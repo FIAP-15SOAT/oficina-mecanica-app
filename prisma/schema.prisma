@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(150)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @default("ATTENDANT") @db.VarChar(20)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  assignedWorkOrders WorkOrder[]     @relation("AssignedUser")
+  statusChanges      StatusHistory[]
+
+  @@map("users")
+}
+
+model Customer {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(150)
+  document  String   @unique @db.VarChar(18)
+  type      String   @default("INDIVIDUAL") @db.VarChar(20)
+  email     String?  @db.VarChar(150)
+  phone     String?  @db.VarChar(20)
+  address   String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  vehicles   Vehicle[]
+  workOrders WorkOrder[]
+
+  @@map("customers")
+}
+
+model Vehicle {
+  id         String   @id @default(uuid()) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  plate      String   @unique @db.VarChar(10)
+  brand      String   @db.VarChar(60)
+  model      String   @db.VarChar(60)
+  year       Int      @db.SmallInt
+  color      String?  @db.VarChar(40)
+  mileage    Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  workOrders WorkOrder[]
+
+  @@map("vehicles")
+}
+
+model Service {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @db.VarChar(150)
+  description      String?  @db.Text
+  basePrice        Decimal  @map("base_price") @db.Decimal(10, 2)
+  estimatedTimeMin Int      @default(60) @map("estimated_time_min")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  workOrderServices WorkOrderService[]
+
+  @@map("services")
+}
+
+model Part {
+  id            String   @id @default(uuid()) @db.Uuid
+  code          String   @unique @db.VarChar(60)
+  name          String   @db.VarChar(150)
+  description   String?  @db.Text
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(10, 2)
+  stockQuantity Int      @default(0) @map("stock_quantity")
+  minStock      Int      @default(0) @map("min_stock")
+  unit          String   @default("UN") @db.VarChar(20)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  workOrderParts WorkOrderPart[]
+  stockMovements StockMovement[]
+
+  @@map("parts")
+}
+
+model WorkOrder {
+  id                 String    @id @default(uuid()) @db.Uuid
+  number             String    @unique @db.VarChar(20)
+  customerId         String    @map("customer_id") @db.Uuid
+  vehicleId          String    @map("vehicle_id") @db.Uuid
+  assignedUserId     String?   @map("assigned_user_id") @db.Uuid
+  status             String    @default("RECEIVED") @db.VarChar(30)
+  problemDescription String?   @map("problem_description") @db.Text
+  internalNotes      String?   @map("internal_notes") @db.Text
+  totalAmount        Decimal   @default(0) @map("total_amount") @db.Decimal(10, 2)
+  approvedAt         DateTime? @map("approved_at")
+  startedAt          DateTime? @map("started_at")
+  finishedAt         DateTime? @map("finished_at")
+  deliveredAt        DateTime? @map("delivered_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  customer       Customer           @relation(fields: [customerId], references: [id])
+  vehicle        Vehicle            @relation(fields: [vehicleId], references: [id])
+  assignedUser   User?              @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  services       WorkOrderService[]
+  parts          WorkOrderPart[]
+  quote          Quote?
+  statusHistory  StatusHistory[]
+  stockMovements StockMovement[]
+
+  @@map("work_orders")
+}
+
+model WorkOrderService {
+  id           String   @id @default(uuid()) @db.Uuid
+  workOrderId  String   @map("work_order_id") @db.Uuid
+  serviceId    String   @map("service_id") @db.Uuid
+  quantity     Int      @default(1)
+  unitPrice    Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice   Decimal  @map("total_price") @db.Decimal(10, 2)
+  timeSpentMin Int?     @map("time_spent_min")
+  status       String   @default("PENDING") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  service   Service   @relation(fields: [serviceId], references: [id])
+
+  @@map("work_order_services")
+}
+
+model WorkOrderPart {
+  id          String   @id @default(uuid()) @db.Uuid
+  workOrderId String   @map("work_order_id") @db.Uuid
+  partId      String   @map("part_id") @db.Uuid
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice  Decimal  @map("total_price") @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  part      Part      @relation(fields: [partId], references: [id])
+
+  @@map("work_order_parts")
+}
+
+model Quote {
+  id             String    @id @default(uuid()) @db.Uuid
+  workOrderId    String    @unique @map("work_order_id") @db.Uuid
+  servicesAmount Decimal   @default(0) @map("services_amount") @db.Decimal(10, 2)
+  partsAmount    Decimal   @default(0) @map("parts_amount") @db.Decimal(10, 2)
+  totalAmount    Decimal   @default(0) @map("total_amount") @db.Decimal(10, 2)
+  status         String    @default("PENDING") @db.VarChar(20)
+  notes          String?   @db.Text
+  sentAt         DateTime? @map("sent_at")
+  approvedAt     DateTime? @map("approved_at")
+  rejectedAt     DateTime? @map("rejected_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  @@map("quotes")
+}
+
+model StatusHistory {
+  id             String   @id @default(uuid()) @db.Uuid
+  workOrderId    String   @map("work_order_id") @db.Uuid
+  changedById    String?  @map("changed_by_id") @db.Uuid
+  previousStatus String?  @map("previous_status") @db.VarChar(30)
+  newStatus      String   @map("new_status") @db.VarChar(30)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  changedBy User?     @relation(fields: [changedById], references: [id])
+
+  @@map("status_history")
+}
+
+model StockMovement {
+  id          String   @id @default(uuid()) @db.Uuid
+  partId      String   @map("part_id") @db.Uuid
+  workOrderId String?  @map("work_order_id") @db.Uuid
+  type        String   @db.VarChar(20)
+  quantity    Int
+  reason      String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  part      Part       @relation(fields: [partId], references: [id])
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id])
+
+  @@map("stock_movements")
+}

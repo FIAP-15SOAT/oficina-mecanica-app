@@ -1,0 +1,38 @@
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
+import { DomainException } from '../../domain/exceptions';
+import { DomainValidationException } from '../../domain/exceptions';
+import { EntityNotFoundException } from '../../domain/exceptions';
+import { BusinessRuleViolationException } from '../../domain/exceptions';
+
+@Catch(DomainException)
+export class DomainExceptionFilter implements ExceptionFilter {
+  catch(exception: DomainException, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+
+    const { status, error } = this.resolveHttpStatus(exception);
+
+    response.status(status).json({
+      statusCode: status,
+      error,
+      message: exception.message,
+    });
+  }
+
+  private resolveHttpStatus(exception: DomainException): { status: number; error: string } {
+    if (exception instanceof DomainValidationException) {
+      return { status: HttpStatus.UNPROCESSABLE_ENTITY, error: 'Unprocessable Entity' };
+    }
+
+    if (exception instanceof EntityNotFoundException) {
+      return { status: HttpStatus.NOT_FOUND, error: 'Not Found' };
+    }
+
+    if (exception instanceof BusinessRuleViolationException) {
+      return { status: HttpStatus.CONFLICT, error: 'Business Rule Violation' };
+    }
+
+    return { status: HttpStatus.BAD_REQUEST, error: 'Domain Error' };
+  }
+}

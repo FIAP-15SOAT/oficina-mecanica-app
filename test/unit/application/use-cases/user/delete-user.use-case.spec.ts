@@ -1,0 +1,31 @@
+import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
+import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
+import { DeleteUserUseCase } from '../../../../../src/application/use-cases/user/delete-user.use-case';
+
+describe('DeleteUserUseCase', () => {
+  let useCase: DeleteUserUseCase;
+  let userRepository: ReturnType<typeof createMockUserRepository>;
+
+  beforeEach(() => {
+    userRepository = createMockUserRepository();
+    useCase = new DeleteUserUseCase(userRepository);
+  });
+
+  it('deve deletar usuário existente', async () => {
+    const user = createMockUser();
+    userRepository.findById.mockResolvedValue(user);
+    userRepository.delete.mockResolvedValue();
+
+    await useCase.execute('user-uuid-123');
+
+    expect(userRepository.findById).toHaveBeenCalledWith('user-uuid-123');
+    expect(userRepository.delete).toHaveBeenCalledWith('user-uuid-123');
+  });
+
+  it('deve lançar NotFoundException se usuário não existir', async () => {
+    userRepository.findById.mockResolvedValue(null);
+
+    await expect(useCase.execute('inexistente')).rejects.toThrow(ResourceNotFoundException);
+    expect(userRepository.delete).not.toHaveBeenCalled();
+  });
+});

@@ -1,0 +1,78 @@
+import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import {
+  ResourceConflictException,
+  ResourceNotFoundException,
+  UnauthorizedAccessException,
+} from '../../../../src/application/exceptions';
+import { ApplicationExceptionFilter } from '../../../../src/infrastructure/filters/application-exception.filter';
+
+function createMockHost() {
+  const jsonFn = jest.fn();
+  const statusFn = jest.fn().mockReturnValue({ json: jsonFn });
+  const mockResponse = { status: statusFn };
+
+  const host = {
+    switchToHttp: () => ({
+      getResponse: <T = typeof mockResponse>(): T => mockResponse as T,
+      getRequest: jest.fn(),
+      getNext: jest.fn(),
+    }),
+    getArgs: jest.fn(),
+    getArgByIndex: jest.fn(),
+    switchToRpc: jest.fn(),
+    switchToWs: jest.fn(),
+    getType: jest.fn(),
+  } satisfies ArgumentsHost;
+
+  return { host, statusFn, jsonFn };
+}
+
+describe('ApplicationExceptionFilter', () => {
+  let filter: ApplicationExceptionFilter;
+
+  beforeEach(() => {
+    filter = new ApplicationExceptionFilter();
+  });
+
+  it('deve retornar 404 para ResourceNotFoundException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new ResourceNotFoundException('Usuário', 'uuid-123');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.NOT_FOUND,
+      error: 'Not Found',
+      message: 'Usuário não encontrado(a) com identificador: uuid-123',
+    });
+  });
+
+  it('deve retornar 409 para ResourceConflictException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new ResourceConflictException('E-mail já cadastrado no sistema');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      error: 'Conflict',
+      message: 'E-mail já cadastrado no sistema',
+    });
+  });
+
+  it('deve retornar 401 para UnauthorizedAccessException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new UnauthorizedAccessException('Credenciais inválidas');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      error: 'Unauthorized',
+      message: 'Credenciais inválidas',
+    });
+  });
+});
