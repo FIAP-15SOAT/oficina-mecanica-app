@@ -1,6 +1,6 @@
 import { UnauthorizedAccessException } from '../../exceptions';
 import { UserRole } from '../../../domain/enums';
-import { ITokenService, IUserRepository, TokenPair } from '../../../domain/interfaces';
+import { ITokenService, IUserRepository, TokenPair, TokenPayload } from '../../../domain/interfaces';
 
 export interface RefreshTokenInput {
   refreshToken: string;
@@ -24,7 +24,7 @@ export class RefreshTokenUseCase {
   ) {}
 
   async execute(input: RefreshTokenInput): Promise<RefreshTokenOutput> {
-    let payload: { sub: string; email: string; role: string };
+    let payload: TokenPayload;
 
     try {
       payload = this.tokenService.verifyRefreshToken(input.refreshToken);

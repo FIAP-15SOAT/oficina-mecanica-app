@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '../../../../src/domain/enums';
 import { TokenPayload } from '../../../../src/domain/interfaces';
 import { JwtTokenService } from '../../../../src/infrastructure/services/jwt-token.service';
 
@@ -10,7 +11,7 @@ describe('JwtTokenService', () => {
   const mockPayload: TokenPayload = {
     sub: 'user-uuid-123',
     email: 'rafael@email.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   };
 
   beforeEach(() => {

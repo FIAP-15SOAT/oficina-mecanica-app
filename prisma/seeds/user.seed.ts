@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 12;
@@ -8,34 +8,34 @@ const DEFAULT_PASSWORD = 'Tech@2026';
 interface UserSeed {
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 const users: UserSeed[] = [
   {
     name: 'Rafael Neves de Oliveira',
     email: 'rafaelneves652@gmail.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   },
   {
     name: 'Guilherme da Rocha Salvador',
     email: 'guilhermedarochasalvador@gmail.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   },
   {
     name: 'Lucas Almeida da Silva',
     email: 'lucas.almeida-silva@hotmail.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   },
   {
     name: 'Ramoon Lincoln Barros Camacho',
     email: 'ramooncamacho@hotmail.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   },
   {
     name: 'Renan Santana Camacho',
     email: 'camacho.renan@gmail.com',
-    role: 'Admin',
+    role: UserRole.ADMIN,
   },
 ];
 

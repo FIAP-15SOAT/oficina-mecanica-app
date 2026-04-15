@@ -1,3 +1,5 @@
+import { Unit } from '../enums';
+
 export class Part {
   id!: string;
   code!: string;
@@ -6,7 +8,7 @@ export class Part {
   unitPrice!: number;
   stockQuantity!: number;
   minStock!: number;
-  unit!: string;
+  unit!: Unit;
   isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;

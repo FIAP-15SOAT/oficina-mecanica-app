@@ -1,5 +1,6 @@
 export { User, UserPublicView } from './user.entity';
 export { Customer } from './customer.entity';
+export { Address } from './address.entity';
 export { Vehicle } from './vehicle.entity';
 export { Service } from './service.entity';
 export { Part } from './part.entity';
