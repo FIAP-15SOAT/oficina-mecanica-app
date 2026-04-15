@@ -28,9 +28,9 @@ model Customer {
   name      String   @db.VarChar(150)
   document  String   @unique @db.VarChar(18)
   type      String   @default("INDIVIDUAL") @db.VarChar(20)
-  email     String?  @db.VarChar(150)
-  phone     String?  @db.VarChar(20)
-  address   String?  @db.VarChar(255)
+  email     String   @db.VarChar(150)
+  phone     String   @db.VarChar(20)
+  address   String   @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -101,6 +101,7 @@ model WorkOrder {
   status             String    @default("RECEIVED") @db.VarChar(30)
   problemDescription String?   @map("problem_description") @db.Text
   internalNotes      String?   @map("internal_notes") @db.Text
+  mileageAtService   Int?      @map("mileage_at_service")
   totalAmount        Decimal   @default(0) @map("total_amount") @db.Decimal(10, 2)
   approvedAt         DateTime? @map("approved_at")
   startedAt          DateTime? @map("started_at")
@@ -114,7 +115,7 @@ model WorkOrder {
   assignedUser   User?              @relation("AssignedUser", fields: [assignedUserId], references: [id])
   services       WorkOrderService[]
   parts          WorkOrderPart[]
-  quote          Quote?
+  quotes         Quote[]
   statusHistory  StatusHistory[]
   stockMovements StockMovement[]
 
@@ -157,7 +158,7 @@ model WorkOrderPart {
 
 model Quote {
   id             String    @id @default(uuid()) @db.Uuid
-  workOrderId    String    @unique @map("work_order_id") @db.Uuid
+  workOrderId    String    @map("work_order_id") @db.Uuid
   servicesAmount Decimal   @default(0) @map("services_amount") @db.Decimal(10, 2)
   partsAmount    Decimal   @default(0) @map("parts_amount") @db.Decimal(10, 2)
   totalAmount    Decimal   @default(0) @map("total_amount") @db.Decimal(10, 2)
