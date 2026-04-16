@@ -7,8 +7,9 @@ export class WorkOrderService {
   quantity!: number;
   unitPrice!: number;
   totalPrice!: number;
-  timeSpentMin!: number | null;
   status!: WorkOrderServiceStatus;
+  startedAt!: Date | null;
+  finishedAt!: Date | null;
   createdAt!: Date;
   updatedAt!: Date;
 

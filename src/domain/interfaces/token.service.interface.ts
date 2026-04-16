@@ -1,7 +1,9 @@
+import { UserRole } from '../enums';
+
 export interface TokenPayload {
   sub: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 export interface TokenPair {

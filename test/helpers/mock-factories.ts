@@ -52,9 +52,9 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     signTokenPair: jest.fn().mockReturnValue(pair),
     verifyAccessToken: jest
       .fn()
-      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: 'Admin' }),
+      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
     verifyRefreshToken: jest
       .fn()
-      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: 'Admin' }),
+      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
   };
 }

@@ -1,5 +1,5 @@
 export enum WorkOrderServiceStatus {
-  PENDING = 'Pending',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed',
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
 }

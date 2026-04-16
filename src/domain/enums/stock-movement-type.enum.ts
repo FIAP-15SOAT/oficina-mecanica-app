@@ -1,5 +1,5 @@
 export enum StockMovementType {
-  IN = 'In',
-  OUT = 'Out',
-  ADJUSTMENT = 'Adjustment',
+  IN = 'IN',
+  OUT = 'OUT',
+  ADJUSTMENT = 'ADJUSTMENT',
 }

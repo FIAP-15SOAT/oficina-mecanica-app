@@ -1,9 +1,11 @@
+import { WorkOrderStatus } from '../enums';
+
 export class StatusHistory {
   id!: string;
   workOrderId!: string;
   changedById!: string | null;
-  previousStatus!: string | null;
-  newStatus!: string;
+  previousStatus!: WorkOrderStatus | null;
+  newStatus!: WorkOrderStatus;
   notes!: string | null;
   createdAt!: Date;
 

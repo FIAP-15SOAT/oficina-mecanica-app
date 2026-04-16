@@ -1,6 +1,6 @@
 export enum QuoteStatus {
-  PENDING = 'Pending',
-  SENT = 'Sent',
-  APPROVED = 'Approved',
-  REJECTED = 'Rejected',
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
 }

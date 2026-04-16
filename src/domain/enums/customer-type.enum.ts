@@ -1,4 +1,4 @@
 export enum CustomerType {
-  INDIVIDUAL = 'Individual',
-  COMPANY = 'Company',
+  INDIVIDUAL = 'INDIVIDUAL',
+  COMPANY = 'COMPANY',
 }
