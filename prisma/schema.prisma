@@ -43,9 +43,10 @@ enum QuoteStatus {
   REJECTED
 }
 
+// IN→ENTRY (Entrada de Peças e Insumos), OUT→EXIT (saída por consumo em OS)
 enum StockMovementType {
-  IN
-  OUT
+  ENTRY
+  EXIT
   ADJUSTMENT
 }
 
@@ -58,6 +59,12 @@ enum Unit {
   CX
   PC
   JG
+}
+
+// Categoria distingue Peça de Insumo
+enum PartSupplyCategory {
+  PART
+  SUPPLY
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -143,23 +150,29 @@ model Service {
   @@map("services")
 }
 
-model Part {
-  id            String   @id @default(uuid()) @db.Uuid
-  code          String   @unique @db.VarChar(60)
-  name          String   @db.VarChar(150)
-  description   String?  @db.Text
-  unitPrice     Decimal  @map("unit_price") @db.Decimal(10, 2)
-  stockQuantity Int      @default(0) @map("stock_quantity")
-  minStock      Int      @default(0) @map("min_stock")
-  unit          Unit     @default(UN)
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+// modelo Part substituído por PartSupply
+// Novos campos: sku, category, costPrice, salePrice, partNumber (opcional), expiresAt (opcional)
+model PartSupply {
+  id          String             @id @default(uuid()) @db.Uuid
+  name        String             @db.VarChar(150)
+  description String?            @db.Text
+  sku         String             @unique @db.VarChar(60)
+  partNumber  String?            @map("part_number") @db.VarChar(60)
+  category    PartSupplyCategory
+  unit        Unit               @default(UN)
+  costPrice   Decimal            @map("cost_price") @db.Decimal(10, 2)
+  salePrice   Decimal            @map("sale_price") @db.Decimal(10, 2)
+  stock       Int                @default(0)
+  minStock    Int                @default(0) @map("min_stock")
+  expiresAt   DateTime?          @map("expires_at")
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  workOrderParts WorkOrderPart[]
   stockMovements StockMovement[]
+  workOrderParts WorkOrderPart[]
 
-  @@map("parts")
+  @@map("parts_supplies")
 }
 
 model WorkOrder {
@@ -211,18 +224,19 @@ model WorkOrderService {
   @@map("work_order_services")
 }
 
+// partId → partSupplyId
 model WorkOrderPart {
-  id          String   @id @default(uuid()) @db.Uuid
-  workOrderId String   @map("work_order_id") @db.Uuid
-  partId      String   @map("part_id") @db.Uuid
-  quantity    Int      @default(1)
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
-  totalPrice  Decimal  @map("total_price") @db.Decimal(10, 2)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  workOrderId   String   @map("work_order_id") @db.Uuid
+  partSupplyId  String   @map("part_supply_id") @db.Uuid
+  quantity      Int      @default(1)
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice    Decimal  @map("total_price") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
-  part      Part      @relation(fields: [partId], references: [id])
+  workOrder  WorkOrder  @relation(fields: [workOrderId], references: [id])
+  partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
 
   @@map("work_order_parts")
 }
@@ -261,17 +275,18 @@ model StatusHistory {
   @@map("status_history")
 }
 
+// partId → partSupplyId; workOrderId mantido (saída atrelada à OS)
 model StockMovement {
-  id          String            @id @default(uuid()) @db.Uuid
-  partId      String            @map("part_id") @db.Uuid
-  workOrderId String?           @map("work_order_id") @db.Uuid
-  type        StockMovementType
-  quantity    Int
-  reason      String?           @db.VarChar(255)
-  createdAt   DateTime          @default(now()) @map("created_at")
+  id           String            @id @default(uuid()) @db.Uuid
+  partSupplyId String            @map("part_supply_id") @db.Uuid
+  workOrderId  String?           @map("work_order_id") @db.Uuid
+  type         StockMovementType
+  quantity     Int
+  reason       String?           @db.VarChar(255)
+  createdAt    DateTime          @default(now()) @map("created_at")
 
-  part      Part       @relation(fields: [partId], references: [id])
-  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id])
+  partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
+  workOrder  WorkOrder? @relation(fields: [workOrderId], references: [id])
 
   @@map("stock_movements")
 }
