@@ -1,9 +1,9 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
-import { ApplicationException } from '../../application/exceptions';
-import { ResourceNotFoundException } from '../../application/exceptions';
-import { ResourceConflictException } from '../../application/exceptions';
-import { UnauthorizedAccessException } from '../../application/exceptions';
+import { ApplicationException } from '@application/exceptions/application.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
 @Catch(ApplicationException)
 export class ApplicationExceptionFilter implements ExceptionFilter {

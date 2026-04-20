@@ -1,5 +1,5 @@
-import { WorkOrderService } from '../../../../src/domain/entities/work-order-service.entity';
-import { WorkOrderServiceStatus } from '../../../../src/domain/enums';
+import { WorkOrderService } from '@domain/entities/work-order-service.entity';
+import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 
 describe('WorkOrderService Entity', () => {
   const validProps = {
@@ -17,7 +17,7 @@ describe('WorkOrderService Entity', () => {
   };
 
   describe('constructor', () => {
-    it('deve criar um WorkOrderService com todos os campos', () => {
+    it('should create a WorkOrderService with all fields', () => {
       const wos = new WorkOrderService(validProps);
 
       expect(wos.id).toBe(validProps.id);
@@ -34,7 +34,7 @@ describe('WorkOrderService Entity', () => {
       expect(wos).not.toHaveProperty('timeSpentMin');
     });
 
-    it('deve criar um WorkOrderService com startedAt e finishedAt preenchidos', () => {
+    it('should create a WorkOrderService with startedAt and finishedAt filled', () => {
       const startedAt = new Date('2024-01-01T11:00:00Z');
       const finishedAt = new Date('2024-01-01T12:00:00Z');
 
@@ -50,7 +50,7 @@ describe('WorkOrderService Entity', () => {
       expect(wos.finishedAt).toBe(finishedAt);
     });
 
-    it('deve criar um WorkOrderService com status IN_PROGRESS', () => {
+    it('should create a WorkOrderService with status IN_PROGRESS', () => {
       const startedAt = new Date('2024-01-01T11:00:00Z');
 
       const wos = new WorkOrderService({
@@ -64,7 +64,7 @@ describe('WorkOrderService Entity', () => {
       expect(wos.finishedAt).toBeNull();
     });
 
-    it('deve criar um WorkOrderService com campos parciais', () => {
+    it('should create a WorkOrderService with partial fields', () => {
       const wos = new WorkOrderService({ quantity: 1, unitPrice: 50.0 });
 
       expect(wos.quantity).toBe(1);
@@ -73,7 +73,7 @@ describe('WorkOrderService Entity', () => {
       expect(wos.status).toBeUndefined();
     });
 
-    it('deve criar um WorkOrderService vazio sem erros', () => {
+    it('should create an empty WorkOrderService without errors', () => {
       expect(() => new WorkOrderService({})).not.toThrow();
     });
   });

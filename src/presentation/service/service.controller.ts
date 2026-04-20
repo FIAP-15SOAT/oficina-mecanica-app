@@ -1,0 +1,194 @@
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { Roles } from '@infrastructure/auth/roles.decorator';
+import { RolesGuard } from '@infrastructure/auth/roles.guard';
+
+import { UserRole } from '@domain/enums/user-role.enum';
+import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
+import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
+import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
+import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
+import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
+import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
+import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
+import { ServiceDataResponseDto } from './dto/service-response.dto';
+import { CreateServiceRequestDto } from './dto/create-service-request.dto';
+import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
+import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
+
+@ApiTags('Services')
+@Controller('services')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth('access-token')
+export class ServiceController {
+  constructor(
+    @Inject('ICreateServiceUseCase')
+    private readonly createServiceUseCase: ICreateServiceUseCase,
+    @Inject('IFindServiceByIdUseCase')
+    private readonly findServiceByIdUseCase: IFindServiceByIdUseCase,
+    @Inject('IFindAllServicesPaginatedUseCase')
+    private readonly findAllServicesPaginatedUseCase: IFindAllServicesPaginatedUseCase,
+    @Inject('IUpdateServiceUseCase')
+    private readonly updateServiceUseCase: IUpdateServiceUseCase,
+    @Inject('IUpdateServiceStatusUseCase')
+    private readonly updateServiceStatusUseCase: IUpdateServiceStatusUseCase,
+    @Inject('IDeleteServiceUseCase')
+    private readonly deleteServiceUseCase: IDeleteServiceUseCase,
+  ) {}
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Criar novo serviço' })
+  @ApiResponse({
+    status: 201,
+    description: 'Serviço criado com sucesso',
+    type: ServiceDataResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiResponse({ status: 409, description: 'Serviço já cadastrado' })
+  @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
+  async create(@Body() request: CreateServiceRequestDto): Promise<ServiceDataResponseDto> {
+    const result = await this.createServiceUseCase.execute(request);
+
+    return { data: result };
+  }
+
+  @Get()
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Listar serviços paginados (somente Admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de serviços',
+    type: ServicePaginatedResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Registros por página (padrão: 10)',
+  })
+  @ApiQuery({
+    name: 'active',
+    required: false,
+    type: Boolean,
+    description: 'Filtra por status: true = apenas ativos, false = apenas inativos, omitir = todos',
+  })
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('active', new ParseBoolPipe({ optional: true })) active?: boolean,
+  ): Promise<ServicePaginatedResponseDto> {
+    const result = await this.findAllServicesPaginatedUseCase.execute(page, pageSize, active);
+
+    return {
+      data: result.services,
+      totalRecords: result.totalRecords,
+      totalPages: result.totalPages,
+    };
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Buscar serviço por ID (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
+  @ApiResponse({ status: 200, description: 'Serviço encontrado', type: ServiceDataResponseDto })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<ServiceDataResponseDto> {
+    const result = await this.findServiceByIdUseCase.execute(id);
+
+    return { data: result };
+  }
+
+  @Put(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Atualizar dados do serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
+  @ApiResponse({ status: 200, description: 'Serviço atualizado', type: ServiceDataResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
+  @ApiResponse({ status: 409, description: 'Outro serviço com o mesmo nome já existe' })
+  @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() request: UpdateServiceRequestDto,
+  ): Promise<ServiceDataResponseDto> {
+    const result = await this.updateServiceUseCase.execute(id, request);
+
+    return { data: result };
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Alterar status do serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status do serviço atualizado',
+    type: ServiceDataResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
+  @ApiResponse({ status: 422, description: 'Serviço já está no status informado' })
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() request: UpdateServiceStatusRequestDto,
+  ): Promise<ServiceDataResponseDto> {
+    const result = await this.updateServiceStatusUseCase.execute(id, request.active);
+
+    return { data: result };
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
+  @ApiResponse({ status: 204, description: 'Serviço removido' })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.deleteServiceUseCase.execute(id);
+  }
+}

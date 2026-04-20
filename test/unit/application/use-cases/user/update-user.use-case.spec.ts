@@ -1,14 +1,12 @@
-import {
-  ResourceConflictException,
-  ResourceNotFoundException,
-} from '../../../../../src/application/exceptions';
-import { UserRole } from '../../../../../src/domain/enums';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UserRole } from '@domain/enums/user-role.enum';
 import {
   createMockHashService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { UpdateUserUseCase } from '../../../../../src/application/use-cases/user/update-user.use-case';
+import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 
 describe('UpdateUserUseCase', () => {
   let useCase: UpdateUserUseCase;
@@ -21,7 +19,7 @@ describe('UpdateUserUseCase', () => {
     useCase = new UpdateUserUseCase(userRepository, hashService);
   });
 
-  it('deve atualizar o nome do usuário', async () => {
+  it('should update user name', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(async (_id, data) =>
@@ -33,7 +31,7 @@ describe('UpdateUserUseCase', () => {
     expect(result.name).toBe('Novo Nome');
   });
 
-  it('deve atualizar o e-mail verificando unicidade', async () => {
+  it('should update email checking uniqueness', async () => {
     const user = createMockUser({ email: 'antigo@email.com' });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(null);
@@ -47,7 +45,7 @@ describe('UpdateUserUseCase', () => {
     expect(userRepository.findByEmail).toHaveBeenCalledWith('novo@email.com');
   });
 
-  it('deve permitir manter o mesmo e-mail', async () => {
+  it('should allow keeping the same email', async () => {
     const user = createMockUser({ email: 'rafael@email.com' });
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(async () => user);
@@ -57,7 +55,7 @@ describe('UpdateUserUseCase', () => {
     expect(userRepository.findByEmail).not.toHaveBeenCalled();
   });
 
-  it('deve lançar ResourceConflictException se novo e-mail já existir', async () => {
+  it('should throw ResourceConflictException if new email already exists', async () => {
     const user = createMockUser({ email: 'antigo@email.com' });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(createMockUser({ id: 'outro-id' }));
@@ -67,7 +65,7 @@ describe('UpdateUserUseCase', () => {
     ).rejects.toThrow(ResourceConflictException);
   });
 
-  it('deve atualizar a role', async () => {
+  it('should update role', async () => {
     const user = createMockUser({ role: UserRole.ATTENDANT });
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(async (_id, data) =>
@@ -79,7 +77,7 @@ describe('UpdateUserUseCase', () => {
     expect(result.role).toBe(UserRole.ADMIN);
   });
 
-  it('deve atualizar a senha com hash', async () => {
+  it('should update password with hash', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(async () => createMockUser());
@@ -89,7 +87,7 @@ describe('UpdateUserUseCase', () => {
     expect(hashService.hash).toHaveBeenCalledWith('NovaSenha@123');
   });
 
-  it('deve lançar ResourceNotFoundException se usuário não existir', async () => {
+  it('should throw ResourceNotFoundException if user does not exist', async () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('inexistente', { name: 'Novo' })).rejects.toThrow(

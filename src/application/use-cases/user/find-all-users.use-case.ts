@@ -1,5 +1,5 @@
-import { UserPublicView } from '../../../domain/entities';
-import { IUserRepository } from '../../../domain/interfaces';
+import { UserPublicView } from '@domain/entities/user.entity';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 export type FindAllUsersOutput = UserPublicView[];
 

@@ -1,10 +1,15 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import {
-  BusinessRuleViolationException,
-  DomainValidationException,
-  EntityNotFoundException,
-} from '../../../../src/domain/exceptions';
-import { DomainExceptionFilter } from '../../../../src/infrastructure/filters/domain-exception.filter';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { DomainException } from '@domain/exceptions/domain.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
+import { DomainExceptionFilter } from '@infrastructure/filters/domain-exception.filter';
+
+class GenericDomainException extends DomainException {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 function createMockHost() {
   const jsonFn = jest.fn();
@@ -34,7 +39,7 @@ describe('DomainExceptionFilter', () => {
     filter = new DomainExceptionFilter();
   });
 
-  it('deve retornar 422 para DomainValidationException', () => {
+  it('should return 422 for DomainValidationException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new DomainValidationException('Nome deve ter no mínimo 3 caracteres');
 
@@ -48,7 +53,7 @@ describe('DomainExceptionFilter', () => {
     });
   });
 
-  it('deve retornar 404 para EntityNotFoundException', () => {
+  it('should return 404 for EntityNotFoundException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new EntityNotFoundException('Usuário', 'uuid-123');
 
@@ -62,7 +67,7 @@ describe('DomainExceptionFilter', () => {
     });
   });
 
-  it('deve retornar 409 para BusinessRuleViolationException', () => {
+  it('should return 409 for BusinessRuleViolationException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new BusinessRuleViolationException('Operação não permitida');
 
@@ -73,6 +78,20 @@ describe('DomainExceptionFilter', () => {
       statusCode: HttpStatus.CONFLICT,
       error: 'Business Rule Violation',
       message: 'Operação não permitida',
+    });
+  });
+
+  it('should return 400 for generic DomainException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new GenericDomainException('Erro de domínio genérico');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      error: 'Domain Error',
+      message: 'Erro de domínio genérico',
     });
   });
 });

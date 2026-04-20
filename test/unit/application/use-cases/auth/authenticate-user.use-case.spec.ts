@@ -1,11 +1,11 @@
-import { UnauthorizedAccessException } from '../../../../../src/application/exceptions';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import {
   createMockHashService,
   createMockTokenService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { AuthenticateUserUseCase } from '../../../../../src/application/use-cases/auth/authenticate-user.use-case';
+import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
 
 describe('AuthenticateUserUseCase', () => {
   let useCase: AuthenticateUserUseCase;
@@ -20,7 +20,7 @@ describe('AuthenticateUserUseCase', () => {
     useCase = new AuthenticateUserUseCase(userRepository, hashService, tokenService);
   });
 
-  it('deve autenticar usuário com sucesso e retornar tokens', async () => {
+  it('should authenticate user successfully and return tokens', async () => {
     const user = createMockUser();
     userRepository.findByEmail.mockResolvedValue(user);
     hashService.compare.mockResolvedValue(true);
@@ -41,7 +41,7 @@ describe('AuthenticateUserUseCase', () => {
     });
   });
 
-  it('deve lançar UnauthorizedAccessException se usuário não existir', async () => {
+  it('should throw UnauthorizedAccessException if user does not exist', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
     await expect(
@@ -49,7 +49,7 @@ describe('AuthenticateUserUseCase', () => {
     ).rejects.toThrow(UnauthorizedAccessException);
   });
 
-  it('deve lançar UnauthorizedAccessException se usuário estiver desativado', async () => {
+  it('should throw UnauthorizedAccessException if user is deactivated', async () => {
     const user = createMockUser({ isActive: false });
     userRepository.findByEmail.mockResolvedValue(user);
 
@@ -58,7 +58,7 @@ describe('AuthenticateUserUseCase', () => {
     ).rejects.toThrow('Usuário desativado');
   });
 
-  it('deve lançar UnauthorizedAccessException se senha estiver incorreta', async () => {
+  it('should throw UnauthorizedAccessException if password is incorrect', async () => {
     const user = createMockUser();
     userRepository.findByEmail.mockResolvedValue(user);
     hashService.compare.mockResolvedValue(false);

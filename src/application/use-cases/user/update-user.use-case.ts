@@ -1,16 +1,11 @@
-import { ResourceConflictException, ResourceNotFoundException } from '../../exceptions';
-import { UserPublicView } from '../../../domain/entities';
-import { UserRole } from '../../../domain/enums';
-import { IHashService, IUserRepository } from '../../../domain/interfaces';
-
-export interface UpdateUserInput {
-  name?: string;
-  email?: string;
-  password?: string;
-  role?: UserRole;
-}
-
-export type UpdateUserOutput = UserPublicView;
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  UpdateUserDto,
+  UpdateUserOutputDto,
+} from '@domain/interfaces/use-cases/user/dto/update-user.dto';
 
 export class UpdateUserUseCase {
   constructor(
@@ -18,15 +13,15 @@ export class UpdateUserUseCase {
     private readonly hashService: IHashService,
   ) {}
 
-  async execute(id: string, input: UpdateUserInput): Promise<UpdateUserOutput> {
+  async execute(id: string, updateUserDto: UpdateUserDto): Promise<UpdateUserOutputDto> {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
       throw new ResourceNotFoundException('Usuário', id);
     }
 
-    if (input.email !== undefined) {
-      const normalizedEmail = input.email.trim().toLowerCase();
+    if (updateUserDto.email !== undefined) {
+      const normalizedEmail = updateUserDto.email.trim().toLowerCase();
 
       if (normalizedEmail !== user.email) {
         const existing = await this.userRepository.findByEmail(normalizedEmail);
@@ -36,19 +31,19 @@ export class UpdateUserUseCase {
         }
       }
 
-      user.changeEmail(input.email);
+      user.changeEmail(updateUserDto.email);
     }
 
-    if (input.name !== undefined) {
-      user.changeName(input.name);
+    if (updateUserDto.name !== undefined) {
+      user.changeName(updateUserDto.name);
     }
 
-    if (input.role !== undefined) {
-      user.changeRole(input.role);
+    if (updateUserDto.role !== undefined) {
+      user.changeRole(updateUserDto.role);
     }
 
-    if (input.password !== undefined) {
-      const passwordHash = await this.hashService.hash(input.password);
+    if (updateUserDto.password !== undefined) {
+      const passwordHash = await this.hashService.hash(updateUserDto.password);
       user.changePassword(passwordHash);
     }
 

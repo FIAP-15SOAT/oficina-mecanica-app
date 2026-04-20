@@ -1,5 +1,5 @@
-import { Address } from '../../../../src/domain/entities/address.entity';
-import { DomainValidationException } from '../../../../src/domain/exceptions';
+import { Address } from '@domain/entities/address.entity';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('Address Entity', () => {
   const validProps = {
@@ -14,7 +14,7 @@ describe('Address Entity', () => {
   };
 
   describe('constructor', () => {
-    it('deve criar um endereço com todos os campos', () => {
+    it('should create an address with all fields', () => {
       const address = new Address(validProps);
 
       expect(address.id).toBe(validProps.id);
@@ -27,7 +27,7 @@ describe('Address Entity', () => {
       expect(address.updatedAt).toBe(validProps.updatedAt);
     });
 
-    it('deve criar um endereço com campos parciais', () => {
+    it('should create an address with partial fields', () => {
       const address = new Address({ street: 'Av. Paulista', city: 'São Paulo' });
 
       expect(address.street).toBe('Av. Paulista');
@@ -35,7 +35,7 @@ describe('Address Entity', () => {
       expect(address.id).toBeUndefined();
     });
 
-    it('deve criar um endereço vazio sem erros', () => {
+    it('should create an empty address without errors', () => {
       expect(() => new Address({})).not.toThrow();
     });
   });
@@ -49,7 +49,7 @@ describe('Address Entity', () => {
       zipCode: '01310-100',
     };
 
-    it('deve criar um endereço válido com todos os campos obrigatórios', () => {
+    it('should create a valid address with all required fields', () => {
       const address = Address.create(createProps);
 
       expect(address.customerId).toBe(createProps.customerId);
@@ -59,13 +59,13 @@ describe('Address Entity', () => {
       expect(address.zipCode).toBe(createProps.zipCode);
     });
 
-    it('deve normalizar state para maiúsculas', () => {
+    it('should normalize state to uppercase', () => {
       const address = Address.create({ ...createProps, state: 'sp' });
 
       expect(address.state).toBe('SP');
     });
 
-    it('deve fazer trim nos campos de texto', () => {
+    it('should trim text fields', () => {
       const address = Address.create({
         ...createProps,
         street: '  Rua das Flores, 123  ',
@@ -81,37 +81,37 @@ describe('Address Entity', () => {
     });
 
     describe('validações', () => {
-      it('deve lançar exceção quando customerId for vazio', () => {
+      it('should throw exception when customerId is empty', () => {
         expect(() => Address.create({ ...createProps, customerId: '' })).toThrow(
           DomainValidationException,
         );
       });
 
-      it('deve lançar exceção quando street for vazio', () => {
+      it('should throw exception when street is empty', () => {
         expect(() => Address.create({ ...createProps, street: '' })).toThrow(
           DomainValidationException,
         );
       });
 
-      it('deve lançar exceção quando street exceder 255 caracteres', () => {
+      it('should throw exception when street exceeds 255 characters', () => {
         expect(() => Address.create({ ...createProps, street: 'a'.repeat(256) })).toThrow(
           DomainValidationException,
         );
       });
 
-      it('deve lançar exceção quando city for vazia', () => {
+      it('should throw exception when city is empty', () => {
         expect(() => Address.create({ ...createProps, city: '' })).toThrow(
           DomainValidationException,
         );
       });
 
-      it('deve lançar exceção quando city exceder 100 caracteres', () => {
+      it('should throw exception when city exceeds 100 characters', () => {
         expect(() => Address.create({ ...createProps, city: 'a'.repeat(101) })).toThrow(
           DomainValidationException,
         );
       });
 
-      it('deve lançar exceção quando state não tiver exatamente 2 caracteres', () => {
+      it('should throw exception when state does not have exactly 2 characters', () => {
         expect(() => Address.create({ ...createProps, state: 'SPP' })).toThrow(
           DomainValidationException,
         );
@@ -120,7 +120,7 @@ describe('Address Entity', () => {
         );
       });
 
-      it('deve lançar exceção quando zipCode tiver formato inválido', () => {
+      it('should throw exception when zipCode has invalid format', () => {
         expect(() => Address.create({ ...createProps, zipCode: '01310100' })).toThrow(
           DomainValidationException,
         );

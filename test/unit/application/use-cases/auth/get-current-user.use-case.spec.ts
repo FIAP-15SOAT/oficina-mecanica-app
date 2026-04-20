@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
-import { GetCurrentUserUseCase } from '../../../../../src/application/use-cases/auth/get-current-user.use-case';
+import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
 
 describe('GetCurrentUserUseCase', () => {
   let useCase: GetCurrentUserUseCase;
@@ -11,7 +11,7 @@ describe('GetCurrentUserUseCase', () => {
     useCase = new GetCurrentUserUseCase(userRepository);
   });
 
-  it('deve retornar dados do usuário autenticado', async () => {
+  it('should return authenticated user data', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
 
@@ -25,7 +25,7 @@ describe('GetCurrentUserUseCase', () => {
     expect(userRepository.findById).toHaveBeenCalledWith('user-uuid-123');
   });
 
-  it('deve lançar NotFoundException se usuário não existir', async () => {
+  it('should throw NotFoundException if user does not exist', async () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('inexistente')).rejects.toThrow(ResourceNotFoundException);

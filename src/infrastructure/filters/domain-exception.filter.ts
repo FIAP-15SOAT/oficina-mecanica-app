@@ -1,9 +1,9 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
-import { DomainException } from '../../domain/exceptions';
-import { DomainValidationException } from '../../domain/exceptions';
-import { EntityNotFoundException } from '../../domain/exceptions';
-import { BusinessRuleViolationException } from '../../domain/exceptions';
+import { DomainException } from '@domain/exceptions/domain.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 @Catch(DomainException)
 export class DomainExceptionFilter implements ExceptionFilter {

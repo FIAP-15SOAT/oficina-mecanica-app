@@ -1,11 +1,11 @@
-import { ResourceConflictException } from '../../../../../src/application/exceptions';
-import { UserRole } from '../../../../../src/domain/enums';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { UserRole } from '@domain/enums/user-role.enum';
 import {
   createMockHashService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { RegisterUserUseCase } from '../../../../../src/application/use-cases/auth/register-user.use-case';
+import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
 
 describe('RegisterUserUseCase', () => {
   let useCase: RegisterUserUseCase;
@@ -18,7 +18,7 @@ describe('RegisterUserUseCase', () => {
     useCase = new RegisterUserUseCase(userRepository, hashService);
   });
 
-  it('deve registrar um novo usuário com sucesso', async () => {
+  it('should register a new user successfully', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.create.mockImplementation(async (user) => {
       return createMockUser({
@@ -43,7 +43,7 @@ describe('RegisterUserUseCase', () => {
     expect(userRepository.create).toHaveBeenCalled();
   });
 
-  it('deve registrar com role específica', async () => {
+  it('should register with specific role', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.create.mockImplementation(async (user) => {
       return createMockUser({ role: user.role });
@@ -59,7 +59,7 @@ describe('RegisterUserUseCase', () => {
     expect(result.role).toBe(UserRole.MECHANIC);
   });
 
-  it('deve lançar ResourceConflictException se e-mail já existir', async () => {
+  it('should throw ResourceConflictException if email already exists', async () => {
     userRepository.findByEmail.mockResolvedValue(createMockUser());
 
     await expect(
@@ -73,7 +73,7 @@ describe('RegisterUserUseCase', () => {
     expect(userRepository.create).not.toHaveBeenCalled();
   });
 
-  it('deve normalizar o e-mail antes de verificar duplicidade', async () => {
+  it('should normalize email before checking for duplicates', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.create.mockImplementation(async (user) => createMockUser({ email: user.email }));
 

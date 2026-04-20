@@ -1,16 +1,11 @@
-import { ResourceConflictException } from '../../exceptions';
-import { User, UserPublicView } from '../../../domain/entities';
-import { UserRole } from '../../../domain/enums';
-import { IHashService, IUserRepository } from '../../../domain/interfaces';
-
-export interface RegisterUserInput {
-  name: string;
-  email: string;
-  password: string;
-  role?: UserRole;
-}
-
-export type RegisterUserOutput = Omit<UserPublicView, 'updatedAt'>;
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { User } from '@domain/entities/user.entity';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  RegisterUserInputDto,
+  RegisterUserOutputDto,
+} from '@domain/interfaces/use-cases/auth/dto/register-user.dto';
 
 export class RegisterUserUseCase {
   constructor(
@@ -18,7 +13,7 @@ export class RegisterUserUseCase {
     private readonly hashService: IHashService,
   ) {}
 
-  async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
+  async execute(input: RegisterUserInputDto): Promise<RegisterUserOutputDto> {
     const existingUser = await this.userRepository.findByEmail(input.email.trim().toLowerCase());
 
     if (existingUser) {

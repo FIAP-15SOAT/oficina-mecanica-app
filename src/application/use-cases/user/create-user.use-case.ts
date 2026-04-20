@@ -1,17 +1,11 @@
-import { ResourceConflictException } from '../../exceptions';
-import { User, UserPublicView } from '../../../domain/entities';
-import { UserRole } from '../../../domain/enums';
-import { IHashService, IUserRepository } from '../../../domain/interfaces';
-
-export interface CreateUserInput {
-  name: string;
-  email: string;
-  password: string;
-  role?: UserRole;
-  isActive?: boolean;
-}
-
-export type CreateUserOutput = UserPublicView;
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { User } from '@domain/entities/user.entity';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  CreateUserDto,
+  CreateUserOutputDto,
+} from '@domain/interfaces/use-cases/user/dto/create-user.dto';
 
 export class CreateUserUseCase {
   constructor(
@@ -19,23 +13,25 @@ export class CreateUserUseCase {
     private readonly hashService: IHashService,
   ) {}
 
-  async execute(input: CreateUserInput): Promise<CreateUserOutput> {
-    const existing = await this.userRepository.findByEmail(input.email.trim().toLowerCase());
+  async execute(createUserDto: CreateUserDto): Promise<CreateUserOutputDto> {
+    const existing = await this.userRepository.findByEmail(
+      createUserDto.email.trim().toLowerCase(),
+    );
 
     if (existing) {
       throw new ResourceConflictException('E-mail já cadastrado no sistema');
     }
 
-    const passwordHash = await this.hashService.hash(input.password);
+    const passwordHash = await this.hashService.hash(createUserDto.password);
 
     const user = User.create({
-      name: input.name,
-      email: input.email,
+      name: createUserDto.name,
+      email: createUserDto.email,
       passwordHash,
-      role: input.role,
+      role: createUserDto.role,
     });
 
-    if (input.isActive === false) {
+    if (createUserDto.isActive === false) {
       user.deactivate();
     }
 

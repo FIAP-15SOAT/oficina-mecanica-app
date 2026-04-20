@@ -20,6 +20,15 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "jest"],
+    "paths": {
+      "@application/*": ["src/application/*"],
+      "@config/*": ["src/config/*"],
+      "@domain/*": ["src/domain/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
+      "@presentation/*": ["src/presentation/*"],
+      "@generated/*": ["prisma/generated/*"]
+    }
   }
 }

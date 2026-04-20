@@ -1,21 +1,14 @@
-import { UnauthorizedAccessException } from '../../exceptions';
-import { UserRole } from '../../../domain/enums';
-import { ITokenService, IUserRepository, TokenPair, TokenPayload } from '../../../domain/interfaces';
-
-export interface RefreshTokenInput {
-  refreshToken: string;
-}
-
-export interface RefreshTokenOutput {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-  };
-}
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import {
+  ITokenService,
+  TokenPair,
+  TokenPayload,
+} from '@domain/interfaces/services/token.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  RefreshTokenInputDto,
+  RefreshTokenOutputDto,
+} from '@domain/interfaces/use-cases/auth/dto/refresh-token.dto';
 
 export class RefreshTokenUseCase {
   constructor(
@@ -23,7 +16,7 @@ export class RefreshTokenUseCase {
     private readonly tokenService: ITokenService,
   ) {}
 
-  async execute(input: RefreshTokenInput): Promise<RefreshTokenOutput> {
+  async execute(input: RefreshTokenInputDto): Promise<RefreshTokenOutputDto> {
     let payload: TokenPayload;
 
     try {

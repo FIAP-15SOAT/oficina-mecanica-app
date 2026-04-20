@@ -41,21 +41,16 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-object-type': 'off',
       'no-console': 'warn',
       'prefer-const': 'error',
-      'no-var': 'error',
-      'prettier/prettier': [
-        'error',
-        {
-          singleQuote: true,
-          trailingComma: 'all',
-          semi: true,
-          printWidth: 100,
-          tabWidth: 2,
-          useTabs: false,
-          bracketSpacing: true,
-          arrowParens: 'always',
-          endOfLine: 'auto',
-        },
-      ],
+      'no-var': 'error'
+    },
+  },
+  {
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
 );

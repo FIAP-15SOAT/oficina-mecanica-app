@@ -1,22 +1,11 @@
-import { UnauthorizedAccessException } from '../../exceptions';
-import { UserRole } from '../../../domain/enums';
-import { IHashService, ITokenService, IUserRepository } from '../../../domain/interfaces';
-
-export interface AuthenticateUserInput {
-  email: string;
-  password: string;
-}
-
-export interface AuthenticateUserOutput {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-  };
-}
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { ITokenService } from '@domain/interfaces/services/token.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  AuthenticateUserInputDto,
+  AuthenticateUserOutputDto,
+} from '@domain/interfaces/use-cases/auth/dto/authenticate-user.dto';
 
 export class AuthenticateUserUseCase {
   constructor(
@@ -25,7 +14,7 @@ export class AuthenticateUserUseCase {
     private readonly tokenService: ITokenService,
   ) {}
 
-  async execute(input: AuthenticateUserInput): Promise<AuthenticateUserOutput> {
+  async execute(input: AuthenticateUserInputDto): Promise<AuthenticateUserOutputDto> {
     const user = await this.userRepository.findByEmail(input.email);
 
     if (!user) {

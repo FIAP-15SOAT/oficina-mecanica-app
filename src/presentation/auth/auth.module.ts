@@ -2,15 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import {
-  AuthenticateUserUseCase,
-  GetCurrentUserUseCase,
-  RefreshTokenUseCase,
-  RegisterUserUseCase,
-} from '../../application/use-cases/auth';
-import { JwtStrategy } from '../../infrastructure/auth';
-import { PrismaUserRepository } from '../../infrastructure/repositories';
-import { BcryptHashService, JwtTokenService } from '../../infrastructure/services';
+import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
+import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
+import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
+import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
+import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
+import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
+import { BcryptHashService } from '@infrastructure/services/bcrypt-hash.service';
+import { JwtTokenService } from '@infrastructure/services/jwt-token.service';
 import { AuthController } from './auth.controller';
 
 @Module({
@@ -41,13 +40,13 @@ import { AuthController } from './auth.controller';
       useClass: JwtTokenService,
     },
     {
-      provide: 'RegisterUserUseCase',
+      provide: 'IRegisterUserUseCase',
       useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
         new RegisterUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
-      provide: 'AuthenticateUserUseCase',
+      provide: 'IAuthenticateUserUseCase',
       useFactory: (
         userRepo: PrismaUserRepository,
         hashService: BcryptHashService,
@@ -56,12 +55,12 @@ import { AuthController } from './auth.controller';
       inject: ['IUserRepository', 'IHashService', 'ITokenService'],
     },
     {
-      provide: 'GetCurrentUserUseCase',
+      provide: 'IGetCurrentUserUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new GetCurrentUserUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
-      provide: 'RefreshTokenUseCase',
+      provide: 'IRefreshTokenUseCase',
       useFactory: (userRepo: PrismaUserRepository, tokenService: JwtTokenService) =>
         new RefreshTokenUseCase(userRepo, tokenService),
       inject: ['IUserRepository', 'ITokenService'],

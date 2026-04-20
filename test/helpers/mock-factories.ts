@@ -1,11 +1,8 @@
-import { User } from '../../src/domain/entities';
-import { UserRole } from '../../src/domain/enums';
-import {
-  IHashService,
-  ITokenService,
-  IUserRepository,
-  TokenPair,
-} from '../../src/domain/interfaces';
+import { User } from '@domain/entities/user.entity';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { ITokenService, TokenPair } from '@domain/interfaces/services/token.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 export function createMockUser(overrides: Partial<User> = {}): User {
   const now = new Date();

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../../../domain/enums';
+import { UserRole } from '@domain/enums/user-role.enum';
 
 class UserResponseDto {
   @ApiProperty({ example: 'uuid-here' })
@@ -26,45 +26,7 @@ export class AuthResponseDto {
   user!: UserResponseDto;
 }
 
-export class RegisterResponseDto {
-  @ApiProperty({ example: 'uuid-here' })
-  id!: string;
-
-  @ApiProperty({ example: 'João Silva' })
-  name!: string;
-
-  @ApiProperty({ example: 'joao@email.com' })
-  email!: string;
-
-  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT })
-  role!: UserRole;
-
-  @ApiProperty({ example: true })
-  isActive!: boolean;
-
-  @ApiProperty()
-  createdAt!: Date;
-}
-
-export class MeResponseDto {
-  @ApiProperty({ example: 'uuid-here' })
-  id!: string;
-
-  @ApiProperty({ example: 'João Silva' })
-  name!: string;
-
-  @ApiProperty({ example: 'joao@email.com' })
-  email!: string;
-
-  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT })
-  role!: UserRole;
-
-  @ApiProperty({ example: true })
-  isActive!: boolean;
-
-  @ApiProperty()
-  createdAt!: Date;
-
-  @ApiProperty()
-  updatedAt!: Date;
+export class AuthDataResponseDto {
+  @ApiProperty({ type: AuthResponseDto, description: 'Dados de autenticação' })
+  data!: AuthResponseDto;
 }

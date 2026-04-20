@@ -1,4 +1,4 @@
-import { Unit } from '../enums';
+import { Unit } from '../enums/unit.enum';
 
 export class Part {
   id!: string;

@@ -1,8 +1,8 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import { InfrastructureException } from '../exceptions';
-import { AuthenticationFailedException } from '../exceptions';
-import { DatabaseOperationException } from '../exceptions';
+import { InfrastructureException } from '../exceptions/infrastructure.exception';
+import { AuthenticationFailedException } from '../exceptions/authentication-failed.exception';
+import { DatabaseOperationException } from '../exceptions/database-operation.exception';
 
 @Catch(InfrastructureException)
 export class InfrastructureExceptionFilter implements ExceptionFilter {

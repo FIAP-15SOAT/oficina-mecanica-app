@@ -1,4 +1,4 @@
-import { CustomerType } from '../enums';
+import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
 
 export class Customer {

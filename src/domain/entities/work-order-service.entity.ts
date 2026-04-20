@@ -1,4 +1,4 @@
-import { WorkOrderServiceStatus } from '../enums';
+import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 
 export class WorkOrderService {
   id!: string;

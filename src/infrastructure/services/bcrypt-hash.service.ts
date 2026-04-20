@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { IHashService } from '../../domain/interfaces';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
 
 @Injectable()
 export class BcryptHashService implements IHashService {
   private readonly saltRounds: number;
 
   constructor(configService: ConfigService) {
-    this.saltRounds = configService.get<number>('BCRYPT_SALT_ROUNDS', 12);
+    this.saltRounds = parseInt(String(configService.get<number>('BCRYPT_SALT_ROUNDS', 12)), 10);
   }
 
   async hash(value: string): Promise<string> {

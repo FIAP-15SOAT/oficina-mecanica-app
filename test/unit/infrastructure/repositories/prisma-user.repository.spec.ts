@@ -1,0 +1,261 @@
+import { randomUUID } from 'crypto';
+import { User as PrismaUserModel } from '@generated/client';
+import { User } from '@domain/entities/user.entity';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
+import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
+
+function createMockPrismaUser(overrides: Partial<PrismaUserModel> = {}): PrismaUserModel {
+  const now = new Date();
+  const id = randomUUID();
+
+  return {
+    id,
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    passwordHash: '$2b$10$hashedpassword',
+    role: 'ATTENDANT',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+describe('PrismaUserRepository', () => {
+  let repository: PrismaUserRepository;
+  let prisma: MockPrismaService;
+
+  beforeEach(() => {
+    prisma = createMockPrismaClient();
+    repository = new PrismaUserRepository(prisma);
+  });
+
+  describe('create', () => {
+    it('should create a user and return domain entity', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const prismaModel = createMockPrismaUser({
+        name: user.name,
+        email: user.email,
+        passwordHash: user.passwordHash,
+        role: user.role,
+        isActive: user.isActive,
+      });
+
+      prisma.user.create.mockResolvedValue(prismaModel);
+
+      const result = await repository.create(user);
+
+      expect(result).toEqual(
+        new User({
+          id: prismaModel.id,
+          name: prismaModel.name,
+          email: prismaModel.email,
+          passwordHash: prismaModel.passwordHash,
+          role: prismaModel.role as UserRole,
+          isActive: prismaModel.isActive,
+          createdAt: prismaModel.createdAt,
+          updatedAt: prismaModel.updatedAt,
+        }),
+      );
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: {
+          name: user.name,
+          email: user.email,
+          passwordHash: user.passwordHash,
+          role: user.role,
+          isActive: user.isActive,
+        },
+      });
+    });
+  });
+
+  describe('findById', () => {
+    it('should find a user by id and return domain entity', async () => {
+      const id = randomUUID();
+      const prismaModel = createMockPrismaUser({ id });
+
+      prisma.user.findUnique.mockResolvedValue(prismaModel);
+
+      const result = await repository.findById(id);
+
+      expect(result).toEqual(
+        new User({
+          id: prismaModel.id,
+          name: prismaModel.name,
+          email: prismaModel.email,
+          passwordHash: prismaModel.passwordHash,
+          role: prismaModel.role as UserRole,
+          isActive: prismaModel.isActive,
+          createdAt: prismaModel.createdAt,
+          updatedAt: prismaModel.updatedAt,
+        }),
+      );
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id } });
+    });
+
+    it('should return null when user is not found', async () => {
+      const id = randomUUID();
+
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findById(id);
+
+      expect(result).toBeNull();
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id } });
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('should find a user by email and return domain entity', async () => {
+      const email = 'john.doe@example.com';
+      const prismaModel = createMockPrismaUser({ email });
+
+      prisma.user.findUnique.mockResolvedValue(prismaModel);
+
+      const result = await repository.findByEmail(email);
+
+      expect(result).toEqual(
+        new User({
+          id: prismaModel.id,
+          name: prismaModel.name,
+          email: prismaModel.email,
+          passwordHash: prismaModel.passwordHash,
+          role: prismaModel.role as UserRole,
+          isActive: prismaModel.isActive,
+          createdAt: prismaModel.createdAt,
+          updatedAt: prismaModel.updatedAt,
+        }),
+      );
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email } });
+    });
+
+    it('should return null when user is not found', async () => {
+      const email = 'nonexistent@example.com';
+
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findByEmail(email);
+
+      expect(result).toBeNull();
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email } });
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all users', async () => {
+      const prismaModels = [
+        createMockPrismaUser({ id: randomUUID(), name: 'User 1' }),
+        createMockPrismaUser({ id: randomUUID(), name: 'User 2' }),
+      ];
+
+      prisma.user.findMany.mockResolvedValue(prismaModels);
+
+      const result = await repository.findAll();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual(
+        new User({
+          id: prismaModels[0].id,
+          name: prismaModels[0].name,
+          email: prismaModels[0].email,
+          passwordHash: prismaModels[0].passwordHash,
+          role: prismaModels[0].role as UserRole,
+          isActive: prismaModels[0].isActive,
+          createdAt: prismaModels[0].createdAt,
+          updatedAt: prismaModels[0].updatedAt,
+        }),
+      );
+
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('should update a user and return domain entity', async () => {
+      const id = randomUUID();
+      const updateData = {
+        name: 'Updated Name',
+        email: 'updated@example.com',
+      };
+
+      const updatedPrismaModel = createMockPrismaUser({
+        id,
+        name: updateData.name,
+        email: updateData.email,
+      });
+
+      prisma.user.update.mockResolvedValue(updatedPrismaModel);
+
+      const result = await repository.update(id, updateData);
+
+      expect(result).toEqual(
+        new User({
+          id: updatedPrismaModel.id,
+          name: updatedPrismaModel.name,
+          email: updatedPrismaModel.email,
+          passwordHash: updatedPrismaModel.passwordHash,
+          role: updatedPrismaModel.role as UserRole,
+          isActive: updatedPrismaModel.isActive,
+          createdAt: updatedPrismaModel.createdAt,
+          updatedAt: updatedPrismaModel.updatedAt,
+        }),
+      );
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id },
+        data: {
+          name: updateData.name,
+          email: updateData.email,
+        },
+      });
+    });
+
+    it('should update user status', async () => {
+      const id = randomUUID();
+      const updateData = {
+        isActive: false,
+      };
+
+      const updatedPrismaModel = createMockPrismaUser({
+        id,
+        isActive: false,
+      });
+
+      prisma.user.update.mockResolvedValue(updatedPrismaModel);
+
+      const result = await repository.update(id, updateData);
+
+      expect(result.isActive).toBe(false);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id },
+        data: {
+          isActive: false,
+        },
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a user', async () => {
+      const id = randomUUID();
+
+      prisma.user.delete.mockResolvedValue(createMockPrismaUser({ id }));
+
+      await repository.delete(id);
+
+      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id } });
+    });
+  });
+});

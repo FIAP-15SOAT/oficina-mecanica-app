@@ -1,10 +1,15 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import {
-  ResourceConflictException,
-  ResourceNotFoundException,
-  UnauthorizedAccessException,
-} from '../../../../src/application/exceptions';
-import { ApplicationExceptionFilter } from '../../../../src/infrastructure/filters/application-exception.filter';
+import { ApplicationException } from '@application/exceptions/application.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { ApplicationExceptionFilter } from '@infrastructure/filters/application-exception.filter';
+
+class GenericApplicationException extends ApplicationException {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 function createMockHost() {
   const jsonFn = jest.fn();
@@ -34,7 +39,7 @@ describe('ApplicationExceptionFilter', () => {
     filter = new ApplicationExceptionFilter();
   });
 
-  it('deve retornar 404 para ResourceNotFoundException', () => {
+  it('should return 404 for ResourceNotFoundException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new ResourceNotFoundException('Usuário', 'uuid-123');
 
@@ -48,7 +53,7 @@ describe('ApplicationExceptionFilter', () => {
     });
   });
 
-  it('deve retornar 409 para ResourceConflictException', () => {
+  it('should return 409 for ResourceConflictException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new ResourceConflictException('E-mail já cadastrado no sistema');
 
@@ -62,7 +67,7 @@ describe('ApplicationExceptionFilter', () => {
     });
   });
 
-  it('deve retornar 401 para UnauthorizedAccessException', () => {
+  it('should return 401 for UnauthorizedAccessException', () => {
     const { host, statusFn, jsonFn } = createMockHost();
     const exception = new UnauthorizedAccessException('Credenciais inválidas');
 
@@ -73,6 +78,20 @@ describe('ApplicationExceptionFilter', () => {
       statusCode: HttpStatus.UNAUTHORIZED,
       error: 'Unauthorized',
       message: 'Credenciais inválidas',
+    });
+  });
+
+  it('should return 500 for generic ApplicationException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new GenericApplicationException('Erro inesperado na aplicação');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      error: 'Application Error',
+      message: 'Erro inesperado na aplicação',
     });
   });
 });
