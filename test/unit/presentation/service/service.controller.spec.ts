@@ -58,7 +58,7 @@ describe('ServiceController', () => {
 
       const result = await controller.create(request);
 
-      expect(result).toEqual(createdService);
+      expect(result).toEqual({ data: createdService });
       expect(createServiceUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
@@ -99,7 +99,7 @@ describe('ServiceController', () => {
 
       const result = await controller.findById(id);
 
-      expect(result).toEqual(service);
+      expect(result).toEqual({ data: service });
       expect(findServiceByIdUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
@@ -128,7 +128,7 @@ describe('ServiceController', () => {
 
       const result = await controller.update(id, request);
 
-      expect(result).toEqual(updatedService);
+      expect(result).toEqual({ data: updatedService });
       expect(updateServiceUseCase.execute).toHaveBeenCalledWith(id, request);
     });
   });
@@ -149,7 +149,7 @@ describe('ServiceController', () => {
 
       const result = await controller.updateStatus(id, request);
 
-      expect(result).toEqual(updatedService);
+      expect(result).toEqual({ data: updatedService });
       expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith(id, false);
     });
 
@@ -168,7 +168,7 @@ describe('ServiceController', () => {
 
       const result = await controller.updateStatus(id, request);
 
-      expect(result).toEqual(updatedService);
+      expect(result).toEqual({ data: updatedService });
       expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith(id, true);
     });
   });

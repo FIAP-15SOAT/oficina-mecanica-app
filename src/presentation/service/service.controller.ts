@@ -31,7 +31,7 @@ import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/fi
 import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
-import { ServiceResponseDto } from './dto/service-response.dto';
+import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
@@ -59,11 +59,17 @@ export class ServiceController {
   @Post()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Criar novo serviço' })
-  @ApiResponse({ status: 201, description: 'Serviço criado com sucesso', type: ServiceResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Serviço criado com sucesso',
+    type: ServiceDataResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'Serviço já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
-  async create(@Body() request: CreateServiceRequestDto): Promise<ServiceResponseDto> {
-    return this.createServiceUseCase.execute(request);
+  async create(@Body() request: CreateServiceRequestDto): Promise<ServiceDataResponseDto> {
+    const result = await this.createServiceUseCase.execute(request);
+
+    return { data: result };
   }
 
   @Get()
@@ -91,24 +97,28 @@ export class ServiceController {
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar serviço por ID (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Serviço encontrado', type: ServiceResponseDto })
+  @ApiResponse({ status: 200, description: 'Serviço encontrado', type: ServiceDataResponseDto })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<ServiceResponseDto> {
-    return this.findServiceByIdUseCase.execute(id);
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<ServiceDataResponseDto> {
+    const result = await this.findServiceByIdUseCase.execute(id);
+
+    return { data: result };
   }
 
   @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do serviço (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Serviço atualizado', type: ServiceResponseDto })
+  @ApiResponse({ status: 200, description: 'Serviço atualizado', type: ServiceDataResponseDto })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   @ApiResponse({ status: 409, description: 'Outro serviço com o mesmo nome já existe' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateServiceRequestDto,
-  ): Promise<ServiceResponseDto> {
-    return this.updateServiceUseCase.execute(id, request);
+  ): Promise<ServiceDataResponseDto> {
+    const result = await this.updateServiceUseCase.execute(id, request);
+
+    return { data: result };
   }
 
   @Patch(':id')
@@ -117,15 +127,17 @@ export class ServiceController {
   @ApiResponse({
     status: 200,
     description: 'Status do serviço atualizado',
-    type: ServiceResponseDto,
+    type: ServiceDataResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   @ApiResponse({ status: 422, description: 'Serviço já está no status informado' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateServiceStatusRequestDto,
-  ): Promise<ServiceResponseDto> {
-    return this.updateServiceStatusUseCase.execute(id, request.active);
+  ): Promise<ServiceDataResponseDto> {
+    const result = await this.updateServiceStatusUseCase.execute(id, request.active);
+
+    return { data: result };
   }
 
   @Delete(':id')

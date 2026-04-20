@@ -32,3 +32,11 @@ export class ServiceResponseDto {
   @ApiProperty({ description: 'Data da ultima atualizacao do servico' })
   updatedAt!: Date;
 }
+
+export class ServiceDataResponseDto {
+  @ApiProperty({
+    type: ServiceResponseDto,
+    description: 'Dados do serviço',
+  })
+  data!: ServiceResponseDto;
+}
