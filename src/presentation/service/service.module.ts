@@ -16,37 +16,37 @@ import { ServiceController } from './service.controller';
       useClass: PrismaServiceRepository,
     },
     {
-      provide: 'CreateServiceUseCase',
+      provide: 'ICreateServiceUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new CreateServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
-      provide: 'FindServiceByIdUseCase',
+      provide: 'IFindServiceByIdUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new FindServiceByIdUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
-      provide: 'FindAllServicesPaginatedUseCase',
+      provide: 'IFindAllServicesPaginatedUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new FindAllServicesPaginatedUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
-      provide: 'UpdateServiceUseCase',
+      provide: 'IUpdateServiceUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new UpdateServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
-      provide: 'UpdateServiceStatusUseCase',
+      provide: 'IUpdateServiceStatusUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new UpdateServiceStatusUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
-      provide: 'DeleteServiceUseCase',
+      provide: 'IDeleteServiceUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new DeleteServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],

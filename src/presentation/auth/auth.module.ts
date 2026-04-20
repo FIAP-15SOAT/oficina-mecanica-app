@@ -40,13 +40,13 @@ import { AuthController } from './auth.controller';
       useClass: JwtTokenService,
     },
     {
-      provide: 'RegisterUserUseCase',
+      provide: 'IRegisterUserUseCase',
       useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
         new RegisterUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
-      provide: 'AuthenticateUserUseCase',
+      provide: 'IAuthenticateUserUseCase',
       useFactory: (
         userRepo: PrismaUserRepository,
         hashService: BcryptHashService,
@@ -55,12 +55,12 @@ import { AuthController } from './auth.controller';
       inject: ['IUserRepository', 'IHashService', 'ITokenService'],
     },
     {
-      provide: 'GetCurrentUserUseCase',
+      provide: 'IGetCurrentUserUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new GetCurrentUserUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
-      provide: 'RefreshTokenUseCase',
+      provide: 'IRefreshTokenUseCase',
       useFactory: (userRepo: PrismaUserRepository, tokenService: JwtTokenService) =>
         new RefreshTokenUseCase(userRepo, tokenService),
       inject: ['IUserRepository', 'ITokenService'],

@@ -9,12 +9,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
-import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
-import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
-import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { IAuthenticateUserUseCase } from '@domain/interfaces/use-cases/auth/authenticate-user.use-case.interface';
+import { IGetCurrentUserUseCase } from '@domain/interfaces/use-cases/auth/get-current-user.use-case.interface';
+import { IRefreshTokenUseCase } from '@domain/interfaces/use-cases/auth/refresh-token.use-case.interface';
+import { IRegisterUserUseCase } from '@domain/interfaces/use-cases/auth/register-user.use-case.interface';
 import { AuthResponseDto, MeResponseDto, RegisterResponseDto } from './dto/auth-response.dto';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
@@ -24,14 +24,14 @@ import { RegisterRequestDto } from './dto/register-request.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
-    @Inject('RegisterUserUseCase')
-    private readonly registerUseCase: RegisterUserUseCase,
-    @Inject('AuthenticateUserUseCase')
-    private readonly authenticateUseCase: AuthenticateUserUseCase,
-    @Inject('GetCurrentUserUseCase')
-    private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
-    @Inject('RefreshTokenUseCase')
-    private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    @Inject('IRegisterUserUseCase')
+    private readonly registerUseCase: IRegisterUserUseCase,
+    @Inject('IAuthenticateUserUseCase')
+    private readonly authenticateUseCase: IAuthenticateUserUseCase,
+    @Inject('IGetCurrentUserUseCase')
+    private readonly getCurrentUserUseCase: IGetCurrentUserUseCase,
+    @Inject('IRefreshTokenUseCase')
+    private readonly refreshTokenUseCase: IRefreshTokenUseCase,
   ) {}
 
   @Post('register')

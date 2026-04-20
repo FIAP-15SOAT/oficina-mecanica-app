@@ -23,14 +23,13 @@ import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
-import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
-import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
-import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
-import { FindServiceByIdUseCase } from '@application/use-cases/service/find-service-by-id.use-case';
-import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
-import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
-
 import { UserRole } from '@domain/enums/user-role.enum';
+import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
+import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
+import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
+import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
+import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
+import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
@@ -43,18 +42,18 @@ import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 @ApiBearerAuth('access-token')
 export class ServiceController {
   constructor(
-    @Inject('CreateServiceUseCase')
-    private readonly createServiceUseCase: CreateServiceUseCase,
-    @Inject('FindServiceByIdUseCase')
-    private readonly findServiceByIdUseCase: FindServiceByIdUseCase,
-    @Inject('FindAllServicesPaginatedUseCase')
-    private readonly findAllServicesPaginatedUseCase: FindAllServicesPaginatedUseCase,
-    @Inject('UpdateServiceUseCase')
-    private readonly updateServiceUseCase: UpdateServiceUseCase,
-    @Inject('UpdateServiceStatusUseCase')
-    private readonly updateServiceStatusUseCase: UpdateServiceStatusUseCase,
-    @Inject('DeleteServiceUseCase')
-    private readonly deleteServiceUseCase: DeleteServiceUseCase,
+    @Inject('ICreateServiceUseCase')
+    private readonly createServiceUseCase: ICreateServiceUseCase,
+    @Inject('IFindServiceByIdUseCase')
+    private readonly findServiceByIdUseCase: IFindServiceByIdUseCase,
+    @Inject('IFindAllServicesPaginatedUseCase')
+    private readonly findAllServicesPaginatedUseCase: IFindAllServicesPaginatedUseCase,
+    @Inject('IUpdateServiceUseCase')
+    private readonly updateServiceUseCase: IUpdateServiceUseCase,
+    @Inject('IUpdateServiceStatusUseCase')
+    private readonly updateServiceStatusUseCase: IUpdateServiceStatusUseCase,
+    @Inject('IDeleteServiceUseCase')
+    private readonly deleteServiceUseCase: IDeleteServiceUseCase,
   ) {}
 
   @Post()

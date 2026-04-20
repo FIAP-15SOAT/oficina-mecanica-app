@@ -13,16 +13,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CreateUserUseCase } from '@application/use-cases/user/create-user.use-case';
-import { DeleteUserUseCase } from '@application/use-cases/user/delete-user.use-case';
-import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.use-case';
-import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
-import { ToggleUserStatusUseCase } from '@application/use-cases/user/toggle-user-status.use-case';
-import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { ICreateUserUseCase } from '@domain/interfaces/use-cases/user/create-user.use-case.interface';
+import { IDeleteUserUseCase } from '@domain/interfaces/use-cases/user/delete-user.use-case.interface';
+import { IFindAllUsersUseCase } from '@domain/interfaces/use-cases/user/find-all-users.use-case.interface';
+import { IFindUserByIdUseCase } from '@domain/interfaces/use-cases/user/find-user-by-id.use-case.interface';
+import { IToggleUserStatusUseCase } from '@domain/interfaces/use-cases/user/toggle-user-status.use-case.interface';
+import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-user.use-case.interface';
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -33,18 +33,18 @@ import { UserResponseDto } from './dto/user-response.dto';
 @ApiBearerAuth('access-token')
 export class UserController {
   constructor(
-    @Inject('CreateUserUseCase')
-    private readonly createUserUseCase: CreateUserUseCase,
-    @Inject('FindUserByIdUseCase')
-    private readonly findUserByIdUseCase: FindUserByIdUseCase,
-    @Inject('FindAllUsersUseCase')
-    private readonly findAllUsersUseCase: FindAllUsersUseCase,
-    @Inject('UpdateUserUseCase')
-    private readonly updateUserUseCase: UpdateUserUseCase,
-    @Inject('ToggleUserStatusUseCase')
-    private readonly toggleUserStatusUseCase: ToggleUserStatusUseCase,
-    @Inject('DeleteUserUseCase')
-    private readonly deleteUserUseCase: DeleteUserUseCase,
+    @Inject('ICreateUserUseCase')
+    private readonly createUserUseCase: ICreateUserUseCase,
+    @Inject('IFindUserByIdUseCase')
+    private readonly findUserByIdUseCase: IFindUserByIdUseCase,
+    @Inject('IFindAllUsersUseCase')
+    private readonly findAllUsersUseCase: IFindAllUsersUseCase,
+    @Inject('IUpdateUserUseCase')
+    private readonly updateUserUseCase: IUpdateUserUseCase,
+    @Inject('IToggleUserStatusUseCase')
+    private readonly toggleUserStatusUseCase: IToggleUserStatusUseCase,
+    @Inject('IDeleteUserUseCase')
+    private readonly deleteUserUseCase: IDeleteUserUseCase,
   ) {}
 
   @Post()

@@ -21,34 +21,34 @@ import { UserController } from './user.controller';
       useClass: BcryptHashService,
     },
     {
-      provide: 'CreateUserUseCase',
+      provide: 'ICreateUserUseCase',
       useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
         new CreateUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
-      provide: 'FindUserByIdUseCase',
+      provide: 'IFindUserByIdUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new FindUserByIdUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
-      provide: 'FindAllUsersUseCase',
+      provide: 'IFindAllUsersUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new FindAllUsersUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
-      provide: 'UpdateUserUseCase',
+      provide: 'IUpdateUserUseCase',
       useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
         new UpdateUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
-      provide: 'ToggleUserStatusUseCase',
+      provide: 'IToggleUserStatusUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new ToggleUserStatusUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
-      provide: 'DeleteUserUseCase',
+      provide: 'IDeleteUserUseCase',
       useFactory: (userRepo: PrismaUserRepository) => new DeleteUserUseCase(userRepo),
       inject: ['IUserRepository'],
     },

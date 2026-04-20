@@ -1,6 +1,6 @@
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
+import { FindAllServicesPaginatedDto } from '@domain/interfaces/use-cases/service/dto/find-all-services-paginated.dto';
 import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
-import { FindAllServicesPaginatedDto } from './dto/find-all-services-paginated.dto';
 
 export class FindAllServicesPaginatedUseCase {
   constructor(private readonly serviceRepository: IServiceRepository) {}
