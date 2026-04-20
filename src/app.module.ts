@@ -10,6 +10,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { AuthModule } from './presentation/auth/auth.module';
 import { UserModule } from './presentation/user/user.module';
 import { ServiceModule } from './presentation/service/service.module';
+import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplies.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ServiceModule } from './presentation/service/service.module';
     AuthModule,
     UserModule,
     ServiceModule,
+    PartsSuppliesModule,
   ],
   providers: [
     {

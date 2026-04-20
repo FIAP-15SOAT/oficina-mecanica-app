@@ -23,7 +23,7 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('Customers', 'Cadastro e gestão de clientes')
     .addTag('Vehicles', 'Cadastro e gestão de veículos')
     .addTag('Services', 'Catálogo de serviços da oficina')
-    .addTag('Parts', 'Peças e insumos com controle de estoque')
+    .addTag('Gestão de Peças e Insumos', 'Cadastro, consulta e movimentação de estoque de peças e insumos')
     .addTag('Work Orders', 'Ordens de serviço e acompanhamento')
     .addTag('Quotes', 'Orçamentos das ordens de serviço')
     .build();

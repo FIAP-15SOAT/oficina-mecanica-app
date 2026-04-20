@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
 import { setupSwagger } from './config/swagger.config';
+import { DateSerializerInterceptor } from './infrastructure/interceptors/date-serializer.interceptor';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,8 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+
+  app.useGlobalInterceptors(new DateSerializerInterceptor());
 
   app.enableCors();
   app.enableShutdownHooks();
