@@ -1,6 +1,5 @@
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
-import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,

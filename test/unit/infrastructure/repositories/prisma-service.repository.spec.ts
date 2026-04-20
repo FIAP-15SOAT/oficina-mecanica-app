@@ -219,7 +219,7 @@ describe('PrismaServiceRepository', () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
-        createMockPrismaService({ id: randomUUID(), isActive: true }),
+        createMockPrismaService({ id: randomUUID(), isActive: false }),
         createMockPrismaService({ id: randomUUID(), isActive: false }),
       ];
 

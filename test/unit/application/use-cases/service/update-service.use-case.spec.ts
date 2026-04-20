@@ -2,7 +2,6 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
 import { UpdateServiceDto } from '@domain/interfaces/use-cases/service/dto/update-service.dto';
-import { Service } from '@domain/entities/service.entity';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,
