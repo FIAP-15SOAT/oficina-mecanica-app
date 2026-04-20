@@ -15,6 +15,7 @@ export type MockPrismaService = {
   user: MockDelegate;
   $connect: jest.Mock;
   $disconnect: jest.Mock;
+  $transaction: jest.Mock;
 } & PrismaService;
 
 export function createMockPrismaClient(): MockPrismaService {
@@ -38,5 +39,8 @@ export function createMockPrismaClient(): MockPrismaService {
     },
     $connect: jest.fn(),
     $disconnect: jest.fn(),
+    $transaction: jest
+      .fn()
+      .mockImplementation((queries: Promise<unknown>[]) => Promise.all(queries)),
   } as unknown as MockPrismaService;
 }

@@ -44,14 +44,15 @@ export class PrismaServiceRepository implements IServiceRepository {
   ): Promise<PaginatedServicesDto> {
     const where = active !== undefined ? { isActive: active } : {};
 
-    const records = await this.prisma.service.findMany({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { createdAt: 'desc' },
-      where,
-    });
-
-    const count = await this.prisma.service.count({ where });
+    const [records, count] = await this.prisma.$transaction([
+      this.prisma.service.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        where,
+      }),
+      this.prisma.service.count({ where }),
+    ]);
 
     return {
       services: records.map((record: PrismaServiceModel) => this.toDomain(record)),
