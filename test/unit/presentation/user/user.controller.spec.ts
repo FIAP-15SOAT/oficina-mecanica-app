@@ -58,7 +58,7 @@ describe('UserController', () => {
 
       const result = await controller.create(request);
 
-      expect(result).toEqual(createdUser.toPublicView());
+      expect(result).toEqual({ data: createdUser.toPublicView() });
       expect(createUserUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
@@ -76,7 +76,7 @@ describe('UserController', () => {
 
       const result = await controller.findAll();
 
-      expect(result).toEqual(usersPublicView);
+      expect(result).toEqual({ data: usersPublicView });
       expect(findAllUsersUseCase.execute).toHaveBeenCalledWith();
     });
   });
@@ -90,7 +90,7 @@ describe('UserController', () => {
 
       const result = await controller.findById(id);
 
-      expect(result).toEqual(user.toPublicView());
+      expect(result).toEqual({ data: user.toPublicView() });
       expect(findUserByIdUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
@@ -113,7 +113,7 @@ describe('UserController', () => {
 
       const result = await controller.update(id, request);
 
-      expect(result).toEqual(updatedUser.toPublicView());
+      expect(result).toEqual({ data: updatedUser.toPublicView() });
       expect(updateUserUseCase.execute).toHaveBeenCalledWith(id, request);
     });
   });
@@ -134,7 +134,7 @@ describe('UserController', () => {
 
       const result = await controller.updateStatus(id, request);
 
-      expect(result).toEqual(updatedUser.toPublicView());
+      expect(result).toEqual({ data: updatedUser.toPublicView() });
       expect(updateUserStatusUseCase.execute).toHaveBeenCalledWith(id, false);
     });
 
@@ -153,7 +153,7 @@ describe('UserController', () => {
 
       const result = await controller.updateStatus(id, request);
 
-      expect(result).toEqual(updatedUser.toPublicView());
+      expect(result).toEqual({ data: updatedUser.toPublicView() });
       expect(updateUserStatusUseCase.execute).toHaveBeenCalledWith(id, true);
     });
   });

@@ -54,7 +54,7 @@ describe('AuthController', () => {
 
       const result = await controller.register(request);
 
-      expect(result).toEqual(registerResult);
+      expect(result).toEqual({ data: registerResult });
       expect(registerUseCase.execute).toHaveBeenCalledWith({
         name: request.name,
         email: request.email,
@@ -87,7 +87,7 @@ describe('AuthController', () => {
 
       const result = await controller.login(request);
 
-      expect(result).toEqual(authResult);
+      expect(result).toEqual({ data: authResult });
       expect(authenticateUseCase.execute).toHaveBeenCalledWith({
         email: request.email,
         password: request.password,
@@ -117,7 +117,7 @@ describe('AuthController', () => {
 
       const result = await controller.refresh(request);
 
-      expect(result).toEqual(refreshResult);
+      expect(result).toEqual({ data: refreshResult });
       expect(refreshTokenUseCase.execute).toHaveBeenCalledWith({
         refreshToken: request.refreshToken,
       });
@@ -147,7 +147,7 @@ describe('AuthController', () => {
 
       const result = await controller.me(authenticatedUser);
 
-      expect(result).toEqual(currentUser);
+      expect(result).toEqual({ data: currentUser });
       expect(getCurrentUserUseCase.execute).toHaveBeenCalledWith(userId);
     });
   });

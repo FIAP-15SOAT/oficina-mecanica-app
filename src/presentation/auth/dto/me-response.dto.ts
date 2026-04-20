@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-export class UserResponseDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+export class MeResponseDto {
+  @ApiProperty({ example: 'uuid-here' })
   id!: string;
 
   @ApiProperty({ example: 'João Silva' })
@@ -24,12 +24,7 @@ export class UserResponseDto {
   updatedAt!: Date;
 }
 
-export class UserDataResponseDto {
-  @ApiProperty({ type: UserResponseDto, description: 'Dados do usuário' })
-  data!: UserResponseDto;
-}
-
-export class UsersDataResponseDto {
-  @ApiProperty({ type: [UserResponseDto], description: 'Lista de usuários' })
-  data!: UserResponseDto[];
+export class MeDataResponseDto {
+  @ApiProperty({ type: MeResponseDto, description: 'Dados do usuário autenticado' })
+  data!: MeResponseDto;
 }

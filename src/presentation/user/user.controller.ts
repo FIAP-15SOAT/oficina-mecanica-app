@@ -27,7 +27,7 @@ import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-use
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
 import { UpdateUserStatusRequestDto } from './dto/update-user-status-request.dto';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
-import { UserResponseDto } from './dto/user-response.dto';
+import { UserDataResponseDto, UsersDataResponseDto } from './dto/user-response.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -52,42 +52,50 @@ export class UserController {
   @Post()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Criar novo usuário (somente Admin)' })
-  @ApiResponse({ status: 201, description: 'Usuário criado com sucesso', type: UserResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Usuário criado com sucesso',
+    type: UserDataResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
-  async create(@Body() dto: CreateUserRequestDto): Promise<UserResponseDto> {
-    return this.createUserUseCase.execute(dto);
+  async create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
+    const result = await this.createUserUseCase.execute(dto);
+    return { data: result };
   }
 
   @Get()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Listar todos os usuários (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Lista de usuários', type: [UserResponseDto] })
-  async findAll(): Promise<UserResponseDto[]> {
-    return this.findAllUsersUseCase.execute();
+  @ApiResponse({ status: 200, description: 'Lista de usuários', type: UsersDataResponseDto })
+  async findAll(): Promise<UsersDataResponseDto> {
+    const result = await this.findAllUsersUseCase.execute();
+    return { data: result };
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar usuário por ID (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Usuário encontrado', type: UserResponseDto })
+  @ApiResponse({ status: 200, description: 'Usuário encontrado', type: UserDataResponseDto })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    return this.findUserByIdUseCase.execute(id);
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
+    const result = await this.findUserByIdUseCase.execute(id);
+    return { data: result };
   }
 
   @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do usuário (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Usuário atualizado', type: UserResponseDto })
+  @ApiResponse({ status: 200, description: 'Usuário atualizado', type: UserDataResponseDto })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserRequestDto,
-  ): Promise<UserResponseDto> {
-    return this.updateUserUseCase.execute(id, dto);
+  ): Promise<UserDataResponseDto> {
+    const result = await this.updateUserUseCase.execute(id, dto);
+    return { data: result };
   }
 
   @Patch(':id')
@@ -96,15 +104,16 @@ export class UserController {
   @ApiResponse({
     status: 200,
     description: 'Status do usuário atualizado',
-    type: UserResponseDto,
+    type: UserDataResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 422, description: 'Usuário já está no status informado' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateUserStatusRequestDto,
-  ): Promise<UserResponseDto> {
-    return this.updateUserStatusUseCase.execute(id, request.active);
+  ): Promise<UserDataResponseDto> {
+    const result = await this.updateUserStatusUseCase.execute(id, request.active);
+    return { data: result };
   }
 
   @Delete(':id')
