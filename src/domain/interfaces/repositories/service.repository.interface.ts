@@ -9,11 +9,7 @@ export interface IServiceRepository {
   create(service: Service): Promise<Service>;
   findById(id: string): Promise<Service | null>;
   findByName(name: string): Promise<Service | null>;
-  findAllPaginated(
-    page: number,
-    pageSize: number,
-    activeOnly: boolean,
-  ): Promise<PaginatedServicesDto>;
+  findAllPaginated(page: number, pageSize: number, active?: boolean): Promise<PaginatedServicesDto>;
   update(id: string, data: Partial<Service>): Promise<Service>;
   delete(id: string): Promise<void>;
 }

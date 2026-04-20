@@ -83,9 +83,9 @@ export class ServiceController {
   async findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
-    @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe) activeOnly: boolean,
+    @Query('active', new ParseBoolPipe({ optional: true })) active?: boolean,
   ): Promise<ServicePaginatedResponseDto> {
-    const result = await this.findAllServicesPaginatedUseCase.execute(page, pageSize, activeOnly);
+    const result = await this.findAllServicesPaginatedUseCase.execute(page, pageSize, active);
 
     return {
       data: result.services,

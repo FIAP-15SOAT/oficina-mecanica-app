@@ -8,12 +8,12 @@ export class FindAllServicesPaginatedUseCase {
   async execute(
     page: number,
     pageSize: number,
-    activeOnly: boolean = true,
+    active?: boolean,
   ): Promise<FindAllServicesPaginatedDto> {
     const { services, total } = await this.serviceRepository.findAllPaginated(
       page,
       pageSize,
-      activeOnly,
+      active,
     );
 
     return {

@@ -64,29 +64,44 @@ describe('ServiceController', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated services with default parameters', async () => {
+    it('should return paginated services passing active=true', async () => {
       const services = [
         createMockService({ id: randomUUID(), name: 'Service 1' }),
         createMockService({ id: randomUUID(), name: 'Service 2' }),
       ];
 
-      const paginatedResult = {
-        services,
-        totalRecords: 2,
-        totalPages: 1,
-      };
+      const paginatedResult = { services, totalRecords: 2, totalPages: 1 };
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
       const result = await controller.findAll(1, 10, true);
 
-      expect(result).toEqual({
-        data: services,
-        totalRecords: 2,
-        totalPages: 1,
-      });
-
+      expect(result).toEqual({ data: services, totalRecords: 2, totalPages: 1 });
       expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, true);
+    });
+
+    it('should return all services when active is undefined', async () => {
+      const services = [createMockService({ id: randomUUID(), name: 'Service 1' })];
+      const paginatedResult = { services, totalRecords: 1, totalPages: 1 };
+
+      findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
+
+      const result = await controller.findAll(1, 10, undefined);
+
+      expect(result).toEqual({ data: services, totalRecords: 1, totalPages: 1 });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('should return only inactive services when active=false', async () => {
+      const services = [createMockService({ id: randomUUID(), isActive: false })];
+      const paginatedResult = { services, totalRecords: 1, totalPages: 1 };
+
+      findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
+
+      const result = await controller.findAll(1, 10, false);
+
+      expect(result).toEqual({ data: services, totalRecords: 1, totalPages: 1 });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, false);
     });
   });
 

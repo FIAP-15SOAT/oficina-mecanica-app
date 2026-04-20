@@ -151,7 +151,7 @@ describe('PrismaServiceRepository', () => {
   });
 
   describe('findAllPaginated', () => {
-    it('should return paginated active services', async () => {
+    it('should return all services when active is not provided', async () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
@@ -183,15 +183,39 @@ describe('PrismaServiceRepository', () => {
         skip: 0,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        where: { isActive: true },
+        where: {},
       });
 
-      expect(prisma.service.count).toHaveBeenCalledWith({
-        where: { isActive: true },
-      });
+      expect(prisma.service.count).toHaveBeenCalledWith({ where: {} });
     });
 
-    it('should return all services when activeOnly is false', async () => {
+    it('should return only active services when active is true', async () => {
+      const page = 1;
+      const pageSize = 10;
+      const prismaModels = [
+        createMockPrismaService({ id: randomUUID(), name: 'Service 1', isActive: true }),
+        createMockPrismaService({ id: randomUUID(), name: 'Service 2', isActive: true }),
+      ];
+
+      prisma.service.findMany.mockResolvedValue(prismaModels);
+      prisma.service.count.mockResolvedValue(2);
+
+      const result = await repository.findAllPaginated(page, pageSize, true);
+
+      expect(result.services).toHaveLength(2);
+      expect(result.total).toBe(2);
+
+      expect(prisma.service.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        where: { isActive: true },
+      });
+
+      expect(prisma.service.count).toHaveBeenCalledWith({ where: { isActive: true } });
+    });
+
+    it('should return only inactive services when active is false', async () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
@@ -232,7 +256,7 @@ describe('PrismaServiceRepository', () => {
         skip: 10,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        where: { isActive: true },
+        where: {},
       });
     });
   });

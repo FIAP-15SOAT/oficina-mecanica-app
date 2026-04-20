@@ -53,11 +53,27 @@ describe('FindAllServicesPaginatedUseCase', () => {
     expect(result.totalPages).toBe(0);
   });
 
-  it('should pass activeOnly=true to the repository by default', async () => {
+  it('should pass undefined to the repository when active is not provided', async () => {
     serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
 
     await useCase.execute(1, 10);
 
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, undefined);
+  });
+
+  it('should pass active=true to the repository when explicitly set', async () => {
+    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+
+    await useCase.execute(1, 10, true);
+
     expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, true);
+  });
+
+  it('should pass active=false to the repository when explicitly set', async () => {
+    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+
+    await useCase.execute(1, 10, false);
+
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, false);
   });
 });
