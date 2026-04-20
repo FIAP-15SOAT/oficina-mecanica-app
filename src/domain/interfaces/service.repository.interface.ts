@@ -1,9 +1,19 @@
 import { Service } from '../entities';
 
+export interface PaginatedServicesDto {
+  services: Service[];
+  total: number;
+}
+
 export interface IServiceRepository {
   create(service: Service): Promise<Service>;
   findById(id: string): Promise<Service | null>;
-  findAll(activeOnly?: boolean): Promise<Service[]>;
+  findByName(name: string): Promise<Service | null>;
+  findAllPaginated(
+    page: number,
+    pageSize: number,
+    activeOnly: boolean,
+  ): Promise<PaginatedServicesDto>;
   update(id: string, data: Partial<Service>): Promise<Service>;
   delete(id: string): Promise<void>;
 }

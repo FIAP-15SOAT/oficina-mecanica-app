@@ -88,7 +88,9 @@
         "ts-jest",
         {
           "diagnostics": {
-            "ignoreCodes": [151002]
+            "ignoreCodes": [
+              151002
+            ]
           }
         }
       ]
@@ -99,6 +101,7 @@
       "!src/main.ts"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "modulePaths": ["<rootDir>"]
   }
 }
