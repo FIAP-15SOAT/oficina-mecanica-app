@@ -12,7 +12,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 
 export class CreateUserRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
-  @IsString()
+  @IsString({ message: 'O nome deve ser um texto.' })
   @IsNotEmpty({ message: 'O nome é obrigatório' })
   @MinLength(3, { message: 'O nome deve ter no mínimo 3 caracteres' })
   name!: string;
@@ -23,7 +23,7 @@ export class CreateUserRequestDto {
   email!: string;
 
   @ApiProperty({ example: 'Senha@123', description: 'Senha (mín. 6 caracteres)' })
-  @IsString()
+  @IsString({ message: 'A senha deve ser um texto.' })
   @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
   password!: string;
 

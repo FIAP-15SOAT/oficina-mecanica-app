@@ -28,13 +28,13 @@ export class InfrastructureExceptionFilter implements ExceptionFilter {
     error: string;
   } {
     if (exception instanceof AuthenticationFailedException) {
-      return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
+      return { status: HttpStatus.UNAUTHORIZED, error: 'Não Autorizado' };
     }
 
     if (exception instanceof DatabaseOperationException) {
-      return { status: HttpStatus.SERVICE_UNAVAILABLE, error: 'Service Unavailable' };
+      return { status: HttpStatus.SERVICE_UNAVAILABLE, error: 'Serviço Indisponível' };
     }
 
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Internal Server Error' };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Erro Interno do Servidor' };
   }
 }
