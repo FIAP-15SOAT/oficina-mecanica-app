@@ -13,7 +13,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
@@ -57,6 +57,8 @@ export class UserController {
     description: 'Usuário criado com sucesso',
     type: UserDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
   async create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
@@ -68,6 +70,7 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Listar todos os usuários (somente Admin)' })
   @ApiResponse({ status: 200, description: 'Lista de usuários', type: UsersDataResponseDto })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async findAll(): Promise<UsersDataResponseDto> {
     const result = await this.findAllUsersUseCase.execute();
     return { data: result };
@@ -76,7 +79,10 @@ export class UserController {
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar usuário por ID (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiResponse({ status: 200, description: 'Usuário encontrado', type: UserDataResponseDto })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
     const result = await this.findUserByIdUseCase.execute(id);
@@ -86,7 +92,10 @@ export class UserController {
   @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do usuário (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiResponse({ status: 200, description: 'Usuário atualizado', type: UserDataResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
@@ -101,11 +110,14 @@ export class UserController {
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Alterar status do usuário (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiResponse({
     status: 200,
     description: 'Status do usuário atualizado',
     type: UserDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 422, description: 'Usuário já está no status informado' })
   async updateStatus(
@@ -120,7 +132,10 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover usuário (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiResponse({ status: 204, description: 'Usuário removido' })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.deleteUserUseCase.execute(id);

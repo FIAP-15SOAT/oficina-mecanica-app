@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 export class UserResponseDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000', format: 'uuid' })
   id!: string;
 
   @ApiProperty({ example: 'João Silva' })
@@ -17,10 +17,10 @@ export class UserResponseDto {
   @ApiProperty({ example: true })
   isActive!: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2026-04-20T12:00:00.000Z', format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2026-04-20T12:00:00.000Z', format: 'date-time' })
   updatedAt!: Date;
 }
 

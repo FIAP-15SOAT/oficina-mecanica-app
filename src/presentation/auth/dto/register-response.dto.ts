@@ -17,7 +17,7 @@ export class RegisterResponseDto {
   @ApiProperty({ example: true })
   isActive!: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2026-04-20T12:00:00.000Z', format: 'date-time' })
   createdAt!: Date;
 }
 

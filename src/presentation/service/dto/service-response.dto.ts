@@ -3,33 +3,42 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class ServiceResponseDto {
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Identificador unico do servico',
+    description: 'Identificador único do serviço',
+    format: 'uuid',
   })
   id!: string;
 
-  @ApiProperty({ example: 'Troca de óleo', description: 'Nome do servico' })
+  @ApiProperty({ example: 'Troca de óleo', description: 'Nome do serviço' })
   name!: string;
 
   @ApiPropertyOptional({
     example: 'Troca de óleo com filtro',
-    description: 'Descricao opcional do servico',
+    description: 'Descrição opcional do serviço',
     nullable: true,
   })
   description?: string | null;
 
-  @ApiProperty({ example: 129.9, description: 'Preco base do servico' })
+  @ApiProperty({ example: 129.9, description: 'Preço base do serviço' })
   basePrice!: number;
 
   @ApiProperty({ example: 60, description: 'Tempo estimado em minutos' })
   estimatedTimeMin!: number;
 
-  @ApiProperty({ example: true, description: 'Indica se o servico esta ativo' })
+  @ApiProperty({ example: true, description: 'Indica se o serviço está ativo' })
   isActive!: boolean;
 
-  @ApiProperty({ description: 'Data de criacao do servico' })
+  @ApiProperty({
+    example: '2026-04-20T12:00:00.000Z',
+    format: 'date-time',
+    description: 'Data de criação do serviço',
+  })
   createdAt!: Date;
 
-  @ApiProperty({ description: 'Data da ultima atualizacao do servico' })
+  @ApiProperty({
+    example: '2026-04-20T12:00:00.000Z',
+    format: 'date-time',
+    description: 'Data da última atualização do serviço',
+  })
   updatedAt!: Date;
 }
 

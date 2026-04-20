@@ -17,7 +17,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
@@ -64,6 +71,8 @@ export class ServiceController {
     description: 'Serviço criado com sucesso',
     type: ServiceDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 409, description: 'Serviço já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
   async create(@Body() request: CreateServiceRequestDto): Promise<ServiceDataResponseDto> {
@@ -79,6 +88,27 @@ export class ServiceController {
     status: 200,
     description: 'Lista paginada de serviços',
     type: ServicePaginatedResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Registros por página (padrão: 10)',
+  })
+  @ApiQuery({
+    name: 'active',
+    required: false,
+    type: Boolean,
+    description: 'Filtra por status: true = apenas ativos, false = apenas inativos, omitir = todos',
   })
   async findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -97,7 +127,10 @@ export class ServiceController {
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar serviço por ID (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiResponse({ status: 200, description: 'Serviço encontrado', type: ServiceDataResponseDto })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<ServiceDataResponseDto> {
     const result = await this.findServiceByIdUseCase.execute(id);
@@ -108,7 +141,10 @@ export class ServiceController {
   @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiResponse({ status: 200, description: 'Serviço atualizado', type: ServiceDataResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   @ApiResponse({ status: 409, description: 'Outro serviço com o mesmo nome já existe' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
@@ -124,11 +160,14 @@ export class ServiceController {
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Alterar status do serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiResponse({
     status: 200,
     description: 'Status do serviço atualizado',
     type: ServiceDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   @ApiResponse({ status: 422, description: 'Serviço já está no status informado' })
   async updateStatus(
@@ -144,7 +183,10 @@ export class ServiceController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover serviço (somente Admin)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiResponse({ status: 204, description: 'Serviço removido' })
+  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Serviço não encontrado' })
   async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.deleteServiceUseCase.execute(id);

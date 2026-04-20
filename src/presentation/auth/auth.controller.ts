@@ -43,6 +43,7 @@ export class AuthController {
     description: 'Usuário registrado com sucesso',
     type: RegisterDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   async register(@Body() dto: RegisterRequestDto): Promise<RegisterDataResponseDto> {
     const result = await this.registerUseCase.execute({
@@ -62,6 +63,7 @@ export class AuthController {
     description: 'Login realizado com sucesso',
     type: AuthDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   async login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.authenticateUseCase.execute({
@@ -79,6 +81,7 @@ export class AuthController {
     description: 'Tokens renovados com sucesso',
     type: AuthDataResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
   async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.refreshTokenUseCase.execute({

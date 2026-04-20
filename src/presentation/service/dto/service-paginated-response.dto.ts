@@ -4,7 +4,7 @@ import { ServiceResponseDto } from './service-response.dto';
 export class ServicePaginatedResponseDto {
   @ApiProperty({
     type: [ServiceResponseDto],
-    description: 'Lista de servicos da pagina atual',
+    description: 'Serviços da página atual',
   })
   data!: ServiceResponseDto[];
 
