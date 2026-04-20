@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole } from '../generated/client';
 import * as bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 12;

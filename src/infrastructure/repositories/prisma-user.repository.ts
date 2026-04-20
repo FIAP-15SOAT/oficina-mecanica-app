@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User as PrismaUser } from '@prisma/client';
+import { User as PrismaUser } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -44,7 +44,7 @@ export class PrismaUserRepository implements IUserRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return records.map((r) => this.toDomain(r));
+    return records.map((r: PrismaUser) => this.toDomain(r));
   }
 
   async update(id: string, data: Partial<User>): Promise<User> {

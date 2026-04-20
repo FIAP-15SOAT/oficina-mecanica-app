@@ -1,9 +1,11 @@
 /* eslint-disable no-console */
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
-import { seedUsers, seedServices } from './seeds/index.js';
+import { PrismaClient } from './generated/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { seedUsers, seedServices } from './seeds';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
   console.log('🚀 Starting database seed...\n');

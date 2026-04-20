@@ -4,7 +4,7 @@ import {
   PaginatedServicesDto,
 } from '@domain/interfaces/repositories/service.repository.interface';
 import { PrismaService } from '../database/prisma/prisma.service';
-import { Service as PrismaServiceModel } from '@prisma/client';
+import { Service as PrismaServiceModel } from '@generated/client';
 
 export class PrismaServiceRepository implements IServiceRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -56,7 +56,7 @@ export class PrismaServiceRepository implements IServiceRepository {
     });
 
     return {
-      services: records.map((record) => this.toDomain(record)),
+      services: records.map((record: PrismaServiceModel) => this.toDomain(record)),
       total: count,
     };
   }

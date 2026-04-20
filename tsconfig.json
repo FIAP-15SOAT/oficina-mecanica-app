@@ -27,7 +27,8 @@
       "@config/*": ["src/config/*"],
       "@domain/*": ["src/domain/*"],
       "@infrastructure/*": ["src/infrastructure/*"],
-      "@presentation/*": ["src/presentation/*"]
+      "@presentation/*": ["src/presentation/*"],
+      "@generated/*": ["prisma/generated/*"]
     }
   }
 }

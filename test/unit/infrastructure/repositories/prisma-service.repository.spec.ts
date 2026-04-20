@@ -1,9 +1,8 @@
 import { randomUUID } from 'crypto';
-import { Decimal } from '@prisma/client/runtime/library';
-import { Service as PrismaServiceModel } from '@prisma/client';
+import { Service as PrismaServiceModel, Prisma } from '@generated/client';
 import { Service } from '@domain/entities/service.entity';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
-import { createMockPrismaClient } from '../../../helpers/prisma-mock.factory';
+import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 
 function createMockPrismaService(overrides: Partial<PrismaServiceModel> = {}): PrismaServiceModel {
   const now = new Date();
@@ -13,7 +12,7 @@ function createMockPrismaService(overrides: Partial<PrismaServiceModel> = {}): P
     id,
     name: 'Oil Change',
     description: 'Full engine oil change',
-    basePrice: new Decimal(99.99),
+    basePrice: new Prisma.Decimal(99.99),
     estimatedTimeMin: 30,
     isActive: true,
     createdAt: now,
@@ -24,7 +23,7 @@ function createMockPrismaService(overrides: Partial<PrismaServiceModel> = {}): P
 
 describe('PrismaServiceRepository', () => {
   let repository: PrismaServiceRepository;
-  let prisma: any;
+  let prisma: MockPrismaService;
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
@@ -43,7 +42,7 @@ describe('PrismaServiceRepository', () => {
       const prismaModel = createMockPrismaService({
         name: service.name,
         description: service.description,
-        basePrice: new Decimal(service.basePrice),
+        basePrice: new Prisma.Decimal(service.basePrice),
         estimatedTimeMin: service.estimatedTimeMin,
         isActive: service.isActive,
       });
@@ -249,7 +248,7 @@ describe('PrismaServiceRepository', () => {
       const updatedPrismaModel = createMockPrismaService({
         id,
         name: updateData.name,
-        basePrice: new Decimal(updateData.basePrice),
+        basePrice: new Prisma.Decimal(updateData.basePrice),
       });
 
       prisma.service.update.mockResolvedValue(updatedPrismaModel);

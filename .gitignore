@@ -5,7 +5,7 @@ dist
 .env
 
 # Prisma generated client
-/generated/prisma
+/prisma/generated
 
 # IDE
 .vscode
