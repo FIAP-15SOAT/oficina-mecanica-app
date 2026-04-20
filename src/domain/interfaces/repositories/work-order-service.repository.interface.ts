@@ -1,4 +1,4 @@
-import { WorkOrderService } from '../entities/work-order-service.entity';
+import { WorkOrderService } from '../../entities/work-order-service.entity';
 
 export interface IWorkOrderServiceRepository {
   create(workOrderService: WorkOrderService): Promise<WorkOrderService>;

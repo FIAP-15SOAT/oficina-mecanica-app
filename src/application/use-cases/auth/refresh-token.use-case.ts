@@ -1,7 +1,7 @@
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { ITokenService, TokenPair, TokenPayload } from '@domain/interfaces/token.service.interface';
-import { IUserRepository } from '@domain/interfaces/user.repository.interface';
+import { ITokenService, TokenPair, TokenPayload } from '@domain/interfaces/services/token.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 export interface RefreshTokenInput {
   refreshToken: string;

@@ -3,7 +3,7 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
 import { UpdateServiceDto } from '@application/use-cases/service/dto/update-service.dto';
 import { Service } from '@domain/entities/service.entity';
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,

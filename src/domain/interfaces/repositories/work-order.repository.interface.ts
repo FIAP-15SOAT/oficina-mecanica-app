@@ -1,5 +1,5 @@
-import { WorkOrder } from '../entities/work-order.entity';
-import { WorkOrderStatus } from '../enums/work-order-status.enum';
+import { WorkOrder } from '../../entities/work-order.entity';
+import { WorkOrderStatus } from '../../enums/work-order-status.enum';
 
 export interface IWorkOrderRepository {
   create(workOrder: WorkOrder): Promise<WorkOrder>;

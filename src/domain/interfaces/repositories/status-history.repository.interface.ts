@@ -1,4 +1,4 @@
-import { StatusHistory } from '../entities/status-history.entity';
+import { StatusHistory } from '../../entities/status-history.entity';
 
 export interface IStatusHistoryRepository {
   create(entry: StatusHistory): Promise<StatusHistory>;

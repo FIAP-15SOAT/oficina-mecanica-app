@@ -1,6 +1,6 @@
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,

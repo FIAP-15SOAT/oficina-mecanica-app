@@ -1,6 +1,6 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Service } from '@domain/entities/service.entity';
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { CreateServiceDto } from './dto/create-service.dto';
 
 export class CreateServiceUseCase {

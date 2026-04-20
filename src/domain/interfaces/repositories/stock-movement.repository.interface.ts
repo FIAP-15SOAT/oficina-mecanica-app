@@ -1,4 +1,4 @@
-import { StockMovement } from '../entities/stock-movement.entity';
+import { StockMovement } from '../../entities/stock-movement.entity';
 
 export interface IStockMovementRepository {
   create(movement: StockMovement): Promise<StockMovement>;

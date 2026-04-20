@@ -1,4 +1,4 @@
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class DeleteServiceUseCase {

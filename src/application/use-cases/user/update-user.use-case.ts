@@ -2,8 +2,8 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { UserPublicView } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { IHashService } from '@domain/interfaces/hash.service.interface';
-import { IUserRepository } from '@domain/interfaces/user.repository.interface';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 export interface UpdateUserInput {
   name?: string;

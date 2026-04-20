@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,

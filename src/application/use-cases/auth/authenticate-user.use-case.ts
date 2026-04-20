@@ -1,8 +1,8 @@
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { IHashService } from '@domain/interfaces/hash.service.interface';
-import { ITokenService } from '@domain/interfaces/token.service.interface';
-import { IUserRepository } from '@domain/interfaces/user.repository.interface';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { ITokenService } from '@domain/interfaces/services/token.service.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 export interface AuthenticateUserInput {
   email: string;

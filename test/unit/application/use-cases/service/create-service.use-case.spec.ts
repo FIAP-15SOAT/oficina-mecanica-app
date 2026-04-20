@@ -1,7 +1,7 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
 import { CreateServiceDto } from '@application/use-cases/service/dto/create-service.dto';
-import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,
