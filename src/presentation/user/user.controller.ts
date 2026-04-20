@@ -23,8 +23,8 @@ import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserRequestDto } from './dto/create-user-request.dto';
+import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('Users')
@@ -53,7 +53,7 @@ export class UserController {
   @ApiResponse({ status: 201, description: 'Usuário criado com sucesso', type: UserResponseDto })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
-  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+  async create(@Body() dto: CreateUserRequestDto): Promise<UserResponseDto> {
     return this.createUserUseCase.execute(dto);
   }
 
@@ -83,7 +83,7 @@ export class UserController {
   @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: UpdateUserRequestDto,
   ): Promise<UserResponseDto> {
     return this.updateUserUseCase.execute(id, dto);
   }

@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-export class CreateUserDto {
+export class CreateUserRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
   @IsString()
   @IsNotEmpty({ message: 'O nome é obrigatório' })

@@ -16,9 +16,9 @@ import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.u
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { AuthResponseDto, MeResponseDto, RegisterResponseDto } from './dto/auth-response.dto';
-import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { RegisterDto } from './dto/register.dto';
+import { LoginRequestDto } from './dto/login-request.dto';
+import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
+import { RegisterRequestDto } from './dto/register-request.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -42,7 +42,7 @@ export class AuthController {
     type: RegisterResponseDto,
   })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
-  async register(@Body() dto: RegisterDto): Promise<RegisterResponseDto> {
+  async register(@Body() dto: RegisterRequestDto): Promise<RegisterResponseDto> {
     const result = await this.registerUseCase.execute({
       name: dto.name,
       email: dto.email,
@@ -61,7 +61,7 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
-  async login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
+  async login(@Body() dto: LoginRequestDto): Promise<AuthResponseDto> {
     return this.authenticateUseCase.execute({
       email: dto.email,
       password: dto.password,
@@ -77,7 +77,7 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
-  async refresh(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
+  async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthResponseDto> {
     return this.refreshTokenUseCase.execute({
       refreshToken: dto.refreshToken,
     });

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-export class RegisterDto {
+export class RegisterRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo do usuário' })
   @IsString()
   @IsNotEmpty({ message: 'O nome é obrigatório' })
