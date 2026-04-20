@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { Service } from '@domain/entities/service.entity';
 import {
   IServiceRepository,
@@ -6,6 +7,7 @@ import {
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Service as PrismaServiceModel } from '@generated/client';
 
+@Injectable()
 export class PrismaServiceRepository implements IServiceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -65,7 +67,11 @@ export class PrismaServiceRepository implements IServiceRepository {
     const updatedService = await this.prisma.service.update({
       where: { id },
       data: {
-        ...data,
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
+        ...(data.estimatedTimeMin !== undefined && { estimatedTimeMin: data.estimatedTimeMin }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
 
