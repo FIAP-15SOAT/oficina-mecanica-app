@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -21,9 +22,10 @@ import { ICreateUserUseCase } from '@domain/interfaces/use-cases/user/create-use
 import { IDeleteUserUseCase } from '@domain/interfaces/use-cases/user/delete-user.use-case.interface';
 import { IFindAllUsersUseCase } from '@domain/interfaces/use-cases/user/find-all-users.use-case.interface';
 import { IFindUserByIdUseCase } from '@domain/interfaces/use-cases/user/find-user-by-id.use-case.interface';
-import { IToggleUserStatusUseCase } from '@domain/interfaces/use-cases/user/toggle-user-status.use-case.interface';
+import { IUpdateUserStatusUseCase } from '@domain/interfaces/use-cases/user/update-user-status.use-case.interface';
 import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-user.use-case.interface';
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
+import { UpdateUserStatusRequestDto } from './dto/update-user-status-request.dto';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 
@@ -41,8 +43,8 @@ export class UserController {
     private readonly findAllUsersUseCase: IFindAllUsersUseCase,
     @Inject('IUpdateUserUseCase')
     private readonly updateUserUseCase: IUpdateUserUseCase,
-    @Inject('IToggleUserStatusUseCase')
-    private readonly toggleUserStatusUseCase: IToggleUserStatusUseCase,
+    @Inject('IUpdateUserStatusUseCase')
+    private readonly updateUserStatusUseCase: IUpdateUserStatusUseCase,
     @Inject('IDeleteUserUseCase')
     private readonly deleteUserUseCase: IDeleteUserUseCase,
   ) {}
@@ -74,7 +76,7 @@ export class UserController {
     return this.findUserByIdUseCase.execute(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do usuário (somente Admin)' })
   @ApiResponse({ status: 200, description: 'Usuário atualizado', type: UserResponseDto })
@@ -88,24 +90,21 @@ export class UserController {
     return this.updateUserUseCase.execute(id, dto);
   }
 
-  @Patch(':id/activate')
+  @Patch(':id')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Ativar usuário (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Usuário ativado', type: UserResponseDto })
+  @ApiOperation({ summary: 'Alterar status do usuário (somente Admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status do usuário atualizado',
+    type: UserResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  @ApiResponse({ status: 422, description: 'Usuário já está ativo' })
-  async activate(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    return this.toggleUserStatusUseCase.activate(id);
-  }
-
-  @Patch(':id/deactivate')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Desativar usuário (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Usuário desativado', type: UserResponseDto })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  @ApiResponse({ status: 422, description: 'Usuário já está desativado' })
-  async deactivate(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    return this.toggleUserStatusUseCase.deactivate(id);
+  @ApiResponse({ status: 422, description: 'Usuário já está no status informado' })
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() request: UpdateUserStatusRequestDto,
+  ): Promise<UserResponseDto> {
+    return this.updateUserStatusUseCase.execute(id, request.active);
   }
 
   @Delete(':id')

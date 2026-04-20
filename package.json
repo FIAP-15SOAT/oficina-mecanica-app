@@ -88,7 +88,12 @@
     "collectCoverageFrom": [
       "src/**/*.(t|j)s",
       "!src/**/*.module.ts",
-      "!src/main.ts"
+      "!src/main.ts",
+      "!src/domain/enums/**/*.ts",
+      "!src/infrastructure/database/prisma/**/*.ts",
+      "!src/**/*.config.ts",
+      "!src/**/*.exception.ts",
+      "!src/**/*.dto.ts"
     ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node",

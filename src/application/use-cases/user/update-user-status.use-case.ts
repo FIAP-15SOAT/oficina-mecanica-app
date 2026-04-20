@@ -1,34 +1,23 @@
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { UserPublicView } from '@domain/entities/user.entity';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IUpdateUserStatusUseCase } from '@domain/interfaces/use-cases/user/update-user-status.use-case.interface';
 
-export type ToggleUserStatusOutput = UserPublicView;
-
-export class ToggleUserStatusUseCase {
+export class UpdateUserStatusUseCase implements IUpdateUserStatusUseCase {
   constructor(private readonly userRepository: IUserRepository) {}
 
-  async activate(id: string): Promise<ToggleUserStatusOutput> {
+  async execute(id: string, active: boolean): Promise<UserPublicView> {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
       throw new ResourceNotFoundException('Usuário', id);
     }
 
-    user.activate();
-
-    const updated = await this.userRepository.update(id, user);
-
-    return updated.toPublicView();
-  }
-
-  async deactivate(id: string): Promise<ToggleUserStatusOutput> {
-    const user = await this.userRepository.findById(id);
-
-    if (!user) {
-      throw new ResourceNotFoundException('Usuário', id);
+    if (active) {
+      user.activate();
+    } else {
+      user.deactivate();
     }
-
-    user.deactivate();
 
     const updated = await this.userRepository.update(id, user);
 

@@ -10,7 +10,7 @@ describe('User Entity', () => {
   };
 
   describe('create (factory method)', () => {
-    it('deve criar um usuário válido com defaults', () => {
+    it('should create a valid user with defaults', () => {
       const user = User.create(validProps);
 
       expect(user.name).toBe('Rafael Neves');
@@ -20,32 +20,32 @@ describe('User Entity', () => {
       expect(user.isActive).toBe(true);
     });
 
-    it('deve criar com role específica', () => {
+    it('should create with specific role', () => {
       const user = User.create({ ...validProps, role: UserRole.ADMIN });
 
       expect(user.role).toBe(UserRole.ADMIN);
     });
 
-    it('deve normalizar o e-mail para lowercase e trimmar', () => {
+    it('should normalize email to lowercase and trim', () => {
       const user = User.create({ ...validProps, email: '  RAFAEL@Email.COM  ' });
 
       expect(user.email).toBe('rafael@email.com');
     });
 
-    it('deve trimmar o nome', () => {
+    it('should trim name', () => {
       const user = User.create({ ...validProps, name: '  Rafael Neves  ' });
 
       expect(user.name).toBe('Rafael Neves');
     });
 
-    it('deve lançar erro se nome for muito curto', () => {
+    it('should throw error if name is too short', () => {
       expect(() => User.create({ ...validProps, name: 'Ab' })).toThrow(DomainValidationException);
       expect(() => User.create({ ...validProps, name: 'Ab' })).toThrow(
         'Nome deve ter no mínimo 3 caracteres',
       );
     });
 
-    it('deve lançar erro se nome for muito longo', () => {
+    it('should throw error if name is too long', () => {
       const longName = 'A'.repeat(151);
 
       expect(() => User.create({ ...validProps, name: longName })).toThrow(
@@ -56,18 +56,18 @@ describe('User Entity', () => {
       );
     });
 
-    it('deve lançar erro se e-mail for inválido', () => {
+    it('should throw error if email is invalid', () => {
       expect(() => User.create({ ...validProps, email: 'invalido' })).toThrow(
         DomainValidationException,
       );
       expect(() => User.create({ ...validProps, email: 'invalido' })).toThrow('E-mail inválido');
     });
 
-    it('deve lançar erro se e-mail for vazio', () => {
+    it('should throw error if email is empty', () => {
       expect(() => User.create({ ...validProps, email: '' })).toThrow(DomainValidationException);
     });
 
-    it('deve lançar erro se e-mail exceder 150 caracteres', () => {
+    it('should throw error if email exceeds 150 characters', () => {
       const longEmail = 'a'.repeat(142) + '@test.com';
 
       expect(() => User.create({ ...validProps, email: longEmail })).toThrow(
@@ -77,21 +77,21 @@ describe('User Entity', () => {
   });
 
   describe('changeName', () => {
-    it('deve alterar o nome com sucesso', () => {
+    it('should change name successfully', () => {
       const user = User.create(validProps);
       user.changeName('Guilherme Salvador');
 
       expect(user.name).toBe('Guilherme Salvador');
     });
 
-    it('deve trimmar o novo nome', () => {
+    it('should trim new name', () => {
       const user = User.create(validProps);
       user.changeName('  Lucas Almeida  ');
 
       expect(user.name).toBe('Lucas Almeida');
     });
 
-    it('deve lançar erro se nome for curto demais', () => {
+    it('should throw error if name is too short', () => {
       const user = User.create(validProps);
 
       expect(() => user.changeName('Ab')).toThrow(DomainValidationException);
@@ -99,14 +99,14 @@ describe('User Entity', () => {
   });
 
   describe('changeEmail', () => {
-    it('deve alterar o e-mail e normalizar', () => {
+    it('should change email and normalize', () => {
       const user = User.create(validProps);
       user.changeEmail('NOVO@Email.COM');
 
       expect(user.email).toBe('novo@email.com');
     });
 
-    it('deve lançar erro se e-mail for inválido', () => {
+    it('should throw error if email is invalid', () => {
       const user = User.create(validProps);
 
       expect(() => user.changeEmail('invalido')).toThrow(DomainValidationException);
@@ -114,14 +114,14 @@ describe('User Entity', () => {
   });
 
   describe('changeRole', () => {
-    it('deve alterar a role com sucesso', () => {
+    it('should change role successfully', () => {
       const user = User.create(validProps);
       user.changeRole(UserRole.MECHANIC);
 
       expect(user.role).toBe(UserRole.MECHANIC);
     });
 
-    it('deve lançar erro para role inválida', () => {
+    it('should throw error for invalid role', () => {
       const user = User.create(validProps);
 
       expect(() => user.changeRole('InvalidRole' as UserRole)).toThrow(DomainValidationException);
@@ -130,14 +130,14 @@ describe('User Entity', () => {
   });
 
   describe('changePassword', () => {
-    it('deve alterar o hash da senha', () => {
+    it('should change password hash', () => {
       const user = User.create(validProps);
       user.changePassword('$2b$12$newhash');
 
       expect(user.passwordHash).toBe('$2b$12$newhash');
     });
 
-    it('deve lançar erro se hash for vazio', () => {
+    it('should throw error if hash is empty', () => {
       const user = User.create(validProps);
 
       expect(() => user.changePassword('')).toThrow(DomainValidationException);
@@ -146,7 +146,7 @@ describe('User Entity', () => {
   });
 
   describe('activate / deactivate', () => {
-    it('deve desativar um usuário ativo', () => {
+    it('should deactivate an active user', () => {
       const user = User.create(validProps);
 
       expect(user.isActive).toBe(true);
@@ -156,7 +156,7 @@ describe('User Entity', () => {
       expect(user.isActive).toBe(false);
     });
 
-    it('deve ativar um usuário desativado', () => {
+    it('should activate a deactivated user', () => {
       const user = User.create(validProps);
       user.deactivate();
       user.activate();
@@ -164,14 +164,14 @@ describe('User Entity', () => {
       expect(user.isActive).toBe(true);
     });
 
-    it('deve lançar erro ao ativar usuário já ativo', () => {
+    it('should throw error when activating already active user', () => {
       const user = User.create(validProps);
 
       expect(() => user.activate()).toThrow(DomainValidationException);
       expect(() => user.activate()).toThrow('Usuário já está ativo');
     });
 
-    it('deve lançar erro ao desativar usuário já desativado', () => {
+    it('should throw error when deactivating already deactivated user', () => {
       const user = User.create(validProps);
       user.deactivate();
 
@@ -181,7 +181,7 @@ describe('User Entity', () => {
   });
 
   describe('role checks', () => {
-    it('deve identificar Admin', () => {
+    it('should identify Admin', () => {
       const user = User.create({ ...validProps, role: UserRole.ADMIN });
 
       expect(user.isAdmin()).toBe(true);
@@ -189,7 +189,7 @@ describe('User Entity', () => {
       expect(user.isAttendant()).toBe(false);
     });
 
-    it('deve identificar Mechanic', () => {
+    it('should identify Mechanic', () => {
       const user = User.create({ ...validProps, role: UserRole.MECHANIC });
 
       expect(user.isAdmin()).toBe(false);
@@ -197,7 +197,7 @@ describe('User Entity', () => {
       expect(user.isAttendant()).toBe(false);
     });
 
-    it('deve identificar Attendant', () => {
+    it('should identify Attendant', () => {
       const user = User.create(validProps);
 
       expect(user.isAdmin()).toBe(false);
@@ -207,7 +207,7 @@ describe('User Entity', () => {
   });
 
   describe('toPublicView', () => {
-    it('deve retornar view pública sem passwordHash', () => {
+    it('should return public view without passwordHash', () => {
       const now = new Date();
       const user = new User({
         id: 'uuid-123',

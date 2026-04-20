@@ -11,7 +11,7 @@ describe('FindUserByIdUseCase', () => {
     useCase = new FindUserByIdUseCase(userRepository);
   });
 
-  it('deve retornar usuário por ID', async () => {
+  it('should return user by ID', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
 
@@ -22,7 +22,7 @@ describe('FindUserByIdUseCase', () => {
     expect(result).not.toHaveProperty('passwordHash');
   });
 
-  it('deve lançar NotFoundException se não encontrar', async () => {
+  it('should throw NotFoundException if not found', async () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('inexistente')).rejects.toThrow(ResourceNotFoundException);

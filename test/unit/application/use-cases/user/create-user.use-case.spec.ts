@@ -18,7 +18,7 @@ describe('CreateUserUseCase', () => {
     useCase = new CreateUserUseCase(userRepository, hashService);
   });
 
-  it('deve criar usuário com sucesso', async () => {
+  it('should create user successfully', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.create.mockImplementation(async (user) =>
       createMockUser({
@@ -41,7 +41,7 @@ describe('CreateUserUseCase', () => {
     expect(hashService.hash).toHaveBeenCalledWith('Senha@123');
   });
 
-  it('deve criar usuário desativado quando isActive=false', async () => {
+  it('should create deactivated user when isActive=false', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.create.mockImplementation(async (user) =>
       createMockUser({ isActive: user.isActive }),
@@ -57,7 +57,7 @@ describe('CreateUserUseCase', () => {
     expect(result.isActive).toBe(false);
   });
 
-  it('deve lançar ResourceConflictException se e-mail já existir', async () => {
+  it('should throw ResourceConflictException if email already exists', async () => {
     userRepository.findByEmail.mockResolvedValue(createMockUser());
 
     await expect(

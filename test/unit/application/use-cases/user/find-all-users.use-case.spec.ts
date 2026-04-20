@@ -11,7 +11,7 @@ describe('FindAllUsersUseCase', () => {
     useCase = new FindAllUsersUseCase(userRepository);
   });
 
-  it('deve retornar lista de usuários', async () => {
+  it('should return list of users', async () => {
     const users = [
       createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN }),
       createMockUser({ id: '2', name: 'Guilherme', role: UserRole.MECHANIC }),
@@ -26,7 +26,7 @@ describe('FindAllUsersUseCase', () => {
     expect(result[0]).not.toHaveProperty('passwordHash');
   });
 
-  it('deve retornar lista vazia quando não houver usuários', async () => {
+  it('should return empty list when there are no users', async () => {
     userRepository.findAll.mockResolvedValue([]);
 
     const result = await useCase.execute();

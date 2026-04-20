@@ -29,7 +29,7 @@ describe('JwtTokenService', () => {
   });
 
   describe('signAccessToken', () => {
-    it('deve assinar token de acesso', () => {
+    it('should sign access token', () => {
       const token = service.signAccessToken(mockPayload);
 
       expect(token).toBe('signed-token');
@@ -38,7 +38,7 @@ describe('JwtTokenService', () => {
   });
 
   describe('signRefreshToken', () => {
-    it('deve assinar refresh token com secret e expiração separados', () => {
+    it('should sign refresh token with separate secret and expiration', () => {
       const token = service.signRefreshToken(mockPayload);
 
       expect(token).toBe('signed-token');
@@ -50,7 +50,7 @@ describe('JwtTokenService', () => {
   });
 
   describe('signTokenPair', () => {
-    it('deve retornar par de tokens', () => {
+    it('should return token pair', () => {
       const pair = service.signTokenPair(mockPayload);
 
       expect(pair.accessToken).toBe('signed-token');
@@ -60,7 +60,7 @@ describe('JwtTokenService', () => {
   });
 
   describe('verifyAccessToken', () => {
-    it('deve verificar token de acesso', () => {
+    it('should verify access token', () => {
       const result = service.verifyAccessToken('some-token');
 
       expect(result).toEqual(mockPayload);
@@ -69,7 +69,7 @@ describe('JwtTokenService', () => {
   });
 
   describe('verifyRefreshToken', () => {
-    it('deve verificar refresh token com secret específico', () => {
+    it('should verify refresh token with specific secret', () => {
       const result = service.verifyRefreshToken('some-refresh-token');
 
       expect(result).toEqual(mockPayload);

@@ -3,3 +3,4 @@ node_modules
 generated
 coverage
 prisma/migrations
+prisma/generated

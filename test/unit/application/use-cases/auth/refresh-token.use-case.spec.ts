@@ -17,7 +17,7 @@ describe('RefreshTokenUseCase', () => {
     useCase = new RefreshTokenUseCase(userRepository, tokenService);
   });
 
-  it('deve renovar tokens com sucesso', async () => {
+  it('should renew tokens successfully', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
 
@@ -34,7 +34,7 @@ describe('RefreshTokenUseCase', () => {
     });
   });
 
-  it('deve lançar UnauthorizedAccessException se refresh token for inválido', async () => {
+  it('should throw UnauthorizedAccessException if refresh token is invalid', async () => {
     tokenService.verifyRefreshToken.mockImplementation(() => {
       throw new Error('invalid token');
     });
@@ -44,7 +44,7 @@ describe('RefreshTokenUseCase', () => {
     );
   });
 
-  it('deve lançar UnauthorizedAccessException se usuário não existir', async () => {
+  it('should throw UnauthorizedAccessException if user does not exist', async () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
@@ -52,7 +52,7 @@ describe('RefreshTokenUseCase', () => {
     );
   });
 
-  it('deve lançar UnauthorizedAccessException se usuário estiver desativado', async () => {
+  it('should throw UnauthorizedAccessException if user is deactivated', async () => {
     const user = createMockUser({ isActive: false });
     userRepository.findById.mockResolvedValue(user);
 

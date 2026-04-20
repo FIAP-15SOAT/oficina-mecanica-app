@@ -11,7 +11,7 @@ describe('DeleteUserUseCase', () => {
     useCase = new DeleteUserUseCase(userRepository);
   });
 
-  it('deve deletar usuário existente', async () => {
+  it('should delete existing user', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
     userRepository.delete.mockResolvedValue();
@@ -22,7 +22,7 @@ describe('DeleteUserUseCase', () => {
     expect(userRepository.delete).toHaveBeenCalledWith('user-uuid-123');
   });
 
-  it('deve lançar NotFoundException se usuário não existir', async () => {
+  it('should throw NotFoundException if user does not exist', async () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('inexistente')).rejects.toThrow(ResourceNotFoundException);

@@ -4,23 +4,21 @@ import { createMockService } from '../../../helpers/service-mock.factory';
 import { CreateServiceRequestDto } from '@presentation/service/dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from '@presentation/service/dto/update-service-request.dto';
 import { UpdateServiceStatusRequestDto } from '@presentation/service/dto/update-service-status-request.dto';
-import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
-import { FindServiceByIdUseCase } from '@application/use-cases/service/find-service-by-id.use-case';
-import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
-import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
-import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
-import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
+import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
+import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
+import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
+import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
+import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
+import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
 
 describe('ServiceController', () => {
   let controller: ServiceController;
-  let createServiceUseCase: jest.Mocked<Pick<CreateServiceUseCase, 'execute'>>;
-  let findServiceByIdUseCase: jest.Mocked<Pick<FindServiceByIdUseCase, 'execute'>>;
-  let findAllServicesPaginatedUseCase: jest.Mocked<
-    Pick<FindAllServicesPaginatedUseCase, 'execute'>
-  >;
-  let updateServiceUseCase: jest.Mocked<Pick<UpdateServiceUseCase, 'execute'>>;
-  let updateServiceStatusUseCase: jest.Mocked<Pick<UpdateServiceStatusUseCase, 'execute'>>;
-  let deleteServiceUseCase: jest.Mocked<Pick<DeleteServiceUseCase, 'execute'>>;
+  let createServiceUseCase: jest.Mocked<ICreateServiceUseCase>;
+  let findServiceByIdUseCase: jest.Mocked<IFindServiceByIdUseCase>;
+  let findAllServicesPaginatedUseCase: jest.Mocked<IFindAllServicesPaginatedUseCase>;
+  let updateServiceUseCase: jest.Mocked<IUpdateServiceUseCase>;
+  let updateServiceStatusUseCase: jest.Mocked<IUpdateServiceStatusUseCase>;
+  let deleteServiceUseCase: jest.Mocked<IDeleteServiceUseCase>;
 
   beforeEach(() => {
     createServiceUseCase = { execute: jest.fn() };
@@ -31,12 +29,12 @@ describe('ServiceController', () => {
     deleteServiceUseCase = { execute: jest.fn() };
 
     controller = new ServiceController(
-      createServiceUseCase as any,
-      findServiceByIdUseCase as any,
-      findAllServicesPaginatedUseCase as any,
-      updateServiceUseCase as any,
-      updateServiceStatusUseCase as any,
-      deleteServiceUseCase as any,
+      createServiceUseCase,
+      findServiceByIdUseCase,
+      findAllServicesPaginatedUseCase,
+      updateServiceUseCase,
+      updateServiceStatusUseCase,
+      deleteServiceUseCase,
     );
   });
 

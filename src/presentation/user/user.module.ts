@@ -3,7 +3,7 @@ import { CreateUserUseCase } from '@application/use-cases/user/create-user.use-c
 import { DeleteUserUseCase } from '@application/use-cases/user/delete-user.use-case';
 import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.use-case';
 import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
-import { ToggleUserStatusUseCase } from '@application/use-cases/user/toggle-user-status.use-case';
+import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
 import { BcryptHashService } from '@infrastructure/services/bcrypt-hash.service';
@@ -43,8 +43,8 @@ import { UserController } from './user.controller';
       inject: ['IUserRepository', 'IHashService'],
     },
     {
-      provide: 'IToggleUserStatusUseCase',
-      useFactory: (userRepo: PrismaUserRepository) => new ToggleUserStatusUseCase(userRepo),
+      provide: 'IUpdateUserStatusUseCase',
+      useFactory: (userRepo: PrismaUserRepository) => new UpdateUserStatusUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {

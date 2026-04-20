@@ -13,7 +13,7 @@ describe('BcryptHashService', () => {
   });
 
   describe('hash', () => {
-    it('deve gerar um hash bcrypt', async () => {
+    it('should generate a bcrypt hash', async () => {
       const hash = await service.hash('minhaSenha123');
 
       expect(hash).toBeDefined();
@@ -21,7 +21,7 @@ describe('BcryptHashService', () => {
       expect(hash.startsWith('$2b$')).toBe(true);
     });
 
-    it('deve gerar hashes diferentes para o mesmo valor', async () => {
+    it('should generate different hashes for same value', async () => {
       const hash1 = await service.hash('minhaSenha123');
       const hash2 = await service.hash('minhaSenha123');
 
@@ -30,7 +30,7 @@ describe('BcryptHashService', () => {
   });
 
   describe('compare', () => {
-    it('deve retornar true para senha correta', async () => {
+    it('should return true for correct password', async () => {
       const hash = await service.hash('Senha@123');
 
       const result = await service.compare('Senha@123', hash);
@@ -38,7 +38,7 @@ describe('BcryptHashService', () => {
       expect(result).toBe(true);
     });
 
-    it('deve retornar false para senha incorreta', async () => {
+    it('should return false for incorrect password', async () => {
       const hash = await service.hash('Senha@123');
 
       const result = await service.compare('SenhaErrada', hash);
