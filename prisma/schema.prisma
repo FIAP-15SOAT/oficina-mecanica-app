@@ -130,7 +130,7 @@ model Vehicle {
 
 model Service {
   id               String   @id @default(uuid()) @db.Uuid
-  name             String   @db.VarChar(150)
+  name             String   @unique @db.VarChar(150)
   description      String?  @db.Text
   basePrice        Decimal  @map("base_price") @db.Decimal(10, 2)
   estimatedTimeMin Int      @default(60) @map("estimated_time_min")

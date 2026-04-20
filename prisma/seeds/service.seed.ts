@@ -166,30 +166,21 @@ export async function seedServices(prisma: PrismaClient): Promise<void> {
   console.log('🌱 Seeding services...');
 
   for (const service of services) {
-    const existingService = await prisma.service.findFirst({
+    await prisma.service.upsert({
       where: { name: service.name },
+      update: {
+        description: service.description,
+        basePrice: service.basePrice,
+        estimatedTimeMin: service.estimatedTimeMin,
+      },
+      create: {
+        name: service.name,
+        description: service.description,
+        basePrice: service.basePrice,
+        estimatedTimeMin: service.estimatedTimeMin,
+        isActive: true,
+      },
     });
-
-    if (existingService) {
-      await prisma.service.update({
-        where: { id: existingService.id },
-        data: {
-          description: service.description,
-          basePrice: service.basePrice,
-          estimatedTimeMin: service.estimatedTimeMin,
-        },
-      });
-    } else {
-      await prisma.service.create({
-        data: {
-          name: service.name,
-          description: service.description,
-          basePrice: service.basePrice,
-          estimatedTimeMin: service.estimatedTimeMin,
-          isActive: true,
-        },
-      });
-    }
 
     console.log(`  ✔ ${service.name} - R$ ${service.basePrice.toFixed(2)}`);
   }
