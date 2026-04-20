@@ -9,21 +9,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import {
-  AuthenticateUserUseCase,
-  GetCurrentUserUseCase,
-  RefreshTokenUseCase,
-  RegisterUserUseCase,
-} from '../../application/use-cases/auth';
-import { AuthenticatedUser, CurrentUser, JwtAuthGuard } from '../../infrastructure/auth';
-import {
-  AuthResponseDto,
-  LoginDto,
-  MeResponseDto,
-  RefreshTokenDto,
-  RegisterDto,
-  RegisterResponseDto,
-} from './dto';
+import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
+import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
+import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
+import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
+import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
+import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { AuthResponseDto, MeResponseDto, RegisterResponseDto } from './dto/auth-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @ApiTags('Auth')
 @Controller('auth')

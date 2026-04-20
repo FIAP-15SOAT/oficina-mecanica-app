@@ -1,4 +1,4 @@
-import { DomainValidationException } from '../exceptions';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;

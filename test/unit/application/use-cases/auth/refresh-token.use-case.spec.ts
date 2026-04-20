@@ -1,10 +1,10 @@
-import { UnauthorizedAccessException } from '../../../../../src/application/exceptions';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import {
   createMockTokenService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { RefreshTokenUseCase } from '../../../../../src/application/use-cases/auth/refresh-token.use-case';
+import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
 
 describe('RefreshTokenUseCase', () => {
   let useCase: RefreshTokenUseCase;

@@ -19,16 +19,18 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard, Roles, RolesGuard } from '../../infrastructure/auth';
+import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { Roles } from '@infrastructure/auth/roles.decorator';
+import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
-import { CreateServiceUseCase } from '../../application/use-cases/service/create-service.use-case';
-import { DeleteServiceUseCase } from '../../application/use-cases/service/delete-service.use-case';
-import { FindAllServicesPaginatedUseCase } from '../../application/use-cases/service/find-all-services-paginated.use-case';
-import { FindServiceByIdUseCase } from '../../application/use-cases/service/find-service-by-id.use-case';
-import { UpdateServiceStatusUseCase } from '../../application/use-cases/service/update-service-status.use-case';
-import { UpdateServiceUseCase } from '../../application/use-cases/service/update-service.use-case';
+import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
+import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
+import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
+import { FindServiceByIdUseCase } from '@application/use-cases/service/find-service-by-id.use-case';
+import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
+import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
 
-import { UserRole } from '../../domain/enums';
+import { UserRole } from '@domain/enums/user-role.enum';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
@@ -45,7 +47,7 @@ export class ServiceController {
     private readonly createServiceUseCase: CreateServiceUseCase,
     @Inject('FindServiceByIdUseCase')
     private readonly findServiceByIdUseCase: FindServiceByIdUseCase,
-    @Inject('FindAllServicesUseCase')
+    @Inject('FindAllServicesPaginatedUseCase')
     private readonly findAllServicesPaginatedUseCase: FindAllServicesPaginatedUseCase,
     @Inject('UpdateServiceUseCase')
     private readonly updateServiceUseCase: UpdateServiceUseCase,

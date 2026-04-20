@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '../../exceptions';
-import { UserRole } from '../../../domain/enums';
-import { IUserRepository } from '../../../domain/interfaces';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { IUserRepository } from '@domain/interfaces/user.repository.interface';
 
 export interface GetCurrentUserOutput {
   id: string;

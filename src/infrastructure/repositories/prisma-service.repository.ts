@@ -1,9 +1,9 @@
-import { Service } from '../../domain/entities';
+import { Service } from '@domain/entities/service.entity';
 import {
   IServiceRepository,
   PaginatedServicesDto,
-} from '../../domain/interfaces/service.repository.interface';
-import { PrismaService } from '../database/prisma';
+} from '@domain/interfaces/service.repository.interface';
+import { PrismaService } from '../database/prisma/prisma.service';
 import { Service as PrismaServiceModel } from '@prisma/client';
 
 export class PrismaServiceRepository implements IServiceRepository {

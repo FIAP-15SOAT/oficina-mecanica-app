@@ -21,6 +21,13 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "paths": {
+      "@application/*": ["src/application/*"],
+      "@config/*": ["src/config/*"],
+      "@domain/*": ["src/domain/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
+      "@presentation/*": ["src/presentation/*"]
+    }
   }
 }

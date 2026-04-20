@@ -1,4 +1,4 @@
-import { Service } from '../entities';
+import { Service } from '../entities/service.entity';
 
 export interface PaginatedServicesDto {
   services: Service[];

@@ -1,5 +1,5 @@
-import { Address } from '../../../../src/domain/entities/address.entity';
-import { DomainValidationException } from '../../../../src/domain/exceptions';
+import { Address } from '@domain/entities/address.entity';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('Address Entity', () => {
   const validProps = {

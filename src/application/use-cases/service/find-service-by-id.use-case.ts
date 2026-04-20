@@ -1,6 +1,6 @@
-import { Service } from '../../../domain/entities';
-import { IServiceRepository } from '../../../domain/interfaces';
-import { ResourceNotFoundException } from '../../exceptions';
+import { Service } from '@domain/entities/service.entity';
+import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindServiceByIdUseCase {
   constructor(private readonly serviceRepository: IServiceRepository) {}

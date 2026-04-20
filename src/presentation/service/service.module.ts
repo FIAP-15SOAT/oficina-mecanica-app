@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import {
-  CreateServiceUseCase,
-  UpdateServiceUseCase,
-  FindServiceByIdUseCase,
-  FindAllServicesPaginatedUseCase,
-  UpdateServiceStatusUseCase,
-  DeleteServiceUseCase,
-} from '../../application/use-cases/service';
-import { PrismaServiceRepository } from '../../infrastructure/repositories';
+import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
+import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
+import { FindServiceByIdUseCase } from '@application/use-cases/service/find-service-by-id.use-case';
+import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
+import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
+import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
+import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { ServiceController } from './service.controller';
 
 @Module({
@@ -21,7 +19,7 @@ import { ServiceController } from './service.controller';
       provide: 'CreateServiceUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new CreateServiceUseCase(serviceRepository),
-      inject: ['IServiceRepository', 'IHashService'],
+      inject: ['IServiceRepository'],
     },
     {
       provide: 'FindServiceByIdUseCase',

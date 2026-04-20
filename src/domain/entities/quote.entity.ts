@@ -1,4 +1,4 @@
-import { QuoteStatus } from '../enums';
+import { QuoteStatus } from '../enums/quote-status.enum';
 
 export class Quote {
   id!: string;

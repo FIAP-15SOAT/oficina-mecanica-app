@@ -1,4 +1,4 @@
-import { DomainValidationException } from '../exceptions';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MAX_STREET_LENGTH = 255;
 const MAX_CITY_LENGTH = 100;

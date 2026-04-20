@@ -1,4 +1,4 @@
-import { PrismaService } from '../../src/infrastructure/database/prisma';
+import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
 export function createMockPrismaClient(): jest.Mocked<PrismaService> {
   return {

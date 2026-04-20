@@ -1,15 +1,15 @@
 import { randomUUID } from 'crypto';
-import { ServiceController } from '../../../../src/presentation/service/service.controller';
+import { ServiceController } from '@presentation/service/service.controller';
 import { createMockService } from '../../../helpers/service-mock.factory';
-import { CreateServiceRequestDto } from '../../../../src/presentation/service/dto/create-service-request.dto';
-import { UpdateServiceRequestDto } from '../../../../src/presentation/service/dto/update-service-request.dto';
-import { UpdateServiceStatusRequestDto } from '../../../../src/presentation/service/dto/update-service-status-request.dto';
-import { CreateServiceUseCase } from '../../../../src/application/use-cases/service/create-service.use-case';
-import { FindServiceByIdUseCase } from '../../../../src/application/use-cases/service/find-service-by-id.use-case';
-import { FindAllServicesPaginatedUseCase } from '../../../../src/application/use-cases/service/find-all-services-paginated.use-case';
-import { UpdateServiceUseCase } from '../../../../src/application/use-cases/service/update-service.use-case';
-import { UpdateServiceStatusUseCase } from '../../../../src/application/use-cases/service/update-service-status.use-case';
-import { DeleteServiceUseCase } from '../../../../src/application/use-cases/service/delete-service.use-case';
+import { CreateServiceRequestDto } from '@presentation/service/dto/create-service-request.dto';
+import { UpdateServiceRequestDto } from '@presentation/service/dto/update-service-request.dto';
+import { UpdateServiceStatusRequestDto } from '@presentation/service/dto/update-service-status-request.dto';
+import { CreateServiceUseCase } from '@application/use-cases/service/create-service.use-case';
+import { FindServiceByIdUseCase } from '@application/use-cases/service/find-service-by-id.use-case';
+import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
+import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
+import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
+import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
 
 describe('ServiceController', () => {
   let controller: ServiceController;

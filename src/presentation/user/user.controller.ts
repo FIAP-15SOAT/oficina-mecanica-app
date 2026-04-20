@@ -13,17 +13,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import {
-  CreateUserUseCase,
-  DeleteUserUseCase,
-  FindAllUsersUseCase,
-  FindUserByIdUseCase,
-  ToggleUserStatusUseCase,
-  UpdateUserUseCase,
-} from '../../application/use-cases/user';
-import { JwtAuthGuard, Roles, RolesGuard } from '../../infrastructure/auth';
-import { UserRole } from '../../domain/enums';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
+import { CreateUserUseCase } from '@application/use-cases/user/create-user.use-case';
+import { DeleteUserUseCase } from '@application/use-cases/user/delete-user.use-case';
+import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.use-case';
+import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
+import { ToggleUserStatusUseCase } from '@application/use-cases/user/toggle-user-status.use-case';
+import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
+import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { Roles } from '@infrastructure/auth/roles.decorator';
+import { RolesGuard } from '@infrastructure/auth/roles.guard';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('Users')
 @Controller('users')

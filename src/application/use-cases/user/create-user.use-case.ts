@@ -1,7 +1,8 @@
-import { ResourceConflictException } from '../../exceptions';
-import { User, UserPublicView } from '../../../domain/entities';
-import { UserRole } from '../../../domain/enums';
-import { IHashService, IUserRepository } from '../../../domain/interfaces';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { User, UserPublicView } from '@domain/entities/user.entity';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { IHashService } from '@domain/interfaces/hash.service.interface';
+import { IUserRepository } from '@domain/interfaces/user.repository.interface';
 
 export interface CreateUserInput {
   name: string;

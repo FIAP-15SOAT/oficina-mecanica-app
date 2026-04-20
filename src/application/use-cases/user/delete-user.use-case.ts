@@ -1,5 +1,5 @@
-import { ResourceNotFoundException } from '../../exceptions';
-import { IUserRepository } from '../../../domain/interfaces';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IUserRepository } from '@domain/interfaces/user.repository.interface';
 
 export class DeleteUserUseCase {
   constructor(private readonly userRepository: IUserRepository) {}

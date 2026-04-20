@@ -1,4 +1,4 @@
-import { Service } from '../../../../domain/entities';
+import { Service } from '@domain/entities/service.entity';
 
 export interface FindAllServicesPaginatedDto {
   services: Service[];

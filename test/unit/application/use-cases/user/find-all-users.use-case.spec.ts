@@ -1,6 +1,6 @@
-import { UserRole } from '../../../../../src/domain/enums';
+import { UserRole } from '@domain/enums/user-role.enum';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
-import { FindAllUsersUseCase } from '../../../../../src/application/use-cases/user/find-all-users.use-case';
+import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.use-case';
 
 describe('FindAllUsersUseCase', () => {
   let useCase: FindAllUsersUseCase;

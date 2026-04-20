@@ -1,4 +1,4 @@
-import { StockMovementType } from '../enums';
+import { StockMovementType } from '../enums/stock-movement-type.enum';
 
 export class StockMovement {
   id!: string;

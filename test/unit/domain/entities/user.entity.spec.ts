@@ -1,6 +1,6 @@
-import { UserRole } from '../../../../src/domain/enums';
-import { User } from '../../../../src/domain/entities/user.entity';
-import { DomainValidationException } from '../../../../src/domain/exceptions';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { User } from '@domain/entities/user.entity';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('User Entity', () => {
   const validProps = {

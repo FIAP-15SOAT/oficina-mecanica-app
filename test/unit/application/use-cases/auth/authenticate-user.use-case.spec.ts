@@ -1,11 +1,11 @@
-import { UnauthorizedAccessException } from '../../../../../src/application/exceptions';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import {
   createMockHashService,
   createMockTokenService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { AuthenticateUserUseCase } from '../../../../../src/application/use-cases/auth/authenticate-user.use-case';
+import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
 
 describe('AuthenticateUserUseCase', () => {
   let useCase: AuthenticateUserUseCase;

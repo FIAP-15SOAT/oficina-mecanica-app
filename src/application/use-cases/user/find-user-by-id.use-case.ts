@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '../../exceptions';
-import { UserPublicView } from '../../../domain/entities';
-import { IUserRepository } from '../../../domain/interfaces';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UserPublicView } from '@domain/entities/user.entity';
+import { IUserRepository } from '@domain/interfaces/user.repository.interface';
 
 export type FindUserByIdOutput = UserPublicView;
 

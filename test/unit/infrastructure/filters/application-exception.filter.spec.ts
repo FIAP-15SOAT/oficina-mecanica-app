@@ -1,10 +1,8 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import {
-  ResourceConflictException,
-  ResourceNotFoundException,
-  UnauthorizedAccessException,
-} from '../../../../src/application/exceptions';
-import { ApplicationExceptionFilter } from '../../../../src/infrastructure/filters/application-exception.filter';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { ApplicationExceptionFilter } from '@infrastructure/filters/application-exception.filter';
 
 function createMockHost() {
   const jsonFn = jest.fn();

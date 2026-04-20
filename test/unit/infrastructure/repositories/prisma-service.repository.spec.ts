@@ -1,13 +1,11 @@
 import { randomUUID } from 'crypto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Service as PrismaServiceModel } from '@prisma/client';
-import { Service } from '../../../../src/domain/entities';
-import { PrismaServiceRepository } from '../../../../src/infrastructure/repositories/prisma-service.repository';
+import { Service } from '@domain/entities/service.entity';
+import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { createMockPrismaClient } from '../../../helpers/prisma-mock.factory';
 
-function createMockPrismaService(
-  overrides: Partial<PrismaServiceModel> = {},
-): PrismaServiceModel {
+function createMockPrismaService(overrides: Partial<PrismaServiceModel> = {}): PrismaServiceModel {
   const now = new Date();
   const id = randomUUID();
 

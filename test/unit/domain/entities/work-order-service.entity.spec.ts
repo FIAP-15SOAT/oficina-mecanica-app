@@ -1,5 +1,5 @@
-import { WorkOrderService } from '../../../../src/domain/entities/work-order-service.entity';
-import { WorkOrderServiceStatus } from '../../../../src/domain/enums';
+import { WorkOrderService } from '@domain/entities/work-order-service.entity';
+import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 
 describe('WorkOrderService Entity', () => {
   const validProps = {

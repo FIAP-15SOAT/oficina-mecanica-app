@@ -1,5 +1,5 @@
-import { Quote } from '../entities';
-import { QuoteStatus } from '../enums';
+import { Quote } from '../entities/quote.entity';
+import { QuoteStatus } from '../enums/quote-status.enum';
 
 export interface IQuoteRepository {
   create(quote: Quote): Promise<Quote>;

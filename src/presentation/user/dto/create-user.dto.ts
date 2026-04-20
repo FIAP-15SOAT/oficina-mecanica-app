@@ -8,7 +8,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../../../domain/enums';
+import { UserRole } from '@domain/enums/user-role.enum';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })

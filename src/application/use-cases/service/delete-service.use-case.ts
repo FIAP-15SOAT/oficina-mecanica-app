@@ -1,5 +1,5 @@
-import { IServiceRepository } from '../../../domain/interfaces';
-import { ResourceNotFoundException } from '../../exceptions';
+import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class DeleteServiceUseCase {
   constructor(private readonly serviceRepository: IServiceRepository) {}

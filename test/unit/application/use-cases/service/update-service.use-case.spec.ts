@@ -1,11 +1,9 @@
-import {
-  ResourceConflictException,
-  ResourceNotFoundException,
-} from '../../../../../src/application/exceptions';
-import { UpdateServiceUseCase } from '../../../../../src/application/use-cases/service/update-service.use-case';
-import { UpdateServiceDto } from '../../../../../src/application/use-cases/service/dto/update-service.dto';
-import { Service } from '../../../../../src/domain/entities';
-import { IServiceRepository } from '../../../../../src/domain/interfaces';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UpdateServiceUseCase } from '@application/use-cases/service/update-service.use-case';
+import { UpdateServiceDto } from '@application/use-cases/service/dto/update-service.dto';
+import { Service } from '@domain/entities/service.entity';
+import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,

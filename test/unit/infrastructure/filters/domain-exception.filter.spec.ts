@@ -1,10 +1,8 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import {
-  BusinessRuleViolationException,
-  DomainValidationException,
-  EntityNotFoundException,
-} from '../../../../src/domain/exceptions';
-import { DomainExceptionFilter } from '../../../../src/infrastructure/filters/domain-exception.filter';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
+import { DomainExceptionFilter } from '@infrastructure/filters/domain-exception.filter';
 
 function createMockHost() {
   const jsonFn = jest.fn();

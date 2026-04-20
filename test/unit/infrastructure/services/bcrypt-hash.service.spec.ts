@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { BcryptHashService } from '../../../../src/infrastructure/services/bcrypt-hash.service';
+import { BcryptHashService } from '@infrastructure/services/bcrypt-hash.service';
 
 describe('BcryptHashService', () => {
   let service: BcryptHashService;

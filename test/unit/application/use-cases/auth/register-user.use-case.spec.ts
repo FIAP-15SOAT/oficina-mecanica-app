@@ -1,11 +1,11 @@
-import { ResourceConflictException } from '../../../../../src/application/exceptions';
-import { UserRole } from '../../../../../src/domain/enums';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { UserRole } from '@domain/enums/user-role.enum';
 import {
   createMockHashService,
   createMockUser,
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
-import { RegisterUserUseCase } from '../../../../../src/application/use-cases/auth/register-user.use-case';
+import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
 
 describe('RegisterUserUseCase', () => {
   let useCase: RegisterUserUseCase;

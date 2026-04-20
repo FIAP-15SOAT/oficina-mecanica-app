@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
-import { FindUserByIdUseCase } from '../../../../../src/application/use-cases/user/find-user-by-id.use-case';
+import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
 
 describe('FindUserByIdUseCase', () => {
   let useCase: FindUserByIdUseCase;

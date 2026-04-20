@@ -1,4 +1,4 @@
-import { Part } from '../entities';
+import { Part } from '../entities/part.entity';
 
 export interface IPartRepository {
   create(part: Part): Promise<Part>;

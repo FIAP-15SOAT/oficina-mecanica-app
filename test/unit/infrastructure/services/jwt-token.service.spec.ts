@@ -1,8 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole } from '../../../../src/domain/enums';
-import { TokenPayload } from '../../../../src/domain/interfaces';
-import { JwtTokenService } from '../../../../src/infrastructure/services/jwt-token.service';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { TokenPayload } from '@domain/interfaces/token.service.interface';
+import { JwtTokenService } from '@infrastructure/services/jwt-token.service';
 
 describe('JwtTokenService', () => {
   let service: JwtTokenService;

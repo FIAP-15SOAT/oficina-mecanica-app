@@ -1,7 +1,7 @@
-import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
-import { DomainValidationException } from '../../../../../src/domain/exceptions';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
-import { ToggleUserStatusUseCase } from '../../../../../src/application/use-cases/user/toggle-user-status.use-case';
+import { ToggleUserStatusUseCase } from '@application/use-cases/user/toggle-user-status.use-case';
 
 describe('ToggleUserStatusUseCase', () => {
   let useCase: ToggleUserStatusUseCase;

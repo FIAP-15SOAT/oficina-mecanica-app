@@ -1,5 +1,5 @@
-import { IServiceRepository } from '../../../domain/interfaces';
-import { calculateTotalPages } from 'src/application/utils/calculate-total-pages.util';
+import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
+import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
 import { FindAllServicesPaginatedDto } from './dto/find-all-services-paginated.dto';
 
 export class FindAllServicesPaginatedUseCase {

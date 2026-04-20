@@ -1,7 +1,7 @@
-import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
-import { UpdateServiceStatusUseCase } from '../../../../../src/application/use-cases/service/update-service-status.use-case';
-import { DomainValidationException } from '../../../../../src/domain/exceptions';
-import { IServiceRepository } from '../../../../../src/domain/interfaces';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { IServiceRepository } from '@domain/interfaces/service.repository.interface';
 import {
   createMockService,
   createMockServiceRepository,

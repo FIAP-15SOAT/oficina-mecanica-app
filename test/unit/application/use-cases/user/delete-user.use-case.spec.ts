@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '../../../../../src/application/exceptions';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
-import { DeleteUserUseCase } from '../../../../../src/application/use-cases/user/delete-user.use-case';
+import { DeleteUserUseCase } from '@application/use-cases/user/delete-user.use-case';
 
 describe('DeleteUserUseCase', () => {
   let useCase: DeleteUserUseCase;

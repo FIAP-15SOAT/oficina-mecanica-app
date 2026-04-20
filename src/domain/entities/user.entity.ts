@@ -1,5 +1,5 @@
-import { DomainValidationException } from '../exceptions';
-import { UserRole } from '../enums';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { UserRole } from '../enums/user-role.enum';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
