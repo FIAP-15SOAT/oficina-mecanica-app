@@ -1,6 +1,6 @@
 # Oficina Mecânica API
 
-Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecânicas. Gestão de ordens de serviço, clientes, veículos, peças e serviços.
+Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecânicas. Gestão de ordens de serviço, clientes, veículos, peças, insumos e serviços.
 
 **Tech Challenge — Fase 1 — Grupo 15SOAT**
 
@@ -8,11 +8,12 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 
 - **Runtime**: Node.js + TypeScript
 - **Framework**: NestJS
-- **ORM**: Prisma 6
-- **Banco de dados**: PostgreSQL
+- **ORM**: Prisma 7
+- **Banco de dados**: PostgreSQL 16
 - **Autenticação**: JWT (access + refresh token) com bcrypt
 - **Documentação**: Swagger/OpenAPI
 - **Testes**: Jest + ts-jest
+- **Containerização**: Docker + Docker Compose
 - **Linting**: ESLint + Prettier
 
 ## Arquitetura
@@ -25,12 +26,13 @@ src/
 │   ├── entities/                    # Entidades com lógica de domínio rica
 │   ├── enums/                       # Enums de negócio (UserRole, WorkOrderStatus, etc.)
 │   ├── exceptions/                  # Exceções de domínio (DomainValidationException, etc.)
-│   └── interfaces/                  # Contratos (repositórios, serviços)
+│   └── interfaces/                  # Contratos (repositórios, use-cases)
 │
 ├── application/                     # Camada de aplicação (casos de uso)
 │   ├── use-cases/
 │   │   ├── auth/                    # Register, Authenticate, RefreshToken, GetCurrentUser
-│   │   └── user/                    # CRUD completo de usuários
+│   │   ├── user/                    # CRUD completo de usuários
+│   │   └── part-supply/             # CRUD + movimentação de estoque de peças e insumos
 │   └── exceptions/                  # Exceções de aplicação (ResourceNotFound, Conflict, etc.)
 │
 ├── infrastructure/                  # Camada de infraestrutura (implementações concretas)
@@ -38,13 +40,16 @@ src/
 │   ├── database/prisma/             # PrismaService e módulo
 │   ├── exceptions/                  # Exceções de infraestrutura
 │   ├── filters/                     # Exception Filters (Domain, Application, Infrastructure)
+│   ├── interceptors/                # DateSerializerInterceptor (ISO 8601 com timezone)
+│   ├── mappers/                     # Conversão Prisma → Entidade de domínio
 │   ├── repositories/                # Implementações Prisma dos repositórios
 │   └── services/                    # BcryptHashService, JwtTokenService
 │
 ├── presentation/                    # Camada de apresentação (controllers, DTOs)
 │   ├── auth/                        # AuthController + DTOs
 │   ├── user/                        # UserController + DTOs
-│   └── exceptions/                  # Exceções de apresentação
+│   ├── service/                     # ServiceController + DTOs
+│   └── parts-supplies/              # PartsSuppliesController + DTOs
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
@@ -59,6 +64,8 @@ test/
 
 prisma/
 ├── schema.prisma                    # Schema do banco de dados
+├── prisma.config.ts                 # Configuração do Prisma v7 (DATABASE_URL)
+├── migrations/                      # Migrations geradas pelo Prisma
 ├── seed.ts                          # Entry point do seed
 └── seeds/                           # Scripts de seed por entidade
 ```
@@ -80,19 +87,22 @@ Cada camada possui suas próprias exceções, sem dependência de framework HTTP
 
 O mapeamento para HTTP acontece exclusivamente nos **Exception Filters** da camada de infraestrutura.
 
-## Pré-requisitos
+## Rodando com Docker (recomendado)
 
-- Node.js >= 18
-- Docker e Docker Compose (para PostgreSQL)
+```bash
+docker compose up --build
+```
 
-## Setup
+Isso sobe o PostgreSQL, executa as migrations, popula o banco e inicia a API em `http://localhost:3000`.
+
+## Setup local
 
 ```bash
 # Instalar dependências
 npm install
 
-# Subir o PostgreSQL
-docker compose up -d
+# Subir apenas o PostgreSQL
+docker compose up postgres -d
 
 # Gerar o Prisma Client
 npm run prisma:generate
@@ -100,8 +110,11 @@ npm run prisma:generate
 # Rodar as migrations
 npm run prisma:migrate
 
-# Popular o banco com usuários iniciais (5 admins)
+# Popular o banco com usuários iniciais
 npm run prisma:seed
+
+# Iniciar a aplicação
+npm run start:dev
 ```
 
 ## Comandos
@@ -115,21 +128,19 @@ npm run prisma:seed
 | `npm run test` | Roda testes unitários |
 | `npm run test:watch` | Testes em modo watch |
 | `npm run test:cov` | Testes com cobertura |
-| `npm run test:e2e` | Testes end-to-end |
 | `npm run lint` | Linting com auto-fix |
 | `npm run format` | Formata código com Prettier |
 | `npm run prisma:generate` | Gera o Prisma Client |
-| `npm run prisma:migrate` | Cria/aplica migrations |
+| `npm run prisma:migrate` | Cria/aplica migrations (dev) |
 | `npm run prisma:studio` | Abre o Prisma Studio (GUI do banco) |
 | `npm run prisma:seed` | Popula o banco com dados iniciais |
 
 ## API
 
-Após iniciar a aplicação, a documentação Swagger fica disponível em:
+Após iniciar a aplicação:
 
-```
-http://localhost:3000/api/docs
-```
+- **Swagger:** `http://localhost:3000/api/docs`
+- **Base URL:** `http://localhost:3000/api`
 
 ### Endpoints disponíveis
 
@@ -137,21 +148,77 @@ http://localhost:3000/api/docs
 - `POST /register` — Registrar novo usuário
 - `POST /login` — Autenticar e obter tokens
 - `POST /refresh` — Renovar tokens com refresh token
-- `GET /me` — Dados do usuário autenticado (requer JWT)
+- `GET /me` — Dados do usuário autenticado *(requer JWT)*
 
-**Users** (`/api/users`) — requer JWT + role Admin
+**Users** (`/api/users`) — *requer JWT*
 - `POST /` — Criar usuário
 - `GET /` — Listar todos
 - `GET /:id` — Buscar por ID
-- `PATCH /:id` — Atualizar
-- `PATCH /:id/activate` — Ativar
-- `PATCH /:id/deactivate` — Desativar
+- `PUT /:id` — Atualizar dados
+- `PATCH /:id` — Alterar status (ativo/inativo)
 - `DELETE /:id` — Remover
+
+**Services** (`/api/services`) — *requer JWT*
+- `POST /` — Cadastrar serviço
+- `GET /` — Listar (paginado, filtro por ativo)
+- `GET /:id` — Buscar por ID
+- `PUT /:id` — Atualizar
+- `PATCH /:id` — Alterar status (ativo/inativo)
+- `DELETE /:id` — Remover
+
+**Peças e Insumos** (`/api/parts-supplies`) — *requer JWT*
+- `POST /` — Cadastrar peça ou insumo
+- `GET /` — Listar estoque (paginado, filtros: category, search, isActive)
+- `GET /low-stock` — Itens com estoque abaixo do mínimo
+- `GET /:id` — Buscar por ID
+- `PATCH /:id` — Atualizar dados
+- `PATCH /:id/stock` — Movimentar estoque (ENTRY / EXIT / ADJUSTMENT)
+- `DELETE /:id` — Remover (soft delete)
+
+### Formato de resposta
+
+Todas as respostas de sucesso são envoltas em `{ data: ... }`:
+
+```json
+{ "data": { "id": "...", "name": "..." } }
+```
+
+Erros seguem o padrão NestJS com mensagens em português:
+
+```json
+{ "statusCode": 404, "error": "Não Encontrado", "message": "Recurso não encontrado" }
+```
+
+## Testes
+
+### Unitários
+
+```bash
+npm test
+```
+
+38 suites, 214 testes.
+
+### Postman / Newman
+
+Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+
+Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Validação**.
+
+Ou via linha de comando com a aplicação rodando:
+
+```bash
+npx newman run oficina-collection.json -e oficina-environment.json
+```
+
+76 requests, 135 assertions.
 
 ## Variáveis de Ambiente
 
+Veja `.env.example` para todas as variáveis disponíveis.
+
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/oficina
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/techchallange?schema=public
 JWT_SECRET=your-secret-key
 JWT_EXPIRATION=15m
 JWT_REFRESH_SECRET=your-refresh-secret-key
@@ -168,3 +235,5 @@ O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
 - Lucas Almeida da Silva
 - Ramoon Lincoln Barros Camacho
 - Renan Santana Camacho
+
+> Os e-mails de acesso estão definidos no arquivo `prisma/seeds/`.
