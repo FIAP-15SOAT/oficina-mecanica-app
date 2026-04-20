@@ -48,7 +48,7 @@ describe('ApplicationExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.NOT_FOUND,
-      error: 'Not Found',
+      error: 'Não Encontrado',
       message: 'Usuário não encontrado(a) com identificador: uuid-123',
     });
   });
@@ -62,7 +62,7 @@ describe('ApplicationExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.CONFLICT,
-      error: 'Conflict',
+      error: 'Conflito',
       message: 'E-mail já cadastrado no sistema',
     });
   });
@@ -76,7 +76,7 @@ describe('ApplicationExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
-      error: 'Unauthorized',
+      error: 'Não Autorizado',
       message: 'Credenciais inválidas',
     });
   });
@@ -90,7 +90,7 @@ describe('ApplicationExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      error: 'Application Error',
+      error: 'Erro da Aplicação',
       message: 'Erro inesperado na aplicação',
     });
   });

@@ -47,7 +47,7 @@ describe('InfrastructureExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
-      error: 'Unauthorized',
+      error: 'Não Autorizado',
       message: 'Token inválido',
     });
   });
@@ -61,7 +61,7 @@ describe('InfrastructureExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
-      error: 'Unauthorized',
+      error: 'Não Autorizado',
       message: 'Falha na autenticação',
     });
   });
@@ -75,7 +75,7 @@ describe('InfrastructureExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-      error: 'Service Unavailable',
+      error: 'Serviço Indisponível',
       message: 'Erro na operação INSERT: conexão recusada',
     });
   });
@@ -89,7 +89,7 @@ describe('InfrastructureExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-      error: 'Service Unavailable',
+      error: 'Serviço Indisponível',
       message: 'Erro na operação DELETE',
     });
   });
@@ -103,7 +103,7 @@ describe('InfrastructureExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      error: 'Internal Server Error',
+      error: 'Erro Interno do Servidor',
       message: 'Erro inesperado',
     });
   });
