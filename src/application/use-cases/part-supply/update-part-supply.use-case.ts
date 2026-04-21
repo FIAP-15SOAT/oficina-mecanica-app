@@ -1,6 +1,6 @@
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
-import { DuplicateSkuException } from '@domain/exceptions/duplicate-sku.exception';
-import { PartSupplyNotFoundException } from '@domain/exceptions/part-supply-not-found.exception';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import { UpdatePartSupplyDto } from '@domain/interfaces/use-cases/part-supply/dto/update-part-supply.dto';
 import { IUpdatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/update-part-supply.use-case.interface';
@@ -11,12 +11,12 @@ export class UpdatePartSupplyUseCase implements IUpdatePartSupplyUseCase {
   async execute(id: string, input: UpdatePartSupplyDto): Promise<PartSupply> {
     const existing = await this.partSupplyRepository.findById(id);
     if (!existing) {
-      throw new PartSupplyNotFoundException(id);
+      throw new ResourceNotFoundException('Peça ou Insumo', id);
     }
     if (input.sku && input.sku !== existing.sku) {
       const withSameSku = await this.partSupplyRepository.findBySku(input.sku);
       if (withSameSku) {
-        throw new DuplicateSkuException(input.sku);
+        throw new ResourceConflictException(`SKU '${input.sku}' já está em uso.`);
       }
     }
     return this.partSupplyRepository.update(id, input);

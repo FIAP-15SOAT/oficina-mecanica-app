@@ -37,17 +37,14 @@ import { IFindAllPartsSuppliesUseCase } from '@domain/interfaces/use-cases/part-
 import { IUpdatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/update-part-supply.use-case.interface';
 import { IDeletePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/delete-part-supply.use-case.interface';
 import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/update-stock.use-case.interface';
-import { IGetLowStockUseCase } from '@domain/interfaces/use-cases/part-supply/get-low-stock.use-case.interface';
 
 import { CreatePartSupplyRequestDto } from './dto/create-part-supply-request.dto';
 import { UpdatePartSupplyRequestDto } from './dto/update-part-supply-request.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
-import { QueryPartsSuppliesDto } from './dto/query-parts-supplies.dto';
-import {
-  PartSupplyDataResponseDto,
-  PartSupplyListResponseDto,
-  PartSupplyPaginatedResponseDto,
-} from './dto/paginated-parts-supplies.dto';
+import { FilterPartsSuppliesDto } from './dto/filter-parts-supplies.dto';
+import { PartSupplyDataResponseDto } from './dto/part-supply-response.dto';
+import { PartSupplyPaginatedResponseDto } from './dto/part-supply-paginated-response.dto';
+import { PartSupplyPresenter } from './part-supply.presenter';
 
 @ApiTags('Gestão de Peças e Insumos')
 @ApiBearerAuth('access-token')
@@ -67,8 +64,6 @@ export class PartsSuppliesController {
     private readonly deletePartSupplyUseCase: IDeletePartSupplyUseCase,
     @Inject('IUpdateStockUseCase')
     private readonly updateStockUseCase: IUpdateStockUseCase,
-    @Inject('IGetLowStockUseCase')
-    private readonly getLowStockUseCase: IGetLowStockUseCase,
   ) {}
 
   @Post()
@@ -83,7 +78,7 @@ export class PartsSuppliesController {
       ...dto,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
     });
-    return { data: result };
+    return PartSupplyPresenter.toDataResponse(result);
   }
 
   @Get()
@@ -91,25 +86,17 @@ export class PartsSuppliesController {
   @ApiOperation({ summary: 'Consulta de Estoque de Peças e Insumos' })
   @ApiOkResponse({ type: PartSupplyPaginatedResponseDto, description: 'Lista paginada de Peças e Insumos' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
-  async findAll(@Query() query: QueryPartsSuppliesDto): Promise<PartSupplyPaginatedResponseDto> {
+  async findAll(@Query() query: FilterPartsSuppliesDto): Promise<PartSupplyPaginatedResponseDto> {
     const result = await this.findAllPartsSuppliesUseCase.execute({
       page: query.page ?? 1,
       limit: query.limit ?? 10,
-      search: query.search,
+      name: query.name,
+      sku: query.sku,
       category: query.category,
       isActive: query.isActive,
+      lowStock: query.lowStock,
     });
-    return { data: result.items, total: result.total, page: result.page, limit: result.limit };
-  }
-
-  @Get('low-stock')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Peças e Insumos com Estoque abaixo do mínimo' })
-  @ApiOkResponse({ type: PartSupplyListResponseDto, description: 'Lista de itens com Estoque baixo' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  async findLowStock(): Promise<PartSupplyListResponseDto> {
-    const result = await this.getLowStockUseCase.execute();
-    return { data: result };
+    return PartSupplyPresenter.toPaginatedDataResponse(result);
   }
 
   @Get(':id')
@@ -122,7 +109,7 @@ export class PartsSuppliesController {
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<PartSupplyDataResponseDto> {
     const result = await this.findPartSupplyByIdUseCase.execute(id);
-    return { data: result };
+    return PartSupplyPresenter.toDataResponse(result);
   }
 
   @Patch(':id')
@@ -142,7 +129,7 @@ export class PartsSuppliesController {
       ...dto,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
     });
-    return { data: result };
+    return PartSupplyPresenter.toDataResponse(result);
   }
 
   @Delete(':id')
@@ -177,6 +164,6 @@ export class PartsSuppliesController {
       reason: dto.reason,
       workOrderId: dto.workOrderId,
     });
-    return { data: result };
+    return PartSupplyPresenter.toDataResponse(result);
   }
 }

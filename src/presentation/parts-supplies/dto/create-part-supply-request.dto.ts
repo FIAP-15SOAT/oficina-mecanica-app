@@ -82,10 +82,10 @@ export class CreatePartSupplyRequestDto {
   minStock?: number;
 
   @ApiPropertyOptional({
-    description: 'Data de validade da Peça ou Insumo (formato ISO 8601)',
-    example: '2026-12-31T00:00:00.000Z',
+    description: 'Data de validade da Peça ou Insumo (formato yyyy-MM-dd)',
+    example: '2026-12-31',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'A data de validade deve estar no formato ISO 8601.' })
+  @IsDateString({}, { message: 'A data de validade deve estar no formato yyyy-MM-dd.' })
   expiresAt?: string;
 }

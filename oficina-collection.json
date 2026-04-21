@@ -1025,7 +1025,7 @@
                   "pm.test('Mensagem indica SKU duplicado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.message).to.include(pm.environment.get('testSku'));",
-                  "    pm.expect(res.error).to.equal('Violação de Regra de Negócio');",
+                  "    pm.expect(res.error).to.equal('Conflict');",
                   "});"
                 ]
               }
@@ -1126,11 +1126,11 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Resposta paginada com estrutura correta', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res).to.have.all.keys('data', 'total', 'page', 'limit');",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "    pm.expect(res.page).to.equal(1);",
                   "    pm.expect(res.limit).to.equal(10);",
-                  "    pm.expect(res.total).to.be.a('number').and.at.least(0);",
+                  "    pm.expect(res.totalRecords).to.be.a('number').and.at.least(0);",
                   "});"
                 ]
               }
@@ -1172,7 +1172,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Retorna estrutura paginada', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res).to.have.all.keys('data', 'total', 'page', 'limit');",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});"
                 ]
@@ -1181,26 +1181,26 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/parts-supplies?search=Filtro&page=1&limit=10"
+            "url": "{{baseUrl}}/parts-supplies?name=Filtro&page=1&limit=10"
           }
         },
         {
-          "name": "TC-PS-09 — Prateleiras de Estoque em baixa (low-stock)",
+          "name": "TC-PS-09 — Consulta de Estoque com filtro de estoque baixo",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna array de itens em baixo estoque', () => {",
+                  "pm.test('Retorna estrutura paginada', () => {",
                   "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});",
-                  "pm.test('Itens com estoque abaixo do mínimo estão ativos', () => {",
+                  "pm.test('Itens com estoque abaixo do mínimo', () => {",
                   "    const res = pm.response.json();",
                   "    res.data.forEach(item => {",
                   "        pm.expect(item.stock).to.be.at.most(item.minStock);",
-                  "        pm.expect(item.isActive).to.be.true;",
                   "    });",
                   "});"
                 ]
@@ -1209,7 +1209,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/parts-supplies/low-stock"
+            "url": "{{baseUrl}}/parts-supplies?lowStock=true&page=1&limit=10"
           }
         },
         {
@@ -1249,7 +1249,7 @@
                   "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));",
                   "pm.test('Mensagem de erro correta', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.error).to.equal('Não Encontrado');",
+                  "    pm.expect(res.error).to.equal('Not Found');",
                   "    pm.expect(res.message).to.include('Peça ou Insumo');",
                   "});"
                 ]
@@ -1309,7 +1309,7 @@
                   "pm.test('Mensagem indica SKU já em uso', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.message).to.include(pm.environment.get('testSku2'));",
-                  "    pm.expect(res.error).to.equal('Violação de Regra de Negócio');",
+                  "    pm.expect(res.error).to.equal('Conflict');",
                   "});"
                 ]
               }
@@ -1403,7 +1403,7 @@
                   "pm.test('Mensagem de estoque insuficiente', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.message).to.include('insuficiente');",
-                  "    pm.expect(res.error).to.equal('Violação de Regra de Negócio');",
+                  "    pm.expect(res.error).to.equal('Conflict');",
                   "});"
                 ]
               }
@@ -2157,10 +2157,10 @@
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem sobre formato ISO 8601', () => {",
+                      "pm.test('Mensagem sobre formato yyyy-MM-dd', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
-                      "    pm.expect(msg.toLowerCase()).to.include('iso');",
+                      "    pm.expect(msg.toLowerCase()).to.include('yyyy-mm-dd');",
                       "});"
                     ]
                   }

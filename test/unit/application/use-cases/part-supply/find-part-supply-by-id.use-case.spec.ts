@@ -2,13 +2,13 @@ import { FindPartSupplyByIdUseCase } from '@application/use-cases/part-supply/fi
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PartSupplyNotFoundException } from '@domain/exceptions/part-supply-not-found.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 describe('FindPartSupplyByIdUseCase', () => {
   let useCase: FindPartSupplyByIdUseCase;
   const mockRepo = {
     create: jest.fn(), findById: jest.fn(), findBySku: jest.fn(),
-    findAll: jest.fn(), findLowStock: jest.fn(), update: jest.fn(),
+    findAllPaginated: jest.fn(), update: jest.fn(),
     updateStock: jest.fn(), softDelete: jest.fn(),
   };
 
@@ -26,12 +26,12 @@ describe('FindPartSupplyByIdUseCase', () => {
   it('should return the Part or Supply when found in Stock', async () => {
     mockRepo.findById.mockResolvedValue(partSupply);
     const result = await useCase.execute('uuid-1');
-    expect(result).toBe(partSupply);
+    expect(result).toEqual(partSupply);
     expect(mockRepo.findById).toHaveBeenCalledWith('uuid-1');
   });
 
-  it('should throw PartSupplyNotFoundException when not found in Stock', async () => {
+  it('should throw ResourceNotFoundException when not found in Stock', async () => {
     mockRepo.findById.mockResolvedValue(null);
-    await expect(useCase.execute('uuid-999')).rejects.toThrow(PartSupplyNotFoundException);
+    await expect(useCase.execute('uuid-999')).rejects.toThrow(ResourceNotFoundException);
   });
 });

@@ -2,13 +2,13 @@ import { DeletePartSupplyUseCase } from '@application/use-cases/part-supply/dele
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PartSupplyNotFoundException } from '@domain/exceptions/part-supply-not-found.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 describe('DeletePartSupplyUseCase', () => {
   let useCase: DeletePartSupplyUseCase;
   const mockRepo = {
     create: jest.fn(), findById: jest.fn(), findBySku: jest.fn(),
-    findAll: jest.fn(), findLowStock: jest.fn(), update: jest.fn(),
+    findAllPaginated: jest.fn(), update: jest.fn(),
     updateStock: jest.fn(), softDelete: jest.fn(),
   };
 
@@ -31,9 +31,9 @@ describe('DeletePartSupplyUseCase', () => {
     expect(mockRepo.softDelete).toHaveBeenCalledWith('uuid-1');
   });
 
-  it('should throw PartSupplyNotFoundException when item does not exist in Stock', async () => {
+  it('should throw ResourceNotFoundException when item does not exist in Stock', async () => {
     mockRepo.findById.mockResolvedValue(null);
-    await expect(useCase.execute('uuid-999')).rejects.toThrow(PartSupplyNotFoundException);
+    await expect(useCase.execute('uuid-999')).rejects.toThrow(ResourceNotFoundException);
     expect(mockRepo.softDelete).not.toHaveBeenCalled();
   });
 });

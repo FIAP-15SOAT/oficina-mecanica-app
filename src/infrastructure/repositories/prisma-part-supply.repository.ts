@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PartSupply } from '@domain/entities/part-supply.entity';
+import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
   IPartSupplyRepository,
   PartSupplyFilters,
 } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
+import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { PartSupplyMapper } from '@infrastructure/mappers/part-supply.mapper';
 
@@ -29,19 +30,22 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return record ? PartSupplyMapper.toDomain(record) : null;
   }
 
-  async findAll(filters: PartSupplyFilters): Promise<{ items: PartSupply[]; total: number }> {
-    const { page, limit, search, category, isActive } = filters;
+  async findAllPaginated(filters: PartSupplyFilters): Promise<{ items: PartSupply[]; total: number }> {
+    const { page, limit, name, sku, category, isActive, lowStock } = filters;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
-    if (search) {
-      where['OR'] = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    if (name) where['name'] = { contains: name, mode: 'insensitive' };
+    if (sku) where['sku'] = { contains: sku, mode: 'insensitive' };
     if (category !== undefined) where['category'] = category;
     if (isActive !== undefined) where['isActive'] = isActive;
+
+    if (lowStock) {
+      const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM parts_supplies WHERE stock <= min_stock
+      `;
+      where['id'] = { in: rows.map((r) => r.id) };
+    }
 
     const [records, total] = await this.prisma.$transaction([
       this.prisma.partSupply.findMany({ where, skip, take: limit, orderBy: { name: 'asc' } }),
@@ -49,13 +53,6 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     ]);
 
     return { items: records.map((r) => PartSupplyMapper.toDomain(r)), total };
-  }
-
-  async findLowStock(): Promise<PartSupply[]> {
-    const records = await this.prisma.partSupply.findMany({
-      where: { isActive: true },
-    });
-    return records.filter((r) => r.stock <= r.minStock).map((r) => PartSupplyMapper.toDomain(r));
   }
 
   async update(id: string, data: Partial<PartSupply>): Promise<PartSupply> {
@@ -78,13 +75,9 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return PartSupplyMapper.toDomain(record);
   }
 
-  async updateStock(
-    id: string,
-    quantity: number,
-    type: StockMovementType,
-    reason?: string,
-    workOrderId?: string,
-  ): Promise<PartSupply> {
+  async updateStock(id: string, data: UpdateStockDto): Promise<PartSupply> {
+    const { quantity, type, reason, workOrderId } = data;
+
     const stockUpdate =
       type === StockMovementType.ENTRY
         ? { increment: quantity }

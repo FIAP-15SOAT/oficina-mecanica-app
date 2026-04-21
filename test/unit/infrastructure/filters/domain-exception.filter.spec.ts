@@ -48,7 +48,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNPROCESSABLE_ENTITY);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      error: 'Entidade Inválida',
+      error: 'Unprocessable Entity',
       message: 'Nome deve ter no mínimo 3 caracteres',
     });
   });
@@ -62,7 +62,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.NOT_FOUND,
-      error: 'Não Encontrado',
+      error: 'Not Found',
       message: 'Usuário não encontrado(a) com identificador: uuid-123',
     });
   });
@@ -76,7 +76,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.CONFLICT,
-      error: 'Violação de Regra de Negócio',
+      error: 'Conflict',
       message: 'Operação não permitida',
     });
   });
@@ -90,7 +90,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
-      error: 'Erro de Domínio',
+      error: 'Bad Request',
       message: 'Erro de domínio genérico',
     });
   });

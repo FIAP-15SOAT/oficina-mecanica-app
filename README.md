@@ -168,8 +168,7 @@ Após iniciar a aplicação:
 
 **Peças e Insumos** (`/api/parts-supplies`) — *requer JWT*
 - `POST /` — Cadastrar peça ou insumo
-- `GET /` — Listar estoque (paginado, filtros: category, search, isActive)
-- `GET /low-stock` — Itens com estoque abaixo do mínimo
+- `GET /` — Listar estoque (paginado, filtros: name, sku, category, isActive, lowStock)
 - `GET /:id` — Buscar por ID
 - `PATCH /:id` — Atualizar dados
 - `PATCH /:id/stock` — Movimentar estoque (ENTRY / EXIT / ADJUSTMENT)
@@ -202,6 +201,8 @@ npm test
 ### Postman / Newman
 
 Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+
+Antes de executar, preencha as variáveis `adminEmail` e `adminPassword` no environment com as credenciais de um dos usuários criados pelo seed.
 
 Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Validação**.
 

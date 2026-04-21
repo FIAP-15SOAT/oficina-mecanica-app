@@ -22,17 +22,17 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
 
   private resolveHttpStatus(exception: ApplicationException): { status: number; error: string } {
     if (exception instanceof ResourceNotFoundException) {
-      return { status: HttpStatus.NOT_FOUND, error: 'Não Encontrado' };
+      return { status: HttpStatus.NOT_FOUND, error: 'Not Found' };
     }
 
     if (exception instanceof ResourceConflictException) {
-      return { status: HttpStatus.CONFLICT, error: 'Conflito' };
+      return { status: HttpStatus.CONFLICT, error: 'Conflict' };
     }
 
     if (exception instanceof UnauthorizedAccessException) {
-      return { status: HttpStatus.UNAUTHORIZED, error: 'Não Autorizado' };
+      return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
     }
 
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Erro da Aplicação' };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Internal Server Error' };
   }
 }

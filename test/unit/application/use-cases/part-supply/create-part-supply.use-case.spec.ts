@@ -2,7 +2,7 @@ import { CreatePartSupplyUseCase } from '@application/use-cases/part-supply/crea
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { DuplicateSkuException } from '@domain/exceptions/duplicate-sku.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 describe('CreatePartSupplyUseCase', () => {
   let useCase: CreatePartSupplyUseCase;
@@ -10,8 +10,7 @@ describe('CreatePartSupplyUseCase', () => {
     create: jest.fn(),
     findById: jest.fn(),
     findBySku: jest.fn(),
-    findAll: jest.fn(),
-    findLowStock: jest.fn(),
+    findAllPaginated: jest.fn(),
     update: jest.fn(),
     updateStock: jest.fn(),
     softDelete: jest.fn(),
@@ -44,8 +43,7 @@ describe('CreatePartSupplyUseCase', () => {
 
     expect(mockRepo.findBySku).toHaveBeenCalledWith('FO-001');
     expect(mockRepo.create).toHaveBeenCalled();
-    expect(result.sku).toBe('FO-001');
-    expect(result.category).toBe(PartSupplyCategory.PART);
+    expect(result).toEqual(saved);
   });
 
   it('should register a Supply in Stock successfully', async () => {
@@ -59,17 +57,17 @@ describe('CreatePartSupplyUseCase', () => {
 
     const result = await useCase.execute(supplyInput);
 
-    expect(result.category).toBe(PartSupplyCategory.SUPPLY);
+    expect(result).toEqual(saved);
   });
 
-  it('should throw DuplicateSkuException when SKU already exists in Stock', async () => {
+  it('should throw ResourceConflictException when SKU already exists in Stock', async () => {
     const existing = new PartSupply({
       id: 'uuid-x', ...input, stock: 5, minStock: 1,
       isActive: true, createdAt: new Date(), updatedAt: new Date(),
     });
     mockRepo.findBySku.mockResolvedValue(existing);
 
-    await expect(useCase.execute(input)).rejects.toThrow(DuplicateSkuException);
+    await expect(useCase.execute(input)).rejects.toThrow(ResourceConflictException);
     expect(mockRepo.create).not.toHaveBeenCalled();
   });
 });

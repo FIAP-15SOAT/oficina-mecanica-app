@@ -2,14 +2,14 @@ import { UpdatePartSupplyUseCase } from '@application/use-cases/part-supply/upda
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PartSupplyNotFoundException } from '@domain/exceptions/part-supply-not-found.exception';
-import { DuplicateSkuException } from '@domain/exceptions/duplicate-sku.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 describe('UpdatePartSupplyUseCase', () => {
   let useCase: UpdatePartSupplyUseCase;
   const mockRepo = {
     create: jest.fn(), findById: jest.fn(), findBySku: jest.fn(),
-    findAll: jest.fn(), findLowStock: jest.fn(), update: jest.fn(),
+    findAllPaginated: jest.fn(), update: jest.fn(),
     updateStock: jest.fn(), softDelete: jest.fn(),
   };
 
@@ -30,18 +30,18 @@ describe('UpdatePartSupplyUseCase', () => {
     mockRepo.update.mockResolvedValue(updated);
 
     const result = await useCase.execute('uuid-1', { salePrice: 50 });
-    expect(result.salePrice).toBe(50);
+    expect(result).toEqual(updated);
     expect(mockRepo.update).toHaveBeenCalledWith('uuid-1', { salePrice: 50 });
   });
 
-  it('should throw PartSupplyNotFoundException when item does not exist in Stock', async () => {
+  it('should throw ResourceNotFoundException when item does not exist in Stock', async () => {
     mockRepo.findById.mockResolvedValue(null);
     await expect(useCase.execute('uuid-999', { name: 'New name' })).rejects.toThrow(
-      PartSupplyNotFoundException,
+      ResourceNotFoundException,
     );
   });
 
-  it('should throw DuplicateSkuException when updating SKU to one already in use', async () => {
+  it('should throw ResourceConflictException when updating SKU to one already in use', async () => {
     const other = new PartSupply({
       id: 'uuid-2', name: 'Other item', sku: 'FO-002',
       category: PartSupplyCategory.PART, unit: Unit.UN, costPrice: 10, salePrice: 20,
@@ -50,7 +50,7 @@ describe('UpdatePartSupplyUseCase', () => {
     mockRepo.findById.mockResolvedValue(existing);
     mockRepo.findBySku.mockResolvedValue(other);
 
-    await expect(useCase.execute('uuid-1', { sku: 'FO-002' })).rejects.toThrow(DuplicateSkuException);
+    await expect(useCase.execute('uuid-1', { sku: 'FO-002' })).rejects.toThrow(ResourceConflictException);
     expect(mockRepo.update).not.toHaveBeenCalled();
   });
 });

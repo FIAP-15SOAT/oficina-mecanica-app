@@ -5,7 +5,7 @@
     { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "default", "enabled": true },
     { "key": "authToken", "value": "", "type": "secret", "enabled": true },
     { "key": "refreshToken", "value": "", "type": "secret", "enabled": true },
-    { "key": "adminEmail", "value": "seu-email@exemplo.com", "type": "default", "enabled": true },
+    { "key": "adminEmail", "value": "guilhermedarochasalvador@gmail.com", "type": "default", "enabled": true },
     { "key": "adminPassword", "value": "Tech@2026", "type": "secret", "enabled": true },
     { "key": "userId", "value": "", "type": "default", "enabled": true },
     { "key": "serviceId", "value": "", "type": "default", "enabled": true },

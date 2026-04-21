@@ -1,3 +1,4 @@
+import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import {
   FindAllPartsSuppliesInputDto,
@@ -9,7 +10,13 @@ export class FindAllPartsSuppliesUseCase implements IFindAllPartsSuppliesUseCase
   constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}
 
   async execute(input: FindAllPartsSuppliesInputDto): Promise<FindAllPartsSuppliesOutputDto> {
-    const { items, total } = await this.partSupplyRepository.findAll(input);
-    return { items, total, page: input.page, limit: input.limit };
+    const { items, total } = await this.partSupplyRepository.findAllPaginated(input);
+    return {
+      items,
+      totalRecords: total,
+      totalPages: calculateTotalPages(total, input.limit),
+      page: input.page,
+      limit: input.limit,
+    };
   }
 }

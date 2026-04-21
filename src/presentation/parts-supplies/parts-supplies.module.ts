@@ -6,7 +6,6 @@ import { FindPartSupplyByIdUseCase } from '@application/use-cases/part-supply/fi
 import { UpdatePartSupplyUseCase } from '@application/use-cases/part-supply/update-part-supply.use-case';
 import { DeletePartSupplyUseCase } from '@application/use-cases/part-supply/delete-part-supply.use-case';
 import { UpdateStockUseCase } from '@application/use-cases/part-supply/update-stock.use-case';
-import { GetLowStockUseCase } from '@application/use-cases/part-supply/get-low-stock.use-case';
 import { PartsSuppliesController } from './parts-supplies.controller';
 
 @Module({
@@ -44,11 +43,6 @@ import { PartsSuppliesController } from './parts-supplies.controller';
     {
       provide: 'IUpdateStockUseCase',
       useFactory: (repo: PrismaPartSupplyRepository) => new UpdateStockUseCase(repo),
-      inject: ['IPartSupplyRepository'],
-    },
-    {
-      provide: 'IGetLowStockUseCase',
-      useFactory: (repo: PrismaPartSupplyRepository) => new GetLowStockUseCase(repo),
       inject: ['IPartSupplyRepository'],
     },
   ],

@@ -22,17 +22,17 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
   private resolveHttpStatus(exception: DomainException): { status: number; error: string } {
     if (exception instanceof DomainValidationException) {
-      return { status: HttpStatus.UNPROCESSABLE_ENTITY, error: 'Entidade Inválida' };
+      return { status: HttpStatus.UNPROCESSABLE_ENTITY, error: 'Unprocessable Entity' };
     }
 
     if (exception instanceof EntityNotFoundException) {
-      return { status: HttpStatus.NOT_FOUND, error: 'Não Encontrado' };
+      return { status: HttpStatus.NOT_FOUND, error: 'Not Found' };
     }
 
     if (exception instanceof BusinessRuleViolationException) {
-      return { status: HttpStatus.CONFLICT, error: 'Violação de Regra de Negócio' };
+      return { status: HttpStatus.CONFLICT, error: 'Conflict' };
     }
 
-    return { status: HttpStatus.BAD_REQUEST, error: 'Erro de Domínio' };
+    return { status: HttpStatus.BAD_REQUEST, error: 'Bad Request' };
   }
 }
