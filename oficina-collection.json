@@ -1284,7 +1284,7 @@
             }
           ],
           "request": {
-            "method": "PATCH",
+            "method": "PUT",
             "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
@@ -1316,7 +1316,7 @@
             }
           ],
           "request": {
-            "method": "PATCH",
+            "method": "PUT",
             "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
@@ -1348,7 +1348,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -1379,7 +1379,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -1411,7 +1411,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -1442,7 +1442,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -1469,7 +1469,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -1501,7 +1501,7 @@
           ],
           "request": {
             "method": "PATCH",
-            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -2227,7 +2227,7 @@
               ],
               "request": {
                 "method": "PATCH",
-                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
                 "header": [
                   {
                     "key": "Content-Type",
@@ -2254,7 +2254,7 @@
               ],
               "request": {
                 "method": "PATCH",
-                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}/stock",
+                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
                 "header": [
                   {
                     "key": "Content-Type",

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PartSupply as PrismaPartSupply } from '@generated/client';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
@@ -44,7 +45,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       const rows = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM parts_supplies WHERE stock <= min_stock
       `;
-      where['id'] = { in: rows.map((r) => r.id) };
+      where['id'] = { in: rows.map((r: { id: string }) => r.id) };
     }
 
     const [records, total] = await this.prisma.$transaction([
@@ -52,7 +53,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       this.prisma.partSupply.count({ where }),
     ]);
 
-    return { items: records.map((r) => PartSupplyMapper.toDomain(r)), total };
+    return { items: records.map((r: PrismaPartSupply) => PartSupplyMapper.toDomain(r)), total };
   }
 
   async update(id: string, data: Partial<PartSupply>): Promise<PartSupply> {

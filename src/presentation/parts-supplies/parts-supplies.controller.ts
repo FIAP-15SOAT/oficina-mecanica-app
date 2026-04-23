@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -112,7 +113,7 @@ export class PartsSuppliesController {
     return PartSupplyPresenter.toDataResponse(result);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar Peça ou Insumo' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
@@ -145,7 +146,7 @@ export class PartsSuppliesController {
     return this.deletePartSupplyUseCase.execute(id);
   }
 
-  @Patch(':id/stock')
+  @Patch(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Movimentar Estoque' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
