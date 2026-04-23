@@ -33,6 +33,6 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
       return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
     }
 
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Application Error' };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Internal Server Error' };
   }
 }

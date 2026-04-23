@@ -30,9 +30,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof BusinessRuleViolationException) {
-      return { status: HttpStatus.CONFLICT, error: 'Business Rule Violation' };
+      return { status: HttpStatus.CONFLICT, error: 'Conflict' };
     }
 
-    return { status: HttpStatus.BAD_REQUEST, error: 'Domain Error' };
+    return { status: HttpStatus.BAD_REQUEST, error: 'Bad Request' };
   }
 }

@@ -90,7 +90,7 @@ describe('ApplicationExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      error: 'Application Error',
+      error: 'Internal Server Error',
       message: 'Erro inesperado na aplicação',
     });
   });

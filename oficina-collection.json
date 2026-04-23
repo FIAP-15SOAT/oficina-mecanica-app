@@ -1,0 +1,2435 @@
+{
+  "info": {
+    "name": "Oficina Mecânica — API Completa",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "TC-AUTH-01 — Login com credenciais válidas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna accessToken', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('accessToken');",
+                  "    pm.expect(res.data.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('authToken', res.data.accessToken);",
+                  "});",
+                  "pm.test('Retorna refreshToken', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('refreshToken');",
+                  "    pm.environment.set('refreshToken', res.data.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"{{adminEmail}}\", \"password\": \"{{adminPassword}}\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-02 — Login com credenciais inválidas (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"naoexiste@email.com\", \"password\": \"senhaerrada\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-03 — Registrar novo usuário (sucesso)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('testEmail', 'user_' + Date.now() + '@oficina.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do usuário', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data.email).to.eql(pm.environment.get('testEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Novo Mecânico\", \"email\": \"{{testEmail}}\", \"password\": \"Senha@123\", \"role\": \"MECHANIC\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-04 — Registrar com e-mail duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Duplicado\", \"email\": \"{{adminEmail}}\", \"password\": \"Senha@123\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-05 — Renovar tokens com refreshToken válido (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna novos tokens', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('accessToken');",
+                  "    pm.expect(res.data).to.have.property('refreshToken');",
+                  "    pm.environment.set('authToken', res.data.accessToken);",
+                  "    pm.environment.set('refreshToken', res.data.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\": \"{{refreshToken}}\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-06 — Renovar tokens com refreshToken inválido (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\": \"token.invalido.aqui\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-AUTH-07 — Obter dados do usuário autenticado (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna dados do usuário logado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('email');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-AUTH-08 — Me sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão de Usuários",
+      "item": [
+        {
+          "name": "TC-USER-01 — Criar usuário (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do usuário criado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data.email).to.eql('atendente.teste@oficina.com');",
+                  "    pm.environment.set('userId', res.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/users",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Atendente Teste\", \"email\": \"atendente.teste@oficina.com\", \"password\": \"Senha@123\", \"role\": \"ATTENDANT\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-02 — Criar usuário com e-mail duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/users",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Duplicado\", \"email\": \"{{adminEmail}}\", \"password\": \"Senha@123\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-03 — Criar usuário sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/users",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Sem Auth\", \"email\": \"semauth@oficina.com\", \"password\": \"Senha@123\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-04 — Listar todos os usuários",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna array de usuários', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-USER-05 — Buscar usuário por ID (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna usuário correto', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.eql(pm.environment.get('userId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-USER-06 — Buscar ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-USER-07 — Atualizar dados do usuário (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nome foi atualizado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.name).to.eql('Atendente Atualizado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Atendente Atualizado\", \"email\": \"atendente.atualizado@oficina.com\", \"password\": \"Senha@123\", \"role\": \"ATTENDANT\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-08 — Alterar status do usuário para inativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Usuário está inativo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.isActive).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": false}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-09 — Remover usuário (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-USER-10 — Remover ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão de Serviços",
+      "item": [
+        {
+          "name": "TC-SVC-01 — Cadastrar serviço (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do serviço', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data.name).to.eql('Troca de Óleo');",
+                  "    pm.environment.set('serviceId', res.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/services",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Troca de Óleo\", \"description\": \"Troca completa com filtro\", \"basePrice\": 129.9, \"estimatedTimeMin\": 60}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-02 — Cadastrar serviço sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/services",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Sem Auth\", \"basePrice\": 50, \"estimatedTimeMin\": 30}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-03 — Cadastrar sem campos obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/services",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"description\": \"Sem nome e sem preço\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-04 — Listar serviços paginados",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "    pm.expect(res).to.have.property('totalPages');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/services?page=1&pageSize=10",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-SVC-05 — Listar serviços filtrado por ativos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Todos os itens estão ativos', () => {",
+                  "    const res = pm.response.json();",
+                  "    res.data.forEach(s => pm.expect(s.isActive).to.be.true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/services?active=true",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-SVC-06 — Buscar serviço por ID (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna serviço correto', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.eql(pm.environment.get('serviceId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-SVC-07 — Buscar ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/services/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-SVC-08 — Atualizar serviço (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Preço foi atualizado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.basePrice).to.eql(159.90);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Troca de Óleo Premium\", \"basePrice\": 159.9, \"estimatedTimeMin\": 75, \"isActive\": true}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-09 — Atualizar serviço com ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/services/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Qualquer\", \"basePrice\": 50, \"estimatedTimeMin\": 30, \"isActive\": true}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-10 — Alterar status do serviço para inativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Serviço está inativo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.isActive).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": false}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-11 — Alterar status já no mesmo estado (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": false}"
+            }
+          }
+        },
+        {
+          "name": "TC-SVC-12 — Remover serviço (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-SVC-13 — Remover ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/services/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão de Peças e Insumos",
+      "item": [
+        {
+          "name": "TC-PS-01 — Cadastrar Peça (sucesso)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('testSku', 'SK-' + Date.now());",
+                  "pm.environment.set('testSku2', 'SL-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Corpo contém id e dados corretos', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.sku).to.equal(pm.environment.get('testSku'));",
+                  "    pm.expect(res.data.partNumber).to.equal('MANN-W712');",
+                  "    pm.expect(res.data.category).to.equal('PART');",
+                  "    pm.expect(res.data.unit).to.equal('UN');",
+                  "    pm.expect(res.data.costPrice).to.equal(25);",
+                  "    pm.expect(res.data.salePrice).to.equal(45);",
+                  "    pm.expect(res.data.stock).to.equal(0);",
+                  "    pm.expect(res.data.isActive).to.be.true;",
+                  "    pm.environment.set('partSupplyId', res.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/parts-supplies",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Filtro de Óleo\",\"sku\":\"{{testSku}}\",\"partNumber\":\"MANN-W712\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":25.00,\"salePrice\":45.00}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-02 — Cadastrar Insumo com data de validade (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Insumo criado com campos corretos', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.category).to.equal('SUPPLY');",
+                  "    pm.expect(res.data.unit).to.equal('L');",
+                  "    pm.expect(res.data.expiresAt).to.be.a('string').and.include('2027');",
+                  "    pm.expect(res.data.isActive).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/parts-supplies",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Óleo 5W30\",\"sku\":\"{{testSku2}}\",\"category\":\"SUPPLY\",\"unit\":\"L\",\"costPrice\":40,\"salePrice\":70,\"expiresAt\":\"2027-12-31\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-03 — Cadastrar com SKU duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica SKU duplicado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.include(pm.environment.get('testSku'));",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/parts-supplies",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Outro Filtro\",\"sku\":\"{{testSku}}\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":20,\"salePrice\":35}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-04 — Cadastrar sem campos obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Retorna erros de validação', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.statusCode).to.equal(400);",
+                  "    pm.expect(res.message).to.be.an('array').and.not.empty;",
+                  "});",
+                  "pm.test('Indica campos obrigatórios ausentes', () => {",
+                  "    const res = pm.response.json();",
+                  "    const erros = JSON.stringify(res.message);",
+                  "    pm.expect(erros).to.include('nome');",
+                  "    pm.expect(erros).to.include('SKU');",
+                  "    pm.expect(erros).to.include('Categoria');",
+                  "    pm.expect(erros).to.include('Unidade');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/parts-supplies",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-05 — Cadastrar sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/parts-supplies",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Teste\",\"sku\":\"T-AUTH\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-06 — Consulta de Estoque paginada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Resposta paginada com estrutura correta', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res.page).to.equal(1);",
+                  "    pm.expect(res.limit).to.equal(10);",
+                  "    pm.expect(res.totalRecords).to.be.a('number').and.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies?page=1&limit=10&isActive=true"
+          }
+        },
+        {
+          "name": "TC-PS-07 — Consulta de Estoque filtrada por Peças (PART)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Todos os itens são Peças (PART)', () => {",
+                  "    const res = pm.response.json();",
+                  "    res.data.forEach(item => pm.expect(item.category).to.equal('PART'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies?category=PART&page=1&limit=10"
+          }
+        },
+        {
+          "name": "TC-PS-08 — Consulta de Estoque com busca por texto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies?name=Filtro&page=1&limit=10"
+          }
+        },
+        {
+          "name": "TC-PS-09 — Consulta de Estoque com filtro de estoque baixo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});",
+                  "pm.test('Itens com estoque abaixo do mínimo', () => {",
+                  "    const res = pm.response.json();",
+                  "    res.data.forEach(item => {",
+                  "        pm.expect(item.stock).to.be.at.most(item.minStock);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies?lowStock=true&page=1&limit=10"
+          }
+        },
+        {
+          "name": "TC-PS-10 — Buscar Peça ou Insumo por ID (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna o item correto', () => {",
+                  "    const res = pm.response.json();",
+                  "    const id = pm.environment.get('partSupplyId');",
+                  "    pm.expect(res.data.id).to.equal(id);",
+                  "    pm.expect(res.data).to.include.all.keys(",
+                  "        'id', 'name', 'sku', 'category', 'unit',",
+                  "        'costPrice', 'salePrice', 'stock', 'minStock',",
+                  "        'isActive', 'createdAt', 'updatedAt'",
+                  "    );",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}"
+          }
+        },
+        {
+          "name": "TC-PS-11 — Buscar ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('Mensagem de erro correta', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Not Found');",
+                  "    pm.expect(res.message).to.include('Peça ou Insumo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies/00000000-0000-0000-0000-000000000000"
+          }
+        },
+        {
+          "name": "TC-PS-12 — Atualizar Peça ou Insumo (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Campos atualizados corretamente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.salePrice).to.equal(50);",
+                  "    pm.expect(res.data.minStock).to.equal(3);",
+                  "});",
+                  "pm.test('Demais campos inalterados', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.sku).to.equal(pm.environment.get('testSku'));",
+                  "    pm.expect(res.data.category).to.equal('PART');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"salePrice\":50.00,\"minStock\":3}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-13 — Atualizar SKU para um já existente (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica SKU já em uso', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.include(pm.environment.get('testSku2'));",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sku\":\"{{testSku2}}\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-14 — Entrada de Peças e Insumos (ENTRY)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Estoque incrementado corretamente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.stock).to.be.a('number').and.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"ENTRY\",\"quantity\":5,\"reason\":\"Reposição de Estoque recebida do fornecedor\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-15 — Saída por Ordem de Serviço (EXIT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Estoque decrementado corretamente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.stock).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"EXIT\", \"quantity\": 2, \"reason\": \"Consumo em OS\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-16 — Saída com estoque insuficiente (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem de estoque insuficiente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('insuficiente');",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"EXIT\", \"quantity\": 9999}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-17 — Ajuste de Estoque (ADJUSTMENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Estoque ajustado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.stock).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"ADJUSTMENT\",\"quantity\":2,\"reason\":\"Ajuste por inventário físico\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-18 — Movimentação com quantity zero ou negativa (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"ENTRY\",\"quantity\":0}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-19 — Movimentação com tipo inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensagem indica tipo inválido', () => {",
+                  "    const res = pm.response.json();",
+                  "    const msg = JSON.stringify(res.message);",
+                  "    pm.expect(msg).to.satisfy(m => m.includes('ENTRY') || m.includes('EXIT') || m.includes('ADJUSTMENT'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"INVALIDO\",\"quantity\":5}"
+            }
+          }
+        },
+        {
+          "name": "TC-PS-20 — Remover Peça ou Insumo do Estoque (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));",
+                  "pm.test('Body vazio', () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}"
+          }
+        },
+        {
+          "name": "TC-PS-21 — Verificar item removido está inativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Item removido está inativo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.isActive).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}"
+          }
+        },
+        {
+          "name": "TC-PS-22 — Remover ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/parts-supplies/00000000-0000-0000-0000-000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação",
+      "item": [
+        {
+          "name": "Validação de Usuários",
+          "item": [
+            {
+              "name": "TC-UVAL-01 — Criar sem campos obrigatórios (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Erros para todos os campos obrigatórios', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('nome');",
+                      "    pm.expect(erros).to.include('e-mail');",
+                      "    pm.expect(erros).to.include('senha');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-UVAL-02 — nome muito curto (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica mínimo de caracteres', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('mínimo 3 caracteres');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"AB\", \"email\": \"ab@test.com\", \"password\": \"Abc@123\"}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-UVAL-03 — e-mail inválido (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica e-mail inválido', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('E-mail inválido');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Joao Silva\", \"email\": \"nao-e-email\", \"password\": \"Abc@123\"}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-UVAL-04 — senha muito curta (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica mínimo de caracteres da senha', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('mínimo 6 caracteres');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Joao Silva\", \"email\": \"joao.val@test.com\", \"password\": \"123\"}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-UVAL-05 — role inválida (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica role inválida', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('Role inválida');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Joao Silva\", \"email\": \"joao.val2@test.com\", \"password\": \"Abc@123\", \"role\": \"SUPERADMIN\"}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Validação de Serviços",
+          "item": [
+            {
+              "name": "TC-SVAL-01 — Criar sem campos obrigatórios (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Erros para todos os campos obrigatórios', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('nome');",
+                      "    pm.expect(erros).to.include('preço base');",
+                      "    pm.expect(erros).to.include('tempo estimado');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-02 — nome muito curto (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica mínimo de caracteres', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('mínimo 3 caracteres');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"AB\", \"basePrice\": 50, \"estimatedTimeMin\": 60}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-03 — nome muito longo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica máximo de caracteres', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('máximo 150 caracteres');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\", \"basePrice\": 50, \"estimatedTimeMin\": 60}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-04 — basePrice negativo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica preço inválido', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('maior que zero');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Servico Teste\", \"basePrice\": -10, \"estimatedTimeMin\": 60}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-05 — basePrice não numérico (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica que preço deve ser número', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('número válido');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Servico Teste\", \"basePrice\": \"gratis\", \"estimatedTimeMin\": 60}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-06 — estimatedTimeMin decimal (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica que tempo deve ser inteiro', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('número inteiro');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Servico Teste\", \"basePrice\": 50, \"estimatedTimeMin\": 30.5}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "TC-SVAL-07 — estimatedTimeMin zero (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica que tempo deve ser maior que zero', () => {",
+                      "    const erros = JSON.stringify(pm.response.json().message);",
+                      "    pm.expect(erros).to.include('maior que zero');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "services"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Servico Teste\", \"basePrice\": 50, \"estimatedTimeMin\": 0}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Validação de Peças e Insumos",
+          "item": [
+            {
+              "name": "TC-VAL-01 — Category inválida (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem de categoria inválida', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg).to.include('PART');",
+                      "    pm.expect(msg).to.include('SUPPLY');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-01\",\"category\":\"OUTRO\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-02 — Unit inválida (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem de unidade inválida', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg).to.include('nválida');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-02\",\"category\":\"PART\",\"unit\":\"GALAO\",\"costPrice\":10,\"salePrice\":20}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-03 — expiresAt com formato inválido (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem sobre formato yyyy-MM-dd', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('yyyy-mm-dd');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-03\",\"category\":\"SUPPLY\",\"unit\":\"L\",\"costPrice\":10,\"salePrice\":20,\"expiresAt\":\"31/12/2027\"}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-04 — costPrice negativo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-04\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":-5,\"salePrice\":20}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-05 — workOrderId inválido no EXIT (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem sobre UUID inválido', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('uuid');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"type\":\"EXIT\",\"quantity\":1,\"workOrderId\":\"nao-e-um-uuid\"}"
+                }
+              }
+            },
+            {
+              "name": "TC-PS-18 — quantity zero ou negativa no stock (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"type\":\"ENTRY\",\"quantity\":0}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-06 — salePrice negativo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica preço de venda inválido', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('venda');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-06\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":-5}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-07 — name string vazia (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica nome obrigatório', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('nome');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"\",\"sku\":\"T-VAL-07\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-08 — sku string vazia (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica SKU obrigatório', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toUpperCase()).to.include('SKU');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-09 — stock negativo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica stock inválido', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('estoque');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-09\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"stock\":-1}"
+                }
+              }
+            },
+            {
+              "name": "TC-VAL-10 — minStock negativo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica minStock inválido', () => {",
+                      "    const res = pm.response.json();",
+                      "    const msg = JSON.stringify(res.message);",
+                      "    pm.expect(msg.toLowerCase()).to.include('estoque');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-10\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"minStock\":-1}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

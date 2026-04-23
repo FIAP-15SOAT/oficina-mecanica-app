@@ -5,7 +5,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 export class UpdateUserRequestDto {
   @ApiPropertyOptional({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'O nome deve ser um texto.' })
   @MinLength(3, { message: 'O nome deve ter no mínimo 3 caracteres' })
   name?: string;
 
@@ -16,7 +16,7 @@ export class UpdateUserRequestDto {
 
   @ApiPropertyOptional({ example: 'NovaSenha@123', description: 'Nova senha (mín. 6 caracteres)' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'A senha deve ser um texto.' })
   @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
   password?: string;
 

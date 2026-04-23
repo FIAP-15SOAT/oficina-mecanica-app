@@ -76,7 +76,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.CONFLICT,
-      error: 'Business Rule Violation',
+      error: 'Conflict',
       message: 'Operação não permitida',
     });
   });
@@ -90,7 +90,7 @@ describe('DomainExceptionFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
-      error: 'Domain Error',
+      error: 'Bad Request',
       message: 'Erro de domínio genérico',
     });
   });
