@@ -194,10 +194,24 @@ Após iniciar a aplicação:
 
 ### Formato de resposta
 
-Todas as respostas de sucesso são envoltas em `{ data: ... }`:
+Recurso único — envolto em `{ data: ... }`:
 
 ```json
 { "data": { "id": "...", "name": "..." } }
+```
+
+Lista paginada — envolto em `{ data: [...], pagination: { ... } }`:
+
+```json
+{
+  "data": [{ "id": "...", "name": "..." }],
+  "pagination": {
+    "totalRecords": 42,
+    "totalPages": 5,
+    "page": 1,
+    "limit": 10
+  }
+}
 ```
 
 Erros seguem o padrão NestJS com mensagens em português:
