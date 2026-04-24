@@ -11,7 +11,7 @@ export class CustomerMapper {
       type: prismaRecord.type as CustomerType,
       email: prismaRecord.email,
       phone: prismaRecord.phone,
-      addresses: [],
+      addresses: [], // address management not implemented in this delivery
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });

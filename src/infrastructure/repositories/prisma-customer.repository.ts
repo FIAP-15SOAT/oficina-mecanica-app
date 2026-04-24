@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Customer as PrismaCustomer } from '@generated/client';
+import { Customer as PrismaCustomer, Prisma } from '@generated/client';
 import { Customer } from '@domain/entities/customer.entity';
 import {
   CustomerFilters,
@@ -38,10 +38,10 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     const { page, limit, name, type, document } = filters;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
-    if (name) where['name'] = { contains: name, mode: 'insensitive' };
-    if (type !== undefined) where['type'] = type;
-    if (document) where['document'] = document;
+    const where: Prisma.CustomerWhereInput = {};
+    if (name) where.name = { contains: name, mode: 'insensitive' };
+    if (type !== undefined) where.type = type;
+    if (document) where.document = document;
 
     const [records, total] = await this.prisma.$transaction([
       this.prisma.customer.findMany({
