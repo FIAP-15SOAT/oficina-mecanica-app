@@ -32,7 +32,8 @@ src/
 │   ├── use-cases/
 │   │   ├── auth/                    # Register, Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD completo de usuários
-│   │   └── part-supply/             # CRUD + movimentação de estoque de peças e insumos
+│   │   ├── part-supply/             # CRUD + movimentação de estoque de peças e insumos
+│   │   └── customer/                # CRUD completo de clientes
 │   └── exceptions/                  # Exceções de aplicação (ResourceNotFound, Conflict, etc.)
 │
 ├── infrastructure/                  # Camada de infraestrutura (implementações concretas)
@@ -49,7 +50,8 @@ src/
 │   ├── auth/                        # AuthController + DTOs
 │   ├── user/                        # UserController + DTOs
 │   ├── service/                     # ServiceController + DTOs
-│   └── parts-supplies/              # PartsSuppliesController + DTOs
+│   ├── parts-supplies/              # PartsSuppliesController + DTOs
+│   └── customers/                   # CustomersController + DTOs
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
@@ -174,6 +176,13 @@ Após iniciar a aplicação:
 - `PATCH /:id/stock` — Movimentar estoque (ENTRY / EXIT / ADJUSTMENT)
 - `DELETE /:id` — Remover (soft delete)
 
+**Clientes** (`/api/customers`) — *requer JWT (ADMIN ou ATTENDANT)*
+- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado)
+- `GET /` — Listar clientes (paginado, filtros: name, type, document)
+- `GET /:id` — Buscar por ID
+- `PUT /:id` — Atualizar dados
+- `DELETE /:id` — Remover (impede exclusão se houver veículos vinculados)
+
 ### Formato de resposta
 
 Todas as respostas de sucesso são envoltas em `{ data: ... }`:
@@ -196,7 +205,7 @@ Erros seguem o padrão NestJS com mensagens em português:
 npm test
 ```
 
-38 suites, 214 testes.
+46 suites, 264 testes.
 
 ### Postman / Newman
 
@@ -204,7 +213,7 @@ Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Po
 
 Antes de executar, preencha as variáveis `adminEmail` e `adminPassword` no environment com as credenciais de um dos usuários criados pelo seed.
 
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Validação**.
+Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes**.
 
 Ou via linha de comando com a aplicação rodando:
 
@@ -212,7 +221,7 @@ Ou via linha de comando com a aplicação rodando:
 npx newman run oficina-collection.json -e oficina-environment.json
 ```
 
-76 requests, 135 assertions.
+92 requests, 162 assertions.
 
 ## Variáveis de Ambiente
 

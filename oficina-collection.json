@@ -2430,6 +2430,492 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Gestão de Clientes",
+      "item": [
+        {
+          "name": "TC-CUST-01 — Criar cliente individual (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.name).to.equal('João da Silva');",
+                  "    pm.expect(res.data.document).to.equal('123.456.789-09');",
+                  "    pm.expect(res.data.type).to.equal('INDIVIDUAL');",
+                  "    pm.expect(res.data.email).to.equal('joao@oficina-test.com');",
+                  "    pm.environment.set('customerId', res.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"João da Silva\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-02 — Criar cliente empresa (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados da empresa', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.type).to.equal('COMPANY');",
+                  "    pm.expect(res.data.document).to.equal('12.345.678/0001-09');",
+                  "    pm.environment.set('customerId2', res.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Empresa ABC Ltda\",\"document\":\"12.345.678/0001-09\",\"type\":\"COMPANY\",\"email\":\"empresa@oficina-test.com\",\"phone\":\"(11) 88888-8888\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-03 — Criar com documento duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica documento duplicado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Outro João\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"outro@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-04 — Criar com email duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica email duplicado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Outro João\",\"document\":\"987.654.321-00\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-05 — Criar com formato de documento inválido (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica documento inválido', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.statusCode).to.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"João\",\"document\":\"12345678909\",\"type\":\"INDIVIDUAL\",\"email\":\"joao2@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-06 — Criar sem campos obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Retorna erros de validação', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.statusCode).to.equal(400);",
+                  "    pm.expect(res.message).to.be.an('array').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"João\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-07 — Criar sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"João da Silva\",\"document\":\"111.222.333-96\",\"type\":\"INDIVIDUAL\",\"email\":\"sem-auth@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-08 — Listar clientes com paginação (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna lista paginada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res.totalRecords).to.be.a('number').and.at.least(2);",
+                  "    pm.expect(res.page).to.equal(1);",
+                  "    pm.expect(res.limit).to.equal(10);",
+                  "    pm.expect(res.totalPages).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/customers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-CUST-09 — Filtrar por tipo INDIVIDUAL (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna apenas clientes INDIVIDUAL', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    res.data.forEach(c => pm.expect(c.type).to.equal('INDIVIDUAL'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers?type=INDIVIDUAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "INDIVIDUAL"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-CUST-10 — Buscar cliente por ID (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna cliente correto', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.equal(pm.environment.get('customerId'));",
+                  "    pm.expect(res.data.name).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/customers/{{customerId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-CUST-11 — Buscar ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/customers/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-CUST-12 — Atualizar cliente (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nome atualizado com sucesso', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.name).to.equal('João da Silva Atualizado');",
+                  "    pm.expect(res.data.id).to.equal(pm.environment.get('customerId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/customers/{{customerId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"João da Silva Atualizado\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-13 — Atualizar com documento duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica conflito de documento', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/customers/{{customerId2}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"document\":\"123.456.789-09\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-14 — Atualizar ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/customers/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Ninguém\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-CUST-15 — Remover cliente (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/customers/{{customerId2}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "TC-CUST-16 — Remover ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/customers/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }
