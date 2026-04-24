@@ -13,6 +13,7 @@ export function createMockVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     year: 2020,
     color: null,
     mileage: null,
+    customer: undefined,
     createdAt: now,
     updatedAt: now,
     ...overrides,
