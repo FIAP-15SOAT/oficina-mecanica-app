@@ -12,7 +12,7 @@ COPY src ./src
 
 # DATABASE_URL is required by prisma generate (Prisma v7 reads it via prisma.config.ts).
 # Only code generation happens here — no real database is needed at build time.
-ARG DATABASE_URL
+ARG DATABASE_URL="postgresql://prisma:prisma@localhost:5432/prisma?schema=public"
 RUN npm run prisma:generate
 
 RUN npm run build
