@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { CustomersController } from '@presentation/customers/customers.controller';
 import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
 import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
@@ -63,9 +64,7 @@ describe('CustomersController', () => {
 
       const result = await controller.findAll({ page: 1, limit: 10 } as any);
 
-      expect(result.data).toEqual(customers);
-      expect(result.totalRecords).toBe(2);
-      expect(result.totalPages).toBe(1);
+      expect(result).toEqual({ data: customers, totalRecords: 2, totalPages: 1, page: 1, limit: 10 });
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -124,11 +123,12 @@ describe('CustomersController', () => {
 
   describe('remove', () => {
     it('should call delete use case with correct id', async () => {
+      const id = randomUUID();
       deleteUseCase.execute.mockResolvedValue(undefined);
 
-      await controller.remove('some-id');
+      await controller.remove(id);
 
-      expect(deleteUseCase.execute).toHaveBeenCalledWith('some-id');
+      expect(deleteUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
 });
