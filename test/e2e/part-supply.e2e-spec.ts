@@ -214,6 +214,36 @@ describe('PartSupply (E2E)', () => {
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });
+
+    it('should filter by isActive=false returning only inactive items', async () => {
+      const createRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Peça Inativa',
+          sku: 'SKU-INACTIVE-FILTER',
+          category: 'PART',
+          unit: 'UN',
+          costPrice: 10,
+          salePrice: 20,
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .delete(`/api/parts-supplies/${createRes.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+
+      const res = await request(httpServer)
+        .get('/api/parts-supplies?isActive=false&limit=100')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
+      res.body.data.forEach((item: { isActive: boolean }) => {
+        expect(item.isActive).toBe(false);
+      });
+    });
   });
 
   // ─── GET /api/parts-supplies/:id ─────────────────────────────────────────

@@ -236,6 +236,18 @@ describe('Service (E2E)', () => {
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/services').expect(401);
     });
+
+    it('should filter services by name (case-insensitive)', async () => {
+      const res = await request(httpServer)
+        .get('/api/services?name=servi%C3%A7o+1&limit=100')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
+      res.body.data.forEach((item: { name: string }) => {
+        expect(item.name.toLowerCase()).toContain('serviço 1');
+      });
+    });
   });
 
   // ─── GET /api/services/:id ────────────────────────────────────────────────
