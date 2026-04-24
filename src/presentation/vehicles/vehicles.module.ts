@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CustomersModule } from '../customers/customers.module';
+import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
-import { PrismaCustomerRepository } from '@infrastructure/repositories/prisma-customer.repository';
 import { CreateVehicleUseCase } from '@application/use-cases/vehicle/create-vehicle.use-case';
 import { FindAllVehiclesUseCase } from '@application/use-cases/vehicle/find-all-vehicles.use-case';
 import { FindVehicleByIdUseCase } from '@application/use-cases/vehicle/find-vehicle-by-id.use-case';
@@ -19,29 +20,29 @@ import { VehiclesController } from './vehicles.controller';
     },
     {
       provide: 'ICreateVehicleUseCase',
-      useFactory: (vehicleRepo: PrismaVehicleRepository, customerRepo: PrismaCustomerRepository) =>
+      useFactory: (vehicleRepo: IVehicleRepository, customerRepo: ICustomerRepository) =>
         new CreateVehicleUseCase(vehicleRepo, customerRepo),
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
     {
       provide: 'IFindAllVehiclesUseCase',
-      useFactory: (repo: PrismaVehicleRepository) => new FindAllVehiclesUseCase(repo),
+      useFactory: (repo: IVehicleRepository) => new FindAllVehiclesUseCase(repo),
       inject: ['IVehicleRepository'],
     },
     {
       provide: 'IFindVehicleByIdUseCase',
-      useFactory: (repo: PrismaVehicleRepository) => new FindVehicleByIdUseCase(repo),
+      useFactory: (repo: IVehicleRepository) => new FindVehicleByIdUseCase(repo),
       inject: ['IVehicleRepository'],
     },
     {
       provide: 'IUpdateVehicleUseCase',
-      useFactory: (vehicleRepo: PrismaVehicleRepository, customerRepo: PrismaCustomerRepository) =>
+      useFactory: (vehicleRepo: IVehicleRepository, customerRepo: ICustomerRepository) =>
         new UpdateVehicleUseCase(vehicleRepo, customerRepo),
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
     {
       provide: 'IDeleteVehicleUseCase',
-      useFactory: (repo: PrismaVehicleRepository) => new DeleteVehicleUseCase(repo),
+      useFactory: (repo: IVehicleRepository) => new DeleteVehicleUseCase(repo),
       inject: ['IVehicleRepository'],
     },
   ],
