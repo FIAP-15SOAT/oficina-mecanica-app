@@ -26,5 +26,6 @@ describe('FindVehicleByIdUseCase', () => {
     vehicleRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('non-existent')).rejects.toThrow(ResourceNotFoundException);
+    expect(vehicleRepository.findById).toHaveBeenCalledWith('non-existent');
   });
 });
