@@ -19,10 +19,10 @@ describe('FindAllCustomersUseCase', () => {
 
     expect(result.items).toEqual(customers);
     expect(result.items).toHaveLength(2);
-    expect(result.totalRecords).toBe(2);
-    expect(result.totalPages).toBe(1);
-    expect(result.page).toBe(1);
-    expect(result.limit).toBe(10);
+    expect(result.pagination.totalRecords).toBe(2);
+    expect(result.pagination.totalPages).toBe(1);
+    expect(result.pagination.page).toBe(1);
+    expect(result.pagination.limit).toBe(10);
   });
 
   it('should calculate totalPages correctly', async () => {
@@ -30,7 +30,7 @@ describe('FindAllCustomersUseCase', () => {
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
-    expect(result.totalPages).toBe(3);
+    expect(result.pagination.totalPages).toBe(3);
   });
 
   it('should pass filters to repository', async () => {

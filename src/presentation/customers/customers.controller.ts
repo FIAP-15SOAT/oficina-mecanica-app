@@ -14,16 +14,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
@@ -63,19 +66,22 @@ export class CustomersController {
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Cadastrar Cliente' })
   @ApiCreatedResponse({ type: CustomerDataResponseDto, description: 'Cliente cadastrado com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio (documento inválido)' })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
     const result = await this.createCustomerUseCase.execute(dto);
-    return CustomerPresenter.toResponse(result);
+    return CustomerPresenter.toDataResponse(result);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar Clientes' })
   @ApiOkResponse({ type: CustomerPaginatedResponseDto, description: 'Lista paginada de Clientes' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   async findAll(@Query() query: FilterCustomersDto): Promise<CustomerPaginatedResponseDto> {
     const result = await this.findAllCustomersUseCase.execute({
       page: query.page ?? 1,
@@ -84,7 +90,7 @@ export class CustomersController {
       type: query.type,
       document: query.document,
     });
-    return CustomerPresenter.toPaginatedResponse(result);
+    return CustomerPresenter.toPaginatedDataResponse(result);
   }
 
   @Get(':id')
@@ -92,12 +98,13 @@ export class CustomersController {
   @ApiOperation({ summary: 'Buscar Cliente por ID' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
   @ApiOkResponse({ type: CustomerDataResponseDto, description: 'Cliente encontrado' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<CustomerDataResponseDto> {
     const result = await this.findCustomerByIdUseCase.execute(id);
-    return CustomerPresenter.toResponse(result);
+    return CustomerPresenter.toDataResponse(result);
   }
 
   @Put(':id')
@@ -105,16 +112,18 @@ export class CustomersController {
   @ApiOperation({ summary: 'Atualizar Cliente' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
   @ApiOkResponse({ type: CustomerDataResponseDto, description: 'Cliente atualizado com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
+  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio (documento inválido)' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado para outro cliente' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID inválido' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCustomerRequestDto,
   ): Promise<CustomerDataResponseDto> {
     const result = await this.updateCustomerUseCase.execute(id, dto);
-    return CustomerPresenter.toResponse(result);
+    return CustomerPresenter.toDataResponse(result);
   }
 
   @Delete(':id')
@@ -123,10 +132,11 @@ export class CustomersController {
   @ApiOperation({ summary: 'Excluir Cliente' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
   @ApiNoContentResponse({ description: 'Cliente excluído com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Cliente possui vínculos e não pode ser excluído' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.deleteCustomerUseCase.execute(id);
   }

@@ -13,10 +13,12 @@ export class FindAllVehiclesUseCase implements IFindAllVehiclesUseCase {
     const { items, total } = await this.vehicleRepository.findAll(input);
     return {
       items,
-      totalRecords: total,
-      totalPages: calculateTotalPages(total, input.limit),
-      page: input.page,
-      limit: input.limit,
+      pagination: {
+        totalRecords: total,
+        totalPages: calculateTotalPages(total, input.limit),
+        page: input.page,
+        limit: input.limit,
+      },
     };
   }
 }

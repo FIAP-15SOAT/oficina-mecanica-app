@@ -14,16 +14,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
@@ -63,20 +66,23 @@ export class VehiclesController {
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Cadastrar Veículo' })
   @ApiCreatedResponse({ type: VehicleDataResponseDto, description: 'Veículo cadastrado com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiUnprocessableEntityResponse({ description: 'Placa em formato inválido ou ano fora do intervalo permitido' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Placa já cadastrada' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async create(@Body() dto: CreateVehicleRequestDto): Promise<VehicleDataResponseDto> {
     const result = await this.createVehicleUseCase.execute(dto);
-    return VehiclePresenter.toResponse(result);
+    return VehiclePresenter.toDataResponse(result);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar Veículos' })
   @ApiOkResponse({ type: VehiclePaginatedResponseDto, description: 'Lista paginada de Veículos' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   async findAll(@Query() query: FilterVehiclesDto): Promise<VehiclePaginatedResponseDto> {
     const result = await this.findAllVehiclesUseCase.execute({
       page: query.page ?? 1,
@@ -85,7 +91,7 @@ export class VehiclesController {
       brand: query.brand,
       plate: query.plate,
     });
-    return VehiclePresenter.toPaginatedResponse(result);
+    return VehiclePresenter.toPaginatedDataResponse(result);
   }
 
   @Get(':id')
@@ -93,12 +99,13 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Buscar Veículo por ID' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
   @ApiOkResponse({ type: VehicleDataResponseDto, description: 'Veículo encontrado' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<VehicleDataResponseDto> {
     const result = await this.findVehicleByIdUseCase.execute(id);
-    return VehiclePresenter.toResponse(result);
+    return VehiclePresenter.toDataResponse(result);
   }
 
   @Put(':id')
@@ -106,16 +113,18 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Atualizar Veículo' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
   @ApiOkResponse({ type: VehicleDataResponseDto, description: 'Veículo atualizado com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
+  @ApiUnprocessableEntityResponse({ description: 'Placa em formato inválido ou ano fora do intervalo permitido' })
   @ApiNotFoundResponse({ description: 'Veículo ou cliente não encontrado' })
   @ApiConflictResponse({ description: 'Placa já cadastrada para outro veículo' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID inválido' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateVehicleRequestDto,
   ): Promise<VehicleDataResponseDto> {
     const result = await this.updateVehicleUseCase.execute(id, dto);
-    return VehiclePresenter.toResponse(result);
+    return VehiclePresenter.toDataResponse(result);
   }
 
   @Delete(':id')
@@ -124,10 +133,11 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Excluir Veículo' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
   @ApiNoContentResponse({ description: 'Veículo excluído com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
-  @ApiConflictResponse({ description: 'Veículo possui ordens de serviço' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiConflictResponse({ description: 'Veículo possui ordens de serviço e não pode ser excluído' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.deleteVehicleUseCase.execute(id);
   }

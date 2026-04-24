@@ -163,9 +163,9 @@ describe('Customer (E2E)', () => {
         .expect(200);
 
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.totalRecords).toBeGreaterThanOrEqual(2);
-      expect(res.body.page).toBe(1);
-      expect(res.body.limit).toBe(10);
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(2);
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
     });
 
     it('should filter by name (partial match)', async () => {
@@ -174,7 +174,7 @@ describe('Customer (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.pagination.totalRecords).toBe(1);
       expect(res.body.data[0].name).toContain('João');
     });
 
@@ -184,7 +184,7 @@ describe('Customer (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.pagination.totalRecords).toBe(1);
       expect(res.body.data[0].type).toBe('INDIVIDUAL');
     });
 
@@ -194,7 +194,7 @@ describe('Customer (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.pagination.totalRecords).toBe(1);
     });
   });
 

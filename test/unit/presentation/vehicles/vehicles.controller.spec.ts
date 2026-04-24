@@ -54,16 +54,13 @@ describe('VehiclesController', () => {
       const vehicles = [createMockVehicle(), createMockVehicle()];
       const useCaseOutput = {
         items: vehicles,
-        totalRecords: 2,
-        totalPages: 1,
-        page: 1,
-        limit: 10,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
       };
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
       const result = await controller.findAll({ page: 1, limit: 10 } as any);
 
-      expect(result).toEqual({ data: vehicles, totalRecords: 2, totalPages: 1, page: 1, limit: 10 });
+      expect(result).toEqual({ data: vehicles, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -72,10 +69,7 @@ describe('VehiclesController', () => {
     it('should forward customerId, brand and plate filters', async () => {
       findAllUseCase.execute.mockResolvedValue({
         items: [],
-        totalRecords: 0,
-        totalPages: 0,
-        page: 1,
-        limit: 10,
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       });
       const customerId = randomUUID();
 

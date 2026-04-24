@@ -13,10 +13,12 @@ export class FindAllCustomersUseCase implements IFindAllCustomersUseCase {
     const { items, total } = await this.customerRepository.findAll(input);
     return {
       items,
-      totalRecords: total,
-      totalPages: calculateTotalPages(total, input.limit),
-      page: input.page,
-      limit: input.limit,
+      pagination: {
+        totalRecords: total,
+        totalPages: calculateTotalPages(total, input.limit),
+        page: input.page,
+        limit: input.limit,
+      },
     };
   }
 }

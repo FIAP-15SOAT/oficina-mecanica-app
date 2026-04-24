@@ -4,17 +4,14 @@ import { VehicleDataResponseDto } from './dto/vehicle-response.dto';
 import { VehiclePaginatedResponseDto } from './dto/vehicle-paginated-response.dto';
 
 export class VehiclePresenter {
-  static toResponse(vehicle: Vehicle): VehicleDataResponseDto {
+  static toDataResponse(vehicle: Vehicle): VehicleDataResponseDto {
     return { data: vehicle };
   }
 
-  static toPaginatedResponse(result: FindAllVehiclesOutputDto): VehiclePaginatedResponseDto {
+  static toPaginatedDataResponse(result: FindAllVehiclesOutputDto): VehiclePaginatedResponseDto {
     return {
       data: result.items,
-      totalRecords: result.totalRecords,
-      totalPages: result.totalPages,
-      page: result.page,
-      limit: result.limit,
+      pagination: result.pagination,
     };
   }
 }

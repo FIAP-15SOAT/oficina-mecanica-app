@@ -55,16 +55,13 @@ describe('CustomersController', () => {
       const customers = [createMockCustomer(), createMockCustomer()];
       const useCaseOutput = {
         items: customers,
-        totalRecords: 2,
-        totalPages: 1,
-        page: 1,
-        limit: 10,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
       };
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
       const result = await controller.findAll({ page: 1, limit: 10 } as any);
 
-      expect(result).toEqual({ data: customers, totalRecords: 2, totalPages: 1, page: 1, limit: 10 });
+      expect(result).toEqual({ data: customers, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -73,10 +70,7 @@ describe('CustomersController', () => {
     it('should forward name, type and document filters', async () => {
       findAllUseCase.execute.mockResolvedValue({
         items: [],
-        totalRecords: 0,
-        totalPages: 0,
-        page: 1,
-        limit: 10,
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       });
 
       await controller.findAll({

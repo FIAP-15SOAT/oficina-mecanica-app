@@ -8,10 +8,14 @@ export interface FindAllVehiclesInputDto {
   plate?: string;
 }
 
-export interface FindAllVehiclesOutputDto {
-  items: Vehicle[];
+export interface FindAllVehiclesPaginationDto {
   totalRecords: number;
   totalPages: number;
   page: number;
   limit: number;
+}
+
+export interface FindAllVehiclesOutputDto {
+  items: Vehicle[];
+  pagination: FindAllVehiclesPaginationDto;
 }

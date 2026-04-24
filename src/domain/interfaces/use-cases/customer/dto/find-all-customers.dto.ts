@@ -9,10 +9,14 @@ export interface FindAllCustomersInputDto {
   document?: string;
 }
 
-export interface FindAllCustomersOutputDto {
-  items: Customer[];
+export interface FindAllCustomersPaginationDto {
   totalRecords: number;
   totalPages: number;
   page: number;
   limit: number;
+}
+
+export interface FindAllCustomersOutputDto {
+  items: Customer[];
+  pagination: FindAllCustomersPaginationDto;
 }
