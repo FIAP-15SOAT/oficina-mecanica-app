@@ -71,6 +71,19 @@ describe('Customer (E2E)', () => {
         .expect(201);
     });
 
+    it('should return 403 for MECHANIC role', async () => {
+      const mechanicAuth = await registerAndLogin(httpServer, {
+        name: 'Mecânico E2E',
+        email: 'mechanic@e2e.test',
+        role: 'MECHANIC',
+      });
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
+        .send(validCustomer)
+        .expect(403);
+    });
+
     it('should return 409 when document already exists', async () => {
       await request(httpServer)
         .post('/api/customers')
@@ -126,58 +139,56 @@ describe('Customer (E2E)', () => {
   // ─── GET /api/customers ───────────────────────────────────────────────────
 
   describe('GET /api/customers', () => {
-    it('should return paginated list', async () => {
+    beforeEach(async () => {
       await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send(validCustomer);
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Empresa ABC',
+          document: '12.345.678/0001-09',
+          type: 'COMPANY',
+          email: 'empresa@email.com',
+          phone: '(11) 88888-8888',
+        });
+    });
 
+    it('should return paginated list', async () => {
       const res = await request(httpServer)
         .get('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.totalRecords).toBeGreaterThanOrEqual(1);
+      expect(res.body.totalRecords).toBeGreaterThanOrEqual(2);
       expect(res.body.page).toBe(1);
       expect(res.body.limit).toBe(10);
     });
 
     it('should filter by name (partial match)', async () => {
-      await request(httpServer)
-        .post('/api/customers')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validCustomer);
-
       const res = await request(httpServer)
         .get('/api/customers?name=João')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.totalRecords).toBe(1);
       expect(res.body.data[0].name).toContain('João');
     });
 
     it('should filter by type', async () => {
-      await request(httpServer)
-        .post('/api/customers')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validCustomer);
-
       const res = await request(httpServer)
         .get('/api/customers?type=INDIVIDUAL')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.data.every((c: any) => c.type === 'INDIVIDUAL')).toBe(true);
+      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.data[0].type).toBe('INDIVIDUAL');
     });
 
     it('should filter by exact document', async () => {
-      await request(httpServer)
-        .post('/api/customers')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validCustomer);
-
       const res = await request(httpServer)
         .get('/api/customers?document=123.456.789-09')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
