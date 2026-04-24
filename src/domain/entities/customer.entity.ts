@@ -4,6 +4,7 @@ import { Address } from './address.entity';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
+const MIN_PHONE_LENGTH = 8;
 const MAX_PHONE_LENGTH = 20;
 
 const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
@@ -75,6 +76,12 @@ export class Customer {
         'Documento inválido. Use o formato CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)',
       );
     }
+    if (this.type === CustomerType.INDIVIDUAL && !CPF_REGEX.test(this.document)) {
+      throw new DomainValidationException('Pessoa física deve informar um CPF válido');
+    }
+    if (this.type === CustomerType.COMPANY && !CNPJ_REGEX.test(this.document)) {
+      throw new DomainValidationException('Pessoa jurídica deve informar um CNPJ válido');
+    }
   }
 
   private validateEmail(): void {
@@ -89,6 +96,9 @@ export class Customer {
   private validatePhone(): void {
     if (!this.phone) {
       throw new DomainValidationException('Telefone é obrigatório');
+    }
+    if (this.phone.length < MIN_PHONE_LENGTH) {
+      throw new DomainValidationException(`Telefone deve ter no mínimo ${MIN_PHONE_LENGTH} caracteres`);
     }
     if (this.phone.length > MAX_PHONE_LENGTH) {
       throw new DomainValidationException(
