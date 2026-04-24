@@ -49,11 +49,11 @@ describe('UpdateCustomerUseCase', () => {
     const existing = createMockCustomer({ id: 'cust-1', email: 'old@email.com' });
     const other = createMockCustomer({ id: 'cust-2', email: 'taken@email.com' });
     customerRepository.findById.mockResolvedValue(existing);
-    customerRepository.findByDocument.mockResolvedValue(null);
     customerRepository.findByEmail.mockResolvedValue(other);
 
     await expect(useCase.execute('cust-1', { email: 'taken@email.com' }))
       .rejects.toThrow(ResourceConflictException);
+    expect(customerRepository.findByDocument).not.toHaveBeenCalled();
     expect(customerRepository.update).not.toHaveBeenCalled();
   });
 
