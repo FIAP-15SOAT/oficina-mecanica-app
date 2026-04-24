@@ -7,7 +7,6 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "collectCoverage": true,
   "coverageDirectory": "coverage/e2e",
   "collectCoverageFrom": [
     "src/**/*.(t|j)s",

@@ -353,13 +353,13 @@ describe('PrismaPartSupplyRepository', () => {
       );
     });
 
-    it('should use increment for ADJUSTMENT', async () => {
+    it('should use set for ADJUSTMENT and return final stock value', async () => {
       const id = randomUUID();
       prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
         await Promise.all(ops);
-        return [createMockPrismaPartSupply({ id, stock: 12 }), {}];
+        return [createMockPrismaPartSupply({ id, stock: 2 }), {}];
       });
-      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id, stock: 12 }));
+      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id, stock: 2 }));
       prisma.stockMovement.create.mockResolvedValue({});
 
       const result = await repository.updateStock(id, {
@@ -373,7 +373,7 @@ describe('PrismaPartSupplyRepository', () => {
           data: { stock: { set: 2 } },
         }),
       );
-      expect(result.stock).toBe(12);
+      expect(result.stock).toBe(2);
     });
   });
 
