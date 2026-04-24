@@ -12,6 +12,7 @@ import { UserModule } from './presentation/user/user.module';
 import { ServiceModule } from './presentation/service/service.module';
 import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplies.module';
 import { CustomersModule } from './presentation/customers/customers.module';
+import { VehiclesModule } from './presentation/vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CustomersModule } from './presentation/customers/customers.module';
     ServiceModule,
     PartsSuppliesModule,
     CustomersModule,
+    VehiclesModule,
   ],
   providers: [
     {
