@@ -113,13 +113,13 @@ export class Vehicle {
   }
 
   private validateColor(): void {
-    if (this.color !== null && this.color !== undefined && this.color.length > MAX_COLOR_LENGTH) {
+    if (this.color !== null && this.color.length > MAX_COLOR_LENGTH) {
       throw new DomainValidationException(`Cor deve ter no máximo ${MAX_COLOR_LENGTH} caracteres`);
     }
   }
 
   private validateMileage(): void {
-    if (this.mileage !== null && this.mileage !== undefined && this.mileage < 0) {
+    if (this.mileage !== null && this.mileage < 0) {
       throw new DomainValidationException('Quilometragem não pode ser negativa');
     }
   }

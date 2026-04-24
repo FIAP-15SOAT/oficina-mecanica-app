@@ -51,6 +51,15 @@ describe('Vehicle Entity', () => {
       });
     });
 
+    describe('customerId validation', () => {
+      it('should throw if customerId is empty', () => {
+        expect(() => Vehicle.create({ ...validProps, customerId: '' }))
+          .toThrow(DomainValidationException);
+        expect(() => Vehicle.create({ ...validProps, customerId: '' }))
+          .toThrow('ID do cliente é obrigatório');
+      });
+    });
+
     describe('plate validation', () => {
       it('should throw for invalid plate format', () => {
         expect(() => Vehicle.create({ ...validProps, plate: '1234ABC' }))
@@ -115,6 +124,15 @@ describe('Vehicle Entity', () => {
           .toThrow(DomainValidationException);
         expect(() => Vehicle.create({ ...validProps, mileage: -1 }))
           .toThrow('Quilometragem não pode ser negativa');
+      });
+    });
+
+    describe('color validation', () => {
+      it('should throw if color exceeds 40 chars', () => {
+        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) }))
+          .toThrow(DomainValidationException);
+        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) }))
+          .toThrow('Cor deve ter no máximo 40 caracteres');
       });
     });
   });
