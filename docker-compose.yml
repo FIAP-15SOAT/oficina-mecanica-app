@@ -20,7 +20,10 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallange?schema=public
     container_name: techchallange-api
     restart: unless-stopped
     ports:
