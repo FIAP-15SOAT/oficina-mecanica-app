@@ -1,0 +1,347 @@
+import type { Server } from 'http';
+import request from 'supertest';
+import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
+import { cleanDatabase } from '../helpers/db-cleanup.helper';
+import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
+
+describe('Vehicle (E2E)', () => {
+  let ctx: TestContext;
+  let httpServer: Server;
+  let adminAuth: AuthTokens;
+
+  beforeAll(async () => {
+    ctx = await setupTestApp();
+    httpServer = ctx.httpServer;
+  });
+
+  afterAll(async () => {
+    await teardownTestApp(ctx);
+  });
+
+  beforeEach(async () => {
+    await cleanDatabase(ctx.prisma);
+    adminAuth = await registerAndLogin(httpServer, {
+      name: 'Admin E2E',
+      email: 'admin@e2e.test',
+      role: 'ADMIN',
+    });
+  });
+
+  async function createCustomer(token: string) {
+    const res = await request(httpServer)
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'João da Silva',
+        document: '123.456.789-09',
+        type: 'INDIVIDUAL',
+        email: 'joao@e2e.test',
+        phone: '(11) 99999-9999',
+      })
+      .expect(201);
+    return res.body.data as { id: string; name: string };
+  }
+
+  const validVehicle = {
+    plate: 'ABC-1234',
+    brand: 'Toyota',
+    model: 'Corolla',
+    year: 2020,
+  };
+
+  // ─── POST /api/vehicles ──────────────────────────────────────────────────
+
+  describe('POST /api/vehicles', () => {
+    it('should create vehicle and return 201 with nested customer', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+
+      const res = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      expect(res.body.data).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          plate: 'ABC-1234',
+          brand: 'Toyota',
+          model: 'Corolla',
+          year: 2020,
+          customerId: customer.id,
+          customer: expect.objectContaining({
+            id: customer.id,
+            name: 'João da Silva',
+          }),
+        }),
+      );
+    });
+
+    it('should return 404 when customer does not exist', async () => {
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: '00000000-0000-0000-0000-000000000000' })
+        .expect(404);
+    });
+
+    it('should return 409 when plate already exists', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(409);
+    });
+
+    it('should return 422 when plate format is invalid', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, plate: '1234ABC' })
+        .expect(422);
+    });
+
+    it('should return 422 when year is in the future', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const futureYear = new Date().getFullYear() + 1;
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, year: futureYear })
+        .expect(422);
+    });
+
+    it('should return 400 when required fields are missing', async () => {
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ brand: 'Toyota' })
+        .expect(400);
+    });
+
+    it('should return 401 when no token is provided', async () => {
+      await request(httpServer)
+        .post('/api/vehicles')
+        .send(validVehicle)
+        .expect(401);
+    });
+  });
+
+  // ─── GET /api/vehicles ───────────────────────────────────────────────────
+
+  describe('GET /api/vehicles', () => {
+    let customerId: string;
+
+    beforeEach(async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      customerId = customer.id;
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId });
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ plate: 'XYZ-9999', brand: 'Honda', model: 'Civic', year: 2021, customerId });
+    });
+
+    it('should return paginated list', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.totalRecords).toBeGreaterThanOrEqual(2);
+      expect(res.body.page).toBe(1);
+      expect(res.body.limit).toBe(10);
+    });
+
+    it('should include nested customer object in each result', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data[0].customer).toEqual(
+        expect.objectContaining({ id: customerId, name: 'João da Silva' }),
+      );
+    });
+
+    it('should filter by brand (partial match)', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles?brand=Toyota')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.data[0].brand).toContain('Toyota');
+    });
+
+    it('should filter by exact plate', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles?plate=ABC-1234')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.totalRecords).toBe(1);
+    });
+
+    it('should filter by customerId', async () => {
+      const res = await request(httpServer)
+        .get(`/api/vehicles?customerId=${customerId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.totalRecords).toBe(2);
+      res.body.data.forEach((v: any) => expect(v.customerId).toBe(customerId));
+    });
+  });
+
+  // ─── GET /api/vehicles/:id ───────────────────────────────────────────────
+
+  describe('GET /api/vehicles/:id', () => {
+    it('should return vehicle by id with nested customer', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.id).toBe(created.body.data.id);
+      expect(res.body.data.customer).toEqual(
+        expect.objectContaining({ id: customer.id, name: 'João da Silva' }),
+      );
+    });
+
+    it('should return 404 when vehicle does not exist', async () => {
+      await request(httpServer)
+        .get('/api/vehicles/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+
+    it('should return 400 for invalid UUID', async () => {
+      await request(httpServer)
+        .get('/api/vehicles/not-a-uuid')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(400);
+    });
+  });
+
+  // ─── PUT /api/vehicles/:id ───────────────────────────────────────────────
+
+  describe('PUT /api/vehicles/:id', () => {
+    it('should update vehicle and return 200', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .put(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ brand: 'Honda' })
+        .expect(200);
+
+      expect(res.body.data.brand).toBe('Honda');
+    });
+
+    it('should return 404 when vehicle does not exist', async () => {
+      await request(httpServer)
+        .put('/api/vehicles/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ brand: 'Honda' })
+        .expect(404);
+    });
+
+    it('should return 409 when updating to plate of another vehicle', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id });
+
+      const second = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ plate: 'XYZ-9999', brand: 'Honda', model: 'Civic', year: 2021, customerId: customer.id })
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/vehicles/${second.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ plate: 'ABC-1234' })
+        .expect(409);
+    });
+  });
+
+  // ─── DELETE /api/vehicles/:id ────────────────────────────────────────────
+
+  describe('DELETE /api/vehicles/:id', () => {
+    it('should delete vehicle and return 204', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      await request(httpServer)
+        .delete(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+    });
+
+    it('should return 404 when vehicle does not exist', async () => {
+      await request(httpServer)
+        .delete('/api/vehicles/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+
+    it('should return 409 when vehicle has work orders', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      await ctx.prisma.workOrder.create({
+        data: {
+          number: 'WO-E2E-001',
+          customerId: customer.id,
+          vehicleId: created.body.data.id,
+        },
+      });
+
+      await request(httpServer)
+        .delete(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(409);
+    });
+  });
+});
