@@ -150,12 +150,14 @@ describe('Vehicle (E2E)', () => {
       await request(httpServer)
         .post('/api/vehicles')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ ...validVehicle, customerId });
+        .send({ ...validVehicle, customerId })
+        .expect(201);
 
       await request(httpServer)
         .post('/api/vehicles')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ plate: 'XYZ-9999', brand: 'Honda', model: 'Civic', year: 2021, customerId });
+        .send({ plate: 'XYZ-9999', brand: 'Honda', model: 'Civic', year: 2021, customerId })
+        .expect(201);
     });
 
     it('should return paginated list', async () => {
@@ -282,7 +284,8 @@ describe('Vehicle (E2E)', () => {
       await request(httpServer)
         .post('/api/vehicles')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ ...validVehicle, customerId: customer.id });
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
 
       const second = await request(httpServer)
         .post('/api/vehicles')
