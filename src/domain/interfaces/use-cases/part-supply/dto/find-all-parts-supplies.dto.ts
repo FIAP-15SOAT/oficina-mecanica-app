@@ -11,10 +11,14 @@ export interface FindAllPartsSuppliesInputDto {
   lowStock?: boolean;
 }
 
-export interface FindAllPartsSuppliesOutputDto {
-  items: PartSupply[];
+export interface FindAllPartsSuppliesPaginationDto {
   totalRecords: number;
   totalPages: number;
   page: number;
   limit: number;
+}
+
+export interface FindAllPartsSuppliesOutputDto {
+  items: PartSupply[];
+  pagination: FindAllPartsSuppliesPaginationDto;
 }

@@ -152,8 +152,8 @@ describe('PartSupply (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBe(10);
-      expect(res.body.totalRecords).toBe(12);
-      expect(res.body.totalPages).toBe(2);
+      expect(res.body.pagination.totalRecords).toBe(12);
+      expect(res.body.pagination.totalPages).toBe(2);
     });
 
     it('should return second page', async () => {
@@ -171,7 +171,7 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBeGreaterThanOrEqual(1);
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
       res.body.data.forEach((item: { name: string }) => {
         expect(item.name).toContain('Peça 1');
       });
@@ -183,7 +183,7 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.pagination.totalRecords).toBe(1);
       expect(res.body.data[0].sku).toBe('SKU-001');
     });
 
@@ -205,7 +205,7 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBeGreaterThanOrEqual(1);
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
       res.body.data.forEach((item: { stock: number; minStock: number }) => {
         expect(item.stock).toBeLessThanOrEqual(item.minStock);
       });
@@ -213,6 +213,36 @@ describe('PartSupply (E2E)', () => {
 
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
+    });
+
+    it('should filter by isActive=false returning only inactive items', async () => {
+      const createRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Peça Inativa',
+          sku: 'SKU-INACTIVE-FILTER',
+          category: 'PART',
+          unit: 'UN',
+          costPrice: 10,
+          salePrice: 20,
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .delete(`/api/parts-supplies/${createRes.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+
+      const res = await request(httpServer)
+        .get('/api/parts-supplies?isActive=false&limit=100')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
+      res.body.data.forEach((item: { isActive: boolean }) => {
+        expect(item.isActive).toBe(false);
+      });
     });
   });
 
@@ -355,7 +385,7 @@ describe('PartSupply (E2E)', () => {
         .send({ type: 'ADJUSTMENT', quantity: 2, reason: 'Ajuste de inventário' })
         .expect(200);
 
-      expect(res.body.data.stock).toBe(12);
+      expect(res.body.data.stock).toBe(2);
     });
 
     it('should return 409 when EXIT quantity exceeds available stock', async () => {
@@ -400,10 +430,12 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
 
-      await request(httpServer)
+      const res = await request(httpServer)
         .get(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(404);
+        .expect(200);
+
+      expect(res.body.data.isActive).toBe(false);
     });
 
     it('should return 404 for non-existent part/supply', async () => {

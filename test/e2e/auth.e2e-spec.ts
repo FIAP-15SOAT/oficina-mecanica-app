@@ -154,6 +154,18 @@ describe('Auth (E2E)', () => {
         .send({ email: 'login@e2e.test' })
         .expect(400);
     });
+
+    it('should return 401 when user is deactivated', async () => {
+      await ctx.prisma.user.updateMany({
+        where: { email: 'login@e2e.test' },
+        data: { isActive: false },
+      });
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ email: 'login@e2e.test', password: 'Senha@123' })
+        .expect(401);
+    });
   });
 
   // ─── POST /api/auth/refresh ───────────────────────────────────────────────
@@ -184,6 +196,23 @@ describe('Auth (E2E)', () => {
 
     it('should return 400 when refreshToken is missing', async () => {
       await request(httpServer).post('/api/auth/refresh').send({}).expect(400);
+    });
+
+    it('should return 401 when user is deactivated after token issued', async () => {
+      const auth = await registerAndLogin(httpServer, {
+        name: 'Refresh Inactive',
+        email: 'refresh-inactive@e2e.test',
+      });
+
+      await ctx.prisma.user.update({
+        where: { id: auth.user.id },
+        data: { isActive: false },
+      });
+
+      await request(httpServer)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: auth.refreshToken })
+        .expect(401);
     });
   });
 
@@ -218,6 +247,38 @@ describe('Auth (E2E)', () => {
         .get('/api/auth/me')
         .set('Authorization', 'Bearer invalid.token.here')
         .expect(401);
+    });
+
+    it('should return 401 when user is deactivated after token issued', async () => {
+      const auth = await registerAndLogin(httpServer, {
+        name: 'Me Inactive',
+        email: 'me-inactive@e2e.test',
+      });
+
+      await ctx.prisma.user.update({
+        where: { id: auth.user.id },
+        data: { isActive: false },
+      });
+
+      await request(httpServer)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .expect(401);
+    });
+
+    it('should return dates with Brazil timezone offset in response', async () => {
+      const auth = await registerAndLogin(httpServer, {
+        name: 'Date User',
+        email: 'date-user@e2e.test',
+      });
+
+      const res = await request(httpServer)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.createdAt).toMatch(/-03:00$/);
+      expect(res.body.data.updatedAt).toMatch(/-03:00$/);
     });
   });
 });

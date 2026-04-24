@@ -8,7 +8,16 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { IAuthenticateUserUseCase } from '@domain/interfaces/use-cases/auth/authenticate-user.use-case.interface';
@@ -38,13 +47,12 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Registrar novo usuário' })
-  @ApiResponse({
-    status: 201,
-    description: 'Usuário registrado com sucesso',
+  @ApiCreatedResponse({
     type: RegisterDataResponseDto,
+    description: 'Usuário registrado com sucesso',
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
+  @ApiConflictResponse({ description: 'E-mail já cadastrado' })
   async register(@Body() dto: RegisterRequestDto): Promise<RegisterDataResponseDto> {
     const result = await this.registerUseCase.execute({
       name: dto.name,
@@ -58,13 +66,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autenticar usuário' })
-  @ApiResponse({
-    status: 200,
-    description: 'Login realizado com sucesso',
-    type: AuthDataResponseDto,
-  })
+  @ApiOkResponse({ type: AuthDataResponseDto, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
   async login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.authenticateUseCase.execute({
       email: dto.email,
@@ -76,13 +80,9 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renovar tokens com refresh token' })
-  @ApiResponse({
-    status: 200,
-    description: 'Tokens renovados com sucesso',
-    type: AuthDataResponseDto,
-  })
+  @ApiOkResponse({ type: AuthDataResponseDto, description: 'Tokens renovados com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
   async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.refreshTokenUseCase.execute({
       refreshToken: dto.refreshToken,
@@ -94,8 +94,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Obter dados do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Dados do usuário', type: MeDataResponseDto })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiOkResponse({ type: MeDataResponseDto, description: 'Dados do usuário' })
+  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   async me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
     const result = await this.getCurrentUserUseCase.execute(user.sub);
     return { data: result };

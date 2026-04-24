@@ -162,11 +162,11 @@ describe('PrismaServiceRepository', () => {
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated(page, pageSize);
+      const result = await repository.findAllPaginated({ page, limit: pageSize });
 
-      expect(result.services).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
-      expect(result.services[0]).toEqual(
+      expect(result.items[0]).toEqual(
         new Service({
           id: prismaModels[0].id,
           name: prismaModels[0].name,
@@ -200,9 +200,9 @@ describe('PrismaServiceRepository', () => {
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated(page, pageSize, true);
+      const result = await repository.findAllPaginated({ page, limit: pageSize, active: true });
 
-      expect(result.services).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
 
       expect(prisma.service.findMany).toHaveBeenCalledWith({
@@ -226,9 +226,9 @@ describe('PrismaServiceRepository', () => {
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated(page, pageSize, false);
+      const result = await repository.findAllPaginated({ page, limit: pageSize, active: false });
 
-      expect(result.services).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
 
       expect(prisma.service.findMany).toHaveBeenCalledWith({
@@ -250,13 +250,36 @@ describe('PrismaServiceRepository', () => {
       prisma.service.findMany.mockResolvedValue([]);
       prisma.service.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated(page, pageSize);
+      await repository.findAllPaginated({ page, limit: pageSize });
 
       expect(prisma.service.findMany).toHaveBeenCalledWith({
         skip: 10,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
         where: {},
+      });
+    });
+
+    it('should filter by name using case-insensitive contains', async () => {
+      const page = 1;
+      const pageSize = 10;
+      const prismaModels = [createMockPrismaService({ name: 'Oil Change' })];
+
+      prisma.service.findMany.mockResolvedValue(prismaModels);
+      prisma.service.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated({ page, limit: pageSize, name: 'oil' });
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.service.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        where: { name: { contains: 'oil', mode: 'insensitive' } },
+      });
+
+      expect(prisma.service.count).toHaveBeenCalledWith({
+        where: { name: { contains: 'oil', mode: 'insensitive' } },
       });
     });
   });

@@ -1,5 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { DateSerializerInterceptor } from '../../src/infrastructure/interceptors/date-serializer.interceptor';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { execSync } from 'child_process';
 import type { Server } from 'http';
@@ -49,6 +50,7 @@ export async function setupTestApp(): Promise<TestContext> {
       transform: true,
     }),
   );
+  app.useGlobalInterceptors(new DateSerializerInterceptor());
 
   await app.init();
 

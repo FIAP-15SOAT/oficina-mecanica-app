@@ -8,9 +8,9 @@ export class PartSupplyMapper {
     return new PartSupply({
       id: prismaRecord.id,
       name: prismaRecord.name,
-      description: prismaRecord.description ?? undefined,
+      description: prismaRecord.description,
       sku: prismaRecord.sku,
-      partNumber: prismaRecord.partNumber ?? undefined,
+      partNumber: prismaRecord.partNumber,
       category: prismaRecord.category as PartSupplyCategory,
       unit: prismaRecord.unit as Unit,
       costPrice: Number(prismaRecord.costPrice),

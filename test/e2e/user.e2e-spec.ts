@@ -94,6 +94,21 @@ describe('User (E2E)', () => {
         .expect(401);
     });
 
+    it('should create user with isActive false when isActive is false', async () => {
+      const res = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Inactive User',
+          email: 'inactive-create@e2e.test',
+          password: 'Senha@123',
+          isActive: false,
+        })
+        .expect(201);
+
+      expect(res.body.data.isActive).toBe(false);
+    });
+
     it('should return 403 for non-admin role', async () => {
       const mechanic = await registerAndLogin(httpServer, {
         name: 'Mechanic',
@@ -238,6 +253,29 @@ describe('User (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ email: 'other@e2e.test' })
         .expect(409);
+    });
+
+    it('should update user email', async () => {
+      const res = await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ email: 'newemail@e2e.test' })
+        .expect(200);
+
+      expect(res.body.data.email).toBe('newemail@e2e.test');
+    });
+
+    it('should update user password and allow login with new password', async () => {
+      await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ password: 'NewPassword@123' })
+        .expect(200);
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ email: 'updateme@e2e.test', password: 'NewPassword@123' })
+        .expect(200);
     });
   });
 

@@ -7,6 +7,17 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "coverageDirectory": "coverage/e2e",
+  "collectCoverageFrom": [
+    "src/**/*.(t|j)s",
+    "!src/main.ts",
+    "!src/**/*.config.ts",
+    "!src/domain/exceptions/*.exception.ts",
+    "!src/presentation/exceptions/*.exception.ts",
+    "!src/**/*.dto.ts",
+    "!src/**/*.entity.ts",
+    "!src/infrastructure/filters/domain-exception.filter.ts"
+  ],
   "moduleNameMapper": {
     "^@application/(.*)$": "<rootDir>/src/application/$1",
     "^@config/(.*)$": "<rootDir>/src/config/$1",

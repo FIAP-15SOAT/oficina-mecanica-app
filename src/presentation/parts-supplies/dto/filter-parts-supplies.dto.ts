@@ -19,7 +19,10 @@ export class FilterPartsSuppliesDto {
   @Min(1, { message: 'O limite de itens deve ser no mínimo 1.' })
   limit?: number = 10;
 
-  @ApiPropertyOptional({ description: 'Filtrar por nome da Peça ou Insumo', example: 'Filtro de Óleo' })
+  @ApiPropertyOptional({
+    description: 'Filtrar por nome da Peça ou Insumo',
+    example: 'Filtro de Óleo',
+  })
   @IsOptional()
   @IsString({ message: 'O nome deve ser um texto.' })
   name?: string;
@@ -34,7 +37,9 @@ export class FilterPartsSuppliesDto {
     description: 'Filtrar por categoria: PART (Peça) ou SUPPLY (Insumo)',
   })
   @IsOptional()
-  @IsEnum(PartSupplyCategory, { message: 'Categoria inválida. Use PART (Peça) ou SUPPLY (Insumo).' })
+  @IsEnum(PartSupplyCategory, {
+    message: 'Categoria inválida. Use PART (Peça) ou SUPPLY (Insumo).',
+  })
   category?: PartSupplyCategory;
 
   @ApiPropertyOptional({ description: 'Filtrar por status ativo/inativo no Estoque' })

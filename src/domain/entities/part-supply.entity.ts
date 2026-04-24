@@ -25,16 +25,16 @@ export interface CreatePartSupplyProps {
 export class PartSupply {
   id!: string;
   name!: string;
-  description?: string;
+  description?: string | null;
   sku!: string;
-  partNumber?: string;
+  partNumber?: string | null;
   category!: PartSupplyCategory;
   unit!: Unit;
   costPrice!: number;
   salePrice!: number;
   stock!: number;
   minStock!: number;
-  expiresAt?: Date;
+  expiresAt?: Date | null;
   isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;

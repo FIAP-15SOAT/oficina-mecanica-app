@@ -9,9 +9,11 @@ import { IFindPartSupplyByIdUseCase } from '@domain/interfaces/use-cases/part-su
 import { IUpdatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/update-part-supply.use-case.interface';
 import { IDeletePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/delete-part-supply.use-case.interface';
 import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/update-stock.use-case.interface';
-import {
-  createMockPartSupply,
-} from '../../../helpers/part-supply-mock.factory';
+import { CreatePartSupplyRequestDto } from '@presentation/parts-supplies/dto/create-part-supply-request.dto';
+import { UpdatePartSupplyRequestDto } from '@presentation/parts-supplies/dto/update-part-supply-request.dto';
+import { FilterPartsSuppliesDto } from '@presentation/parts-supplies/dto/filter-parts-supplies.dto';
+import { UpdateStockDto } from '@presentation/parts-supplies/dto/update-stock.dto';
+import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 
 describe('PartsSuppliesController', () => {
   let controller: PartsSuppliesController;
@@ -42,7 +44,7 @@ describe('PartsSuppliesController', () => {
 
   describe('create', () => {
     it('should create a part/supply and return it wrapped in data', async () => {
-      const dto = {
+      const dto: CreatePartSupplyRequestDto = {
         name: 'Filtro de Óleo',
         sku: 'FO-001',
         category: PartSupplyCategory.PART,
@@ -53,14 +55,14 @@ describe('PartsSuppliesController', () => {
       const created = createMockPartSupply({ name: dto.name, sku: dto.sku });
       createPartSupplyUseCase.execute.mockResolvedValue(created);
 
-      const result = await controller.create(dto as any);
+      const result = await controller.create(dto);
 
       expect(result).toEqual({ data: created });
       expect(createPartSupplyUseCase.execute).toHaveBeenCalledTimes(1);
     });
 
     it('should convert expiresAt string to Date before calling use case', async () => {
-      const dto = {
+      const dto: CreatePartSupplyRequestDto = {
         name: 'Fluido de Freio',
         sku: 'FF-001',
         category: PartSupplyCategory.SUPPLY,
@@ -72,7 +74,7 @@ describe('PartsSuppliesController', () => {
       const created = createMockPartSupply({ sku: dto.sku });
       createPartSupplyUseCase.execute.mockResolvedValue(created);
 
-      await controller.create(dto as any);
+      await controller.create(dto);
 
       const callArg = createPartSupplyUseCase.execute.mock.calls[0][0];
       expect(callArg.expiresAt).toBeInstanceOf(Date);
@@ -85,12 +87,21 @@ describe('PartsSuppliesController', () => {
         createMockPartSupply({ id: randomUUID(), name: 'Peça 1' }),
         createMockPartSupply({ id: randomUUID(), name: 'Peça 2' }),
       ];
-      const useCaseOutput = { items, totalRecords: 2, totalPages: 1, page: 1, limit: 10 };
+
+      const useCaseOutput = {
+        items,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
+      };
+
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const result = await controller.findAll({} as any);
+      const query: FilterPartsSuppliesDto = {};
+      const result = await controller.findAll(query);
 
-      expect(result).toEqual({ data: items, totalRecords: 2, totalPages: 1, page: 1, limit: 10 });
+      expect(result).toEqual({
+        data: useCaseOutput.items,
+        pagination: useCaseOutput.pagination,
+      });
       expect(findAllPartsSuppliesUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -98,10 +109,15 @@ describe('PartsSuppliesController', () => {
 
     it('should forward name, sku, category, isActive and lowStock filters', async () => {
       const items = [createMockPartSupply()];
-      const useCaseOutput = { items, totalRecords: 1, totalPages: 1, page: 1, limit: 10 };
+
+      const useCaseOutput = {
+        items,
+        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
+      };
+
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      await controller.findAll({
+      const query: FilterPartsSuppliesDto = {
         page: 1,
         limit: 10,
         name: 'Filtro',
@@ -109,7 +125,8 @@ describe('PartsSuppliesController', () => {
         category: PartSupplyCategory.PART,
         isActive: true,
         lowStock: true,
-      } as any);
+      };
+      await controller.findAll(query);
 
       expect(findAllPartsSuppliesUseCase.execute).toHaveBeenCalledWith({
         page: 1,
@@ -139,14 +156,17 @@ describe('PartsSuppliesController', () => {
   describe('update', () => {
     it('should update a part/supply and return it wrapped in data', async () => {
       const id = randomUUID();
-      const dto = { name: 'Filtro de Óleo Premium', salePrice: 59.9 };
+      const dto: UpdatePartSupplyRequestDto = { name: 'Filtro de Óleo Premium', salePrice: 59.9 };
       const updated = createMockPartSupply({ id, name: dto.name, salePrice: dto.salePrice });
       updatePartSupplyUseCase.execute.mockResolvedValue(updated);
 
-      const result = await controller.update(id, dto as any);
+      const result = await controller.update(id, dto);
 
       expect(result).toEqual({ data: updated });
-      expect(updatePartSupplyUseCase.execute).toHaveBeenCalledWith(id, expect.objectContaining(dto));
+      expect(updatePartSupplyUseCase.execute).toHaveBeenCalledWith(
+        id,
+        expect.objectContaining(dto),
+      );
     });
   });
 
@@ -165,11 +185,15 @@ describe('PartsSuppliesController', () => {
   describe('updateStock', () => {
     it('should register a stock ENTRY and return updated part/supply', async () => {
       const id = randomUUID();
-      const dto = { type: StockMovementType.ENTRY, quantity: 5, reason: 'Reposição' };
+      const dto: UpdateStockDto = {
+        type: StockMovementType.ENTRY,
+        quantity: 5,
+        reason: 'Reposição',
+      };
       const after = createMockPartSupply({ id, stock: 15 });
       updateStockUseCase.execute.mockResolvedValue(after);
 
-      const result = await controller.updateStock(id, dto as any);
+      const result = await controller.updateStock(id, dto);
 
       expect(result).toEqual({ data: after });
       expect(updateStockUseCase.execute).toHaveBeenCalledWith(id, {
@@ -183,11 +207,11 @@ describe('PartsSuppliesController', () => {
     it('should register a stock EXIT linked to a work order', async () => {
       const id = randomUUID();
       const workOrderId = randomUUID();
-      const dto = { type: StockMovementType.EXIT, quantity: 3, workOrderId };
+      const dto: UpdateStockDto = { type: StockMovementType.EXIT, quantity: 3, workOrderId };
       const after = createMockPartSupply({ id, stock: 7 });
       updateStockUseCase.execute.mockResolvedValue(after);
 
-      const result = await controller.updateStock(id, dto as any);
+      const result = await controller.updateStock(id, dto);
 
       expect(result).toEqual({ data: after });
       expect(updateStockUseCase.execute).toHaveBeenCalledWith(id, {
@@ -200,11 +224,15 @@ describe('PartsSuppliesController', () => {
 
     it('should register a stock ADJUSTMENT', async () => {
       const id = randomUUID();
-      const dto = { type: StockMovementType.ADJUSTMENT, quantity: 8, reason: 'Inventário' };
+      const dto: UpdateStockDto = {
+        type: StockMovementType.ADJUSTMENT,
+        quantity: 8,
+        reason: 'Inventário',
+      };
       const after = createMockPartSupply({ id, stock: 8 });
       updateStockUseCase.execute.mockResolvedValue(after);
 
-      const result = await controller.updateStock(id, dto as any);
+      const result = await controller.updateStock(id, dto);
 
       expect(result).toEqual({ data: after });
     });

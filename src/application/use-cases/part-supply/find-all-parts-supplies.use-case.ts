@@ -13,10 +13,12 @@ export class FindAllPartsSuppliesUseCase implements IFindAllPartsSuppliesUseCase
     const { items, total } = await this.partSupplyRepository.findAllPaginated(input);
     return {
       items,
-      totalRecords: total,
-      totalPages: calculateTotalPages(total, input.limit),
-      page: input.page,
-      limit: input.limit,
+      pagination: {
+        totalRecords: total,
+        totalPages: calculateTotalPages(total, input.limit),
+        page: input.page,
+        limit: input.limit,
+      },
     };
   }
 }

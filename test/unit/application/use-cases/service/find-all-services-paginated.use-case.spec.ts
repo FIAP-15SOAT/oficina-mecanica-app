@@ -21,13 +21,16 @@ describe('FindAllServicesPaginatedUseCase', () => {
       createMockService({ id: randomUUID(), name: 'Tire Rotation' }),
     ];
 
-    serviceRepository.findAllPaginated.mockResolvedValue({ services, total: services.length });
+    serviceRepository.findAllPaginated.mockResolvedValue({
+      items: services,
+      total: services.length,
+    });
 
-    const result = await useCase.execute(1, 10);
+    const result = await useCase.execute({ page: 1, limit: 10 });
 
-    expect(result.services).toHaveLength(2);
-    expect(result.totalRecords).toBe(services.length);
-    expect(result.totalPages).toBe(1);
+    expect(result.items).toHaveLength(2);
+    expect(result.pagination.totalRecords).toBe(services.length);
+    expect(result.pagination.totalPages).toBe(1);
   });
 
   it('should calculate total pages correctly when records span multiple pages', async () => {
@@ -35,45 +38,60 @@ describe('FindAllServicesPaginatedUseCase', () => {
       createMockService({ id: randomUUID(), name: `Service ${i}` }),
     );
 
-    serviceRepository.findAllPaginated.mockResolvedValue({ services, total: 25 });
+    serviceRepository.findAllPaginated.mockResolvedValue({ items: services, total: 25 });
 
-    const result = await useCase.execute(1, 10);
+    const result = await useCase.execute({ page: 1, limit: 10 });
 
-    expect(result.totalPages).toBe(3); // Math.ceil(25 / 10)
-    expect(result.totalRecords).toBe(25);
+    expect(result.pagination.totalPages).toBe(3); // Math.ceil(25 / 10)
+    expect(result.pagination.totalRecords).toBe(25);
   });
 
   it('should return zero pages when there are no records', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    const result = await useCase.execute(1, 10);
+    const result = await useCase.execute({ page: 1, limit: 10 });
 
-    expect(result.services).toHaveLength(0);
-    expect(result.totalRecords).toBe(0);
-    expect(result.totalPages).toBe(0);
+    expect(result.items).toHaveLength(0);
+    expect(result.pagination.totalRecords).toBe(0);
+    expect(result.pagination.totalPages).toBe(0);
   });
 
   it('should pass undefined to the repository when active is not provided', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    await useCase.execute(1, 10);
+    await useCase.execute({ page: 1, limit: 10 });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, undefined);
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      active: undefined,
+      name: undefined,
+    });
   });
 
   it('should pass active=true to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    await useCase.execute(1, 10, true);
+    await useCase.execute({ page: 1, limit: 10, active: true });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, true);
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      active: true,
+      name: undefined,
+    });
   });
 
   it('should pass active=false to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ services: [], total: 0 });
+    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    await useCase.execute(1, 10, false);
+    await useCase.execute({ page: 1, limit: 10, active: false });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(1, 10, false);
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      active: false,
+      name: undefined,
+    });
   });
 });
