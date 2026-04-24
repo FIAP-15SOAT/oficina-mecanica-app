@@ -4,6 +4,7 @@ import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
   IPartSupplyRepository,
+  PaginatedPartSuppliesDto,
   PartSupplyFilters,
 } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
@@ -31,7 +32,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return record ? PartSupplyMapper.toDomain(record) : null;
   }
 
-  async findAllPaginated(filters: PartSupplyFilters): Promise<{ items: PartSupply[]; total: number }> {
+  async findAllPaginated(filters: PartSupplyFilters): Promise<PaginatedPartSuppliesDto> {
     const { page, limit, name, sku, category, isActive, lowStock } = filters;
     const skip = (page - 1) * limit;
 

@@ -8,13 +8,12 @@ export class PartSupplyPresenter {
     return { data: partSupply };
   }
 
-  static toPaginatedDataResponse(result: FindAllPartsSuppliesOutputDto): PartSupplyPaginatedResponseDto {
+  static toPaginatedDataResponse(
+    result: FindAllPartsSuppliesOutputDto,
+  ): PartSupplyPaginatedResponseDto {
     return {
       data: result.items,
-      totalRecords: result.totalRecords,
-      totalPages: result.totalPages,
-      page: result.page,
-      limit: result.limit,
+      pagination: result.pagination,
     };
   }
 }

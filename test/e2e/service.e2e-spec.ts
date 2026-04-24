@@ -135,13 +135,13 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBe(10);
-      expect(res.body.totalRecords).toBe(15);
-      expect(res.body.totalPages).toBe(2);
+      expect(res.body.pagination.totalRecords).toBe(15);
+      expect(res.body.pagination.totalPages).toBe(2);
     });
 
     it('should return second page', async () => {
       const res = await request(httpServer)
-        .get('/api/services?page=2&pageSize=10')
+        .get('/api/services?page=2&limit=10')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
@@ -150,12 +150,12 @@ describe('Service (E2E)', () => {
 
     it('should respect custom pageSize', async () => {
       const res = await request(httpServer)
-        .get('/api/services?page=1&pageSize=5')
+        .get('/api/services?page=1&limit=5')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
       expect(res.body.data.length).toBe(5);
-      expect(res.body.totalPages).toBe(3);
+      expect(res.body.pagination.totalPages).toBe(3);
     });
 
     it('should return all services when active is not specified', async () => {
@@ -176,11 +176,11 @@ describe('Service (E2E)', () => {
         .expect(200);
 
       const res = await request(httpServer)
-        .get('/api/services?page=1&pageSize=100')
+        .get('/api/services?page=1&limit=100')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(16);
+      expect(res.body.pagination.totalRecords).toBe(16);
     });
 
     it('should return only active services when active=true', async () => {
@@ -201,11 +201,11 @@ describe('Service (E2E)', () => {
         .expect(200);
 
       const res = await request(httpServer)
-        .get('/api/services?page=1&pageSize=100&active=true')
+        .get('/api/services?page=1&limit=100&active=true')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(15);
+      expect(res.body.pagination.totalRecords).toBe(15);
     });
 
     it('should return only inactive services when active=false', async () => {
@@ -226,11 +226,11 @@ describe('Service (E2E)', () => {
         .expect(200);
 
       const res = await request(httpServer)
-        .get('/api/services?page=1&pageSize=100&active=false')
+        .get('/api/services?page=1&limit=100&active=false')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
-      expect(res.body.totalRecords).toBe(1);
+      expect(res.body.pagination.totalRecords).toBe(1);
     });
 
     it('should return 401 without token', async () => {

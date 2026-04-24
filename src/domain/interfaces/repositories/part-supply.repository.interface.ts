@@ -12,11 +12,16 @@ export interface PartSupplyFilters {
   lowStock?: boolean;
 }
 
+export interface PaginatedPartSuppliesDto {
+  items: PartSupply[];
+  total: number;
+}
+
 export interface IPartSupplyRepository {
   create(partSupply: PartSupply): Promise<PartSupply>;
   findById(id: string): Promise<PartSupply | null>;
   findBySku(sku: string): Promise<PartSupply | null>;
-  findAllPaginated(filters: PartSupplyFilters): Promise<{ items: PartSupply[]; total: number }>;
+  findAllPaginated(filters: PartSupplyFilters): Promise<PaginatedPartSuppliesDto>;
   update(id: string, data: Partial<PartSupply>): Promise<PartSupply>;
   updateStock(id: string, data: UpdateStockDto): Promise<PartSupply>;
   softDelete(id: string): Promise<void>;

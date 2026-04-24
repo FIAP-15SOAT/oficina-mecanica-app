@@ -13,12 +13,12 @@ export class UpdateStockDto {
   @IsEnum(StockMovementType, {
     message: 'Tipo de movimentação inválido. Use ENTRY, EXIT ou ADJUSTMENT.',
   })
-  type: StockMovementType;
+  type!: StockMovementType;
 
   @ApiProperty({ description: 'Quantidade de Peças ou Insumos movimentados', example: 5 })
   @IsInt({ message: 'A quantidade deve ser um número inteiro.' })
   @IsPositive({ message: 'A quantidade deve ser positiva.' })
-  quantity: number;
+  quantity!: number;
 
   @ApiPropertyOptional({
     description: 'Motivo da movimentação de Estoque',

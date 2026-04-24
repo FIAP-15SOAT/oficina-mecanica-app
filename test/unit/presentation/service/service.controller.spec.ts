@@ -70,38 +70,71 @@ describe('ServiceController', () => {
         createMockService({ id: randomUUID(), name: 'Service 2' }),
       ];
 
-      const paginatedResult = { services, totalRecords: 2, totalPages: 1 };
+      const paginatedResult = {
+        items: services,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
+      };
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(1, 10, true);
+      const result = await controller.findAll({ page: 1, limit: 10, active: true });
 
-      expect(result).toEqual({ data: services, totalRecords: 2, totalPages: 1 });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, true);
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        active: true,
+        name: undefined,
+      });
     });
 
     it('should return all services when active is undefined', async () => {
       const services = [createMockService({ id: randomUUID(), name: 'Service 1' })];
-      const paginatedResult = { services, totalRecords: 1, totalPages: 1 };
+      const paginatedResult = {
+        items: services,
+        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
+      };
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(1, 10, undefined);
+      const result = await controller.findAll({ page: 1, limit: 10 });
 
-      expect(result).toEqual({ data: services, totalRecords: 1, totalPages: 1 });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, undefined);
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        active: undefined,
+        name: undefined,
+      });
     });
 
     it('should return only inactive services when active=false', async () => {
       const services = [createMockService({ id: randomUUID(), isActive: false })];
-      const paginatedResult = { services, totalRecords: 1, totalPages: 1 };
+      const paginatedResult = {
+        items: services,
+        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
+      };
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(1, 10, false);
+      const result = await controller.findAll({ page: 1, limit: 10, active: false });
 
-      expect(result).toEqual({ data: services, totalRecords: 1, totalPages: 1 });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(1, 10, false);
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        active: false,
+        name: undefined,
+      });
     });
   });
 

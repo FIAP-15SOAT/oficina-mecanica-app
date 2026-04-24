@@ -110,7 +110,7 @@
       "^@infrastructure/(.*)$": "<rootDir>/src/infrastructure/$1",
       "^@presentation/(.*)$": "<rootDir>/src/presentation/$1",
       "^@generated/(.*)$": "<rootDir>/prisma/generated/$1",
-      "^@prisma/client/runtime/library$": "<rootDir>/__mocks__/@prisma/client/runtime/library.js",
+
       "^(.*)\\.js$": "$1"
     }
   }

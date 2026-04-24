@@ -3,9 +3,11 @@ import { Service } from '@domain/entities/service.entity';
 import {
   IServiceRepository,
   PaginatedServicesDto,
+  ServiceFilters,
 } from '@domain/interfaces/repositories/service.repository.interface';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Service as PrismaServiceModel } from '@generated/client';
+import { ServiceMapper } from '@infrastructure/mappers/service.mapper';
 
 @Injectable()
 export class PrismaServiceRepository implements IServiceRepository {
@@ -22,32 +24,38 @@ export class PrismaServiceRepository implements IServiceRepository {
       },
     });
 
-    return this.toDomain(createdService);
+    return ServiceMapper.toDomain(createdService);
   }
 
   async findById(id: string): Promise<Service | null> {
     const serviceRecord = await this.prisma.service.findUnique({ where: { id } });
 
-    return serviceRecord ? this.toDomain(serviceRecord) : null;
+    return serviceRecord ? ServiceMapper.toDomain(serviceRecord) : null;
   }
 
   async findByName(name: string): Promise<Service | null> {
     const serviceRecord = await this.prisma.service.findFirst({ where: { name } });
 
-    return serviceRecord ? this.toDomain(serviceRecord) : null;
+    return serviceRecord ? ServiceMapper.toDomain(serviceRecord) : null;
   }
 
-  async findAllPaginated(
-    page: number,
-    pageSize: number,
-    active?: boolean,
-  ): Promise<PaginatedServicesDto> {
-    const where = active !== undefined ? { isActive: active } : {};
+  async findAllPaginated(filters: ServiceFilters): Promise<PaginatedServicesDto> {
+    const { page, limit, active, name } = filters;
+
+    const where: Record<string, unknown> = {};
+
+    if (active !== undefined) {
+      where['isActive'] = active;
+    }
+
+    if (name) {
+      where['name'] = { contains: name, mode: 'insensitive' };
+    }
 
     const [records, count] = await this.prisma.$transaction([
       this.prisma.service.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         where,
       }),
@@ -55,7 +63,7 @@ export class PrismaServiceRepository implements IServiceRepository {
     ]);
 
     return {
-      services: records.map((record: PrismaServiceModel) => this.toDomain(record)),
+      items: records.map((record: PrismaServiceModel) => ServiceMapper.toDomain(record)),
       total: count,
     };
   }
@@ -72,23 +80,10 @@ export class PrismaServiceRepository implements IServiceRepository {
       },
     });
 
-    return this.toDomain(updatedService);
+    return ServiceMapper.toDomain(updatedService);
   }
 
   async delete(id: string): Promise<void> {
     await this.prisma.service.delete({ where: { id } });
-  }
-
-  private toDomain(record: PrismaServiceModel): Service {
-    return new Service({
-      id: record.id,
-      name: record.name,
-      description: record.description,
-      basePrice: Number(record.basePrice),
-      estimatedTimeMin: record.estimatedTimeMin,
-      isActive: record.isActive,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    });
   }
 }

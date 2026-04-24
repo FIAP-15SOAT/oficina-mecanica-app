@@ -1,19 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PartSupplyResponseDto } from './part-supply-response.dto';
 
-export class PartSupplyPaginatedResponseDto {
-  @ApiProperty({ type: [PartSupplyResponseDto], description: 'Peças e Insumos da página atual' })
-  data: PartSupplyResponseDto[];
-
+export class PartSupplyPaginationDto {
   @ApiProperty({ example: 42, description: 'Total de registros encontrados' })
-  totalRecords: number;
+  totalRecords!: number;
 
   @ApiProperty({ example: 5, description: 'Total de páginas disponíveis' })
-  totalPages: number;
+  totalPages!: number;
 
   @ApiProperty({ example: 1, description: 'Página atual' })
-  page: number;
+  page!: number;
 
   @ApiProperty({ example: 10, description: 'Itens por página' })
-  limit: number;
+  limit!: number;
+}
+
+export class PartSupplyPaginatedResponseDto {
+  @ApiProperty({ type: [PartSupplyResponseDto], description: 'Peças e Insumos da página atual' })
+  data!: PartSupplyResponseDto[];
+
+  @ApiProperty({ type: PartSupplyPaginationDto, description: 'Informações de paginação' })
+  pagination!: PartSupplyPaginationDto;
 }

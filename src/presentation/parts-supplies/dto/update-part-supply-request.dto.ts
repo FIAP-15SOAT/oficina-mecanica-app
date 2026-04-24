@@ -47,7 +47,9 @@ export class UpdatePartSupplyRequestDto {
     example: PartSupplyCategory.PART,
   })
   @IsOptional()
-  @IsEnum(PartSupplyCategory, { message: 'Categoria inválida. Use PART (Peça) ou SUPPLY (Insumo).' })
+  @IsEnum(PartSupplyCategory, {
+    message: 'Categoria inválida. Use PART (Peça) ou SUPPLY (Insumo).',
+  })
   category?: PartSupplyCategory;
 
   @ApiPropertyOptional({ enum: Unit, description: 'Unidade de medida', example: Unit.UN })
@@ -81,7 +83,10 @@ export class UpdatePartSupplyRequestDto {
   @IsDateString({}, { message: 'A data de validade deve estar no formato yyyy-MM-dd.' })
   expiresAt?: string;
 
-  @ApiPropertyOptional({ description: 'Status ativo/inativo da Peça ou Insumo no Estoque', example: true })
+  @ApiPropertyOptional({
+    description: 'Status ativo/inativo da Peça ou Insumo no Estoque',
+    example: true,
+  })
   @IsOptional()
   @IsBoolean({ message: 'O status deve ser true ou false.' })
   isActive?: boolean;

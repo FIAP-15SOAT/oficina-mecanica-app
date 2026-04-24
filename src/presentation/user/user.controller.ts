@@ -13,7 +13,20 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
@@ -52,15 +65,11 @@ export class UserController {
   @Post()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Criar novo usuário (somente Admin)' })
-  @ApiResponse({
-    status: 201,
-    description: 'Usuário criado com sucesso',
-    type: UserDataResponseDto,
-  })
+  @ApiCreatedResponse({ type: UserDataResponseDto, description: 'Usuário criado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
-  @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiConflictResponse({ description: 'E-mail já cadastrado' })
+  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
   async create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
     const result = await this.createUserUseCase.execute(dto);
     return { data: result };
@@ -69,8 +78,8 @@ export class UserController {
   @Get()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Listar todos os usuários (somente Admin)' })
-  @ApiResponse({ status: 200, description: 'Lista de usuários', type: UsersDataResponseDto })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  @ApiOkResponse({ type: UsersDataResponseDto, description: 'Lista de usuários' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   async findAll(): Promise<UsersDataResponseDto> {
     const result = await this.findAllUsersUseCase.execute();
     return { data: result };
@@ -80,10 +89,10 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar usuário por ID (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
-  @ApiResponse({ status: 200, description: 'Usuário encontrado', type: UserDataResponseDto })
+  @ApiOkResponse({ type: UserDataResponseDto, description: 'Usuário encontrado' })
   @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
     const result = await this.findUserByIdUseCase.execute(id);
     return { data: result };
@@ -93,12 +102,12 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Atualizar dados do usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
-  @ApiResponse({ status: 200, description: 'Usuário atualizado', type: UserDataResponseDto })
+  @ApiOkResponse({ type: UserDataResponseDto, description: 'Usuário atualizado' })
   @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
-  @ApiResponse({ status: 422, description: 'Erro de validação de domínio' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
+  @ApiConflictResponse({ description: 'E-mail já cadastrado' })
+  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserRequestDto,
@@ -111,15 +120,11 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Alterar status do usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
-  @ApiResponse({
-    status: 200,
-    description: 'Status do usuário atualizado',
-    type: UserDataResponseDto,
-  })
+  @ApiOkResponse({ type: UserDataResponseDto, description: 'Status do usuário atualizado' })
   @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  @ApiResponse({ status: 422, description: 'Usuário já está no status informado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
+  @ApiUnprocessableEntityResponse({ description: 'Usuário já está no status informado' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateUserStatusRequestDto,
@@ -133,10 +138,10 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
-  @ApiResponse({ status: 204, description: 'Usuário removido' })
+  @ApiNoContentResponse({ description: 'Usuário removido' })
   @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.deleteUserUseCase.execute(id);
   }
