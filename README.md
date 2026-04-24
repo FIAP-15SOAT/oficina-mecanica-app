@@ -33,7 +33,8 @@ src/
 │   │   ├── auth/                    # Register, Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD completo de usuários
 │   │   ├── part-supply/             # CRUD + movimentação de estoque de peças e insumos
-│   │   └── customer/                # CRUD completo de clientes
+│   │   ├── customer/                # CRUD completo de clientes
+│   │   └── vehicle/                 # CRUD completo de veículos
 │   └── exceptions/                  # Exceções de aplicação (ResourceNotFound, Conflict, etc.)
 │
 ├── infrastructure/                  # Camada de infraestrutura (implementações concretas)
@@ -51,7 +52,8 @@ src/
 │   ├── user/                        # UserController + DTOs
 │   ├── service/                     # ServiceController + DTOs
 │   ├── parts-supplies/              # PartsSuppliesController + DTOs
-│   └── customers/                   # CustomersController + DTOs
+│   ├── customers/                   # CustomersController + DTOs
+│   └── vehicles/                    # VehiclesController + DTOs
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
@@ -183,6 +185,13 @@ Após iniciar a aplicação:
 - `PUT /:id` — Atualizar dados
 - `DELETE /:id` — Remover (impede exclusão se houver veículos vinculados)
 
+**Veículos** (`/api/vehicles`) — *requer JWT (ADMIN ou ATTENDANT)*
+- `POST /` — Cadastrar veículo (validação de placa old `ABC-1234` ou Mercosul `ABC1D23`)
+- `GET /` — Listar veículos (paginado, filtros: plate, brand, customerId)
+- `GET /:id` — Buscar por ID (retorna cliente aninhado)
+- `PUT /:id` — Atualizar dados (placa normalizada para maiúsculas)
+- `DELETE /:id` — Remover (impede exclusão se houver ordens de serviço vinculadas)
+
 ### Formato de resposta
 
 Todas as respostas de sucesso são envoltas em `{ data: ... }`:
@@ -205,7 +214,7 @@ Erros seguem o padrão NestJS com mensagens em português:
 npm test
 ```
 
-46 suites, 264 testes.
+53 suites, 303 testes.
 
 ### Postman / Newman
 
@@ -213,7 +222,7 @@ Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Po
 
 Antes de executar, preencha as variáveis `adminEmail` e `adminPassword` no environment com as credenciais de um dos usuários criados pelo seed.
 
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes**.
+Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Veículos**.
 
 Ou via linha de comando com a aplicação rodando:
 
@@ -221,7 +230,7 @@ Ou via linha de comando com a aplicação rodando:
 npx newman run oficina-collection.json -e oficina-environment.json
 ```
 
-92 requests, 162 assertions.
+109 requests, 186 assertions.
 
 ## Variáveis de Ambiente
 
