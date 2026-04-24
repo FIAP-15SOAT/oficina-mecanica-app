@@ -1,9 +1,13 @@
 import { CreateCustomerUseCase } from '@application/use-cases/customer/create-customer.use-case';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
 
 describe('CreateCustomerUseCase', () => {
+  let useCase: CreateCustomerUseCase;
+  let customerRepository: jest.Mocked<ICustomerRepository>;
+
   const validInput = {
     name: 'João da Silva',
     document: '123.456.789-09',
@@ -12,36 +16,37 @@ describe('CreateCustomerUseCase', () => {
     phone: '(11) 99999-9999',
   };
 
-  it('should create customer when document and email are unique', async () => {
-    const repo = createMockCustomerRepository();
-    repo.findByDocument.mockResolvedValue(null);
-    repo.findByEmail.mockResolvedValue(null);
-    repo.create.mockResolvedValue(createMockCustomer(validInput));
+  beforeEach(() => {
+    customerRepository = createMockCustomerRepository();
+    useCase = new CreateCustomerUseCase(customerRepository);
+  });
 
-    const useCase = new CreateCustomerUseCase(repo);
+  it('should create customer when document and email are unique', async () => {
+    const saved = createMockCustomer(validInput);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.create.mockResolvedValue(saved);
+
     const result = await useCase.execute(validInput);
 
-    expect(result.name).toBe('João da Silva');
-    expect(repo.create).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(saved);
+    expect(customerRepository.findByDocument).toHaveBeenCalledWith(validInput.document);
+    expect(customerRepository.create).toHaveBeenCalledTimes(1);
   });
 
   it('should throw ResourceConflictException if document already exists', async () => {
-    const repo = createMockCustomerRepository();
-    repo.findByDocument.mockResolvedValue(createMockCustomer());
-    repo.findByEmail.mockResolvedValue(null);
+    customerRepository.findByDocument.mockResolvedValue(createMockCustomer());
+    customerRepository.findByEmail.mockResolvedValue(null);
 
-    const useCase = new CreateCustomerUseCase(repo);
     await expect(useCase.execute(validInput)).rejects.toThrow(ResourceConflictException);
-    expect(repo.create).not.toHaveBeenCalled();
+    expect(customerRepository.create).not.toHaveBeenCalled();
   });
 
   it('should throw ResourceConflictException if email already exists', async () => {
-    const repo = createMockCustomerRepository();
-    repo.findByDocument.mockResolvedValue(null);
-    repo.findByEmail.mockResolvedValue(createMockCustomer());
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(createMockCustomer());
 
-    const useCase = new CreateCustomerUseCase(repo);
     await expect(useCase.execute(validInput)).rejects.toThrow(ResourceConflictException);
-    expect(repo.create).not.toHaveBeenCalled();
+    expect(customerRepository.create).not.toHaveBeenCalled();
   });
 });
