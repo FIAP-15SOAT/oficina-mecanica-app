@@ -32,10 +32,11 @@ describe('DeleteVehicleUseCase', () => {
   });
 
   it('should throw ResourceConflictException when vehicle has work orders', async () => {
-    vehicleRepository.findById.mockResolvedValue(createMockVehicle());
+    const vehicle = createMockVehicle();
+    vehicleRepository.findById.mockResolvedValue(vehicle);
     vehicleRepository.hasWorkOrders.mockResolvedValue(true);
 
-    await expect(useCase.execute('veh-1')).rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute(vehicle.id)).rejects.toThrow(ResourceConflictException);
     expect(vehicleRepository.delete).not.toHaveBeenCalled();
   });
 });
