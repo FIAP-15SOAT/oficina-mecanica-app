@@ -179,10 +179,11 @@ Após iniciar a aplicação:
 - `DELETE /:id` — Remover (soft delete)
 
 **Clientes** (`/api/customers`) — *requer JWT (ADMIN ou ATTENDANT)*
-- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado)
+- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado, endereço opcional)
 - `GET /` — Listar clientes (paginado, filtros: name, type, document)
 - `GET /:id` — Buscar por ID
-- `PUT /:id` — Atualizar dados
+- `GET /:id/vehicles` — Listar veículos do cliente (paginado)
+- `PUT /:id` — Atualizar dados (incluindo endereço)
 - `DELETE /:id` — Remover (impede exclusão se houver veículos vinculados)
 
 **Veículos** (`/api/vehicles`) — *requer JWT (ADMIN ou ATTENDANT)*
@@ -228,7 +229,7 @@ Erros seguem o padrão NestJS com mensagens em português:
 npm test
 ```
 
-53 suites, 303 testes.
+58 suites, 378 testes.
 
 ### Postman / Newman
 
@@ -244,7 +245,7 @@ Ou via linha de comando com a aplicação rodando:
 npx newman run oficina-collection.json -e oficina-environment.json
 ```
 
-109 requests, 186 assertions.
+111 requests, 189 assertions.
 
 ## Variáveis de Ambiente
 

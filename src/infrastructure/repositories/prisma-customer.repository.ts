@@ -4,9 +4,12 @@ import { Customer } from '@domain/entities/customer.entity';
 import {
   CustomerFilters,
   ICustomerRepository,
+  PaginatedCustomersDto,
 } from '@domain/interfaces/repositories/customer.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { CustomerMapper } from '@infrastructure/mappers/customer.mapper';
+
+const ADDRESS_INCLUDE = { address: true } as const;
 
 @Injectable()
 export class PrismaCustomerRepository implements ICustomerRepository {
@@ -15,32 +18,42 @@ export class PrismaCustomerRepository implements ICustomerRepository {
   async create(customer: Customer): Promise<Customer> {
     const record = await this.prisma.customer.create({
       data: CustomerMapper.toPrismaCreate(customer),
+      include: ADDRESS_INCLUDE,
     });
     return CustomerMapper.toDomain(record);
   }
 
   async findById(id: string): Promise<Customer | null> {
-    const record = await this.prisma.customer.findUnique({ where: { id } });
+    const record = await this.prisma.customer.findUnique({
+      where: { id },
+      include: ADDRESS_INCLUDE,
+    });
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
   async findByDocument(document: string): Promise<Customer | null> {
-    const record = await this.prisma.customer.findUnique({ where: { document } });
+    const record = await this.prisma.customer.findUnique({
+      where: { document },
+      include: ADDRESS_INCLUDE,
+    });
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
   async findByEmail(email: string): Promise<Customer | null> {
-    const record = await this.prisma.customer.findUnique({ where: { email } });
+    const record = await this.prisma.customer.findUnique({
+      where: { email },
+      include: ADDRESS_INCLUDE,
+    });
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
-  async findAll(filters: CustomerFilters): Promise<{ items: Customer[]; total: number }> {
+  async findAllPaginated(filters: CustomerFilters): Promise<PaginatedCustomersDto> {
     const { page, limit, name, type, document } = filters;
     const skip = (page - 1) * limit;
 
     const where: Prisma.CustomerWhereInput = {};
     if (name) where.name = { contains: name, mode: 'insensitive' };
-    if (type !== undefined) where.type = type;
+    if (type) where.type = type;
     if (document) where.document = document;
 
     const [records, total] = await this.prisma.$transaction([
@@ -49,6 +62,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: ADDRESS_INCLUDE,
       }),
       this.prisma.customer.count({ where }),
     ]);
@@ -65,7 +79,29 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         ...(data.type !== undefined && { type: data.type }),
         ...(data.email !== undefined && { email: data.email }),
         ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.address !== undefined && {
+          address: data.address
+            ? {
+                upsert: {
+                  create: {
+                    id: data.address.id,
+                    street: data.address.street,
+                    city: data.address.city,
+                    state: data.address.state,
+                    zipCode: data.address.zipCode,
+                  },
+                  update: {
+                    street: data.address.street,
+                    city: data.address.city,
+                    state: data.address.state,
+                    zipCode: data.address.zipCode,
+                  },
+                },
+              }
+            : { delete: true },
+        }),
       },
+      include: ADDRESS_INCLUDE,
     });
     return CustomerMapper.toDomain(record);
   }
@@ -75,12 +111,18 @@ export class PrismaCustomerRepository implements ICustomerRepository {
   }
 
   async hasVehicles(id: string): Promise<boolean> {
-    const count = await this.prisma.vehicle.count({ where: { customerId: id } });
-    return count > 0;
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: { customerId: id },
+      select: { id: true },
+    });
+    return !!vehicle;
   }
 
   async hasWorkOrders(id: string): Promise<boolean> {
-    const count = await this.prisma.workOrder.count({ where: { customerId: id } });
-    return count > 0;
+    const workOrder = await this.prisma.workOrder.findFirst({
+      where: { customerId: id },
+      select: { id: true },
+    });
+    return !!workOrder;
   }
 }

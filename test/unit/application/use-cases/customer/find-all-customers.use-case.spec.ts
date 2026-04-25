@@ -13,7 +13,7 @@ describe('FindAllCustomersUseCase', () => {
 
   it('should return paginated customers', async () => {
     const customers = [createMockCustomer(), createMockCustomer()];
-    customerRepository.findAll.mockResolvedValue({ items: customers, total: 2 });
+    customerRepository.findAllPaginated.mockResolvedValue({ items: customers, total: 2 });
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
@@ -26,7 +26,7 @@ describe('FindAllCustomersUseCase', () => {
   });
 
   it('should calculate totalPages correctly', async () => {
-    customerRepository.findAll.mockResolvedValue({ items: [], total: 25 });
+    customerRepository.findAllPaginated.mockResolvedValue({ items: [], total: 25 });
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
@@ -34,10 +34,10 @@ describe('FindAllCustomersUseCase', () => {
   });
 
   it('should pass filters to repository', async () => {
-    customerRepository.findAll.mockResolvedValue({ items: [], total: 0 });
+    customerRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
     await useCase.execute({ page: 2, limit: 5, name: 'João' });
 
-    expect(customerRepository.findAll).toHaveBeenCalledWith({ page: 2, limit: 5, name: 'João' });
+    expect(customerRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5, name: 'João' });
   });
 });

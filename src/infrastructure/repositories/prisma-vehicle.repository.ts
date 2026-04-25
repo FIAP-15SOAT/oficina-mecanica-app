@@ -3,12 +3,13 @@ import { Prisma } from '@generated/client';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import {
   IVehicleRepository,
+  PaginatedVehiclesDto,
   VehicleFilters,
 } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { VehicleMapper } from '@infrastructure/mappers/vehicle.mapper';
 
-const CUSTOMER_SELECT = { id: true, name: true, document: true };
+const CUSTOMER_INCLUDE = { address: true } as const;
 
 @Injectable()
 export class PrismaVehicleRepository implements IVehicleRepository {
@@ -17,7 +18,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async create(vehicle: Vehicle): Promise<Vehicle> {
     const record = await this.prisma.vehicle.create({
       data: VehicleMapper.toPrismaCreate(vehicle),
-      include: { customer: { select: CUSTOMER_SELECT } },
+      include: { customer: { include: CUSTOMER_INCLUDE } },
     });
     return VehicleMapper.toDomain(record);
   }
@@ -25,7 +26,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findById(id: string): Promise<Vehicle | null> {
     const record = await this.prisma.vehicle.findUnique({
       where: { id },
-      include: { customer: { select: CUSTOMER_SELECT } },
+      include: { customer: { include: CUSTOMER_INCLUDE } },
     });
     return record ? VehicleMapper.toDomain(record) : null;
   }
@@ -35,7 +36,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
     return record ? VehicleMapper.toDomain(record) : null;
   }
 
-  async findAll(filters: VehicleFilters): Promise<{ items: Vehicle[]; total: number }> {
+  async findAllPaginated(filters: VehicleFilters): Promise<PaginatedVehiclesDto> {
     const { page, limit, customerId, brand, plate } = filters;
     const skip = (page - 1) * limit;
 
@@ -50,7 +51,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { customer: { select: CUSTOMER_SELECT } },
+        include: { customer: { include: CUSTOMER_INCLUDE } },
       }),
       this.prisma.vehicle.count({ where }),
     ]);
@@ -70,7 +71,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         ...(data.color !== undefined && { color: data.color }),
         ...(data.mileage !== undefined && { mileage: data.mileage }),
       },
-      include: { customer: { select: CUSTOMER_SELECT } },
+      include: { customer: { include: CUSTOMER_INCLUDE } },
     });
     return VehicleMapper.toDomain(record);
   }
@@ -80,7 +81,10 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   }
 
   async hasWorkOrders(id: string): Promise<boolean> {
-    const count = await this.prisma.workOrder.count({ where: { vehicleId: id } });
-    return count > 0;
+    const workOrder = await this.prisma.workOrder.findFirst({
+      where: { vehicleId: id },
+      select: { id: true },
+    });
+    return !!workOrder;
   }
 }

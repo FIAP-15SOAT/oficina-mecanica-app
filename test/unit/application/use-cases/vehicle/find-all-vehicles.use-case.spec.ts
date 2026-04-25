@@ -13,7 +13,7 @@ describe('FindAllVehiclesUseCase', () => {
 
   it('should return paginated vehicles', async () => {
     const vehicles = [createMockVehicle(), createMockVehicle()];
-    vehicleRepository.findAll.mockResolvedValue({ items: vehicles, total: 2 });
+    vehicleRepository.findAllPaginated.mockResolvedValue({ items: vehicles, total: 2 });
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
@@ -26,7 +26,7 @@ describe('FindAllVehiclesUseCase', () => {
   });
 
   it('should calculate totalPages correctly', async () => {
-    vehicleRepository.findAll.mockResolvedValue({ items: [], total: 25 });
+    vehicleRepository.findAllPaginated.mockResolvedValue({ items: [], total: 25 });
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
@@ -34,10 +34,10 @@ describe('FindAllVehiclesUseCase', () => {
   });
 
   it('should pass filters to repository', async () => {
-    vehicleRepository.findAll.mockResolvedValue({ items: [], total: 0 });
+    vehicleRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
     await useCase.execute({ page: 2, limit: 5, brand: 'Toyota' });
 
-    expect(vehicleRepository.findAll).toHaveBeenCalledWith({ page: 2, limit: 5, brand: 'Toyota' });
+    expect(vehicleRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5, brand: 'Toyota' });
   });
 });

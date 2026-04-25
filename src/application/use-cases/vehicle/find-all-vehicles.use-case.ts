@@ -10,7 +10,7 @@ export class FindAllVehiclesUseCase implements IFindAllVehiclesUseCase {
   constructor(private readonly vehicleRepository: IVehicleRepository) {}
 
   async execute(input: FindAllVehiclesInputDto): Promise<FindAllVehiclesOutputDto> {
-    const { items, total } = await this.vehicleRepository.findAll(input);
+    const { items, total } = await this.vehicleRepository.findAllPaginated(input);
     return {
       items,
       pagination: {

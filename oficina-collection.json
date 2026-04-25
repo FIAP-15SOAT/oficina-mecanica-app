@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Oficina Mec\u00e2nica \u2014 API Completa",
+    "name": "Oficina Mecânica — API Completa",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -18,7 +18,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "TC-AUTH-01 \u2014 Login com credenciais v\u00e1lidas",
+          "name": "TC-AUTH-01 — Login com credenciais válidas",
           "event": [
             {
               "listen": "test",
@@ -59,7 +59,7 @@
           }
         },
         {
-          "name": "TC-AUTH-02 \u2014 Login com credenciais inv\u00e1lidas (401)",
+          "name": "TC-AUTH-02 — Login com credenciais inválidas (401)",
           "event": [
             {
               "listen": "test",
@@ -89,7 +89,7 @@
           }
         },
         {
-          "name": "TC-AUTH-03 \u2014 Registrar novo usu\u00e1rio (sucesso)",
+          "name": "TC-AUTH-03 — Registrar novo usuário (sucesso)",
           "event": [
             {
               "listen": "prerequest",
@@ -104,7 +104,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do usu\u00e1rio', () => {",
+                  "pm.test('Retorna dados do usuário', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.have.property('id');",
                   "    pm.expect(res.data.email).to.eql(pm.environment.get('testEmail'));",
@@ -127,12 +127,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Novo Mec\u00e2nico\", \"email\": \"{{testEmail}}\", \"password\": \"Senha@123\", \"role\": \"MECHANIC\"}"
+              "raw": "{\"name\": \"Novo Mecânico\", \"email\": \"{{testEmail}}\", \"password\": \"Senha@123\", \"role\": \"MECHANIC\"}"
             }
           }
         },
         {
-          "name": "TC-AUTH-04 \u2014 Registrar com e-mail duplicado (409)",
+          "name": "TC-AUTH-04 — Registrar com e-mail duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -162,7 +162,7 @@
           }
         },
         {
-          "name": "TC-AUTH-05 \u2014 Renovar tokens com refreshToken v\u00e1lido (sucesso)",
+          "name": "TC-AUTH-05 — Renovar tokens com refreshToken válido (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -199,7 +199,7 @@
           }
         },
         {
-          "name": "TC-AUTH-06 \u2014 Renovar tokens com refreshToken inv\u00e1lido (401)",
+          "name": "TC-AUTH-06 — Renovar tokens com refreshToken inválido (401)",
           "event": [
             {
               "listen": "test",
@@ -229,14 +229,14 @@
           }
         },
         {
-          "name": "TC-AUTH-07 \u2014 Obter dados do usu\u00e1rio autenticado (me)",
+          "name": "TC-AUTH-07 — Obter dados do usuário autenticado (me)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna dados do usu\u00e1rio logado', () => {",
+                  "pm.test('Retorna dados do usuário logado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.have.property('id');",
                   "    pm.expect(res.data).to.have.property('email');",
@@ -257,7 +257,7 @@
           }
         },
         {
-          "name": "TC-AUTH-08 \u2014 Me sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-AUTH-08 — Me sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -285,17 +285,17 @@
       ]
     },
     {
-      "name": "Gest\u00e3o de Usu\u00e1rios",
+      "name": "Gestão de Usuários",
       "item": [
         {
-          "name": "TC-USER-01 \u2014 Criar usu\u00e1rio (sucesso)",
+          "name": "TC-USER-01 — Criar usuário (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do usu\u00e1rio criado', () => {",
+                  "pm.test('Retorna dados do usuário criado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.have.property('id');",
                   "    pm.expect(res.data.email).to.eql('atendente.teste@oficina.com');",
@@ -321,7 +321,7 @@
           }
         },
         {
-          "name": "TC-USER-02 \u2014 Criar usu\u00e1rio com e-mail duplicado (409)",
+          "name": "TC-USER-02 — Criar usuário com e-mail duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -348,7 +348,7 @@
           }
         },
         {
-          "name": "TC-USER-03 \u2014 Criar usu\u00e1rio sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-USER-03 — Criar usuário sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -378,14 +378,14 @@
           }
         },
         {
-          "name": "TC-USER-04 \u2014 Listar todos os usu\u00e1rios",
+          "name": "TC-USER-04 — Listar todos os usuários",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna array de usu\u00e1rios', () => {",
+                  "pm.test('Retorna array de usuários', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});"
@@ -405,14 +405,14 @@
           }
         },
         {
-          "name": "TC-USER-05 \u2014 Buscar usu\u00e1rio por ID (sucesso)",
+          "name": "TC-USER-05 — Buscar usuário por ID (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna usu\u00e1rio correto', () => {",
+                  "pm.test('Retorna usuário correto', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.eql(pm.environment.get('userId'));",
                   "});"
@@ -432,7 +432,7 @@
           }
         },
         {
-          "name": "TC-USER-06 \u2014 Buscar ID inexistente (404)",
+          "name": "TC-USER-06 — Buscar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -455,7 +455,7 @@
           }
         },
         {
-          "name": "TC-USER-07 \u2014 Atualizar dados do usu\u00e1rio (sucesso)",
+          "name": "TC-USER-07 — Atualizar dados do usuário (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -486,14 +486,14 @@
           }
         },
         {
-          "name": "TC-USER-08 \u2014 Alterar status do usu\u00e1rio para inativo",
+          "name": "TC-USER-08 — Alterar status do usuário para inativo",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Usu\u00e1rio est\u00e1 inativo', () => {",
+                  "pm.test('Usuário está inativo', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.isActive).to.be.false;",
                   "});"
@@ -517,7 +517,7 @@
           }
         },
         {
-          "name": "TC-USER-09 \u2014 Remover usu\u00e1rio (204)",
+          "name": "TC-USER-09 — Remover usuário (204)",
           "event": [
             {
               "listen": "test",
@@ -540,7 +540,7 @@
           }
         },
         {
-          "name": "TC-USER-10 \u2014 Remover ID inexistente (404)",
+          "name": "TC-USER-10 — Remover ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -565,20 +565,20 @@
       ]
     },
     {
-      "name": "Gest\u00e3o de Servi\u00e7os",
+      "name": "Gestão de Serviços",
       "item": [
         {
-          "name": "TC-SVC-01 \u2014 Cadastrar servi\u00e7o (sucesso)",
+          "name": "TC-SVC-01 — Cadastrar serviço (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do servi\u00e7o', () => {",
+                  "pm.test('Retorna dados do serviço', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.have.property('id');",
-                  "    pm.expect(res.data.name).to.eql('Troca de \u00d3leo');",
+                  "    pm.expect(res.data.name).to.eql('Troca de Óleo');",
                   "    pm.environment.set('serviceId', res.data.id);",
                   "});"
                 ]
@@ -596,12 +596,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Troca de \u00d3leo\", \"description\": \"Troca completa com filtro\", \"basePrice\": 129.9, \"estimatedTimeMin\": 60}"
+              "raw": "{\"name\": \"Troca de Óleo\", \"description\": \"Troca completa com filtro\", \"basePrice\": 129.9, \"estimatedTimeMin\": 60}"
             }
           }
         },
         {
-          "name": "TC-SVC-02 \u2014 Cadastrar servi\u00e7o sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-SVC-02 — Cadastrar serviço sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -631,7 +631,7 @@
           }
         },
         {
-          "name": "TC-SVC-03 \u2014 Cadastrar sem campos obrigat\u00f3rios (400)",
+          "name": "TC-SVC-03 — Cadastrar sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
@@ -653,12 +653,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"description\": \"Sem nome e sem pre\u00e7o\"}"
+              "raw": "{\"description\": \"Sem nome e sem preço\"}"
             }
           }
         },
         {
-          "name": "TC-SVC-04 \u2014 Listar servi\u00e7os paginados",
+          "name": "TC-SVC-04 — Listar serviços paginados",
           "event": [
             {
               "listen": "test",
@@ -688,14 +688,14 @@
           }
         },
         {
-          "name": "TC-SVC-05 \u2014 Listar servi\u00e7os filtrado por ativos",
+          "name": "TC-SVC-05 — Listar serviços filtrado por ativos",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Todos os itens est\u00e3o ativos', () => {",
+                  "pm.test('Todos os itens estão ativos', () => {",
                   "    const res = pm.response.json();",
                   "    res.data.forEach(s => pm.expect(s.isActive).to.be.true);",
                   "});"
@@ -715,14 +715,14 @@
           }
         },
         {
-          "name": "TC-SVC-06 \u2014 Buscar servi\u00e7o por ID (sucesso)",
+          "name": "TC-SVC-06 — Buscar serviço por ID (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna servi\u00e7o correto', () => {",
+                  "pm.test('Retorna serviço correto', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.eql(pm.environment.get('serviceId'));",
                   "});"
@@ -742,7 +742,7 @@
           }
         },
         {
-          "name": "TC-SVC-07 \u2014 Buscar ID inexistente (404)",
+          "name": "TC-SVC-07 — Buscar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -765,14 +765,14 @@
           }
         },
         {
-          "name": "TC-SVC-08 \u2014 Atualizar servi\u00e7o (sucesso)",
+          "name": "TC-SVC-08 — Atualizar serviço (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Pre\u00e7o foi atualizado', () => {",
+                  "pm.test('Preço foi atualizado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.basePrice).to.eql(159.90);",
                   "});"
@@ -791,12 +791,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Troca de \u00d3leo Premium\", \"basePrice\": 159.9, \"estimatedTimeMin\": 75, \"isActive\": true}"
+              "raw": "{\"name\": \"Troca de Óleo Premium\", \"basePrice\": 159.9, \"estimatedTimeMin\": 75, \"isActive\": true}"
             }
           }
         },
         {
-          "name": "TC-SVC-09 \u2014 Atualizar servi\u00e7o com ID inexistente (404)",
+          "name": "TC-SVC-09 — Atualizar serviço com ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -823,14 +823,14 @@
           }
         },
         {
-          "name": "TC-SVC-10 \u2014 Alterar status do servi\u00e7o para inativo",
+          "name": "TC-SVC-10 — Alterar status do serviço para inativo",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Servi\u00e7o est\u00e1 inativo', () => {",
+                  "pm.test('Serviço está inativo', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.isActive).to.be.false;",
                   "});"
@@ -854,7 +854,7 @@
           }
         },
         {
-          "name": "TC-SVC-11 \u2014 Alterar status j\u00e1 no mesmo estado (422)",
+          "name": "TC-SVC-11 — Alterar status já no mesmo estado (422)",
           "event": [
             {
               "listen": "test",
@@ -881,7 +881,7 @@
           }
         },
         {
-          "name": "TC-SVC-12 \u2014 Remover servi\u00e7o (204)",
+          "name": "TC-SVC-12 — Remover serviço (204)",
           "event": [
             {
               "listen": "test",
@@ -904,7 +904,7 @@
           }
         },
         {
-          "name": "TC-SVC-13 \u2014 Remover ID inexistente (404)",
+          "name": "TC-SVC-13 — Remover ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -929,10 +929,10 @@
       ]
     },
     {
-      "name": "Gest\u00e3o de Pe\u00e7as e Insumos",
+      "name": "Gestão de Peças e Insumos",
       "item": [
         {
-          "name": "TC-PS-01 \u2014 Cadastrar Pe\u00e7a (sucesso)",
+          "name": "TC-PS-01 — Cadastrar Peça (sucesso)",
           "event": [
             {
               "listen": "prerequest",
@@ -948,7 +948,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Corpo cont\u00e9m id e dados corretos', () => {",
+                  "pm.test('Corpo contém id e dados corretos', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
                   "    pm.expect(res.data.sku).to.equal(pm.environment.get('testSku'));",
@@ -976,12 +976,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Filtro de \u00d3leo\",\"sku\":\"{{testSku}}\",\"partNumber\":\"MANN-W712\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":25.00,\"salePrice\":45.00}"
+              "raw": "{\"name\":\"Filtro de Óleo\",\"sku\":\"{{testSku}}\",\"partNumber\":\"MANN-W712\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":25.00,\"salePrice\":45.00}"
             }
           }
         },
         {
-          "name": "TC-PS-02 \u2014 Cadastrar Insumo com data de validade (sucesso)",
+          "name": "TC-PS-02 — Cadastrar Insumo com data de validade (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -1010,12 +1010,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"\u00d3leo 5W30\",\"sku\":\"{{testSku2}}\",\"category\":\"SUPPLY\",\"unit\":\"L\",\"costPrice\":40,\"salePrice\":70,\"expiresAt\":\"2027-12-31\"}"
+              "raw": "{\"name\":\"Óleo 5W30\",\"sku\":\"{{testSku2}}\",\"category\":\"SUPPLY\",\"unit\":\"L\",\"costPrice\":40,\"salePrice\":70,\"expiresAt\":\"2027-12-31\"}"
             }
           }
         },
         {
-          "name": "TC-PS-03 \u2014 Cadastrar com SKU duplicado (409)",
+          "name": "TC-PS-03 — Cadastrar com SKU duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -1047,19 +1047,19 @@
           }
         },
         {
-          "name": "TC-PS-04 \u2014 Cadastrar sem campos obrigat\u00f3rios (400)",
+          "name": "TC-PS-04 — Cadastrar sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                  "pm.test('Retorna erros de valida\u00e7\u00e3o', () => {",
+                  "pm.test('Retorna erros de validação', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.statusCode).to.equal(400);",
                   "    pm.expect(res.message).to.be.an('array').and.not.empty;",
                   "});",
-                  "pm.test('Indica campos obrigat\u00f3rios ausentes', () => {",
+                  "pm.test('Indica campos obrigatórios ausentes', () => {",
                   "    const res = pm.response.json();",
                   "    const erros = JSON.stringify(res.message);",
                   "    pm.expect(erros).to.include('nome');",
@@ -1087,7 +1087,7 @@
           }
         },
         {
-          "name": "TC-PS-05 \u2014 Cadastrar sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-PS-05 — Cadastrar sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -1117,7 +1117,7 @@
           }
         },
         {
-          "name": "TC-PS-06 \u2014 Consulta de Estoque paginada",
+          "name": "TC-PS-06 — Consulta de Estoque paginada",
           "event": [
             {
               "listen": "test",
@@ -1142,14 +1142,14 @@
           }
         },
         {
-          "name": "TC-PS-07 \u2014 Consulta de Estoque filtrada por Pe\u00e7as (PART)",
+          "name": "TC-PS-07 — Consulta de Estoque filtrada por Peças (PART)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Todos os itens s\u00e3o Pe\u00e7as (PART)', () => {",
+                  "pm.test('Todos os itens são Peças (PART)', () => {",
                   "    const res = pm.response.json();",
                   "    res.data.forEach(item => pm.expect(item.category).to.equal('PART'));",
                   "});"
@@ -1163,7 +1163,7 @@
           }
         },
         {
-          "name": "TC-PS-08 \u2014 Consulta de Estoque com busca por texto",
+          "name": "TC-PS-08 — Consulta de Estoque com busca por texto",
           "event": [
             {
               "listen": "test",
@@ -1185,7 +1185,7 @@
           }
         },
         {
-          "name": "TC-PS-09 \u2014 Consulta de Estoque com filtro de estoque baixo",
+          "name": "TC-PS-09 — Consulta de Estoque com filtro de estoque baixo",
           "event": [
             {
               "listen": "test",
@@ -1197,7 +1197,7 @@
                   "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});",
-                  "pm.test('Itens com estoque abaixo do m\u00ednimo', () => {",
+                  "pm.test('Itens com estoque abaixo do mínimo', () => {",
                   "    const res = pm.response.json();",
                   "    res.data.forEach(item => {",
                   "        pm.expect(item.stock).to.be.at.most(item.minStock);",
@@ -1213,7 +1213,7 @@
           }
         },
         {
-          "name": "TC-PS-10 \u2014 Buscar Pe\u00e7a ou Insumo por ID (sucesso)",
+          "name": "TC-PS-10 — Buscar Peça ou Insumo por ID (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -1240,7 +1240,7 @@
           }
         },
         {
-          "name": "TC-PS-11 \u2014 Buscar ID inexistente (404)",
+          "name": "TC-PS-11 — Buscar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -1250,7 +1250,7 @@
                   "pm.test('Mensagem de erro correta', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.error).to.equal('Not Found');",
-                  "    pm.expect(res.message).to.include('Pe\u00e7a ou Insumo');",
+                  "    pm.expect(res.message).to.include('Peça ou Insumo');",
                   "});"
                 ]
               }
@@ -1262,7 +1262,7 @@
           }
         },
         {
-          "name": "TC-PS-12 \u2014 Atualizar Pe\u00e7a ou Insumo (sucesso)",
+          "name": "TC-PS-12 — Atualizar Peça ou Insumo (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -1299,14 +1299,14 @@
           }
         },
         {
-          "name": "TC-PS-13 \u2014 Atualizar SKU para um j\u00e1 existente (409)",
+          "name": "TC-PS-13 — Atualizar SKU para um já existente (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensagem indica SKU j\u00e1 em uso', () => {",
+                  "pm.test('Mensagem indica SKU já em uso', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.message).to.include(pm.environment.get('testSku2'));",
                   "    pm.expect(res.error).to.equal('Conflict');",
@@ -1331,7 +1331,7 @@
           }
         },
         {
-          "name": "TC-PS-14 \u2014 Entrada de Pe\u00e7as e Insumos (ENTRY)",
+          "name": "TC-PS-14 — Entrada de Peças e Insumos (ENTRY)",
           "event": [
             {
               "listen": "test",
@@ -1357,12 +1357,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"type\":\"ENTRY\",\"quantity\":5,\"reason\":\"Reposi\u00e7\u00e3o de Estoque recebida do fornecedor\"}"
+              "raw": "{\"type\":\"ENTRY\",\"quantity\":5,\"reason\":\"Reposição de Estoque recebida do fornecedor\"}"
             }
           }
         },
         {
-          "name": "TC-PS-15 \u2014 Sa\u00edda por Ordem de Servi\u00e7o (EXIT)",
+          "name": "TC-PS-15 — Saída por Ordem de Serviço (EXIT)",
           "event": [
             {
               "listen": "test",
@@ -1393,7 +1393,7 @@
           }
         },
         {
-          "name": "TC-PS-16 \u2014 Sa\u00edda com estoque insuficiente (409)",
+          "name": "TC-PS-16 — Saída com estoque insuficiente (409)",
           "event": [
             {
               "listen": "test",
@@ -1425,7 +1425,7 @@
           }
         },
         {
-          "name": "TC-PS-17 \u2014 Ajuste de Estoque (ADJUSTMENT)",
+          "name": "TC-PS-17 — Ajuste de Estoque (ADJUSTMENT)",
           "event": [
             {
               "listen": "test",
@@ -1451,12 +1451,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"type\":\"ADJUSTMENT\",\"quantity\":2,\"reason\":\"Ajuste por invent\u00e1rio f\u00edsico\"}"
+              "raw": "{\"type\":\"ADJUSTMENT\",\"quantity\":2,\"reason\":\"Ajuste por inventário físico\"}"
             }
           }
         },
         {
-          "name": "TC-PS-18 \u2014 Movimenta\u00e7\u00e3o com quantity zero ou negativa (400)",
+          "name": "TC-PS-18 — Movimentação com quantity zero ou negativa (400)",
           "event": [
             {
               "listen": "test",
@@ -1483,14 +1483,14 @@
           }
         },
         {
-          "name": "TC-PS-19 \u2014 Movimenta\u00e7\u00e3o com tipo inv\u00e1lido (400)",
+          "name": "TC-PS-19 — Movimentação com tipo inválido (400)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                  "pm.test('Mensagem indica tipo inv\u00e1lido', () => {",
+                  "pm.test('Mensagem indica tipo inválido', () => {",
                   "    const res = pm.response.json();",
                   "    const msg = JSON.stringify(res.message);",
                   "    pm.expect(msg).to.satisfy(m => m.includes('ENTRY') || m.includes('EXIT') || m.includes('ADJUSTMENT'));",
@@ -1515,7 +1515,7 @@
           }
         },
         {
-          "name": "TC-PS-20 \u2014 Remover Pe\u00e7a ou Insumo do Estoque (204)",
+          "name": "TC-PS-20 — Remover Peça ou Insumo do Estoque (204)",
           "event": [
             {
               "listen": "test",
@@ -1533,14 +1533,14 @@
           }
         },
         {
-          "name": "TC-PS-21 \u2014 Verificar item removido est\u00e1 inativo",
+          "name": "TC-PS-21 — Verificar item removido está inativo",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Item removido est\u00e1 inativo', () => {",
+                  "pm.test('Item removido está inativo', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.isActive).to.be.false;",
                   "});"
@@ -1554,7 +1554,7 @@
           }
         },
         {
-          "name": "TC-PS-22 \u2014 Remover ID inexistente (404)",
+          "name": "TC-PS-22 — Remover ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -1573,20 +1573,20 @@
       ]
     },
     {
-      "name": "Valida\u00e7\u00e3o",
+      "name": "Validação",
       "item": [
         {
-          "name": "Valida\u00e7\u00e3o de Usu\u00e1rios",
+          "name": "Validação de Usuários",
           "item": [
             {
-              "name": "TC-UVAL-01 \u2014 Criar sem campos obrigat\u00f3rios (400)",
+              "name": "TC-UVAL-01 — Criar sem campos obrigatórios (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Erros para todos os campos obrigat\u00f3rios', () => {",
+                      "pm.test('Erros para todos os campos obrigatórios', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
                       "    pm.expect(erros).to.include('nome');",
                       "    pm.expect(erros).to.include('e-mail');",
@@ -1622,16 +1622,16 @@
               "response": []
             },
             {
-              "name": "TC-UVAL-02 \u2014 nome muito curto (400)",
+              "name": "TC-UVAL-02 — nome muito curto (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica m\u00ednimo de caracteres', () => {",
+                      "pm.test('Mensagem indica mínimo de caracteres', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('m\u00ednimo 3 caracteres');",
+                      "    pm.expect(erros).to.include('mínimo 3 caracteres');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1663,16 +1663,16 @@
               "response": []
             },
             {
-              "name": "TC-UVAL-03 \u2014 e-mail inv\u00e1lido (400)",
+              "name": "TC-UVAL-03 — e-mail inválido (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica e-mail inv\u00e1lido', () => {",
+                      "pm.test('Mensagem indica e-mail inválido', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('E-mail inv\u00e1lido');",
+                      "    pm.expect(erros).to.include('E-mail inválido');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1704,16 +1704,16 @@
               "response": []
             },
             {
-              "name": "TC-UVAL-04 \u2014 senha muito curta (400)",
+              "name": "TC-UVAL-04 — senha muito curta (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica m\u00ednimo de caracteres da senha', () => {",
+                      "pm.test('Mensagem indica mínimo de caracteres da senha', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('m\u00ednimo 6 caracteres');",
+                      "    pm.expect(erros).to.include('mínimo 6 caracteres');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1745,16 +1745,16 @@
               "response": []
             },
             {
-              "name": "TC-UVAL-05 \u2014 role inv\u00e1lida (400)",
+              "name": "TC-UVAL-05 — role inválida (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica role inv\u00e1lida', () => {",
+                      "pm.test('Mensagem indica role inválida', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('Role inv\u00e1lida');",
+                      "    pm.expect(erros).to.include('Role inválida');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1788,20 +1788,20 @@
           ]
         },
         {
-          "name": "Valida\u00e7\u00e3o de Servi\u00e7os",
+          "name": "Validação de Serviços",
           "item": [
             {
-              "name": "TC-SVAL-01 \u2014 Criar sem campos obrigat\u00f3rios (400)",
+              "name": "TC-SVAL-01 — Criar sem campos obrigatórios (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Erros para todos os campos obrigat\u00f3rios', () => {",
+                      "pm.test('Erros para todos os campos obrigatórios', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
                       "    pm.expect(erros).to.include('nome');",
-                      "    pm.expect(erros).to.include('pre\u00e7o base');",
+                      "    pm.expect(erros).to.include('preço base');",
                       "    pm.expect(erros).to.include('tempo estimado');",
                       "});"
                     ],
@@ -1834,16 +1834,16 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-02 \u2014 nome muito curto (400)",
+              "name": "TC-SVAL-02 — nome muito curto (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica m\u00ednimo de caracteres', () => {",
+                      "pm.test('Mensagem indica mínimo de caracteres', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('m\u00ednimo 3 caracteres');",
+                      "    pm.expect(erros).to.include('mínimo 3 caracteres');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1875,16 +1875,16 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-03 \u2014 nome muito longo (400)",
+              "name": "TC-SVAL-03 — nome muito longo (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica m\u00e1ximo de caracteres', () => {",
+                      "pm.test('Mensagem indica máximo de caracteres', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('m\u00e1ximo 150 caracteres');",
+                      "    pm.expect(erros).to.include('máximo 150 caracteres');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1916,14 +1916,14 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-04 \u2014 basePrice negativo (400)",
+              "name": "TC-SVAL-04 — basePrice negativo (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica pre\u00e7o inv\u00e1lido', () => {",
+                      "pm.test('Mensagem indica preço inválido', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
                       "    pm.expect(erros).to.include('maior que zero');",
                       "});"
@@ -1957,16 +1957,16 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-05 \u2014 basePrice n\u00e3o num\u00e9rico (400)",
+              "name": "TC-SVAL-05 — basePrice não numérico (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica que pre\u00e7o deve ser n\u00famero', () => {",
+                      "pm.test('Mensagem indica que preço deve ser número', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('n\u00famero v\u00e1lido');",
+                      "    pm.expect(erros).to.include('número válido');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -1998,7 +1998,7 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-06 \u2014 estimatedTimeMin decimal (400)",
+              "name": "TC-SVAL-06 — estimatedTimeMin decimal (400)",
               "event": [
                 {
                   "listen": "test",
@@ -2007,7 +2007,7 @@
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
                       "pm.test('Mensagem indica que tempo deve ser inteiro', () => {",
                       "    const erros = JSON.stringify(pm.response.json().message);",
-                      "    pm.expect(erros).to.include('n\u00famero inteiro');",
+                      "    pm.expect(erros).to.include('número inteiro');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -2039,7 +2039,7 @@
               "response": []
             },
             {
-              "name": "TC-SVAL-07 \u2014 estimatedTimeMin zero (400)",
+              "name": "TC-SVAL-07 — estimatedTimeMin zero (400)",
               "event": [
                 {
                   "listen": "test",
@@ -2082,17 +2082,17 @@
           ]
         },
         {
-          "name": "Valida\u00e7\u00e3o de Pe\u00e7as e Insumos",
+          "name": "Validação de Peças e Insumos",
           "item": [
             {
-              "name": "TC-VAL-01 \u2014 Category inv\u00e1lida (400)",
+              "name": "TC-VAL-01 — Category inválida (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem de categoria inv\u00e1lida', () => {",
+                      "pm.test('Mensagem de categoria inválida', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg).to.include('PART');",
@@ -2118,17 +2118,17 @@
               }
             },
             {
-              "name": "TC-VAL-02 \u2014 Unit inv\u00e1lida (400)",
+              "name": "TC-VAL-02 — Unit inválida (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem de unidade inv\u00e1lida', () => {",
+                      "pm.test('Mensagem de unidade inválida', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
-                      "    pm.expect(msg).to.include('nv\u00e1lida');",
+                      "    pm.expect(msg).to.include('nválida');",
                       "});"
                     ]
                   }
@@ -2150,7 +2150,7 @@
               }
             },
             {
-              "name": "TC-VAL-03 \u2014 expiresAt com formato inv\u00e1lido (400)",
+              "name": "TC-VAL-03 — expiresAt com formato inválido (400)",
               "event": [
                 {
                   "listen": "test",
@@ -2182,7 +2182,7 @@
               }
             },
             {
-              "name": "TC-VAL-04 \u2014 costPrice negativo (400)",
+              "name": "TC-VAL-04 — costPrice negativo (400)",
               "event": [
                 {
                   "listen": "test",
@@ -2209,14 +2209,14 @@
               }
             },
             {
-              "name": "TC-VAL-05 \u2014 workOrderId inv\u00e1lido no EXIT (400)",
+              "name": "TC-VAL-05 — workOrderId inválido no EXIT (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem sobre UUID inv\u00e1lido', () => {",
+                      "pm.test('Mensagem sobre UUID inválido', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toLowerCase()).to.include('uuid');",
@@ -2241,7 +2241,7 @@
               }
             },
             {
-              "name": "TC-PS-18 \u2014 quantity zero ou negativa no stock (400)",
+              "name": "TC-PS-18 — quantity zero ou negativa no stock (400)",
               "event": [
                 {
                   "listen": "test",
@@ -2268,14 +2268,14 @@
               }
             },
             {
-              "name": "TC-VAL-06 \u2014 salePrice negativo (400)",
+              "name": "TC-VAL-06 — salePrice negativo (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica pre\u00e7o de venda inv\u00e1lido', () => {",
+                      "pm.test('Mensagem indica preço de venda inválido', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toLowerCase()).to.include('venda');",
@@ -2300,14 +2300,14 @@
               }
             },
             {
-              "name": "TC-VAL-07 \u2014 name string vazia (400)",
+              "name": "TC-VAL-07 — name string vazia (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica nome obrigat\u00f3rio', () => {",
+                      "pm.test('Mensagem indica nome obrigatório', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toLowerCase()).to.include('nome');",
@@ -2332,14 +2332,14 @@
               }
             },
             {
-              "name": "TC-VAL-08 \u2014 sku string vazia (400)",
+              "name": "TC-VAL-08 — sku string vazia (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica SKU obrigat\u00f3rio', () => {",
+                      "pm.test('Mensagem indica SKU obrigatório', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toUpperCase()).to.include('SKU');",
@@ -2364,14 +2364,14 @@
               }
             },
             {
-              "name": "TC-VAL-09 \u2014 stock negativo (400)",
+              "name": "TC-VAL-09 — stock negativo (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica stock inv\u00e1lido', () => {",
+                      "pm.test('Mensagem indica stock inválido', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toLowerCase()).to.include('estoque');",
@@ -2396,14 +2396,14 @@
               }
             },
             {
-              "name": "TC-VAL-10 \u2014 minStock negativo (400)",
+              "name": "TC-VAL-10 — minStock negativo (400)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
                       "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                      "pm.test('Mensagem indica minStock inv\u00e1lido', () => {",
+                      "pm.test('Mensagem indica minStock inválido', () => {",
                       "    const res = pm.response.json();",
                       "    const msg = JSON.stringify(res.message);",
                       "    pm.expect(msg.toLowerCase()).to.include('estoque');",
@@ -2432,10 +2432,10 @@
       ]
     },
     {
-      "name": "Gest\u00e3o de Clientes",
+      "name": "Gestão de Clientes",
       "item": [
         {
-          "name": "TC-CUST-01 \u2014 Criar cliente individual (sucesso)",
+          "name": "TC-CUST-01 — Criar cliente individual (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -2445,7 +2445,7 @@
                   "pm.test('Retorna dados do cliente', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
-                  "    pm.expect(res.data.name).to.equal('Jo\u00e3o da Silva');",
+                  "    pm.expect(res.data.name).to.equal('João da Silva');",
                   "    pm.expect(res.data.document).to.equal('123.456.789-09');",
                   "    pm.expect(res.data.type).to.equal('INDIVIDUAL');",
                   "    pm.expect(res.data.email).to.equal('joao@oficina-test.com');",
@@ -2466,12 +2466,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Jo\u00e3o da Silva\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+              "raw": "{\"name\":\"João da Silva\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-02 \u2014 Criar cliente empresa (sucesso)",
+          "name": "TC-CUST-02 — Criar cliente empresa (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -2505,7 +2505,7 @@
           }
         },
         {
-          "name": "TC-CUST-03 \u2014 Criar com documento duplicado (409)",
+          "name": "TC-CUST-03 — Criar com documento duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -2531,12 +2531,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Outro Jo\u00e3o\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"outro@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
+              "raw": "{\"name\":\"Outro João\",\"document\":\"123.456.789-09\",\"type\":\"INDIVIDUAL\",\"email\":\"outro@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-04 \u2014 Criar com email duplicado (409)",
+          "name": "TC-CUST-04 — Criar com email duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -2562,19 +2562,19 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Outro Jo\u00e3o\",\"document\":\"987.654.321-00\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
+              "raw": "{\"name\":\"Outro João\",\"document\":\"987.654.321-00\",\"type\":\"INDIVIDUAL\",\"email\":\"joao@oficina-test.com\",\"phone\":\"(11) 77777-7777\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-05 \u2014 Criar com formato de documento inv\u00e1lido (422)",
+          "name": "TC-CUST-05 — Criar com formato de documento inválido (422)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
-                  "pm.test('Mensagem indica documento inv\u00e1lido', () => {",
+                  "pm.test('Mensagem indica documento inválido', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.statusCode).to.equal(422);",
                   "});"
@@ -2593,19 +2593,19 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Jo\u00e3o\",\"document\":\"12345678909\",\"type\":\"INDIVIDUAL\",\"email\":\"joao2@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+              "raw": "{\"name\":\"João\",\"document\":\"12345678909\",\"type\":\"INDIVIDUAL\",\"email\":\"joao2@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-06 \u2014 Criar sem campos obrigat\u00f3rios (400)",
+          "name": "TC-CUST-06 — Criar sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
-                  "pm.test('Retorna erros de valida\u00e7\u00e3o', () => {",
+                  "pm.test('Retorna erros de validação', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.statusCode).to.equal(400);",
                   "    pm.expect(res.message).to.be.an('array').and.not.empty;",
@@ -2625,12 +2625,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Jo\u00e3o\"}"
+              "raw": "{\"name\":\"João\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-07 \u2014 Criar sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-CUST-07 — Criar sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -2655,12 +2655,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Jo\u00e3o da Silva\",\"document\":\"111.222.333-96\",\"type\":\"INDIVIDUAL\",\"email\":\"sem-auth@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
+              "raw": "{\"name\":\"João da Silva\",\"document\":\"111.222.333-96\",\"type\":\"INDIVIDUAL\",\"email\":\"sem-auth@oficina-test.com\",\"phone\":\"(11) 99999-9999\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-08 \u2014 Listar clientes com pagina\u00e7\u00e3o (200)",
+          "name": "TC-CUST-08 — Listar clientes com paginação (200)",
           "event": [
             {
               "listen": "test",
@@ -2691,7 +2691,7 @@
           }
         },
         {
-          "name": "TC-CUST-09 \u2014 Filtrar por tipo INDIVIDUAL (200)",
+          "name": "TC-CUST-09 — Filtrar por tipo INDIVIDUAL (200)",
           "event": [
             {
               "listen": "test",
@@ -2733,7 +2733,7 @@
           }
         },
         {
-          "name": "TC-CUST-10 \u2014 Buscar cliente por ID (200)",
+          "name": "TC-CUST-10 — Buscar cliente por ID (200)",
           "event": [
             {
               "listen": "test",
@@ -2761,7 +2761,7 @@
           }
         },
         {
-          "name": "TC-CUST-11 \u2014 Buscar ID inexistente (404)",
+          "name": "TC-CUST-11 — Buscar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -2784,7 +2784,7 @@
           }
         },
         {
-          "name": "TC-CUST-12 \u2014 Atualizar cliente (200)",
+          "name": "TC-CUST-12 — Atualizar cliente (200)",
           "event": [
             {
               "listen": "test",
@@ -2793,7 +2793,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Nome atualizado com sucesso', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.data.name).to.equal('Jo\u00e3o da Silva Atualizado');",
+                  "    pm.expect(res.data.name).to.equal('João da Silva Atualizado');",
                   "    pm.expect(res.data.id).to.equal(pm.environment.get('customerId'));",
                   "});"
                 ]
@@ -2811,12 +2811,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Jo\u00e3o da Silva Atualizado\"}"
+              "raw": "{\"name\":\"João da Silva Atualizado\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-13 \u2014 Atualizar com documento duplicado (409)",
+          "name": "TC-CUST-13 — Atualizar com documento duplicado (409)",
           "event": [
             {
               "listen": "test",
@@ -2847,7 +2847,7 @@
           }
         },
         {
-          "name": "TC-CUST-14 \u2014 Atualizar ID inexistente (404)",
+          "name": "TC-CUST-14 — Atualizar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -2869,12 +2869,55 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Ningu\u00e9m\"}"
+              "raw": "{\"name\":\"Ninguém\"}"
             }
           }
         },
         {
-          "name": "TC-CUST-15 \u2014 Remover cliente (204)",
+          "name": "TC-CUST-17 — Listar veículos do cliente (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/customers/{{customerId}}/vehicles?page=1&limit=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna lista paginada de veículos do cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
+                  "    pm.expect(res.pagination.page).to.equal(1);",
+                  "    pm.expect(res.pagination.limit).to.equal(10);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CUST-18 — Listar veículos de cliente inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/customers/00000000-0000-0000-0000-000000000000/vehicles"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CUST-15 — Remover cliente (204)",
           "event": [
             {
               "listen": "test",
@@ -2897,7 +2940,7 @@
           }
         },
         {
-          "name": "TC-CUST-16 \u2014 Remover ID inexistente (404)",
+          "name": "TC-CUST-16 — Remover ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -2922,17 +2965,17 @@
       ]
     },
     {
-      "name": "Gest\u00e3o de Ve\u00edculos",
+      "name": "Gestão de Veículos",
       "item": [
         {
-          "name": "TC-VEH-01 \u2014 Criar ve\u00edculo (sucesso)",
+          "name": "TC-VEH-01 — Criar veículo (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do ve\u00edculo com cliente aninhado', () => {",
+                  "pm.test('Retorna dados do veículo com cliente aninhado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
                   "    pm.expect(res.data.plate).to.equal('ABC-1234');",
@@ -2963,7 +3006,7 @@
           }
         },
         {
-          "name": "TC-VEH-02 \u2014 Criar segundo ve\u00edculo (sucesso)",
+          "name": "TC-VEH-02 — Criar segundo veículo (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -2995,7 +3038,7 @@
           }
         },
         {
-          "name": "TC-VEH-03 \u2014 Criar com cliente inexistente (404)",
+          "name": "TC-VEH-03 — Criar com cliente inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -3022,7 +3065,7 @@
           }
         },
         {
-          "name": "TC-VEH-04 \u2014 Criar com placa duplicada (409)",
+          "name": "TC-VEH-04 — Criar com placa duplicada (409)",
           "event": [
             {
               "listen": "test",
@@ -3049,7 +3092,7 @@
           }
         },
         {
-          "name": "TC-VEH-05 \u2014 Criar com placa inv\u00e1lida (422)",
+          "name": "TC-VEH-05 — Criar com placa inválida (422)",
           "event": [
             {
               "listen": "test",
@@ -3076,7 +3119,7 @@
           }
         },
         {
-          "name": "TC-VEH-06 \u2014 Criar sem campos obrigat\u00f3rios (400)",
+          "name": "TC-VEH-06 — Criar sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
@@ -3103,7 +3146,7 @@
           }
         },
         {
-          "name": "TC-VEH-07 \u2014 Criar sem autentica\u00e7\u00e3o (401)",
+          "name": "TC-VEH-07 — Criar sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -3133,7 +3176,7 @@
           }
         },
         {
-          "name": "TC-VEH-08 \u2014 Listar ve\u00edculos paginados (200)",
+          "name": "TC-VEH-08 — Listar veículos paginados (200)",
           "event": [
             {
               "listen": "test",
@@ -3159,14 +3202,14 @@
           }
         },
         {
-          "name": "TC-VEH-09 \u2014 Filtrar por marca (200)",
+          "name": "TC-VEH-09 — Filtrar por marca (200)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna apenas ve\u00edculos Toyota', () => {",
+                  "pm.test('Retorna apenas veículos Toyota', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.totalRecords).to.equal(1);",
                   "    pm.expect(res.data[0].brand).to.include('Toyota');",
@@ -3182,14 +3225,14 @@
           }
         },
         {
-          "name": "TC-VEH-10 \u2014 Filtrar por customerId (200)",
+          "name": "TC-VEH-10 — Filtrar por customerId (200)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna apenas ve\u00edculos do cliente', () => {",
+                  "pm.test('Retorna apenas veículos do cliente', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.totalRecords).to.be.at.least(2);",
                   "    res.data.forEach(v => pm.expect(v.customerId).to.equal(pm.environment.get('customerId')));",
@@ -3205,14 +3248,14 @@
           }
         },
         {
-          "name": "TC-VEH-11 \u2014 Buscar ve\u00edculo por ID (200)",
+          "name": "TC-VEH-11 — Buscar veículo por ID (200)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna ve\u00edculo com cliente aninhado', () => {",
+                  "pm.test('Retorna veículo com cliente aninhado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.equal(pm.environment.get('vehicleId'));",
                   "    pm.expect(res.data.plate).to.equal('ABC-1234');",
@@ -3230,7 +3273,7 @@
           }
         },
         {
-          "name": "TC-VEH-12 \u2014 Buscar ID inexistente (404)",
+          "name": "TC-VEH-12 — Buscar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -3248,14 +3291,14 @@
           }
         },
         {
-          "name": "TC-VEH-13 \u2014 Atualizar ve\u00edculo (200)",
+          "name": "TC-VEH-13 — Atualizar veículo (200)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna ve\u00edculo atualizado', () => {",
+                  "pm.test('Retorna veículo atualizado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.brand).to.equal('Honda');",
                   "    pm.expect(res.data.mileage).to.equal(20000);",
@@ -3280,7 +3323,7 @@
           }
         },
         {
-          "name": "TC-VEH-14 \u2014 Atualizar com placa de outro ve\u00edculo (409)",
+          "name": "TC-VEH-14 — Atualizar com placa de outro veículo (409)",
           "event": [
             {
               "listen": "test",
@@ -3307,7 +3350,7 @@
           }
         },
         {
-          "name": "TC-VEH-15 \u2014 Atualizar ID inexistente (404)",
+          "name": "TC-VEH-15 — Atualizar ID inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -3334,7 +3377,7 @@
           }
         },
         {
-          "name": "TC-VEH-16 \u2014 Remover ve\u00edculo (204)",
+          "name": "TC-VEH-16 — Remover veículo (204)",
           "event": [
             {
               "listen": "test",
@@ -3352,7 +3395,7 @@
           }
         },
         {
-          "name": "TC-VEH-17 \u2014 Remover ID inexistente (404)",
+          "name": "TC-VEH-17 — Remover ID inexistente (404)",
           "event": [
             {
               "listen": "test",

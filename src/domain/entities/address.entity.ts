@@ -26,12 +26,16 @@ export class Address {
     state: string;
     zipCode: string;
   }): Address {
+    const now = new Date();
     const address = new Address({
+      id: crypto.randomUUID(),
       customerId: props.customerId.trim(),
       street: props.street.trim(),
       city: props.city.trim(),
       state: props.state.trim().toUpperCase(),
       zipCode: props.zipCode.trim(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     address.validateCustomerId();

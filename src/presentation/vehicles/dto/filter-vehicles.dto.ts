@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+
+const PLATE_REGEX = /^([A-Z]{3}-\d{4}|[A-Z]{3}\d[A-Z]\d{2})$/;
 
 export class FilterVehiclesDto {
   @ApiPropertyOptional({ description: 'Número da página', example: 1, default: 1 })
@@ -29,6 +31,8 @@ export class FilterVehiclesDto {
 
   @ApiPropertyOptional({ description: 'Filtrar por placa (exato)', example: 'ABC-1234' })
   @IsOptional()
+  @Transform(({ value }) => value?.trim().toUpperCase())
   @IsString({ message: 'A placa deve ser um texto.' })
+  @Matches(PLATE_REGEX, { message: 'Placa inválida. Use o formato antigo (ABC-1234) ou Mercosul (ABC1D23).' })
   plate?: string;
 }

@@ -5,7 +5,9 @@ import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/
 import { IFindCustomerByIdUseCase } from '@domain/interfaces/use-cases/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 
 describe('CustomersController', () => {
@@ -15,6 +17,7 @@ describe('CustomersController', () => {
   let findByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateCustomerUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteCustomerUseCase>;
+  let findVehiclesByCustomerIdUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -22,12 +25,14 @@ describe('CustomersController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
+    findVehiclesByCustomerIdUseCase = { execute: jest.fn() };
     controller = new CustomersController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
+      findVehiclesByCustomerIdUseCase,
     );
   });
 
@@ -112,6 +117,23 @@ describe('CustomersController', () => {
 
       expect(result).toEqual({ data: updated });
       expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { name: 'Novo Nome' });
+    });
+  });
+
+  describe('findVehiclesByCustomerId', () => {
+    it('should return paginated vehicles for a customer', async () => {
+      const customerId = randomUUID();
+      const vehicles = [createMockVehicle({ customerId }), createMockVehicle({ customerId })];
+      const useCaseOutput = {
+        items: vehicles,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
+      };
+      findVehiclesByCustomerIdUseCase.execute.mockResolvedValue(useCaseOutput);
+
+      const result = await controller.findVehiclesByCustomerId(customerId, { page: 1, limit: 10 } as any);
+
+      expect(result).toEqual({ data: vehicles, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
+      expect(findVehiclesByCustomerIdUseCase.execute).toHaveBeenCalledWith(customerId, { page: 1, limit: 10 });
     });
   });
 

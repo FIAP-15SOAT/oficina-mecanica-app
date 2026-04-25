@@ -1,4 +1,6 @@
+import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { Customer } from './customer.entity';
 
 const MIN_BRAND_LENGTH = 2;
 const MAX_BRAND_LENGTH = 60;
@@ -29,7 +31,7 @@ export class Vehicle {
   year!: number;
   color!: string | null;
   mileage!: number | null;
-  customer?: { id: string; name: string; document: string };
+  customer?: Customer;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -65,6 +67,9 @@ export class Vehicle {
   private validateCustomerId(): void {
     if (!this.customerId) {
       throw new DomainValidationException('ID do cliente é obrigatório');
+    }
+    if (!isUuid(this.customerId)) {
+      throw new DomainValidationException('ID do cliente deve ser um UUID válido');
     }
   }
 

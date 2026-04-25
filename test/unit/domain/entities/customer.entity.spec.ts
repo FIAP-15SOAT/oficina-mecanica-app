@@ -20,7 +20,7 @@ describe('Customer Entity', () => {
         expect(customer.type).toBe(CustomerType.INDIVIDUAL);
         expect(customer.email).toBe('joao@email.com');
         expect(customer.phone).toBe('(11) 99999-9999');
-        expect(customer.addresses).toEqual([]);
+        expect(customer.address).toBeNull();
         expect(customer.id).toBeDefined();
         expect(customer.createdAt).toBeInstanceOf(Date);
         expect(customer.updatedAt).toBeInstanceOf(Date);
@@ -74,17 +74,17 @@ describe('Customer Entity', () => {
         expect(() => Customer.create({ ...validProps, document: '' }))
           .toThrow('Documento é obrigatório');
       });
-      it('should throw if document has no formatting (raw digits)', () => {
-        expect(() => Customer.create({ ...validProps, document: '12345678909' }))
+      it('should throw if CPF fails digit verification (invalid check digits)', () => {
+        expect(() => Customer.create({ ...validProps, document: '12345678900' }))
           .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, document: '12345678909' }))
-          .toThrow('Documento inválido. Use o formato CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)');
+        expect(() => Customer.create({ ...validProps, document: '12345678900' }))
+          .toThrow('Pessoa física deve informar um CPF válido');
       });
       it('should throw if document does not match CPF or CNPJ pattern', () => {
         expect(() => Customer.create({ ...validProps, document: '123.456.789' }))
           .toThrow(DomainValidationException);
         expect(() => Customer.create({ ...validProps, document: '123.456.789' }))
-          .toThrow('Documento inválido. Use o formato CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)');
+          .toThrow('Pessoa física deve informar um CPF válido');
       });
       it('should throw if INDIVIDUAL uses CNPJ document', () => {
         expect(() => Customer.create({ ...validProps, type: CustomerType.INDIVIDUAL, document: '12.345.678/0001-95' }))
@@ -128,17 +128,17 @@ describe('Customer Entity', () => {
         expect(() => Customer.create({ ...validProps, phone: '' }))
           .toThrow('Telefone é obrigatório');
       });
-      it('should throw if phone is too short (< 8 chars)', () => {
+      it('should throw if phone has invalid format', () => {
         expect(() => Customer.create({ ...validProps, phone: '1234567' }))
           .toThrow(DomainValidationException);
         expect(() => Customer.create({ ...validProps, phone: '1234567' }))
-          .toThrow('Telefone deve ter no mínimo 8 caracteres');
+          .toThrow('Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999');
       });
-      it('should throw if phone exceeds 20 chars', () => {
-        expect(() => Customer.create({ ...validProps, phone: '1'.repeat(21) }))
+      it('should throw if phone does not match phone pattern', () => {
+        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' }))
           .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, phone: '1'.repeat(21) }))
-          .toThrow('Telefone deve ter no máximo 20 caracteres');
+        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' }))
+          .toThrow('Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999');
       });
     });
   });

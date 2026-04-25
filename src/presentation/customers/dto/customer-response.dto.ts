@@ -1,5 +1,22 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+
+export class AddressResponseDto {
+  @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  id: string;
+
+  @ApiProperty({ example: 'Rua das Flores, 123' })
+  street: string;
+
+  @ApiProperty({ example: 'São Paulo' })
+  city: string;
+
+  @ApiProperty({ example: 'SP' })
+  state: string;
+
+  @ApiProperty({ example: '01310-100' })
+  zipCode: string;
+}
 
 export class CustomerResponseDto {
   @ApiProperty({ description: 'ID único do Cliente', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
@@ -25,6 +42,9 @@ export class CustomerResponseDto {
 
   @ApiProperty({ description: 'Data da última atualização', example: '2026-04-21T08:00:00.000Z' })
   updatedAt: Date;
+
+  @ApiPropertyOptional({ type: AddressResponseDto, nullable: true })
+  address?: AddressResponseDto | null;
 }
 
 export class CustomerDataResponseDto {

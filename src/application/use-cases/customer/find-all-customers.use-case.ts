@@ -10,7 +10,7 @@ export class FindAllCustomersUseCase implements IFindAllCustomersUseCase {
   constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(input: FindAllCustomersInputDto): Promise<FindAllCustomersOutputDto> {
-    const { items, total } = await this.customerRepository.findAll(input);
+    const { items, total } = await this.customerRepository.findAllPaginated(input);
     return {
       items,
       pagination: {

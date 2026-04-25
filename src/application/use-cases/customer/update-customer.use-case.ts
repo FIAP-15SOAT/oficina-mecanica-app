@@ -1,6 +1,6 @@
-// src/application/use-cases/customer/update-customer.use-case.ts
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { Address } from '@domain/entities/address.entity';
 import { Customer } from '@domain/entities/customer.entity';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/update-customer.dto';
@@ -26,6 +26,16 @@ export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
         throw new ResourceConflictException(`E-mail '${input.email}' já está cadastrado.`);
       }
     }
-    return this.customerRepository.update(id, input);
+    const updateData: Partial<Customer> = {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.document !== undefined && { document: input.document }),
+      ...(input.type !== undefined && { type: input.type }),
+      ...(input.email !== undefined && { email: input.email }),
+      ...(input.phone !== undefined && { phone: input.phone }),
+      ...(input.address !== undefined && {
+        address: input.address ? Address.create({ customerId: id, ...input.address }) : null,
+      }),
+    };
+    return this.customerRepository.update(id, updateData);
   }
 }

@@ -1,8 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
-const PLATE_REGEX = /^([A-Za-z]{3}-\d{4}|[A-Za-z]{3}\d[A-Za-z]\d{2})$/;
+const PLATE_REGEX = /^([A-Z]{3}-\d{4}|[A-Z]{3}\d[A-Z]\d{2})$/;
 
 export class CreateVehicleRequestDto {
   @ApiProperty({ description: 'ID do Cliente proprietário', format: 'uuid' })
@@ -14,6 +14,7 @@ export class CreateVehicleRequestDto {
     description: 'Placa do veículo — formato antigo (ABC-1234) ou Mercosul (ABC1D23)',
     example: 'ABC-1234',
   })
+  @Transform(({ value }) => value?.trim().toUpperCase())
   @Matches(PLATE_REGEX, { message: 'Placa inválida. Use o formato antigo (ABC-1234) ou Mercosul (ABC1D23).' })
   @IsString({ message: 'A placa deve ser um texto.' })
   @IsNotEmpty({ message: 'A placa é obrigatória.' })

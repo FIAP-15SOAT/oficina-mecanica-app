@@ -1,8 +1,13 @@
-import { Vehicle as PrismaVehicle } from '@generated/client';
+import { Vehicle as PrismaVehicle, Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
 import { Vehicle } from '@domain/entities/vehicle.entity';
+import { CustomerMapper } from './customer.mapper';
+
+type PrismaCustomerWithAddress = PrismaCustomer & {
+  address?: PrismaAddress | null;
+};
 
 type PrismaVehicleWithCustomer = PrismaVehicle & {
-  customer?: { id: string; name: string; document: string } | null;
+  customer?: PrismaCustomerWithAddress | null;
 };
 
 export class VehicleMapper {
@@ -17,11 +22,7 @@ export class VehicleMapper {
       color: prismaRecord.color ?? null,
       mileage: prismaRecord.mileage ?? null,
       customer: prismaRecord.customer
-        ? {
-            id: prismaRecord.customer.id,
-            name: prismaRecord.customer.name,
-            document: prismaRecord.customer.document,
-          }
+        ? CustomerMapper.toDomain(prismaRecord.customer)
         : undefined,
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,

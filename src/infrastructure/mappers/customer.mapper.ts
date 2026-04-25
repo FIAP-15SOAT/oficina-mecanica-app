@@ -1,9 +1,14 @@
-import { Customer as PrismaCustomer } from '@generated/client';
+import { Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
 import { Customer } from '@domain/entities/customer.entity';
+import { Address } from '@domain/entities/address.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 
+type PrismaCustomerWithAddress = PrismaCustomer & {
+  address?: PrismaAddress | null;
+};
+
 export class CustomerMapper {
-  static toDomain(prismaRecord: PrismaCustomer): Customer {
+  static toDomain(prismaRecord: PrismaCustomerWithAddress): Customer {
     return new Customer({
       id: prismaRecord.id,
       name: prismaRecord.name,
@@ -11,7 +16,18 @@ export class CustomerMapper {
       type: prismaRecord.type as CustomerType,
       email: prismaRecord.email,
       phone: prismaRecord.phone,
-      addresses: [], // address management not implemented in this delivery
+      address: prismaRecord.address
+        ? new Address({
+            id: prismaRecord.address.id,
+            customerId: prismaRecord.address.customerId,
+            street: prismaRecord.address.street,
+            city: prismaRecord.address.city,
+            state: prismaRecord.address.state,
+            zipCode: prismaRecord.address.zipCode,
+            createdAt: prismaRecord.address.createdAt,
+            updatedAt: prismaRecord.address.updatedAt,
+          })
+        : null,
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });
@@ -25,6 +41,17 @@ export class CustomerMapper {
       type: customer.type,
       email: customer.email,
       phone: customer.phone,
+      ...(customer.address && {
+        address: {
+          create: {
+            id: customer.address.id,
+            street: customer.address.street,
+            city: customer.address.city,
+            state: customer.address.state,
+            zipCode: customer.address.zipCode,
+          },
+        },
+      }),
     };
   }
 }

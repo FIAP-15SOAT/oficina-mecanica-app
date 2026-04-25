@@ -1,15 +1,21 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
+import { DocumentValidator } from '@infrastructure/validators/document.validator';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
-const MIN_PHONE_LENGTH = 8;
-const MAX_PHONE_LENGTH = 20;
 
-const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// DDD opcional com parênteses, espaço opcional, celular (9[1-9]XXXXXXX) ou fixo ([2-8]XXXXXXX), hífen opcional
+const PHONE_REGEX = /^(\(?[1-9]{2}\)?)?[\s-]?(?:[2-8]|9[1-9])[0-9]{3}-?[0-9]{4}$/;
+
+export interface AddressProps {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
 
 export interface CreateCustomerProps {
   name: string;
@@ -17,6 +23,7 @@ export interface CreateCustomerProps {
   type: CustomerType;
   email: string;
   phone: string;
+  address?: AddressProps | null;
 }
 
 export class Customer {
@@ -26,7 +33,7 @@ export class Customer {
   type!: CustomerType;
   email!: string;
   phone!: string;
-  addresses!: Address[];
+  address?: Address | null;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -35,14 +42,15 @@ export class Customer {
   }
 
   static create(props: CreateCustomerProps): Customer {
+    const id = crypto.randomUUID();
     const customer = new Customer({
-      id: crypto.randomUUID(),
+      id,
       name: props.name.trim(),
       document: props.document.trim(),
       type: props.type,
       email: props.email.trim(),
       phone: props.phone.trim(),
-      addresses: [],
+      address: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -51,6 +59,10 @@ export class Customer {
     customer.validateDocument();
     customer.validateEmail();
     customer.validatePhone();
+
+    if (props.address) {
+      customer.address = Address.create({ customerId: id, ...props.address });
+    }
 
     return customer;
   }
@@ -71,15 +83,10 @@ export class Customer {
     if (!this.document) {
       throw new DomainValidationException('Documento é obrigatório');
     }
-    if (!CPF_REGEX.test(this.document) && !CNPJ_REGEX.test(this.document)) {
-      throw new DomainValidationException(
-        'Documento inválido. Use o formato CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)',
-      );
-    }
-    if (this.type === CustomerType.INDIVIDUAL && !CPF_REGEX.test(this.document)) {
+    if (this.type === CustomerType.INDIVIDUAL && !DocumentValidator.validateCpf(this.document)) {
       throw new DomainValidationException('Pessoa física deve informar um CPF válido');
     }
-    if (this.type === CustomerType.COMPANY && !CNPJ_REGEX.test(this.document)) {
+    if (this.type === CustomerType.COMPANY && !DocumentValidator.validateCnpj(this.document)) {
       throw new DomainValidationException('Pessoa jurídica deve informar um CNPJ válido');
     }
   }
@@ -97,12 +104,9 @@ export class Customer {
     if (!this.phone) {
       throw new DomainValidationException('Telefone é obrigatório');
     }
-    if (this.phone.length < MIN_PHONE_LENGTH) {
-      throw new DomainValidationException(`Telefone deve ter no mínimo ${MIN_PHONE_LENGTH} caracteres`);
-    }
-    if (this.phone.length > MAX_PHONE_LENGTH) {
+    if (!PHONE_REGEX.test(this.phone)) {
       throw new DomainValidationException(
-        `Telefone deve ter no máximo ${MAX_PHONE_LENGTH} caracteres`,
+        'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999',
       );
     }
   }
