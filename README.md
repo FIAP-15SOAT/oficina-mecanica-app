@@ -32,7 +32,9 @@ src/
 │   ├── use-cases/
 │   │   ├── auth/                    # Register, Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD completo de usuários
-│   │   └── part-supply/             # CRUD + movimentação de estoque de peças e insumos
+│   │   ├── part-supply/             # CRUD + movimentação de estoque de peças e insumos
+│   │   ├── customer/                # CRUD completo de clientes
+│   │   └── vehicle/                 # CRUD completo de veículos
 │   └── exceptions/                  # Exceções de aplicação (ResourceNotFound, Conflict, etc.)
 │
 ├── infrastructure/                  # Camada de infraestrutura (implementações concretas)
@@ -49,7 +51,9 @@ src/
 │   ├── auth/                        # AuthController + DTOs
 │   ├── user/                        # UserController + DTOs
 │   ├── service/                     # ServiceController + DTOs
-│   └── parts-supplies/              # PartsSuppliesController + DTOs
+│   ├── parts-supplies/              # PartsSuppliesController + DTOs
+│   ├── customers/                   # CustomersController + DTOs
+│   └── vehicles/                    # VehiclesController + DTOs
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
@@ -174,12 +178,41 @@ Após iniciar a aplicação:
 - `PATCH /:id/stock` — Movimentar estoque (ENTRY / EXIT / ADJUSTMENT)
 - `DELETE /:id` — Remover (soft delete)
 
+**Clientes** (`/api/customers`) — *requer JWT (ADMIN ou ATTENDANT)*
+- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado, endereço obrigatório)
+- `GET /` — Listar clientes (paginado, filtros: name, type, document)
+- `GET /:id` — Buscar por ID
+- `GET /:id/vehicles` — Listar veículos do cliente (paginado)
+- `PUT /:id` — Atualizar dados (incluindo endereço)
+- `DELETE /:id` — Remover (impede exclusão se houver veículos vinculados)
+
+**Veículos** (`/api/vehicles`) — *requer JWT (ADMIN ou ATTENDANT)*
+- `POST /` — Cadastrar veículo (validação de placa old `ABC-1234` ou Mercosul `ABC1D23`)
+- `GET /` — Listar veículos (paginado, filtros: plate, brand, customerId)
+- `GET /:id` — Buscar por ID (retorna cliente aninhado)
+- `PUT /:id` — Atualizar dados (placa normalizada para maiúsculas)
+- `DELETE /:id` — Remover (impede exclusão se houver ordens de serviço vinculadas)
+
 ### Formato de resposta
 
-Todas as respostas de sucesso são envoltas em `{ data: ... }`:
+Recurso único — envolto em `{ data: ... }`:
 
 ```json
 { "data": { "id": "...", "name": "..." } }
+```
+
+Lista paginada — envolto em `{ data: [...], pagination: { ... } }`:
+
+```json
+{
+  "data": [{ "id": "...", "name": "..." }],
+  "pagination": {
+    "totalRecords": 42,
+    "totalPages": 5,
+    "page": 1,
+    "limit": 10
+  }
+}
 ```
 
 Erros seguem o padrão NestJS com mensagens em português:
@@ -196,7 +229,7 @@ Erros seguem o padrão NestJS com mensagens em português:
 npm test
 ```
 
-38 suites, 214 testes.
+58 suites, 378 testes.
 
 ### Postman / Newman
 
@@ -204,7 +237,7 @@ Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Po
 
 Antes de executar, preencha as variáveis `adminEmail` e `adminPassword` no environment com as credenciais de um dos usuários criados pelo seed.
 
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Validação**.
+Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Veículos**.
 
 Ou via linha de comando com a aplicação rodando:
 
@@ -212,7 +245,7 @@ Ou via linha de comando com a aplicação rodando:
 npx newman run oficina-collection.json -e oficina-environment.json
 ```
 
-76 requests, 135 assertions.
+111 requests, 189 assertions.
 
 ## Variáveis de Ambiente
 

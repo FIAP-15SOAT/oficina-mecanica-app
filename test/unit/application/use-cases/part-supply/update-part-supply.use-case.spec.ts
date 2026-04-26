@@ -1,7 +1,10 @@
 import { UpdatePartSupplyUseCase } from '@application/use-cases/part-supply/update-part-supply.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
+import { Unit } from '@domain/enums/unit.enum';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
+import { UpdatePartSupplyDto } from '@domain/interfaces/use-cases/part-supply/dto/update-part-supply.dto';
 import {
   createMockPartSupply,
   createMockPartSupplyRepository,
@@ -10,6 +13,15 @@ import {
 describe('UpdatePartSupplyUseCase', () => {
   let useCase: UpdatePartSupplyUseCase;
   let partSupplyRepository: jest.Mocked<IPartSupplyRepository>;
+
+  const validInput: UpdatePartSupplyDto = {
+    name: 'Filtro de Óleo',
+    sku: 'FO-001',
+    category: PartSupplyCategory.PART,
+    unit: Unit.UN,
+    costPrice: 25.0,
+    salePrice: 45.0,
+  };
 
   beforeEach(() => {
     partSupplyRepository = createMockPartSupplyRepository();
@@ -22,16 +34,16 @@ describe('UpdatePartSupplyUseCase', () => {
     partSupplyRepository.findById.mockResolvedValue(existing);
     partSupplyRepository.update.mockResolvedValue(updated);
 
-    const result = await useCase.execute('uuid-1', { salePrice: 50 });
+    const result = await useCase.execute('uuid-1', { ...validInput, salePrice: 50 });
 
     expect(result).toEqual(updated);
-    expect(partSupplyRepository.update).toHaveBeenCalledWith('uuid-1', { salePrice: 50 });
+    expect(partSupplyRepository.update).toHaveBeenCalledWith('uuid-1', expect.objectContaining({ salePrice: 50 }));
   });
 
   it('should throw ResourceNotFoundException when item does not exist in Stock', async () => {
     partSupplyRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('uuid-999', { name: 'New name' })).rejects.toThrow(
+    await expect(useCase.execute('uuid-999', validInput)).rejects.toThrow(
       ResourceNotFoundException,
     );
   });
@@ -42,7 +54,7 @@ describe('UpdatePartSupplyUseCase', () => {
     partSupplyRepository.findById.mockResolvedValue(existing);
     partSupplyRepository.findBySku.mockResolvedValue(other);
 
-    await expect(useCase.execute('uuid-1', { sku: 'FO-002' })).rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('uuid-1', { ...validInput, sku: 'FO-002' })).rejects.toThrow(ResourceConflictException);
     expect(partSupplyRepository.update).not.toHaveBeenCalled();
   });
 });

@@ -95,7 +95,7 @@ model Customer {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @default(now()) @updatedAt @map("updated_at")
 
-  addresses  Address[]
+  address    Address?
   vehicles   Vehicle[]
   workOrders WorkOrder[]
 
@@ -104,7 +104,7 @@ model Customer {
 
 model Address {
   id         String   @id @default(uuid()) @db.Uuid
-  customerId String   @map("customer_id") @db.Uuid
+  customerId String   @unique @map("customer_id") @db.Uuid
   street     String   @db.VarChar(255)
   city       String   @db.VarChar(100)
   state      String   @db.VarChar(2)
