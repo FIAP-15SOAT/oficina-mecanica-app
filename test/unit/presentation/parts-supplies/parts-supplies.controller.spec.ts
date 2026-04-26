@@ -156,7 +156,14 @@ describe('PartsSuppliesController', () => {
   describe('update', () => {
     it('should update a part/supply and return it wrapped in data', async () => {
       const id = randomUUID();
-      const dto: UpdatePartSupplyRequestDto = { name: 'Filtro de Óleo Premium', salePrice: 59.9 };
+      const dto: UpdatePartSupplyRequestDto = {
+        name: 'Filtro de Óleo Premium',
+        sku: 'FO-001',
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 25.0,
+        salePrice: 59.9,
+      };
       const updated = createMockPartSupply({ id, name: dto.name, salePrice: dto.salePrice });
       updatePartSupplyUseCase.execute.mockResolvedValue(updated);
 

@@ -17,23 +17,19 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
     if (!existing) {
       throw new ResourceNotFoundException('Veículo', id);
     }
-    if (input.customerId && input.customerId !== existing.customerId) {
+    if (input.customerId !== existing.customerId) {
       const customer = await this.customerRepository.findById(input.customerId);
       if (!customer) {
         throw new ResourceNotFoundException('Cliente', input.customerId);
       }
     }
-    const dto: UpdateVehicleDto = { ...input };
-    if (dto.plate) {
-      const plate = dto.plate.trim().toUpperCase();
-      if (plate !== existing.plate) {
-        const byPlate = await this.vehicleRepository.findByPlate(plate);
-        if (byPlate) {
-          throw new ResourceConflictException(`Placa '${plate}' já está cadastrada.`);
-        }
-        dto.plate = plate;
+    const plate = input.plate.trim().toUpperCase();
+    if (plate !== existing.plate) {
+      const byPlate = await this.vehicleRepository.findByPlate(plate);
+      if (byPlate) {
+        throw new ResourceConflictException(`Placa '${plate}' já está cadastrada.`);
       }
     }
-    return this.vehicleRepository.update(id, dto);
+    return this.vehicleRepository.update(id, { ...input, plate });
   }
 }

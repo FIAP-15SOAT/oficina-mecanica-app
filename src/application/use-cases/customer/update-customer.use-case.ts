@@ -14,27 +14,25 @@ export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
     if (!existing) {
       throw new ResourceNotFoundException('Cliente', id);
     }
-    if (input.document && input.document !== existing.document) {
+    if (input.document !== existing.document) {
       const byDocument = await this.customerRepository.findByDocument(input.document);
       if (byDocument) {
         throw new ResourceConflictException(`Documento '${input.document}' já está cadastrado.`);
       }
     }
-    if (input.email && input.email !== existing.email) {
+    if (input.email !== existing.email) {
       const byEmail = await this.customerRepository.findByEmail(input.email);
       if (byEmail) {
         throw new ResourceConflictException(`E-mail '${input.email}' já está cadastrado.`);
       }
     }
     const updateData: Partial<Customer> = {
-      ...(input.name !== undefined && { name: input.name }),
-      ...(input.document !== undefined && { document: input.document }),
-      ...(input.type !== undefined && { type: input.type }),
-      ...(input.email !== undefined && { email: input.email }),
-      ...(input.phone !== undefined && { phone: input.phone }),
-      ...(input.address !== undefined && {
-        address: input.address ? Address.create({ customerId: id, ...input.address }) : null,
-      }),
+      name: input.name,
+      document: input.document,
+      type: input.type,
+      email: input.email,
+      phone: input.phone,
+      address: Address.create({ customerId: id, ...input.address }),
     };
     return this.customerRepository.update(id, updateData);
   }
