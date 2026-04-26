@@ -179,7 +179,7 @@ Após iniciar a aplicação:
 - `DELETE /:id` — Remover (soft delete)
 
 **Clientes** (`/api/customers`) — *requer JWT (ADMIN ou ATTENDANT)*
-- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado, endereço opcional)
+- `POST /` — Cadastrar cliente (CPF ou CNPJ formatado, endereço obrigatório)
 - `GET /` — Listar clientes (paginado, filtros: name, type, document)
 - `GET /:id` — Buscar por ID
 - `GET /:id/vehicles` — Listar veículos do cliente (paginado)
