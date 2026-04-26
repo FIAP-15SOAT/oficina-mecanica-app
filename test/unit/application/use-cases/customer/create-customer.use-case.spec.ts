@@ -14,6 +14,7 @@ describe('CreateCustomerUseCase', () => {
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '(11) 99999-9999',
+    address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
   };
 
   beforeEach(() => {
@@ -22,7 +23,7 @@ describe('CreateCustomerUseCase', () => {
   });
 
   it('should create customer when document and email are unique', async () => {
-    const saved = createMockCustomer(validInput);
+    const saved = createMockCustomer({ name: validInput.name, document: validInput.document, type: validInput.type, email: validInput.email, phone: validInput.phone });
     customerRepository.findByDocument.mockResolvedValue(null);
     customerRepository.findByEmail.mockResolvedValue(null);
     customerRepository.create.mockResolvedValue(saved);

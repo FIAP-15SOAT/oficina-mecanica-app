@@ -44,8 +44,9 @@ describe('CustomersController', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'joao@email.com',
         phone: '(11) 99999-9999',
+        address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
       };
-      const created = createMockCustomer(dto);
+      const created = createMockCustomer({ name: dto.name, document: dto.document, type: dto.type, email: dto.email, phone: dto.phone });
       createUseCase.execute.mockResolvedValue(created);
 
       const result = await controller.create(dto as any);

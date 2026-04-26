@@ -3,12 +3,20 @@ import { CustomerType } from '@domain/enums/customer-type.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('Customer Entity', () => {
+  const validAddress = {
+    street: 'Rua das Flores, 123',
+    city: 'São Paulo',
+    state: 'SP',
+    zipCode: '01310-100',
+  };
+
   const validProps = {
     name: 'João da Silva',
     document: '123.456.789-09',
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '(11) 99999-9999',
+    address: validAddress,
   };
 
   describe('create (factory method)', () => {
@@ -20,7 +28,8 @@ describe('Customer Entity', () => {
         expect(customer.type).toBe(CustomerType.INDIVIDUAL);
         expect(customer.email).toBe('joao@email.com');
         expect(customer.phone).toBe('(11) 99999-9999');
-        expect(customer.address).toBeNull();
+        expect(customer.address).toBeDefined();
+        expect(customer.address!.street).toBe(validAddress.street);
         expect(customer.id).toBeDefined();
         expect(customer.createdAt).toBeInstanceOf(Date);
         expect(customer.updatedAt).toBeInstanceOf(Date);

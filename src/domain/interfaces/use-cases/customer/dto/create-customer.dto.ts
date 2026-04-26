@@ -1,5 +1,11 @@
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { AddressProps } from '@domain/entities/customer.entity';
+
+export interface AddressDto {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
 
 export interface CreateCustomerDto {
   name: string;
@@ -7,5 +13,5 @@ export interface CreateCustomerDto {
   type: CustomerType;
   email: string;
   phone: string;
-  address?: AddressProps | null;
+  address: AddressDto;
 }

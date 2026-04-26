@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -6,7 +6,6 @@ import {
   IsEmail,
   MaxLength,
   Matches,
-  IsOptional,
   ValidateNested,
   Length,
 } from 'class-validator';
@@ -78,9 +77,8 @@ export class CreateCustomerRequestDto {
   })
   phone: string;
 
-  @ApiPropertyOptional({ type: AddressRequestDto, description: 'Endereço do Cliente' })
-  @IsOptional()
+  @ApiProperty({ type: AddressRequestDto, description: 'Endereço do Cliente' })
   @ValidateNested()
   @Type(() => AddressRequestDto)
-  address?: AddressRequestDto;
+  address: AddressRequestDto;
 }

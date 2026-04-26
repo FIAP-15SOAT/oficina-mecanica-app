@@ -23,7 +23,7 @@ export interface CreateCustomerProps {
   type: CustomerType;
   email: string;
   phone: string;
-  address?: AddressProps | null;
+  address: AddressProps;
 }
 
 export class Customer {
@@ -60,9 +60,7 @@ export class Customer {
     customer.validateEmail();
     customer.validatePhone();
 
-    if (props.address) {
-      customer.address = Address.create({ customerId: id, ...props.address });
-    }
+    customer.address = Address.create({ customerId: id, ...props.address });
 
     return customer;
   }
