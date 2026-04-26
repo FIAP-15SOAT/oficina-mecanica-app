@@ -1,8 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-
-const PLATE_REGEX = /^([A-Z]{3}-\d{4}|[A-Z]{3}\d[A-Z]\d{2})$/;
+import { PLATE_REGEX } from '@domain/constants/plate.regex';
 
 export class FilterVehiclesDto {
   @ApiPropertyOptional({ description: 'Número da página', example: 1, default: 1 })

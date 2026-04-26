@@ -8,6 +8,7 @@ import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/de
 import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 
 describe('CustomersController', () => {
@@ -133,7 +134,7 @@ describe('CustomersController', () => {
 
       const result = await controller.findVehiclesByCustomerId(customerId, { page: 1, limit: 10 } as any);
 
-      expect(result).toEqual({ data: vehicles, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
+      expect(result).toEqual(VehiclePresenter.toPaginatedDataResponse(useCaseOutput));
       expect(findVehiclesByCustomerIdUseCase.execute).toHaveBeenCalledWith(customerId, { page: 1, limit: 10 });
     });
   });

@@ -1,8 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-
-const PLATE_REGEX = /^([A-Z]{3}-\d{4}|[A-Z]{3}\d[A-Z]\d{2})$/;
+import { PLATE_REGEX } from '@domain/constants/plate.regex';
 
 export class CreateVehicleRequestDto {
   @ApiProperty({ description: 'ID do Cliente proprietário', format: 'uuid' })

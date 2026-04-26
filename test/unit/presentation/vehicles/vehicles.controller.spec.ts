@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { VehiclesController } from '@presentation/vehicles/vehicles.controller';
+import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
 import { ICreateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/create-vehicle.use-case.interface';
 import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/find-all-vehicles.use-case.interface';
 import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
@@ -44,7 +45,7 @@ describe('VehiclesController', () => {
 
       const result = await controller.create(dto as any);
 
-      expect(result).toEqual({ data: created });
+      expect(result).toEqual(VehiclePresenter.toDataResponse(created));
       expect(createUseCase.execute).toHaveBeenCalledWith(dto);
     });
   });
@@ -60,7 +61,7 @@ describe('VehiclesController', () => {
 
       const result = await controller.findAll({ page: 1, limit: 10 } as any);
 
-      expect(result).toEqual({ data: vehicles, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
+      expect(result).toEqual(VehiclePresenter.toPaginatedDataResponse(useCaseOutput));
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -98,7 +99,7 @@ describe('VehiclesController', () => {
 
       const result = await controller.findById(vehicle.id);
 
-      expect(result).toEqual({ data: vehicle });
+      expect(result).toEqual(VehiclePresenter.toDataResponse(vehicle));
       expect(findByIdUseCase.execute).toHaveBeenCalledWith(vehicle.id);
     });
   });
@@ -110,7 +111,7 @@ describe('VehiclesController', () => {
 
       const result = await controller.update(updated.id, { brand: 'Honda' } as any);
 
-      expect(result).toEqual({ data: updated });
+      expect(result).toEqual(VehiclePresenter.toDataResponse(updated));
       expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { brand: 'Honda' });
     });
   });

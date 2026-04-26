@@ -1,6 +1,7 @@
 import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { Customer } from './customer.entity';
+import { PLATE_REGEX } from '@domain/constants/plate.regex';
 
 const MIN_BRAND_LENGTH = 2;
 const MAX_BRAND_LENGTH = 60;
@@ -8,9 +9,6 @@ const MIN_MODEL_LENGTH = 2;
 const MAX_MODEL_LENGTH = 60;
 const MAX_COLOR_LENGTH = 40;
 const MIN_YEAR = 1950;
-
-const OLD_PLATE_REGEX = /^[A-Z]{3}-\d{4}$/;
-const MERCOSUL_PLATE_REGEX = /^[A-Z]{3}\d[A-Z]\d{2}$/;
 
 export interface CreateVehicleProps {
   customerId: string;
@@ -77,7 +75,7 @@ export class Vehicle {
     if (!this.plate) {
       throw new DomainValidationException('Placa é obrigatória');
     }
-    if (!OLD_PLATE_REGEX.test(this.plate) && !MERCOSUL_PLATE_REGEX.test(this.plate)) {
+    if (!PLATE_REGEX.test(this.plate)) {
       throw new DomainValidationException(
         'Placa inválida. Use o formato antigo (ABC-1234) ou Mercosul (ABC1D23)',
       );

@@ -36,8 +36,8 @@ export class VehicleResponseDto {
   @ApiPropertyOptional({ description: 'Quilometragem', example: 50000, nullable: true })
   mileage: number | null;
 
-  @ApiPropertyOptional({ type: CustomerSummaryDto, description: 'Dados resumidos do cliente' })
-  customer?: CustomerSummaryDto;
+  @ApiProperty({ type: CustomerSummaryDto, description: 'Dados resumidos do cliente' })
+  customer: CustomerSummaryDto;
 
   @ApiProperty({ description: 'Data de cadastro' })
   createdAt: Date;
