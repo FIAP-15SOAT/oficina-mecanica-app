@@ -13,7 +13,7 @@ describe('CreateCustomerUseCase', () => {
     document: '123.456.789-09',
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
-    phone: '(11) 99999-9999',
+    phone: '11999999999',
     address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
   };
 

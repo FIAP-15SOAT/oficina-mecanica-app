@@ -2,13 +2,12 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
 import { DocumentValidator } from '@infrastructure/validators/document.validator';
+import { PHONE_REGEX } from '@domain/constants/phone.regex';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// DDD opcional com parênteses, espaço opcional, celular (9[1-9]XXXXXXX) ou fixo ([2-8]XXXXXXX), hífen opcional
-const PHONE_REGEX = /^(\(?[1-9]{2}\)?)?[\s-]?(?:[2-8]|9[1-9])[0-9]{3}-?[0-9]{4}$/;
 
 export interface AddressProps {
   street: string;

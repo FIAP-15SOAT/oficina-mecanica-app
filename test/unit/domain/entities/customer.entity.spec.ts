@@ -15,7 +15,7 @@ describe('Customer Entity', () => {
     document: '123.456.789-09',
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
-    phone: '(11) 99999-9999',
+    phone: '11999999999',
     address: validAddress,
   };
 
@@ -27,7 +27,7 @@ describe('Customer Entity', () => {
         expect(customer.document).toBe('123.456.789-09');
         expect(customer.type).toBe(CustomerType.INDIVIDUAL);
         expect(customer.email).toBe('joao@email.com');
-        expect(customer.phone).toBe('(11) 99999-9999');
+        expect(customer.phone).toBe('11999999999');
         expect(customer.address).toBeDefined();
         expect(customer.address!.street).toBe(validAddress.street);
         expect(customer.id).toBeDefined();
@@ -48,10 +48,10 @@ describe('Customer Entity', () => {
         const customer = Customer.create({
           ...validProps,
           name: '  João da Silva  ',
-          phone: '  (11) 99999-9999  ',
+          phone: '  11999999999  ',
         });
         expect(customer.name).toBe('João da Silva');
-        expect(customer.phone).toBe('(11) 99999-9999');
+        expect(customer.phone).toBe('11999999999');
       });
     });
 

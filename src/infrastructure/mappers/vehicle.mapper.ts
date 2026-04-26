@@ -1,13 +1,9 @@
-import { Vehicle as PrismaVehicle, Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
+import { Vehicle as PrismaVehicle, Customer as PrismaCustomer } from '@generated/client';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { CustomerMapper } from './customer.mapper';
 
-type PrismaCustomerWithAddress = PrismaCustomer & {
-  address?: PrismaAddress | null;
-};
-
 type PrismaVehicleWithCustomer = PrismaVehicle & {
-  customer?: PrismaCustomerWithAddress | null;
+  customer?: PrismaCustomer | null;
 };
 
 export class VehicleMapper {

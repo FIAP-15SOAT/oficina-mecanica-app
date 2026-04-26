@@ -12,6 +12,7 @@ import {
 import { Transform, Type } from 'class-transformer';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { IsValidCpfCnpj } from '@infrastructure/validators/document.validator';
+import { PHONE_REGEX } from '@domain/constants/phone.regex';
 
 export class AddressRequestDto {
   @ApiProperty({ description: 'Logradouro', example: 'Rua das Flores, 123' })
@@ -72,9 +73,7 @@ export class CreateCustomerRequestDto {
   @Transform(({ value }) => value?.replace(/\D/g, ''))
   @IsString({ message: 'O telefone deve ser um texto.' })
   @IsNotEmpty({ message: 'O telefone é obrigatório.' })
-  @Matches(/^([1-9]{2})?(?:[2-8]|9[1-9])[0-9]{7}$/, {
-    message: 'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999.',
-  })
+  @Matches(PHONE_REGEX, { message: 'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999.' })
   phone: string;
 
   @ApiProperty({ type: AddressRequestDto, description: 'Endereço do Cliente' })

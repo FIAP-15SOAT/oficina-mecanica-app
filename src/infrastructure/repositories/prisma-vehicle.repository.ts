@@ -9,8 +9,6 @@ import {
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { VehicleMapper } from '@infrastructure/mappers/vehicle.mapper';
 
-const CUSTOMER_INCLUDE = { address: true } as const;
-
 @Injectable()
 export class PrismaVehicleRepository implements IVehicleRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -18,7 +16,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async create(vehicle: Vehicle): Promise<Vehicle> {
     const record = await this.prisma.vehicle.create({
       data: VehicleMapper.toPrismaCreate(vehicle),
-      include: { customer: { include: CUSTOMER_INCLUDE } },
+      include: { customer: true },
     });
     return VehicleMapper.toDomain(record);
   }
@@ -26,7 +24,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findById(id: string): Promise<Vehicle | null> {
     const record = await this.prisma.vehicle.findUnique({
       where: { id },
-      include: { customer: { include: CUSTOMER_INCLUDE } },
+      include: { customer: true },
     });
     return record ? VehicleMapper.toDomain(record) : null;
   }
@@ -51,7 +49,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { customer: { include: CUSTOMER_INCLUDE } },
+        include: { customer: true },
       }),
       this.prisma.vehicle.count({ where }),
     ]);
@@ -71,7 +69,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         ...(data.color !== undefined && { color: data.color }),
         ...(data.mileage !== undefined && { mileage: data.mileage }),
       },
-      include: { customer: { include: CUSTOMER_INCLUDE } },
+      include: { customer: true },
     });
     return VehicleMapper.toDomain(record);
   }

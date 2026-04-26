@@ -11,7 +11,7 @@ export function createMockCustomer(overrides: Partial<Customer> = {}): Customer 
     document: '123.456.789-09',
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
-    phone: '(11) 99999-9999',
+    phone: '11999999999',
     address: null,
     createdAt: now,
     updatedAt: now,
