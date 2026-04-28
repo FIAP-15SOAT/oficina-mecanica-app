@@ -15,7 +15,7 @@ import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 
 export class CreatePartSupplyRequestDto {
-  @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Filtro de Óleo' })
+  @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Correia de alternador' })
   @IsString({ message: 'O nome da Peça ou Insumo deve ser um texto.' })
   @IsNotEmpty({ message: 'O nome da Peça ou Insumo é obrigatório.' })
   @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
@@ -26,7 +26,7 @@ export class CreatePartSupplyRequestDto {
   @IsString({ message: 'A descrição deve ser um texto.' })
   description?: string;
 
-  @ApiProperty({ description: 'SKU único da Peça ou Insumo no Estoque', example: 'FO-001' })
+  @ApiProperty({ description: 'SKU único da Peça ou Insumo no Estoque', example: 'CA-ALT-001' })
   @IsString({ message: 'O SKU deve ser um texto.' })
   @IsNotEmpty({ message: 'O SKU é obrigatório.' })
   @MaxLength(60, { message: 'O SKU deve ter no máximo 60 caracteres.' })
