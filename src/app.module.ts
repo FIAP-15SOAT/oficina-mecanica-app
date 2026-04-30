@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 
+import { AllExceptionsFilter } from './infrastructure/filters/all-exceptions.filter';
 import { ApplicationExceptionFilter } from './infrastructure/filters/application-exception.filter';
 import { DomainExceptionFilter } from './infrastructure/filters/domain-exception.filter';
 import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastructure-exception.filter';
@@ -28,6 +29,10 @@ import { VehiclesModule } from './presentation/vehicles/vehicles.module';
     VehiclesModule,
   ],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
     {
       provide: APP_FILTER,
       useClass: DomainExceptionFilter,
