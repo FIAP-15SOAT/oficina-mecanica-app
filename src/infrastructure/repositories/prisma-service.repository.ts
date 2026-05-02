@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, Service as PrismaServiceModel } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Service } from '@domain/entities/service.entity';
 import {
   IServiceRepository,
@@ -17,17 +18,24 @@ export class PrismaServiceRepository implements IServiceRepository {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(service: Service): Promise<Service> {
-    const createdService = await this.prisma.service.create({
-      data: {
-        name: service.name,
-        description: service.description,
-        basePrice: service.basePrice,
-        estimatedTimeMin: service.estimatedTimeMin,
-        isActive: service.isActive,
-      },
-    });
+    try {
+      const createdService = await this.prisma.service.create({
+        data: {
+          name: service.name,
+          description: service.description,
+          basePrice: service.basePrice,
+          estimatedTimeMin: service.estimatedTimeMin,
+          isActive: service.isActive,
+        },
+      });
 
-    return ServiceMapper.toDomain(createdService);
+      return ServiceMapper.toDomain(createdService);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('Serviço já cadastrado');
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Service | null> {

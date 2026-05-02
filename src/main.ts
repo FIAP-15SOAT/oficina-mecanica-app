@@ -1,16 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { setupSwagger } from './config/swagger.config';
 import { DateSerializerInterceptor } from './infrastructure/interceptors/date-serializer.interceptor';
+import { SanitizeStringsPipe } from './infrastructure/pipes/sanitize-strings.pipe';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
 
+  app.use(helmet());
+
   app.useGlobalPipes(
+    new SanitizeStringsPipe(),
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
@@ -20,7 +25,12 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalInterceptors(new DateSerializerInterceptor());
 
-  app.enableCors();
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:3000'];
+  app.enableCors({
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
+  });
   app.enableShutdownHooks();
 
   setupSwagger(app);

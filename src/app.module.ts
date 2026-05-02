@@ -3,6 +3,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 
+import { AllExceptionsFilter } from './infrastructure/filters/all-exceptions.filter';
 import { ApplicationExceptionFilter } from './infrastructure/filters/application-exception.filter';
 import { DomainExceptionFilter } from './infrastructure/filters/domain-exception.filter';
 import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastructure-exception.filter';
@@ -49,6 +50,10 @@ import { StockModule } from './presentation/stock/stock.module';
     StockModule,
   ],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
     {
       provide: APP_FILTER,
       useClass: DomainExceptionFilter,

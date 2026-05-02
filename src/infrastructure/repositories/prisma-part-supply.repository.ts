@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PartSupply as PrismaPartSupply, Prisma } from '@generated/client';
+import { Prisma, PartSupply as PrismaPartSupply } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
@@ -17,25 +18,32 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(partSupply: PartSupply): Promise<PartSupply> {
-    const record = await this.prisma.partSupply.create({
-      data: {
-        id: partSupply.id,
-        name: partSupply.name,
-        description: partSupply.description,
-        sku: partSupply.sku,
-        partNumber: partSupply.partNumber,
-        category: partSupply.category,
-        unit: partSupply.unit,
-        costPrice: partSupply.costPrice,
-        salePrice: partSupply.salePrice,
-        stock: partSupply.stock,
-        minStock: partSupply.minStock,
-        expiresAt: partSupply.expiresAt,
-        isActive: partSupply.isActive,
-      },
-    });
+    try {
+      const record = await this.prisma.partSupply.create({
+        data: {
+          id: partSupply.id,
+          name: partSupply.name,
+          description: partSupply.description,
+          sku: partSupply.sku,
+          partNumber: partSupply.partNumber,
+          category: partSupply.category,
+          unit: partSupply.unit,
+          costPrice: partSupply.costPrice,
+          salePrice: partSupply.salePrice,
+          stock: partSupply.stock,
+          minStock: partSupply.minStock,
+          expiresAt: partSupply.expiresAt,
+          isActive: partSupply.isActive,
+        },
+      });
 
-    return PartSupplyMapper.toDomain(record);
+      return PartSupplyMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('Peça ou insumo já cadastrado');
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<PartSupply | null> {

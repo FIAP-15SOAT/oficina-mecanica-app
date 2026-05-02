@@ -11,7 +11,7 @@ import {
 
 export class CreateServiceRequestDto {
   @ApiProperty({
-    example: 'Troca de óleo',
+    example: 'Higienização de estofados',
     description: 'Nome do serviço (mín. 3 e máx. 150 caracteres)',
   })
   @IsString()
