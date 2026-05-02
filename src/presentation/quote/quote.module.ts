@@ -15,6 +15,8 @@ import { ApproveQuoteUseCase } from '@application/use-cases/quote/approve-quote.
 import { RejectQuoteUseCase } from '@application/use-cases/quote/reject-quote.use-case';
 import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-quote-status.use-case';
 import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-decision-quote.use-case';
+import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
+import { FindWorkOrderQuotesUseCase } from '@application/use-cases/quote/find-work-order-quotes.use-case';
 import { JwtTokenService } from '@infrastructure/services/jwt-token.service';
 
 import { PrismaQuoteRepository } from '@infrastructure/repositories/prisma-quote.repository';
@@ -126,6 +128,17 @@ import { QuoteController } from './quote.controller';
           configService.getOrThrow<string>('QUOTE_DECISION_TOKEN_SECRET'),
         ),
       inject: ['ITokenService', 'IApproveQuoteUseCase', 'IRejectQuoteUseCase', ConfigService],
+    },
+    {
+      provide: 'IFindAllQuotesPaginatedUseCase',
+      useFactory: (quoteRepo: PrismaQuoteRepository) => new FindAllQuotesPaginatedUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
+    },
+    {
+      provide: 'IFindWorkOrderQuotesUseCase',
+      useFactory: (quoteRepo: PrismaQuoteRepository, workOrderRepo: PrismaWorkOrderRepository) =>
+        new FindWorkOrderQuotesUseCase(quoteRepo, workOrderRepo),
+      inject: ['IQuoteRepository', 'IWorkOrderRepository'],
     },
   ],
 })

@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
+import { PaginationMetaDto, PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 
 export class QuoteResponseDto {
   @ApiProperty({ description: 'ID do orçamento', format: 'uuid', example: 'f9b6e8e0-1c2d-4e5f-8a9b-0c1d2e3f4a5b' })
@@ -57,4 +58,14 @@ export class QuoteDataResponseDto {
 export class QuoteWithItemsDataResponseDto {
   @ApiProperty({ type: QuoteWithItemsResponseDto })
   data!: QuoteWithItemsResponseDto;
+}
+
+export class QuoteListResponseDto {
+  @ApiProperty({ type: [QuoteWithItemsResponseDto] })
+  data!: QuoteWithItemsResponseDto[];
+}
+
+export class QuotePaginatedResponseDto extends PaginatedResponseDto<QuoteWithItemsResponseDto> {
+  @ApiProperty({ type: [QuoteWithItemsResponseDto] })
+  data!: QuoteWithItemsResponseDto[];
 }

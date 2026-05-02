@@ -45,6 +45,29 @@ describe('PrismaPartSupplyRepository', () => {
       expect(result.sku).toBe(partSupply.sku);
       expect(prisma.partSupply.create).toHaveBeenCalledTimes(1);
     });
+
+    it('should throw ResourceConflictException when SKU already exists', async () => {
+      const partSupply = createMockPartSupply();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate SKU', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.partSupply.create.mockRejectedValue(error);
+
+      await expect(repository.create(partSupply as any)).rejects.toThrow(
+        'Peça ou insumo já cadastrado',
+      );
+    });
+
+    it('should rethrow unknown errors', async () => {
+      const partSupply = createMockPartSupply();
+      const error = new Error('Database connection failed');
+      prisma.partSupply.create.mockRejectedValue(error);
+
+      await expect(repository.create(partSupply as any)).rejects.toThrow(
+        'Database connection failed',
+      );
+    });
   });
 
   describe('findById', () => {

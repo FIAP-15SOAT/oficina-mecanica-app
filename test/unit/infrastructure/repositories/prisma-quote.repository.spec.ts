@@ -140,7 +140,7 @@ describe('PrismaQuoteRepository', () => {
       ]);
       prisma.quote.count.mockResolvedValue(1);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 });
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
 
       expect(result.total).toBe(1);
       expect(result.items.length).toBe(1);
@@ -151,12 +151,10 @@ describe('PrismaQuoteRepository', () => {
       prisma.quote.count.mockResolvedValue(0);
 
       const workOrderId = randomUUID();
-      await repository.findAllPaginated({
-        page: 1,
-        limit: 10,
-        workOrderId,
-        status: QuoteStatus.SENT,
-      });
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { workOrderId, status: QuoteStatus.SENT },
+      );
 
       expect(prisma.quote.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

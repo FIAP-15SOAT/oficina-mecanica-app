@@ -59,6 +59,29 @@ describe('PrismaServiceRepository', () => {
         },
       });
     });
+
+    it('should throw ResourceConflictException when service already exists', async () => {
+      const service = createMockService();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate Service', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.service.create.mockRejectedValue(error);
+
+      await expect(repository.create(service as any)).rejects.toThrow(
+        'Serviço já cadastrado',
+      );
+    });
+
+    it('should rethrow unknown errors', async () => {
+      const service = createMockService();
+      const error = new Error('Database connection failed');
+      prisma.service.create.mockRejectedValue(error);
+
+      await expect(repository.create(service as any)).rejects.toThrow(
+        'Database connection failed',
+      );
+    });
   });
 
   describe('findById', () => {

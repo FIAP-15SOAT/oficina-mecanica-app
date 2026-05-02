@@ -5,7 +5,7 @@ import {
   PaginationInput,
 } from '../common/pagination.interface';
 
-export interface QuoteFilters extends PaginationInput {
+export interface QuoteFilters {
   workOrderId?: string;
   status?: QuoteStatus;
 }
@@ -16,5 +16,8 @@ export interface IQuoteRepository {
   findByWorkOrderId(workOrderId: string): Promise<Quote[]>;
   update(quote: Quote): Promise<Quote>;
   rejectPendingByWorkOrderId(workOrderId: string): Promise<void>;
-  findAllPaginated(filters: QuoteFilters): Promise<PaginatedRepositoryResult<Quote>>;
+  findAllPaginated(
+    pagination: PaginationInput,
+    filters: QuoteFilters,
+  ): Promise<PaginatedRepositoryResult<Quote>>;
 }

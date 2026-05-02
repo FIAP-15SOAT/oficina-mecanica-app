@@ -47,6 +47,7 @@ import { IUpdateQuotePartSupplyItemUseCase } from '@domain/interfaces/use-cases/
 import { ISubmitQuoteUseCase } from '@domain/interfaces/use-cases/quote/submit-quote.use-case.interface';
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@domain/interfaces/use-cases/quote/update-quote-status.use-case.interface';
+import { IFindAllQuotesPaginatedUseCase } from '@domain/interfaces/use-cases/quote/find-all-quotes-paginated.use-case.interface';
 
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { AddQuoteServiceRequestDto } from './dto/add-quote-service-request.dto';
@@ -55,7 +56,12 @@ import { UpdateQuoteServiceItemRequestDto } from './dto/update-quote-service-ite
 import { UpdateQuotePartSupplyItemRequestDto } from './dto/update-quote-part-supply-item-request.dto';
 import { UpdateQuoteStatusRequestDto } from './dto/update-quote-status-request.dto';
 import { QuoteEmailDecisionRequestDto } from './dto/quote-email-decision-request.dto';
-import { QuoteDataResponseDto, QuoteWithItemsDataResponseDto } from './dto/quote-response.dto';
+import { FindAllQuotesQueryDto } from './dto/find-all-quotes-query.dto';
+import {
+  QuoteDataResponseDto,
+  QuoteWithItemsDataResponseDto,
+  QuotePaginatedResponseDto,
+} from './dto/quote-response.dto';
 import { QuotePresenter } from './quote.presenter';
 
 @ApiTags('Gestão de Orçamentos')
@@ -77,7 +83,24 @@ export class QuoteController {
     @Inject('ISubmitQuoteUseCase') private readonly submitQuoteUseCase: ISubmitQuoteUseCase,
     @Inject('IEmailDecisionQuoteUseCase') private readonly emailDecisionQuoteUseCase: IEmailDecisionQuoteUseCase,
     @Inject('IUpdateQuoteStatusUseCase') private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
+    @Inject('IFindAllQuotesPaginatedUseCase')
+    private readonly findAllQuotesPaginatedUseCase: IFindAllQuotesPaginatedUseCase,
   ) { }
+
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @ApiOperation({ summary: 'Listar orçamentos paginado' })
+  @ApiOkResponse({ type: QuotePaginatedResponseDto })
+  async findAll(@Query() query: FindAllQuotesQueryDto) {
+    const { page, limit, ...filters } = query;
+    const result = await this.findAllQuotesPaginatedUseCase.execute({
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
+    });
+
+    return QuotePresenter.toPaginatedResponse(result);
+  }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)

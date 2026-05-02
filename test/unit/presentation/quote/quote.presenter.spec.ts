@@ -54,4 +54,24 @@ describe('QuotePresenter', () => {
       expect(response.data.partsSupplies).toEqual([]);
     });
   });
+
+  describe('toPaginatedResponse', () => {
+    it('should format paginated result correctly', () => {
+      const paginatedResult = {
+        items: [quote],
+        pagination: {
+          totalRecords: 1,
+          totalPages: 1,
+          page: 1,
+          limit: 10,
+        },
+      };
+
+      const response = QuotePresenter.toPaginatedResponse(paginatedResult);
+
+      expect(response.data).toHaveLength(1);
+      expect(response.data[0].id).toBe(quote.id);
+      expect(response.pagination).toEqual(paginatedResult.pagination);
+    });
+  });
 });

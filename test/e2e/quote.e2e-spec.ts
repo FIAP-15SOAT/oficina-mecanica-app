@@ -1253,5 +1253,114 @@ describe('Quote (E2E)', () => {
         process.env.QUOTE_DECISION_TOKEN_SECRET = originalSecret;
       }
     });
+    it('should sanitize strings with null characters (SanitizeStringsPipe)', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const notes = 'Test\0Notes';
+      const sanitizedNotes = 'TestNotes';
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId, notes })
+        .expect(201);
+
+      expect(res.body.data.notes).toBe(sanitizedNotes);
+    });
+
+    it('should reject a quote via email decision (QuoteDecisionAction.REJECT)', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      
+      const quoteId = createRes.body.data.id;
+      const service = await createService();
+      await request(httpServer).post(`/api/quotes/${quoteId}/services/${service.id}`).set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ quantity: 1 }).expect(200);
+      await request(httpServer).post(`/api/quotes/${quoteId}/submissions`).set('Authorization', `Bearer ${adminAuth.accessToken}`).expect(200);
+
+      const token = jwtService.sign(
+        { quoteId, action: 'reject', type: 'quote-email-decision' },
+        { secret, expiresIn: '7d' },
+      );
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}/decisions`)
+        .query({ action: 'reject', token })
+        .expect(200);
+
+      const updatedQuote = await ctx.prisma.quote.findUnique({ where: { id: quoteId } });
+      expect(updatedQuote?.status).toBe('REJECTED');
+    });
+
+  describe('Retrieval', () => {
+    it('should list all quotes paginated (GET /api/quotes)', async () => {
+      const wo = await createWorkOrderInDiagnosis();
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.workOrderId })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data[0].services).toBeDefined();
+      expect(res.body.data[0].partsSupplies).toBeDefined();
+    });
+
+    it('should filter quotes by workOrderId (GET /api/quotes?workOrderId=...)', async () => {
+      const wo1 = await createWorkOrderInDiagnosis();
+      const wo2 = await createWorkOrderInDiagnosis();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo1.workOrderId })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get(`/api/quotes?workOrderId=${wo1.workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].workOrderId).toBe(wo1.workOrderId);
+    });
+
+    it('should list quotes of a work order (GET /api/work-orders/:id/quotes)', async () => {
+      const wo = await createWorkOrderInDiagnosis();
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.workOrderId })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get(`/api/work-orders/${wo.workOrderId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data[0].workOrderId).toBe(wo.workOrderId);
+      expect(res.body.data[0].services).toBeDefined();
+      expect(res.body.data[0].partsSupplies).toBeDefined();
+    });
+
+    it('should return 404 when listing quotes for non-existent work order', async () => {
+      const invalidId = 'f9b6e8e0-1c2d-4e5f-8a9b-0c1d2e3f4a5b';
+      await request(httpServer)
+        .get(`/api/work-orders/${invalidId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
   });
+});
 });

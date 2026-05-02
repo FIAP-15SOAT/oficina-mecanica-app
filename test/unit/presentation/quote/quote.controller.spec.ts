@@ -16,6 +16,7 @@ describe('QuoteController', () => {
   let submitQuoteUseCase: any;
   let emailDecisionQuoteUseCase: any;
   let updateQuoteStatusUseCase: any;
+  let findAllQuotesPaginatedUseCase: any;
 
   beforeEach(() => {
     createQuoteUseCase = { execute: jest.fn() };
@@ -29,6 +30,7 @@ describe('QuoteController', () => {
     submitQuoteUseCase = { execute: jest.fn() };
     emailDecisionQuoteUseCase = { execute: jest.fn() };
     updateQuoteStatusUseCase = { execute: jest.fn() };
+    findAllQuotesPaginatedUseCase = { execute: jest.fn() };
 
     controller = new QuoteController(
       createQuoteUseCase,
@@ -42,6 +44,7 @@ describe('QuoteController', () => {
       submitQuoteUseCase,
       emailDecisionQuoteUseCase,
       updateQuoteStatusUseCase,
+      findAllQuotesPaginatedUseCase,
     );
   });
 
@@ -174,5 +177,29 @@ describe('QuoteController', () => {
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote as any));
     expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, action, token);
+  });
+
+  it('should list all quotes paginated', async () => {
+    const resultUseCase = { items: [], pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 } };
+    findAllQuotesPaginatedUseCase.execute.mockResolvedValue(resultUseCase);
+
+    const result = await controller.findAll({ page: 1, limit: 10 });
+
+    expect(result).toEqual(QuotePresenter.toPaginatedResponse(resultUseCase as any));
+    expect(findAllQuotesPaginatedUseCase.execute).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+    });
+  });
+
+  it('should list all quotes with default pagination', async () => {
+    findAllQuotesPaginatedUseCase.execute.mockResolvedValue({ items: [], pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 } });
+
+    await controller.findAll({});
+
+    expect(findAllQuotesPaginatedUseCase.execute).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+    });
   });
 });

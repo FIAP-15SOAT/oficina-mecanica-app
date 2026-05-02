@@ -8,7 +8,7 @@ import {
 } from '@domain/interfaces/repositories/quote.repository.interface';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
-import { PaginatedRepositoryResult } from '@domain/interfaces/common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
@@ -35,35 +35,42 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   }
 
   async findById(id: string): Promise<Quote | null> {
-    const record = await this.prisma.quote.findUnique({ where: { id } });
+    const record = await this.prisma.quote.findUnique({
+      where: { id },
+      include: { services: true, parts: true },
+    });
+
     return record ? QuoteMapper.toDomain(record) : null;
   }
 
   async findByWorkOrderId(workOrderId: string): Promise<Quote[]> {
     const records = await this.prisma.quote.findMany({
       where: { workOrderId },
+      include: { services: true, parts: true },
       orderBy: { createdAt: 'desc' },
     });
 
     return records.map((r) => QuoteMapper.toDomain(r));
   }
-
-
-  async findAllPaginated(filters: QuoteFilters): Promise<PaginatedRepositoryResult<Quote>> {
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters: QuoteFilters,
+  ): Promise<PaginatedRepositoryResult<Quote>> {
     const { workOrderId, status } = filters;
 
-    const where: Record<string, unknown> = {};
+    const where: Prisma.QuoteWhereInput = {};
 
-    if (workOrderId) where['workOrderId'] = workOrderId;
-    if (status) where['status'] = status;
+    if (workOrderId) where.workOrderId = workOrderId;
+    if (status) where.status = status;
 
     const result = await paginate(
       this.prisma.quote,
       {
         where,
-        orderBy: { createdAt: 'desc' }
+        include: { services: true, parts: true },
+        orderBy: { createdAt: 'desc' },
       },
-      filters,
+      pagination,
     );
 
     return {

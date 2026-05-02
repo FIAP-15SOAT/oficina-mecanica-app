@@ -36,6 +36,7 @@ import { IUpdateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order
 import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-status.use-case.interface';
 import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
 import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/reporting/find-work-order-status-history.use-case.interface';
+import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
 
 import { CreateWorkOrderRequestDto } from './dto/create-work-order-request.dto';
 import { UpdateWorkOrderRequestDto } from './dto/update-work-order-request.dto';
@@ -46,7 +47,9 @@ import {
   WorkOrderDataResponseDto,
   WorkOrderPaginatedResponseDto,
 } from './dto/work-order-response.dto';
+import { QuoteListResponseDto } from '../quote/dto/quote-response.dto';
 import { WorkOrderPresenter } from './work-order.presenter';
+import { QuotePresenter } from '../quote/quote.presenter';
 
 @ApiTags('Gestão de Ordens de Serviço')
 @Controller('work-orders')
@@ -64,7 +67,20 @@ export class WorkOrderController {
     private readonly updateWorkOrderServiceStatusUseCase: IUpdateWorkOrderServiceStatusUseCase,
     @Inject('IFindWorkOrderStatusHistoryUseCase')
     private readonly findWorkOrderStatusHistoryUseCase: IFindWorkOrderStatusHistoryUseCase,
+    @Inject('IFindWorkOrderQuotesUseCase')
+    private readonly findWorkOrderQuotesUseCase: IFindWorkOrderQuotesUseCase,
   ) { }
+
+  @Get(':id/quotes')
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @ApiOperation({ summary: 'Listar orçamentos de uma Ordem de Serviço' })
+  @ApiOkResponse({ type: QuoteListResponseDto, description: 'Lista de orçamentos' })
+  @ApiNotFoundResponse({ description: 'Ordem de Serviço não encontrada' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  async findQuotes(@Param('id', ParseUUIDPipe) id: string) {
+    const quotes = await this.findWorkOrderQuotesUseCase.execute(id);
+    return QuotePresenter.toListResponse(quotes);
+  }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)

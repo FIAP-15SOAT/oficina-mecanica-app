@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DateSerializerInterceptor } from '../../src/infrastructure/interceptors/date-serializer.interceptor';
+import { SanitizeStringsPipe } from '../../src/infrastructure/pipes/sanitize-strings.pipe';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import { execSync } from 'child_process';
@@ -53,6 +54,7 @@ export async function setupTestApp(): Promise<TestContext> {
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
+    new SanitizeStringsPipe(),
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,

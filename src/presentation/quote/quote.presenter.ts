@@ -36,4 +36,21 @@ export class QuotePresenter {
   static toDataResponse(quote: Quote): QuoteDataResponseDto {
     return { data: QuotePresenter.toResponse(quote) };
   }
+
+  static toListResponse(quotes: Quote[]): QuoteListResponseDto {
+    return {
+      data: quotes.map((q) => QuotePresenter.toWithItemsResponse(q).data),
+    };
+  }
+
+  static toPaginatedResponse(paginatedResult: PaginatedResult<Quote>): QuotePaginatedResponseDto {
+    const { items, pagination } = paginatedResult;
+    return {
+      data: items.map((q) => QuotePresenter.toWithItemsResponse(q).data),
+      pagination,
+    };
+  }
 }
+
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
+import { QuoteListResponseDto, QuotePaginatedResponseDto } from './dto/quote-response.dto';

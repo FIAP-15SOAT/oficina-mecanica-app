@@ -12,6 +12,7 @@ describe('WorkOrderController', () => {
   let updateStatusUseCase: any;
   let updateServiceStatusUseCase: any;
   let findStatusHistoryUseCase: any;
+  let findWorkOrderQuotesUseCase: any;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -21,6 +22,7 @@ describe('WorkOrderController', () => {
     updateStatusUseCase = { execute: jest.fn() };
     updateServiceStatusUseCase = { execute: jest.fn() };
     findStatusHistoryUseCase = { execute: jest.fn() };
+    findWorkOrderQuotesUseCase = { execute: jest.fn() };
 
     controller = new WorkOrderController(
       createUseCase,
@@ -30,6 +32,7 @@ describe('WorkOrderController', () => {
       updateStatusUseCase,
       updateServiceStatusUseCase,
       findStatusHistoryUseCase,
+      findWorkOrderQuotesUseCase,
     );
   });
 
@@ -145,5 +148,16 @@ describe('WorkOrderController', () => {
 
     expect(result.data).toHaveLength(1);
     expect(findStatusHistoryUseCase.execute).toHaveBeenCalledWith(id);
+  });
+
+  it('should find quotes of a work order', async () => {
+    const id = randomUUID();
+    const quotes = [{ id: randomUUID(), workOrderId: id }];
+    findWorkOrderQuotesUseCase.execute.mockResolvedValue(quotes);
+
+    const result = await controller.findQuotes(id);
+
+    expect(result.data).toHaveLength(1);
+    expect(findWorkOrderQuotesUseCase.execute).toHaveBeenCalledWith(id);
   });
 });
