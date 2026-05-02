@@ -42,12 +42,10 @@ import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/fi
 import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
-import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { FindAllServicesQueryDto } from './dto/filter-services.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
 import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { ServiceMetricsDataResponseDto, ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-response.dto';
@@ -73,21 +71,8 @@ export class ServiceController {
     private readonly deleteServiceUseCase: IDeleteServiceUseCase,
     @Inject('IFindServiceMetricsUseCase')
     private readonly findServiceMetricsUseCase: IFindServiceMetricsUseCase,
-    @Inject('IFindAllServicesMetricsUseCase')
-    private readonly findAllServicesMetricsUseCase: IFindAllServicesMetricsUseCase,
   ) { }
 
-  @Get('/services-metrics')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Obter métricas de todos os serviços' })
-  @ApiOkResponse({ type: ServiceMetricsPaginatedResponseDto, description: 'Lista paginada de métricas de todos os serviços' })
-  async getAllMetrics(@Query() pagination: PaginationDto) {
-    const result = await this.findAllServicesMetricsUseCase.execute({
-      page: pagination.page ?? 1,
-      limit: pagination.limit ?? 10,
-    });
-    return ServicePresenter.toMetricsPaginatedDataResponse(result);
-  }
 
   @Get(':id/metrics')
   @Roles(UserRole.ADMIN)

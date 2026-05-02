@@ -1,8 +1,5 @@
 import { StockMovement } from '@domain/entities/stock-movement.entity';
-import {
-  IStockMovementRepository,
-  StockMovementFilters,
-} from '@domain/interfaces/repositories/stock-movement.repository.interface';
+import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
 import { IFindStockMovementsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-movements.use-case.interface';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';

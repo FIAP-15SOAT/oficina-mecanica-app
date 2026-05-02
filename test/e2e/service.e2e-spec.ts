@@ -445,7 +445,7 @@ describe('Service (E2E)', () => {
         .expect(201);
 
       const res = await request(httpServer)
-        .get('/api/services/metrics')
+        .get('/api/services-metrics')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`);
       
       if (res.status !== 200) {

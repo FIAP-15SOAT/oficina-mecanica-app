@@ -27,9 +27,7 @@ export function createMockWorkOrderServiceRepository(): jest.Mocked<IWorkOrderSe
   return {
     create: jest.fn(),
     findByWorkOrderAndService: jest.fn(),
-    findByWorkOrderId: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
     isAllCompletedByWorkOrderId: jest.fn(),
   };
 }

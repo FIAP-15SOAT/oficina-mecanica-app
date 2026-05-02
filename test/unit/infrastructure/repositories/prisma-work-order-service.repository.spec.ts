@@ -64,25 +64,6 @@ describe('PrismaWorkOrderServiceRepository', () => {
     });
   });
 
-  describe('findByWorkOrderId', () => {
-    it('should return items for a work order', async () => {
-      const workOrderId = randomUUID();
-      prisma.workOrderService.findMany.mockResolvedValue([
-        {
-          workOrderId,
-          serviceId: randomUUID(),
-          quantity: 2,
-          unitPrice: new Prisma.Decimal(100.0),
-          totalPrice: new Prisma.Decimal(200.0),
-          status: WorkOrderServiceStatus.PENDING,
-        },
-      ]);
-
-      const result = await repository.findByWorkOrderId(workOrderId);
-
-      expect(result.length).toBe(1);
-    });
-  });
 
   describe('update', () => {
     it('should update a work order service', async () => {
@@ -107,17 +88,6 @@ describe('PrismaWorkOrderServiceRepository', () => {
     });
   });
 
-  describe('delete', () => {
-    it('should delete an item', async () => {
-      const workOrderId = randomUUID();
-      const serviceId = randomUUID();
-      prisma.workOrderService.delete.mockResolvedValue({ workOrderId, serviceId });
-
-      await repository.delete(workOrderId, serviceId);
-
-      expect(prisma.workOrderService.delete).toHaveBeenCalled();
-    });
-  });
 
   describe('isAllCompletedByWorkOrderId', () => {
     it('should return true if no non-completed items', async () => {

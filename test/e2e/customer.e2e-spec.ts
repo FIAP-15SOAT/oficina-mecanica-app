@@ -44,7 +44,7 @@ describe('Customer (E2E)', () => {
       street: 'Rua Teste, 123',
       city: 'São Paulo',
       state: 'SP',
-            zipCode: '01310100',
+      zipCode: '01310-100',
     },
   };
 
@@ -191,6 +191,7 @@ describe('Customer (E2E)', () => {
         '12.345.678/0001-951', // neither 11 nor 14 (stripped)
         '1234567890', // 10 digits (line 6 of validator)
         '1234567890123', // 13 digits (line 25 of validator)
+        '123.456.789-0A', // Stripped length 11, but digits only length 10 (line 6 hits after inner strip)
         '123.456.789-10', // Invalid CPF checksum (line 13 of validator)
       ];
 
@@ -232,7 +233,7 @@ describe('Customer (E2E)', () => {
             street: 'Av. Paulista, 1000',
             city: 'São Paulo',
             state: 'SP',
-            zipCode: '01310100',
+            zipCode: '01310-100',
           },
         });
     });

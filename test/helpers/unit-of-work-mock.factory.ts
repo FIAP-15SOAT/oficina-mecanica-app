@@ -33,7 +33,6 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
     workOrderService: createMockWorkOrderServiceRepository(),
     workOrderPartSupply: {
       create: jest.fn(),
-      findByWorkOrderId: jest.fn(),
       createMany: jest.fn(),
     } as any,
     quote: createMockQuoteRepository(),

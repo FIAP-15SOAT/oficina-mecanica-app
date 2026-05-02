@@ -75,59 +75,6 @@ describe('PrismaStockReservationRepository', () => {
     });
   });
 
-  describe('findById', () => {
-    it('should return a reservation when found', async () => {
-      const id = randomUUID();
-      prisma.stockReservation.findUnique.mockResolvedValue({
-        id,
-        partSupplyId: randomUUID(),
-        workOrderId: randomUUID(),
-        quantity: 5,
-        createdAt: new Date(),
-      });
-
-      const result = await repository.findById(id);
-
-      expect(result).toBeDefined();
-      expect(result?.id).toBe(id);
-    });
-
-    it('should return null when not found', async () => {
-      prisma.stockReservation.findUnique.mockResolvedValue(null);
-      const result = await repository.findById(randomUUID());
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('findByPartSupplyId', () => {
-    it('should return reservations for a part', async () => {
-      const partSupplyId = randomUUID();
-      prisma.stockReservation.findMany.mockResolvedValue([
-        {
-          id: randomUUID(),
-          partSupplyId,
-          workOrderId: randomUUID(),
-          quantity: 5,
-          createdAt: new Date(),
-        },
-      ]);
-
-      const result = await repository.findByPartSupplyId(partSupplyId);
-
-      expect(result.length).toBe(1);
-    });
-  });
-
-  describe('deleteById', () => {
-    it('should delete a reservation by id', async () => {
-      const id = randomUUID();
-      prisma.stockReservation.delete.mockResolvedValue({ id });
-
-      await repository.deleteById(id);
-
-      expect(prisma.stockReservation.delete).toHaveBeenCalledWith({ where: { id } });
-    });
-  });
 
   describe('deleteByWorkOrderId', () => {
     it('should delete reservations for a work order', async () => {

@@ -39,24 +39,6 @@ describe('PrismaWorkOrderPartSupplyRepository', () => {
     });
   });
 
-  describe('findByWorkOrderId', () => {
-    it('should return items for a work order', async () => {
-      const workOrderId = randomUUID();
-      prisma.workOrderPartSupply.findMany.mockResolvedValue([
-        {
-          workOrderId,
-          partSupplyId: randomUUID(),
-          quantity: 3,
-          unitPrice: new Prisma.Decimal(10.0),
-          totalPrice: new Prisma.Decimal(30.0),
-        },
-      ]);
-
-      const result = await repository.findByWorkOrderId(workOrderId);
-
-      expect(result.length).toBe(1);
-    });
-  });
 
   describe('createMany', () => {
     it('should create multiple items', async () => {

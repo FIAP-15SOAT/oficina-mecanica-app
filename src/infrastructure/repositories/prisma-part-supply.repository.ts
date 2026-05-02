@@ -165,11 +165,4 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       data: { stock: { decrement: amount } },
     });
   }
-
-  async incrementStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { stock: { increment: amount } },
-    });
-  }
 }

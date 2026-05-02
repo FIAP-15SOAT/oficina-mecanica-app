@@ -38,21 +38,11 @@ export class PrismaStockReservationRepository implements IStockReservationReposi
     });
   }
 
-  async findById(id: string): Promise<StockReservation | null> {
-    const record = await this.prisma.stockReservation.findUnique({ where: { id } });
-    return record ? StockReservationMapper.toDomain(record) : null;
-  }
 
   async findByWorkOrderId(workOrderId: string): Promise<StockReservation[]> {
     const records = await this.prisma.stockReservation.findMany({ where: { workOrderId } });
     return records.map((r) => StockReservationMapper.toDomain(r));
   }
-
-  async findByPartSupplyId(partSupplyId: string): Promise<StockReservation[]> {
-    const records = await this.prisma.stockReservation.findMany({ where: { partSupplyId } });
-    return records.map((r) => StockReservationMapper.toDomain(r));
-  }
-
   async findAllPaginated(
     pagination: PaginationInput,
     filters: StockReservationFilters,
@@ -79,9 +69,6 @@ export class PrismaStockReservationRepository implements IStockReservationReposi
     };
   }
 
-  async deleteById(id: string): Promise<void> {
-    await this.prisma.stockReservation.delete({ where: { id } });
-  }
 
   async deleteByWorkOrderId(workOrderId: string): Promise<void> {
     await this.prisma.stockReservation.deleteMany({ where: { workOrderId } });

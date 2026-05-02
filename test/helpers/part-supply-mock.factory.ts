@@ -37,7 +37,6 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     incrementReservedStock: jest.fn(),
     decrementReservedStock: jest.fn(),
     decrementStock: jest.fn(),
-    incrementStock: jest.fn(),
     delete: jest.fn(),
     hasQuotePartSupplies: jest.fn(),
     hasWorkOrderPartSupplies: jest.fn(),

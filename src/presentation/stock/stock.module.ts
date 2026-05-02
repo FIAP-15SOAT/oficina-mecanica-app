@@ -28,4 +28,4 @@ import { StockReservationsController } from './stock-reservations.controller';
     },
   ],
 })
-export class StockModule {}
+export class StockModule { }

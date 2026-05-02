@@ -43,11 +43,6 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     return record ? WorkOrderMapper.toDomain(record) : null;
   }
 
-  async findByNumber(number: string): Promise<WorkOrder | null> {
-    const record = await this.prisma.workOrder.findUnique({ where: { number } });
-    return record ? WorkOrderMapper.toDomain(record) : null;
-  }
-
   async findAllPaginated(pagination: PaginationInput, filters: WorkOrderFilters): Promise<PaginatedRepositoryResult<WorkOrder>> {
     const { number, customerId, vehicleId, assignedUserId, status } = filters;
 

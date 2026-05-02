@@ -2,6 +2,5 @@ import { WorkOrderPartSupply } from '../../entities/work-order-part-supply.entit
 
 export interface IWorkOrderPartSupplyRepository {
   create(workOrderPartSupply: WorkOrderPartSupply): Promise<WorkOrderPartSupply>;
-  findByWorkOrderId(workOrderId: string): Promise<WorkOrderPartSupply[]>;
   createMany(items: WorkOrderPartSupply[]): Promise<void>;
 }

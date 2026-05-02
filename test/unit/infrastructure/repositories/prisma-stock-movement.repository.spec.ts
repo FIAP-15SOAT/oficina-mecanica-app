@@ -39,50 +39,6 @@ describe('PrismaStockMovementRepository', () => {
     });
   });
 
-  describe('findByPartId', () => {
-    it('should return movements for a part', async () => {
-      const partId = randomUUID();
-      prisma.stockMovement.findMany.mockResolvedValue([
-        {
-          id: randomUUID(),
-          partSupplyId: partId,
-          type: StockMovementType.ENTRY,
-          quantity: 5,
-          createdAt: new Date(),
-        },
-      ]);
-
-      const result = await repository.findByPartId(partId);
-
-      expect(result.length).toBe(1);
-      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { partSupplyId: partId } }),
-      );
-    });
-  });
-
-  describe('findByWorkOrderId', () => {
-    it('should return movements for a work order', async () => {
-      const workOrderId = randomUUID();
-      prisma.stockMovement.findMany.mockResolvedValue([
-        {
-          id: randomUUID(),
-          partSupplyId: randomUUID(),
-          workOrderId,
-          type: StockMovementType.EXIT,
-          quantity: 2,
-          createdAt: new Date(),
-        },
-      ]);
-
-      const result = await repository.findByWorkOrderId(workOrderId);
-
-      expect(result.length).toBe(1);
-      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workOrderId } }),
-      );
-    });
-  });
 
   describe('findAllPaginated', () => {
     it('should return paginated stock movements', async () => {

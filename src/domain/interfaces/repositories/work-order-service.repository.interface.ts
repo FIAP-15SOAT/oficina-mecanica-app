@@ -6,8 +6,6 @@ export interface IWorkOrderServiceRepository {
     workOrderId: string,
     serviceId: string,
   ): Promise<WorkOrderService | null>;
-  findByWorkOrderId(workOrderId: string): Promise<WorkOrderService[]>;
   update(workOrderService: WorkOrderService): Promise<WorkOrderService>;
-  delete(workOrderId: string, serviceId: string): Promise<void>;
   isAllCompletedByWorkOrderId(workOrderId: string): Promise<boolean>;
 }

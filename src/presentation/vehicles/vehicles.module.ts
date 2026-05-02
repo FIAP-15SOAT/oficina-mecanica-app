@@ -53,5 +53,6 @@ import { VehiclesController } from './vehicles.controller';
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
+  exports: ['IVehicleRepository'],
 })
 export class VehiclesModule {}

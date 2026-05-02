@@ -1,11 +1,10 @@
 import { FindStockMovementsUseCase } from '@application/use-cases/stock/find-stock-movements.use-case';
 import { createMockStockMovementRepository, createMockStockMovement } from '../../../../helpers/stock-movement-mock.factory';
-import { IStockMovementRepository, StockMovementFilters } from '@domain/interfaces/repositories/stock-movement.repository.interface';
+import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
 
 describe('FindStockMovementsUseCase', () => {
   let useCase: FindStockMovementsUseCase;
   let repository: jest.Mocked<IStockMovementRepository>;
-  let partSupplyRepository: any;
 
   beforeEach(() => {
     repository = createMockStockMovementRepository() as jest.Mocked<IStockMovementRepository>;
@@ -26,7 +25,7 @@ describe('FindStockMovementsUseCase', () => {
     expect(result.pagination.totalPages).toBe(1);
     expect(result.pagination.page).toBe(1);
     expect(result.pagination.limit).toBe(10);
-    expect(repository.findAllPaginated).toHaveBeenCalledWith({ page: 1, limit: 10 }, expect.any(Object));
+    expect(repository.findAllPaginated).toHaveBeenCalledWith({ page: 1, limit: 10 }, {});
   });
 
   it('should return empty result when no movements exist', async () => {
@@ -68,6 +67,24 @@ describe('FindStockMovementsUseCase', () => {
         startDate: new Date('2023-01-01T00:00:00.000Z'),
         endDate: new Date('2023-01-31T23:59:59.999Z'),
       }),
+    );
+  });
+
+  it('should return empty result when partSupplyId does not exist', async () => {
+    const input = {
+      page: 1,
+      limit: 10,
+      partSupplyId: 'invalid-id',
+    };
+
+    repository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    const result = await useCase.execute(input);
+
+    expect(result.items).toHaveLength(0);
+    expect(repository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      expect.objectContaining({ partSupplyId: 'invalid-id' }),
     );
   });
 });

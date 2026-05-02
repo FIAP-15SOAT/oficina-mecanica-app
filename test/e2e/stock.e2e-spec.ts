@@ -91,12 +91,15 @@ describe('Stock (E2E)', () => {
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should return 404 when partSupplyId does not exist', async () => {
-      await request(httpServer)
+    it('should return 200 and empty data when partSupplyId does not exist', async () => {
+      const res = await request(httpServer)
         .get('/api/stock-movements')
         .query({ partSupplyId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(404);
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.data.length).toBe(0);
     });
   });
 
@@ -133,6 +136,85 @@ describe('Stock (E2E)', () => {
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
       expect(res.body.data[0].partSupplyId).toBe(part.id);
+    });
+
+    it('should filter stock reservations by partSupplyId and workOrderId', async () => {
+      const part = await createPartSupply('Peça Filtrar', 'FILT-001');
+      const customer = await ctx.prisma.customer.create({
+        data: { name: 'Test Filter', document: '12345678900', type: 'INDIVIDUAL', email: 'filter@stock.com', phone: '123' }
+      });
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: { customerId: customer.id, plate: 'FLT-0001', brand: 'Test', model: 'Test', year: 2020 }
+      });
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: { customerId: customer.id, vehicleId: vehicle.id, number: 'FILTER', status: 'IN_PROGRESS' }
+      });
+
+      await ctx.prisma.stockReservation.create({
+        data: {
+          partSupplyId: part.id,
+          workOrderId: workOrder.id,
+          quantity: 10,
+        }
+      });
+
+      // Filter by partSupplyId
+      let res = await request(httpServer)
+        .get('/api/stock-reservations')
+        .query({ partSupplyId: part.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(res.body.data.length).toBe(1);
+
+      // Filter by workOrderId
+      res = await request(httpServer)
+        .get('/api/stock-reservations')
+        .query({ workOrderId: workOrder.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(res.body.data.length).toBe(1);
+
+      // Filter by both
+      res = await request(httpServer)
+        .get('/api/stock-reservations')
+        .query({ partSupplyId: part.id, workOrderId: workOrder.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(res.body.data.length).toBe(1);
+    });
+  });
+
+  describe('GET /api/stock-movements (Advanced)', () => {
+    it('should filter stock movements by workOrderId', async () => {
+      const part = await createPartSupply('Peça Mov', 'MOV-001');
+      const customer = await ctx.prisma.customer.create({
+        data: { name: 'Test Mov', document: '09876543211', type: 'INDIVIDUAL', email: 'mov@stock.com', phone: '123' }
+      });
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: { customerId: customer.id, plate: 'MOV-0001', brand: 'Test', model: 'Test', year: 2020 }
+      });
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: { customerId: customer.id, vehicleId: vehicle.id, number: 'MOVE-1', status: 'IN_PROGRESS' }
+      });
+
+      await ctx.prisma.stockMovement.create({
+        data: {
+          partSupplyId: part.id,
+          workOrderId: workOrder.id,
+          quantity: 2,
+          type: 'EXIT',
+          reason: 'Test work order filter',
+        }
+      });
+
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .query({ workOrderId: workOrder.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].workOrderId).toBe(workOrder.id);
     });
   });
 });

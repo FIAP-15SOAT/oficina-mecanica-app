@@ -405,15 +405,4 @@ describe('PrismaPartSupplyRepository', () => {
       });
     });
   });
-
-  describe('incrementStock', () => {
-    it('should increment stock', async () => {
-      const id = randomUUID();
-      await repository.incrementStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { stock: { increment: 5 } },
-      });
-    });
-  });
 });

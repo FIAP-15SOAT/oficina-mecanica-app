@@ -1,5 +1,6 @@
 import { UpdateWorkOrderServiceStatusUseCase } from '@application/use-cases/work-order/update-work-order-service-status.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
@@ -149,6 +150,26 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
 
       expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
       expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
+    });
+
+
+    it('should throw BadRequestException when status is PENDING', async () => {
+      const workOrder = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+      const woService = createMockWorkOrderService({
+        workOrderId: workOrder.id,
+        status: WorkOrderServiceStatus.PENDING,
+      });
+
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+
+      await expect(useCase.execute({
+        workOrderId: workOrder.id,
+        serviceId: woService.serviceId,
+        status: WorkOrderServiceStatus.PENDING,
+      } as any)).rejects.toThrow(BadRequestException);
+
+      expect(mockRepos.workOrderService.update).not.toHaveBeenCalled();
     });
   });
 });

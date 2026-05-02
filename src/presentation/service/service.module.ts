@@ -9,9 +9,10 @@ import { FindServiceMetricsUseCase } from '@application/use-cases/service/find-s
 import { FindAllServicesMetricsUseCase } from '@application/use-cases/service/find-all-services-metrics.use-case';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { ServiceController } from './service.controller';
+import { ServicesMetricsController } from './services-metrics.controller';
 
 @Module({
-  controllers: [ServiceController],
+  controllers: [ServiceController, ServicesMetricsController],
   providers: [
     {
       provide: 'IServiceRepository',

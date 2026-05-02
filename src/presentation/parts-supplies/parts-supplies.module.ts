@@ -46,5 +46,6 @@ import { PartsSuppliesController } from './parts-supplies.controller';
       inject: ['IPartSupplyRepository'],
     },
   ],
+  exports: ['IPartSupplyRepository'],
 })
 export class PartsSuppliesModule {}

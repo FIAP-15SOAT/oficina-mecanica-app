@@ -23,10 +23,6 @@ export class PrismaWorkOrderPartSupplyRepository implements IWorkOrderPartSupply
     return WorkOrderPartSupplyMapper.toDomain(record);
   }
 
-  async findByWorkOrderId(workOrderId: string): Promise<WorkOrderPartSupply[]> {
-    const records = await this.prisma.workOrderPartSupply.findMany({ where: { workOrderId } });
-    return records.map((r) => WorkOrderPartSupplyMapper.toDomain(r));
-  }
 
   async createMany(items: WorkOrderPartSupply[]): Promise<void> {
     await this.prisma.workOrderPartSupply.createMany({

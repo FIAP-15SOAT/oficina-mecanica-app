@@ -14,8 +14,6 @@ export interface IQuoteRepository {
   create(quote: Quote): Promise<Quote>;
   findById(id: string): Promise<Quote | null>;
   findByWorkOrderId(workOrderId: string): Promise<Quote[]>;
-  findPendingByWorkOrderId(workOrderId: string): Promise<Quote[]>;
-  findApprovedByWorkOrderId(workOrderId: string): Promise<Quote | null>;
   update(quote: Quote): Promise<Quote>;
   rejectPendingByWorkOrderId(workOrderId: string): Promise<void>;
   findAllPaginated(filters: QuoteFilters): Promise<PaginatedRepositoryResult<Quote>>;

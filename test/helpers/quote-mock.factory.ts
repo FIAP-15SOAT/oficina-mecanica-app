@@ -55,8 +55,6 @@ export function createMockQuoteRepository(): jest.Mocked<IQuoteRepository> {
     create: jest.fn(),
     findById: jest.fn(),
     findByWorkOrderId: jest.fn(),
-    findApprovedByWorkOrderId: jest.fn(),
-    findPendingByWorkOrderId: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     rejectPendingByWorkOrderId: jest.fn(),

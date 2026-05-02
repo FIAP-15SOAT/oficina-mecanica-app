@@ -54,6 +54,6 @@ import { CustomersController } from './customers.controller';
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
-  exports: ['ICustomerRepository'],
+  exports: ['ICustomerRepository', 'IVehicleRepository'],
 })
 export class CustomersModule { }

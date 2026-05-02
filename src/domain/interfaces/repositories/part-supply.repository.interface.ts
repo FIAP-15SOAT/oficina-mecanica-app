@@ -26,7 +26,6 @@ export interface IPartSupplyRepository {
   updateStock(id: string, data: UpdateStockDto): Promise<PartSupply>;
   incrementReservedStock(id: string, amount: number): Promise<void>;
   decrementReservedStock(id: string, amount: number): Promise<void>;
-  incrementStock(id: string, amount: number): Promise<void>;
   decrementStock(id: string, amount: number): Promise<void>;
   hasQuotePartSupplies(id: string): Promise<boolean>;
   hasWorkOrderPartSupplies(id: string): Promise<boolean>;

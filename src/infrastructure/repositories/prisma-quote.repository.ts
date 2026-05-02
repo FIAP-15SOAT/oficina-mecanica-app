@@ -48,21 +48,6 @@ export class PrismaQuoteRepository implements IQuoteRepository {
     return records.map((r) => QuoteMapper.toDomain(r));
   }
 
-  async findApprovedByWorkOrderId(workOrderId: string): Promise<Quote | null> {
-    const record = await this.prisma.quote.findFirst({
-      where: { workOrderId, status: QuoteStatus.APPROVED },
-    });
-
-    return record ? QuoteMapper.toDomain(record) : null;
-  }
-
-  async findPendingByWorkOrderId(workOrderId: string): Promise<Quote[]> {
-    const records = await this.prisma.quote.findMany({
-      where: { workOrderId, status: { in: [QuoteStatus.PENDING, QuoteStatus.SENT] } },
-    });
-
-    return records.map((r) => QuoteMapper.toDomain(r));
-  }
 
   async findAllPaginated(filters: QuoteFilters): Promise<PaginatedRepositoryResult<Quote>> {
     const { workOrderId, status } = filters;

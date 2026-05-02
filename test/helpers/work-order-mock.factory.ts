@@ -30,7 +30,6 @@ export function createMockWorkOrderRepository(): jest.Mocked<IWorkOrderRepositor
   return {
     create: jest.fn(),
     findById: jest.fn(),
-    findByNumber: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     generateNextNumber: jest.fn(),

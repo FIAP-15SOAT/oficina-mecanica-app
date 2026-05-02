@@ -11,6 +11,7 @@ import {
   Post,
   Req,
   Patch,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -32,6 +34,7 @@ import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { Public } from '@infrastructure/auth/public.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
 
 import { ICreateQuoteUseCase } from '@domain/interfaces/use-cases/quote/create-quote.use-case.interface';
 import { IFindQuoteByIdUseCase } from '@domain/interfaces/use-cases/quote/find-quote-by-id.use-case.interface';
@@ -268,11 +271,13 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
+  @ApiQuery({ name: 'action', enum: QuoteEmailDecisionAction, description: 'Ação a ser tomada (approve/reject)' })
+  @ApiQuery({ name: 'token', description: 'Token assinado para decisão do orçamento' })
   async emailDecision(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: QuoteEmailDecisionRequestDto,
+    @Query() query: QuoteEmailDecisionRequestDto,
   ) {
-    const quote = await this.emailDecisionQuoteUseCase.execute(id, body.action, body.token);
+    const quote = await this.emailDecisionQuoteUseCase.execute(id, query.action, query.token);
     return QuotePresenter.toDataResponse(quote);
   }
 }

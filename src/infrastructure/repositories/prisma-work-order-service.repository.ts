@@ -37,12 +37,6 @@ export class PrismaWorkOrderServiceRepository implements IWorkOrderServiceReposi
     return record ? WorkOrderServiceMapper.toDomain(record) : null;
   }
 
-  async findByWorkOrderId(workOrderId: string): Promise<WorkOrderService[]> {
-    const records = await this.prisma.workOrderService.findMany({ where: { workOrderId } });
-
-    return records.map((r) => WorkOrderServiceMapper.toDomain(r));
-  }
-
   async update(workOrderService: WorkOrderService): Promise<WorkOrderService> {
     const record = await this.prisma.workOrderService.update({
       where: {
@@ -62,12 +56,6 @@ export class PrismaWorkOrderServiceRepository implements IWorkOrderServiceReposi
     });
 
     return WorkOrderServiceMapper.toDomain(record);
-  }
-
-  async delete(workOrderId: string, serviceId: string): Promise<void> {
-    await this.prisma.workOrderService.delete({
-      where: { workOrderId_serviceId: { workOrderId, serviceId } },
-    });
   }
 
   async isAllCompletedByWorkOrderId(workOrderId: string): Promise<boolean> {

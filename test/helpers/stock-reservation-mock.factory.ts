@@ -20,11 +20,8 @@ export function createMockStockReservationRepository(): jest.Mocked<IStockReserv
   return {
     create: jest.fn(),
     createMany: jest.fn(),
-    findById: jest.fn(),
     findByWorkOrderId: jest.fn(),
-    findByPartSupplyId: jest.fn(),
     findAllPaginated: jest.fn(),
-    deleteById: jest.fn(),
     deleteByWorkOrderId: jest.fn(),
   };
 }

@@ -33,23 +33,6 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
     return StockMovementMapper.toDomain(record);
   }
 
-  async findByPartId(partId: string): Promise<StockMovement[]> {
-    const records = await this.prisma.stockMovement.findMany({
-      where: { partSupplyId: partId },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return records.map((r) => StockMovementMapper.toDomain(r));
-  }
-
-  async findByWorkOrderId(workOrderId: string): Promise<StockMovement[]> {
-    const records = await this.prisma.stockMovement.findMany({
-      where: { workOrderId },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return records.map((r) => StockMovementMapper.toDomain(r));
-  }
 
   async findAllPaginated(
     pagination: PaginationInput,

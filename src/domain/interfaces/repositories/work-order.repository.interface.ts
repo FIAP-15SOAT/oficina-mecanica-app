@@ -16,7 +16,6 @@ export interface WorkOrderFilters {
 export interface IWorkOrderRepository {
   create(workOrder: WorkOrder): Promise<WorkOrder>;
   findById(id: string): Promise<WorkOrder | null>;
-  findByNumber(number: string): Promise<WorkOrder | null>;
   findAllPaginated(pagination: PaginationInput, filters: WorkOrderFilters): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;

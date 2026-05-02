@@ -12,6 +12,8 @@ import { FindWorkOrderStatusHistoryUseCase } from '@application/use-cases/work-o
 import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-work-order.repository';
 import { PrismaStatusHistoryRepository } from '@infrastructure/repositories/prisma-status-history.repository';
 import { PrismaUnitOfWork } from '@infrastructure/repositories/prisma-unit-of-work';
+import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 import { WorkOrderController } from './work-order.controller';
 
@@ -41,7 +43,7 @@ import { WorkOrderController } from './work-order.controller';
     },
     {
       provide: 'IUpdateWorkOrderUseCase',
-      useFactory: (workOrderRepo: PrismaWorkOrderRepository, userRepo: any) =>
+      useFactory: (workOrderRepo: IWorkOrderRepository, userRepo: IUserRepository) =>
         new UpdateWorkOrderUseCase(workOrderRepo, userRepo),
       inject: ['IWorkOrderRepository', 'IUserRepository'],
     },

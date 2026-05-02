@@ -41,7 +41,7 @@ describe('Vehicle (E2E)', () => {
           street: 'Rua Teste, 123',
           city: 'São Paulo',
           state: 'SP',
-          zipCode: '01310100',
+          zipCode: '01310-100',
         },
       })
       .expect(201);

@@ -4,7 +4,7 @@ import { UpdateQuotePartSupplyQuantityDto } from '@domain/interfaces/use-cases/q
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateQuotePartSupplyQuantityUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) {}
+  constructor(private readonly unitOfWork: IUnitOfWork) { }
 
   async execute(dto: UpdateQuotePartSupplyQuantityDto): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {
@@ -12,6 +12,12 @@ export class UpdateQuotePartSupplyQuantityUseCase {
 
       if (!quote) {
         throw new ResourceNotFoundException('Orçamento', dto.quoteId);
+      }
+
+      const workOrder = await repos.workOrder.findById(quote.workOrderId);
+
+      if (!workOrder) {
+        throw new ResourceNotFoundException('Ordem de Serviço', quote.workOrderId);
       }
 
       quote.ensureCanChangeItems();

@@ -116,43 +116,6 @@ describe('PrismaQuoteRepository', () => {
     });
   });
 
-  describe('findApprovedByWorkOrderId', () => {
-    it('should return approved quote', async () => {
-      prisma.quote.findFirst.mockResolvedValue({
-        id: randomUUID(),
-        status: QuoteStatus.APPROVED,
-        servicesAmount: new Prisma.Decimal(0),
-        partsAmount: new Prisma.Decimal(0),
-        totalAmount: new Prisma.Decimal(0),
-      });
-
-      const result = await repository.findApprovedByWorkOrderId(randomUUID());
-
-      expect(result).toBeDefined();
-    });
-
-    it('should return null when not found', async () => {
-      prisma.quote.findFirst.mockResolvedValue(null);
-      const result = await repository.findApprovedByWorkOrderId(randomUUID());
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('findPendingByWorkOrderId', () => {
-    it('should return pending quote', async () => {
-      prisma.quote.findMany.mockResolvedValue([{
-        id: randomUUID(),
-        status: QuoteStatus.PENDING,
-        servicesAmount: new Prisma.Decimal(0),
-        partsAmount: new Prisma.Decimal(0),
-        totalAmount: new Prisma.Decimal(0),
-      }]);
-
-      const result = await repository.findPendingByWorkOrderId(randomUUID());
-
-      expect(result).toBeDefined();
-    });
-  });
 
   describe('rejectPendingByWorkOrderId', () => {
     it('should update pending quotes to rejected', async () => {

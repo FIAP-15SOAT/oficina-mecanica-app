@@ -58,6 +58,18 @@ describe('DocumentValidator', () => {
     it('should return false for other lengths', () => {
       expect(DocumentValidator.validateCpfCnpj('12345')).toBe(false);
     });
+
+    it('should cover remainder < 2 for CPF and CNPJ check digits', () => {
+      // CPF where d1 remainder is < 2 (d1=0)
+      expect(DocumentValidator.validateCpf('00000000604')).toBe(true);
+      // CPF where d2 remainder is < 2 (d2=0)
+      expect(DocumentValidator.validateCpf('00000001910')).toBe(true);
+
+      // CNPJ where d1 remainder is < 2 (d1=0)
+      expect(DocumentValidator.validateCnpj('00000000000604')).toBe(true);
+      // CNPJ where d2 remainder is < 2 (d2=0)
+      expect(DocumentValidator.validateCnpj('00000000001910')).toBe(true);
+    });
   });
 
   describe('IsValidCpfCnpjConstraint', () => {

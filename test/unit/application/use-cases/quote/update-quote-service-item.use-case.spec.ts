@@ -25,6 +25,7 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
     const updatedQuote = createMockQuote({ ...quote, servicesAmount: 200, totalAmount: 200 });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
     (mockRepos.quoteService.findOne as jest.Mock).mockResolvedValue(existing);
     (mockRepos.quoteService.update as jest.Mock).mockResolvedValue(updatedService);
     (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([updatedService]);
@@ -50,9 +51,20 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
+  it('should throw ResourceNotFoundException when work order not found', async () => {
+    const quote = createMockQuote();
+    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({ quoteId: quote.id, serviceId: 'any', quantity: 1 }),
+    ).rejects.toThrow(ResourceNotFoundException);
+  });
+
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
 
     await expect(
       useCase.execute({ quoteId: quote.id, serviceId: 'any', quantity: 1 }),
@@ -62,6 +74,7 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
   it('should throw ResourceNotFoundException when service item not found in quote', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
     (mockRepos.quoteService.findOne as jest.Mock).mockResolvedValue(null);
 
     await expect(

@@ -52,23 +52,6 @@ describe('PrismaWorkOrderRepository', () => {
     });
   });
 
-  describe('findByNumber', () => {
-    it('should return a work order when found', async () => {
-      const number = '000001';
-      prisma.workOrder.findUnique.mockResolvedValue({ id: randomUUID(), number });
-
-      const result = await repository.findByNumber(number);
-
-      expect(result).toBeDefined();
-      expect(result?.number).toBe(number);
-    });
-
-    it('should return null when not found', async () => {
-      prisma.workOrder.findUnique.mockResolvedValue(null);
-      const result = await repository.findByNumber('999999');
-      expect(result).toBeNull();
-    });
-  });
 
   describe('findAllPaginated', () => {
     it('should filter by customerId', async () => {

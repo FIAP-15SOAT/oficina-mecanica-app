@@ -58,7 +58,7 @@ describe('WorkOrder (E2E)', () => {
           street: 'Rua Teste, 123',
           city: 'São Paulo',
           state: 'SP',
-          zipCode: '01310100',
+          zipCode: '01310-100',
         },
       })
       .expect(201);
@@ -352,19 +352,15 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.data.mileageAtService).toBe(50000);
     });
 
-    it('should return 404 when updating to non-existent customer', async () => {
-      const customer = await createCustomer();
-      const vehicle = await createVehicle(customer.id);
-      const wo = await createWorkOrder(customer.id, vehicle.id);
-
+    it('should return 404 when work order does not exist during update', async () => {
       await request(httpServer)
-        .put(`/api/work-orders/${wo.id}`)
+        .put('/api/work-orders/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ customerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
+        .send({ problemDescription: 'Test' })
         .expect(404);
     });
 
-    it('should return 404 when updating to non-existent vehicle', async () => {
+    it('should return 404 when assigned user does not exist during update', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
       const wo = await createWorkOrder(customer.id, vehicle.id);
@@ -372,7 +368,16 @@ describe('WorkOrder (E2E)', () => {
       await request(httpServer)
         .put(`/api/work-orders/${wo.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ vehicleId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
+        .send({ assignedUserId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
+        .expect(404);
+    });
+  });
+
+  describe('GET /api/work-orders/:id/status-history', () => {
+    it('should return 404 when work order does not exist', async () => {
+      await request(httpServer)
+        .get('/api/work-orders/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/status-history')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
   });
@@ -581,6 +586,27 @@ describe('WorkOrder (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
       expect(res.body.data.length).toBe(1);
+
+      // Filter by assignedUserId
+      // Create another WO with assigned user
+      const usersRes = await request(httpServer)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      const adminUserId = usersRes.body.data.find((u: any) => u.email === 'admin@e2e.test').id;
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: adminUserId, problemDescription: 'Assigned WO' })
+        .expect(201);
+
+      res = await request(httpServer)
+        .get(`/api/work-orders?assignedUserId=${adminUserId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data.every((wo: any) => wo.assignedUserId === adminUserId)).toBe(true);
     });
   });
 });
