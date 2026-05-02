@@ -42,7 +42,7 @@ import { UpdateUserStatusRequestDto } from './dto/update-user-status-request.dto
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserDataResponseDto, UsersDataResponseDto } from './dto/user-response.dto';
 
-@ApiTags('Users')
+@ApiTags('Gestão de Usuários')
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -60,7 +60,7 @@ export class UserController {
     private readonly updateUserStatusUseCase: IUpdateUserStatusUseCase,
     @Inject('IDeleteUserUseCase')
     private readonly deleteUserUseCase: IDeleteUserUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(UserRole.ADMIN)

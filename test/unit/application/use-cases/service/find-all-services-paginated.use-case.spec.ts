@@ -61,12 +61,10 @@ describe('FindAllServicesPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10 });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: undefined,
-      name: undefined,
-    });
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      {},
+    );
   });
 
   it('should pass active=true to the repository when explicitly set', async () => {
@@ -74,12 +72,10 @@ describe('FindAllServicesPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10, active: true });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: true,
-      name: undefined,
-    });
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      { active: true },
+    );
   });
 
   it('should pass active=false to the repository when explicitly set', async () => {
@@ -87,11 +83,9 @@ describe('FindAllServicesPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10, active: false });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: false,
-      name: undefined,
-    });
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      { active: false },
+    );
   });
 });

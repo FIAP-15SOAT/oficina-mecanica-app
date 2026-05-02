@@ -1,5 +1,7 @@
-import { FindAllVehiclesInputDto, FindAllVehiclesOutputDto } from './dto/find-all-vehicles.dto';
+import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { Vehicle } from '@domain/entities/vehicle.entity';
+import { FindAllVehiclesInputDto } from './dto/find-all-vehicles.dto';
 
 export interface IFindAllVehiclesUseCase {
-  execute(input: FindAllVehiclesInputDto): Promise<FindAllVehiclesOutputDto>;
+  execute(input: FindAllVehiclesInputDto): Promise<PaginatedResult<Vehicle>>;
 }

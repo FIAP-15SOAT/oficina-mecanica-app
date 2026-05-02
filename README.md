@@ -252,7 +252,7 @@ npx newman run oficina-collection.json -e oficina-environment.json
 Veja `.env.example` para todas as variáveis disponíveis.
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/techchallange?schema=public
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
 JWT_SECRET=your-secret-key
 JWT_EXPIRATION=15m
 JWT_REFRESH_SECRET=your-refresh-secret-key

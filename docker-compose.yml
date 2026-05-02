@@ -1,14 +1,14 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: techchallange-postgres
+    container_name: techchallenge-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: techchallange
+      POSTGRES_DB: techchallenge
       TZ: America/Sao_Paulo
       PGTZ: America/Sao_Paulo
     volumes:
@@ -23,15 +23,15 @@ services:
     build:
       context: .
       args:
-        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallange?schema=public
-    container_name: techchallange-api
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallenge?schema=public
+    container_name: techchallenge-api
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallange?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallenge?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-in-production}
@@ -42,5 +42,19 @@ services:
       postgres:
         condition: service_healthy
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: techchallenge-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    environment:
+      - MH_STORAGE=maildir
+      - MH_MAILDIR_PATH=/maildir
+    volumes:
+      - mailhog_data:/maildir
+
 volumes:
   postgres_data:
+  mailhog_data:

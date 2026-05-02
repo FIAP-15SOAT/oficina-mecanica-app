@@ -11,14 +11,17 @@ export class UpdateStockUseCase implements IUpdateStockUseCase {
 
   async execute(id: string, input: UpdateStockDto): Promise<PartSupply> {
     const partSupply = await this.partSupplyRepository.findById(id);
+
     if (!partSupply) {
       throw new ResourceNotFoundException('Peça ou Insumo', id);
     }
+
     if (input.type === StockMovementType.EXIT && input.quantity > partSupply.stock) {
       throw new ResourceConflictException(
         `Estoque insuficiente. Solicitado: ${input.quantity}, disponível: ${partSupply.stock}.`,
       );
     }
+
     return this.partSupplyRepository.updateStock(id, input);
   }
 }

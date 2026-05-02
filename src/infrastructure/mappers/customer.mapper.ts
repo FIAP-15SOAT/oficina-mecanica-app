@@ -33,25 +33,5 @@ export class CustomerMapper {
     });
   }
 
-  static toPrismaCreate(customer: Customer) {
-    return {
-      id: customer.id,
-      name: customer.name,
-      document: customer.document,
-      type: customer.type,
-      email: customer.email,
-      phone: customer.phone,
-      ...(customer.address && {
-        address: {
-          create: {
-            id: customer.address.id,
-            street: customer.address.street,
-            city: customer.address.city,
-            state: customer.address.state,
-            zipCode: customer.address.zipCode,
-          },
-        },
-      }),
-    };
-  }
+
 }

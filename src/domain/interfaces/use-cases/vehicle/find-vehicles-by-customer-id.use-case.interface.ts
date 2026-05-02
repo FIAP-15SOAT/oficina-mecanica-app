@@ -1,5 +1,5 @@
-import { FindAllVehiclesOutputDto } from './dto/find-all-vehicles.dto';
+import { Vehicle } from '@domain/entities/vehicle.entity';
 
 export interface IFindVehiclesByCustomerIdUseCase {
-  execute(customerId: string, input: { page: number; limit: number }): Promise<FindAllVehiclesOutputDto>;
+  execute(customerId: string): Promise<Vehicle[]>;
 }

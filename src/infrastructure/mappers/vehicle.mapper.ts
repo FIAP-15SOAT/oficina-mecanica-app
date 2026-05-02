@@ -25,16 +25,5 @@ export class VehicleMapper {
     });
   }
 
-  static toPrismaCreate(vehicle: Vehicle) {
-    return {
-      id: vehicle.id,
-      customerId: vehicle.customerId,
-      plate: vehicle.plate,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year,
-      color: vehicle.color,
-      mileage: vehicle.mileage,
-    };
-  }
+
 }

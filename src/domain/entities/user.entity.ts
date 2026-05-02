@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { UserRole } from '../enums/user-role.enum';
 
@@ -27,12 +28,17 @@ export class User {
     passwordHash: string;
     role?: UserRole;
   }): User {
+    const now = new Date();
+
     const user = new User({
+      id: randomUUID(),
       name: props.name.trim(),
       email: props.email.trim().toLowerCase(),
       passwordHash: props.passwordHash,
       role: props.role ?? UserRole.ATTENDANT,
       isActive: true,
+      createdAt: now,
+      updatedAt: now,
     });
 
     user.validateName();

@@ -1,24 +1,19 @@
-import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
+import { PartSupply } from '@domain/entities/part-supply.entity';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import {
-  FindAllPartsSuppliesInputDto,
-  FindAllPartsSuppliesOutputDto,
-} from '@domain/interfaces/use-cases/part-supply/dto/find-all-parts-supplies.dto';
+import { FindAllPartsSuppliesInputDto } from '@domain/interfaces/use-cases/part-supply/dto/find-all-parts-supplies.dto';
 import { IFindAllPartsSuppliesUseCase } from '@domain/interfaces/use-cases/part-supply/find-all-parts-supplies.use-case.interface';
+import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllPartsSuppliesUseCase implements IFindAllPartsSuppliesUseCase {
-  constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}
+  constructor(private readonly partSupplyRepository: IPartSupplyRepository) { }
 
-  async execute(input: FindAllPartsSuppliesInputDto): Promise<FindAllPartsSuppliesOutputDto> {
-    const { items, total } = await this.partSupplyRepository.findAllPaginated(input);
-    return {
-      items,
-      pagination: {
-        totalRecords: total,
-        totalPages: calculateTotalPages(total, input.limit),
-        page: input.page,
-        limit: input.limit,
-      },
-    };
+  async execute(input: FindAllPartsSuppliesInputDto): Promise<PaginatedResult<PartSupply>> {
+    const { page, limit, ...filters } = input;
+    const pagination: PaginationInput = { page, limit };
+
+    const result = await this.partSupplyRepository.findAllPaginated(pagination, filters);
+
+    return buildPaginatedResult(result, pagination);
   }
 }

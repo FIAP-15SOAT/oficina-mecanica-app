@@ -1,24 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { PartSupply as PrismaPartSupply } from '@generated/client';
+import { PartSupply as PrismaPartSupply, Prisma } from '@generated/client';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
   IPartSupplyRepository,
-  PaginatedPartSuppliesDto,
   PartSupplyFilters,
 } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { PartSupplyMapper } from '@infrastructure/mappers/part-supply.mapper';
+import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaPartSupplyRepository implements IPartSupplyRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(partSupply: PartSupply): Promise<PartSupply> {
     const record = await this.prisma.partSupply.create({
-      data: PartSupplyMapper.toPrismaCreate(partSupply),
+      data: {
+        id: partSupply.id,
+        name: partSupply.name,
+        description: partSupply.description,
+        sku: partSupply.sku,
+        partNumber: partSupply.partNumber,
+        category: partSupply.category,
+        unit: partSupply.unit,
+        costPrice: partSupply.costPrice,
+        salePrice: partSupply.salePrice,
+        stock: partSupply.stock,
+        minStock: partSupply.minStock,
+        expiresAt: partSupply.expiresAt,
+        isActive: partSupply.isActive,
+      },
     });
+
     return PartSupplyMapper.toDomain(record);
   }
 
@@ -32,29 +48,36 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return record ? PartSupplyMapper.toDomain(record) : null;
   }
 
-  async findAllPaginated(filters: PartSupplyFilters): Promise<PaginatedPartSuppliesDto> {
-    const { page, limit, name, sku, category, isActive, lowStock } = filters;
-    const skip = (page - 1) * limit;
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters: PartSupplyFilters,
+  ): Promise<PaginatedRepositoryResult<PartSupply>> {
+    const { name, sku, category, isActive, lowStock } = filters;
 
-    const where: Record<string, unknown> = {};
-    if (name) where['name'] = { contains: name, mode: 'insensitive' };
-    if (sku) where['sku'] = { contains: sku, mode: 'insensitive' };
-    if (category !== undefined) where['category'] = category;
-    if (isActive !== undefined) where['isActive'] = isActive;
+    const where: Prisma.PartSupplyWhereInput = {};
+
+    if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
+    if (sku) where.sku = { contains: sku.trim(), mode: 'insensitive' };
+    if (category) where.category = category;
+    if (isActive !== undefined) where.isActive = isActive;
 
     if (lowStock) {
-      const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-        SELECT id FROM parts_supplies WHERE stock <= min_stock
-      `;
-      where['id'] = { in: rows.map((r: { id: string }) => r.id) };
+      where['stock'] = { lte: this.prisma.partSupply.fields.minStock };
     }
 
-    const [records, total] = await this.prisma.$transaction([
-      this.prisma.partSupply.findMany({ where, skip, take: limit, orderBy: { name: 'asc' } }),
-      this.prisma.partSupply.count({ where }),
-    ]);
+    const result = await paginate(
+      this.prisma.partSupply,
+      {
+        where,
+        orderBy: { name: 'asc' }
+      },
+      pagination,
+    );
 
-    return { items: records.map((r: PrismaPartSupply) => PartSupplyMapper.toDomain(r)), total };
+    return {
+      items: result.items.map((r: PrismaPartSupply) => PartSupplyMapper.toDomain(r)),
+      total: result.total,
+    };
   }
 
   async update(id: string, data: Partial<PartSupply>): Promise<PartSupply> {
@@ -100,10 +123,53 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return PartSupplyMapper.toDomain(updatedRecord);
   }
 
-  async softDelete(id: string): Promise<void> {
+  async delete(id: string): Promise<void> {
+    await this.prisma.partSupply.delete({ where: { id } });
+  }
+
+  async hasQuotePartSupplies(id: string): Promise<boolean> {
+    const record = await this.prisma.quotePartSupply.findFirst({
+      where: { partSupplyId: id },
+      select: { partSupplyId: true },
+    });
+
+    return !!record;
+  }
+
+  async hasWorkOrderPartSupplies(id: string): Promise<boolean> {
+    const record = await this.prisma.workOrderPartSupply.findFirst({
+      where: { partSupplyId: id },
+      select: { partSupplyId: true },
+    });
+
+    return !!record;
+  }
+
+  async incrementReservedStock(id: string, amount: number): Promise<void> {
     await this.prisma.partSupply.update({
       where: { id },
-      data: { isActive: false },
+      data: { reservedStock: { increment: amount } },
+    });
+  }
+
+  async decrementReservedStock(id: string, amount: number): Promise<void> {
+    await this.prisma.partSupply.update({
+      where: { id },
+      data: { reservedStock: { decrement: amount } },
+    });
+  }
+
+  async decrementStock(id: string, amount: number): Promise<void> {
+    await this.prisma.partSupply.update({
+      where: { id },
+      data: { stock: { decrement: amount } },
+    });
+  }
+
+  async incrementStock(id: string, amount: number): Promise<void> {
+    await this.prisma.partSupply.update({
+      where: { id },
+      data: { stock: { increment: amount } },
     });
   }
 }

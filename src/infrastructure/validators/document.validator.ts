@@ -56,7 +56,7 @@ export class DocumentValidator {
 }
 
 @ValidatorConstraint({ name: 'isValidCpfCnpj', async: false })
-class IsValidCpfCnpjConstraint implements ValidatorConstraintInterface {
+export class IsValidCpfCnpjConstraint implements ValidatorConstraintInterface {
   validate(value: string): boolean {
     return typeof value === 'string' && DocumentValidator.validateCpfCnpj(value);
   }

@@ -162,11 +162,13 @@ const services: ServiceSeed[] = [
   },
 ];
 
-export async function seedServices(prisma: PrismaClient): Promise<void> {
+export async function seedServices(prisma: PrismaClient): Promise<Record<string, string>> {
   console.log('🌱 Seeding services...');
 
+  const ids: Record<string, string> = {};
+
   for (const service of services) {
-    await prisma.service.upsert({
+    const result = await prisma.service.upsert({
       where: { name: service.name },
       update: {
         description: service.description,
@@ -182,8 +184,10 @@ export async function seedServices(prisma: PrismaClient): Promise<void> {
       },
     });
 
+    ids[service.name] = result.id;
     console.log(`  ✔ ${service.name} - R$ ${service.basePrice.toFixed(2)}`);
   }
 
   console.log(`✅ ${services.length} services seeded`);
+  return ids;
 }

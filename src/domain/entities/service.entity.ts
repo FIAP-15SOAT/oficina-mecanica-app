@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MIN_NAME_LENGTH = 3;
@@ -25,12 +26,17 @@ export class Service {
     estimatedTimeMin: number;
     isActive?: boolean;
   }): Service {
+    const now = new Date();
+
     const service = new Service({
+      id: randomUUID(),
       name: props.name.trim(),
       description: props.description?.trim() ?? null,
       basePrice: props.basePrice,
       estimatedTimeMin: props.estimatedTimeMin,
       isActive: props.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
     });
 
     service.validateName();

@@ -8,6 +8,7 @@ import { FindAllVehiclesUseCase } from '@application/use-cases/vehicle/find-all-
 import { FindVehicleByIdUseCase } from '@application/use-cases/vehicle/find-vehicle-by-id.use-case';
 import { UpdateVehicleUseCase } from '@application/use-cases/vehicle/update-vehicle.use-case';
 import { DeleteVehicleUseCase } from '@application/use-cases/vehicle/delete-vehicle.use-case';
+import { FindVehiclesByCustomerIdUseCase } from '@application/use-cases/vehicle/find-vehicles-by-customer-id.use-case';
 import { VehiclesController } from './vehicles.controller';
 
 @Module({
@@ -44,6 +45,12 @@ import { VehiclesController } from './vehicles.controller';
       provide: 'IDeleteVehicleUseCase',
       useFactory: (repo: IVehicleRepository) => new DeleteVehicleUseCase(repo),
       inject: ['IVehicleRepository'],
+    },
+    {
+      provide: 'IFindVehiclesByCustomerIdUseCase',
+      useFactory: (vehicleRepo: IVehicleRepository, customerRepo: ICustomerRepository) =>
+        new FindVehiclesByCustomerIdUseCase(vehicleRepo, customerRepo),
+      inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
 })

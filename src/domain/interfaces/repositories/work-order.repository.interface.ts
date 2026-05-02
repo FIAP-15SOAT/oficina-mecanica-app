@@ -1,13 +1,23 @@
 import { WorkOrder } from '../../entities/work-order.entity';
 import { WorkOrderStatus } from '../../enums/work-order-status.enum';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '../common/pagination.interface';
+
+export interface WorkOrderFilters {
+  number?: string;
+  customerId?: string;
+  vehicleId?: string;
+  assignedUserId?: string;
+  status?: WorkOrderStatus;
+}
 
 export interface IWorkOrderRepository {
   create(workOrder: WorkOrder): Promise<WorkOrder>;
   findById(id: string): Promise<WorkOrder | null>;
   findByNumber(number: string): Promise<WorkOrder | null>;
-  findByCustomerId(customerId: string): Promise<WorkOrder[]>;
-  findByStatus(status: WorkOrderStatus): Promise<WorkOrder[]>;
-  findAll(): Promise<WorkOrder[]>;
-  update(id: string, data: Partial<WorkOrder>): Promise<WorkOrder>;
-  updateStatus(id: string, status: WorkOrderStatus): Promise<WorkOrder>;
+  findAllPaginated(pagination: PaginationInput, filters: WorkOrderFilters): Promise<PaginatedRepositoryResult<WorkOrder>>;
+  update(workOrder: WorkOrder): Promise<WorkOrder>;
+  generateNextNumber(): Promise<string>;
 }

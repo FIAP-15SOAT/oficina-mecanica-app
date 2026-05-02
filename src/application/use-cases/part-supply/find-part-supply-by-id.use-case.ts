@@ -8,9 +8,11 @@ export class FindPartSupplyByIdUseCase implements IFindPartSupplyByIdUseCase {
 
   async execute(id: string): Promise<PartSupply> {
     const partSupply = await this.partSupplyRepository.findById(id);
+
     if (!partSupply) {
       throw new ResourceNotFoundException('Peça ou Insumo', id);
     }
+
     return partSupply;
   }
 }

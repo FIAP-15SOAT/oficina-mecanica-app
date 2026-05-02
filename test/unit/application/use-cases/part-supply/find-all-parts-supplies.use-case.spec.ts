@@ -69,15 +69,16 @@ describe('FindAllPartsSuppliesUseCase', () => {
       lowStock: true,
     });
 
-    expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 2,
-      limit: 5,
-      name: 'Filtro',
-      sku: 'FO',
-      category: PartSupplyCategory.PART,
-      isActive: true,
-      lowStock: true,
-    });
+    expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 2, limit: 5 },
+      {
+        name: 'Filtro',
+        sku: 'FO',
+        category: PartSupplyCategory.PART,
+        isActive: true,
+        lowStock: true,
+      },
+    );
   });
 
   it('should pass isActive=false to the repository when explicitly set', async () => {
@@ -86,6 +87,7 @@ describe('FindAllPartsSuppliesUseCase', () => {
     await useCase.execute({ page: 1, limit: 10, isActive: false });
 
     expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
       expect.objectContaining({ isActive: false }),
     );
   });

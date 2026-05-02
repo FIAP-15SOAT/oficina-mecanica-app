@@ -1,9 +1,10 @@
+import { randomUUID } from 'crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MAX_STREET_LENGTH = 255;
 const MAX_CITY_LENGTH = 100;
 const STATE_LENGTH = 2;
-const ZIP_CODE_REGEX = /^\d{5}-\d{3}$/;
+const ZIP_CODE_REGEX = /^\d{5}-?\d{3}$/;
 
 export class Address {
   id!: string;
@@ -28,7 +29,7 @@ export class Address {
   }): Address {
     const now = new Date();
     const address = new Address({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       customerId: props.customerId.trim(),
       street: props.street.trim(),
       city: props.city.trim(),
@@ -49,7 +50,7 @@ export class Address {
 
   private validateCustomerId(): void {
     if (!this.customerId || this.customerId.trim().length === 0) {
-      throw new DomainValidationException('customerId é obrigatório');
+      throw new DomainValidationException('ID do cliente é obrigatório');
     }
   }
 
@@ -68,6 +69,7 @@ export class Address {
     if (!this.city || this.city.length === 0) {
       throw new DomainValidationException('Cidade é obrigatória');
     }
+
     if (this.city.length > MAX_CITY_LENGTH) {
       throw new DomainValidationException(
         `Cidade deve ter no máximo ${MAX_CITY_LENGTH} caracteres`,
@@ -83,7 +85,7 @@ export class Address {
 
   private validateZipCode(): void {
     if (!this.zipCode || !ZIP_CODE_REGEX.test(this.zipCode)) {
-      throw new DomainValidationException('CEP inválido. Formato esperado: 00000-000');
+      throw new DomainValidationException('CEP inválido. Formato esperado: 00000000');
     }
   }
 }

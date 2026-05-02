@@ -1,20 +1,6 @@
-import { Service } from '@domain/entities/service.entity';
+import { PaginationInput } from '@domain/interfaces/common/pagination.interface';
 
-export interface FindAllServicesPaginatedInputDto {
-  page: number;
-  limit: number;
+export interface FindAllServicesPaginatedInputDto extends PaginationInput {
   active?: boolean;
   name?: string;
-}
-
-export interface FindAllServicesPaginationDto {
-  totalRecords: number;
-  totalPages: number;
-  page: number;
-  limit: number;
-}
-
-export interface FindAllServicesPaginatedDto {
-  items: Service[];
-  pagination: FindAllServicesPaginationDto;
 }

@@ -48,14 +48,14 @@ describe('UpdateStockUseCase', () => {
       type: StockMovementType.EXIT,
       quantity: 3,
       reason: 'Work Order consumption',
-      workOrderId: 'os-uuid-1',
+      workOrderId: 'uuid-1',
     });
 
     expect(partSupplyRepository.updateStock).toHaveBeenCalledWith('uuid-1', {
       type: StockMovementType.EXIT,
       quantity: 3,
       reason: 'Work Order consumption',
-      workOrderId: 'os-uuid-1',
+      workOrderId: 'uuid-1',
     });
     expect(result).toEqual(after);
   });
@@ -67,7 +67,7 @@ describe('UpdateStockUseCase', () => {
       useCase.execute('uuid-1', {
         type: StockMovementType.EXIT,
         quantity: 15,
-        workOrderId: 'os-uuid-1',
+        workOrderId: 'uuid-1',
       }),
     ).rejects.toThrow(ResourceConflictException);
 

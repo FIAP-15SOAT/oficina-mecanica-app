@@ -29,7 +29,7 @@ describe('CreateVehicleUseCase', () => {
 
   it('should create vehicle when customer exists and plate is unique', async () => {
     const customer = createMockCustomer({ id: customerId });
-    const saved = createMockVehicle(validInput);
+    const saved = createMockVehicle({ ...validInput, plate: 'ABC1234' });
     customerRepository.findById.mockResolvedValue(customer);
     vehicleRepository.findByPlate.mockResolvedValue(null);
     vehicleRepository.create.mockResolvedValue(saved);
@@ -38,7 +38,7 @@ describe('CreateVehicleUseCase', () => {
 
     expect(result).toEqual(saved);
     expect(customerRepository.findById).toHaveBeenCalledWith(customerId);
-    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('ABC-1234');
+    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('ABC1234');
     expect(vehicleRepository.create).toHaveBeenCalledTimes(1);
   });
 
@@ -64,6 +64,6 @@ describe('CreateVehicleUseCase', () => {
 
     await useCase.execute({ ...validInput, plate: 'abc-1234' });
 
-    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('ABC-1234');
+    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('ABC1234');
   });
 });

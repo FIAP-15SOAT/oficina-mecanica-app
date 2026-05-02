@@ -2,8 +2,12 @@ import { WorkOrderService } from '../../entities/work-order-service.entity';
 
 export interface IWorkOrderServiceRepository {
   create(workOrderService: WorkOrderService): Promise<WorkOrderService>;
-  findById(id: string): Promise<WorkOrderService | null>;
+  findByWorkOrderAndService(
+    workOrderId: string,
+    serviceId: string,
+  ): Promise<WorkOrderService | null>;
   findByWorkOrderId(workOrderId: string): Promise<WorkOrderService[]>;
-  update(id: string, data: Partial<WorkOrderService>): Promise<WorkOrderService>;
-  delete(id: string): Promise<void>;
+  update(workOrderService: WorkOrderService): Promise<WorkOrderService>;
+  delete(workOrderId: string, serviceId: string): Promise<void>;
+  isAllCompletedByWorkOrderId(workOrderId: string): Promise<boolean>;
 }

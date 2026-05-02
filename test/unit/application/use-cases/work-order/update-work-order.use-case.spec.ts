@@ -1,0 +1,75 @@
+import { UpdateWorkOrderUseCase } from '@application/use-cases/work-order/update-work-order.use-case';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
+
+describe('UpdateWorkOrderUseCase', () => {
+  let useCase: UpdateWorkOrderUseCase;
+  let workOrderRepository: any;
+  let userRepository: any;
+
+  beforeEach(() => {
+    workOrderRepository = createMockWorkOrderRepository();
+    userRepository = { findById: jest.fn() };
+    useCase = new UpdateWorkOrderUseCase(workOrderRepository, userRepository);
+  });
+
+  it('should update a work order in RECEIVED status', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+    const updated = createMockWorkOrder({ ...wo, problemDescription: 'Barulho na suspensão' });
+
+    workOrderRepository.findById.mockResolvedValue(wo);
+    workOrderRepository.update.mockResolvedValue(updated);
+
+    const result = await useCase.execute(wo.id, { problemDescription: 'Barulho na suspensão' });
+
+    expect(result.problemDescription).toBe('Barulho na suspensão');
+    expect(workOrderRepository.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('should update a work order and assign a user', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+    const userId = 'user-uuid';
+    const user = { id: userId, name: 'John' };
+    const updated = createMockWorkOrder({ ...wo, assignedUserId: userId });
+
+    workOrderRepository.findById.mockResolvedValue(wo);
+    userRepository.findById.mockResolvedValue(user);
+    workOrderRepository.update.mockResolvedValue(updated);
+
+    const result = await useCase.execute(wo.id, { assignedUserId: userId });
+
+    expect(result.assignedUserId).toBe(userId);
+    expect(userRepository.findById).toHaveBeenCalledWith(userId);
+  });
+
+  it('should throw ResourceNotFoundException when work order not found', async () => {
+    workOrderRepository.findById.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute('bad-id', { problemDescription: 'any' }),
+    ).rejects.toThrow(ResourceNotFoundException);
+  });
+
+  it('should throw BusinessRuleViolationException when work order is APPROVED', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.APPROVED });
+    workOrderRepository.findById.mockResolvedValue(wo);
+
+    await expect(
+      useCase.execute(wo.id, { problemDescription: 'any' }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+  });
+
+  it('should throw ResourceNotFoundException when assigned user not found', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+    workOrderRepository.findById.mockResolvedValue(wo);
+    userRepository.findById.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute(wo.id, { assignedUserId: 'bad-user' }),
+    ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(userRepository.findById).toHaveBeenCalledWith('bad-user');
+  });
+});

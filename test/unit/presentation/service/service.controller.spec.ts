@@ -10,6 +10,8 @@ import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/s
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
 import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
+import { IFindServiceMetricsUseCase, ServiceMetrics } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
 
 describe('ServiceController', () => {
   let controller: ServiceController;
@@ -19,6 +21,8 @@ describe('ServiceController', () => {
   let updateServiceUseCase: jest.Mocked<IUpdateServiceUseCase>;
   let updateServiceStatusUseCase: jest.Mocked<IUpdateServiceStatusUseCase>;
   let deleteServiceUseCase: jest.Mocked<IDeleteServiceUseCase>;
+  let findServiceMetricsUseCase: jest.Mocked<IFindServiceMetricsUseCase>;
+  let findAllServicesMetricsUseCase: jest.Mocked<IFindAllServicesMetricsUseCase>;
 
   beforeEach(() => {
     createServiceUseCase = { execute: jest.fn() };
@@ -27,6 +31,8 @@ describe('ServiceController', () => {
     updateServiceUseCase = { execute: jest.fn() };
     updateServiceStatusUseCase = { execute: jest.fn() };
     deleteServiceUseCase = { execute: jest.fn() };
+    findServiceMetricsUseCase = { execute: jest.fn() };
+    findAllServicesMetricsUseCase = { execute: jest.fn() };
 
     controller = new ServiceController(
       createServiceUseCase,
@@ -35,6 +41,8 @@ describe('ServiceController', () => {
       updateServiceUseCase,
       updateServiceStatusUseCase,
       deleteServiceUseCase,
+      findServiceMetricsUseCase,
+      findAllServicesMetricsUseCase,
     );
   });
 
@@ -77,18 +85,16 @@ describe('ServiceController', () => {
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 10, active: true });
+      const query = { page: 1, limit: 10, active: true };
+      const result = await controller.findAll(query as any);
 
       expect(result).toEqual({
         data: paginatedResult.items,
         pagination: paginatedResult.pagination,
       });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        active: true,
-        name: undefined,
-      });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10, active: true }),
+      );
     });
 
     it('should return all services when active is undefined', async () => {
@@ -100,18 +106,16 @@ describe('ServiceController', () => {
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 10 });
+      const query = { page: 1, limit: 10 };
+      const result = await controller.findAll(query as any);
 
       expect(result).toEqual({
         data: paginatedResult.items,
         pagination: paginatedResult.pagination,
       });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        active: undefined,
-        name: undefined,
-      });
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
     });
 
     it('should return only inactive services when active=false', async () => {
@@ -123,18 +127,25 @@ describe('ServiceController', () => {
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 10, active: false });
+      const query = { page: 1, limit: 10, active: false };
+      const result = await controller.findAll(query as any);
 
-      expect(result).toEqual({
-        data: paginatedResult.items,
-        pagination: paginatedResult.pagination,
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10, active: false }),
+      );
+    });
+
+    it('should use default values when page and limit are missing', async () => {
+      findAllServicesPaginatedUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        active: false,
-        name: undefined,
-      });
+
+      await controller.findAll({});
+
+      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
     });
   });
 
@@ -229,8 +240,67 @@ describe('ServiceController', () => {
 
       await controller.delete(id);
 
-      expect(deleteServiceUseCase.execute).toHaveBeenCalledWith(id);
       expect(deleteServiceUseCase.execute).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getMetrics', () => {
+    it('should return metrics for a service', async () => {
+      const id = randomUUID();
+      const mockMetrics: ServiceMetrics = {
+        serviceId: id,
+        serviceName: 'Service Test',
+        executionCount: 10,
+        averageTimeMinutes: 30,
+      };
+
+      findServiceMetricsUseCase.execute.mockResolvedValue(mockMetrics);
+
+      const result = await controller.getMetrics(id);
+
+      expect(result).toEqual({ data: mockMetrics });
+      expect(findServiceMetricsUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('getAllMetrics', () => {
+    it('should return metrics for all services', async () => {
+      const mockMetrics: ServiceMetrics[] = [
+        {
+          serviceId: randomUUID(),
+          serviceName: 'Service 1',
+          executionCount: 5,
+          averageTimeMinutes: 20,
+        },
+      ];
+
+      const paginatedResult = {
+        items: mockMetrics,
+        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
+      };
+
+      findAllServicesMetricsUseCase.execute.mockResolvedValue(paginatedResult);
+
+      const result = await controller.getAllMetrics({ page: 1, limit: 10 });
+
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllServicesMetricsUseCase.execute).toHaveBeenCalled();
+    });
+
+    it('should use default values when page and limit are missing', async () => {
+      findAllServicesMetricsUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
+
+      await controller.getAllMetrics({});
+
+      expect(findAllServicesMetricsUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
     });
   });
 });

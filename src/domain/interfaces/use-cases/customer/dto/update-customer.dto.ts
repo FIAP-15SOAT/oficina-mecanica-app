@@ -1,11 +1,5 @@
 import { CustomerType } from '@domain/enums/customer-type.enum';
-
-export interface AddressDto {
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
+import { AddressDto } from './address.dto';
 
 export interface UpdateCustomerDto {
   name: string;

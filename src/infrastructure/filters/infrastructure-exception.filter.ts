@@ -2,7 +2,8 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nest
 import { Response } from 'express';
 import { InfrastructureException } from '../exceptions/infrastructure.exception';
 import { AuthenticationFailedException } from '../exceptions/authentication-failed.exception';
-import { DatabaseOperationException } from '../exceptions/database-operation.exception';
+import { ServiceIntegrationException } from '@infrastructure/exceptions/service-intergration.exception';
+import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
 
 @Catch(InfrastructureException)
 export class InfrastructureExceptionFilter implements ExceptionFilter {
@@ -31,7 +32,9 @@ export class InfrastructureExceptionFilter implements ExceptionFilter {
       return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
     }
 
-    if (exception instanceof DatabaseOperationException) {
+    if (exception instanceof ServiceIntegrationException ||
+      exception instanceof DatabaseOperationException
+    ) {
       return { status: HttpStatus.SERVICE_UNAVAILABLE, error: 'Service Unavailable' };
     }
 

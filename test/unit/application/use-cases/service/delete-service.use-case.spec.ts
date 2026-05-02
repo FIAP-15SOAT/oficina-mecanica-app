@@ -1,4 +1,5 @@
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
@@ -19,6 +20,8 @@ describe('DeleteServiceUseCase', () => {
     const service = createMockService();
 
     serviceRepository.findById.mockResolvedValue(service);
+    serviceRepository.hasWorkOrderServices.mockResolvedValue(false);
+    serviceRepository.hasQuoteServices.mockResolvedValue(false);
     serviceRepository.delete.mockResolvedValue(undefined);
 
     await useCase.execute(service.id);
@@ -32,6 +35,26 @@ describe('DeleteServiceUseCase', () => {
 
     await expect(useCase.execute('non-existent-id')).rejects.toThrow(ResourceNotFoundException);
 
+    expect(serviceRepository.delete).not.toHaveBeenCalled();
+  });
+
+  it('should throw ResourceConflictException when service has work order services (line 21)', async () => {
+    const service = createMockService();
+    serviceRepository.findById.mockResolvedValue(service);
+    serviceRepository.hasWorkOrderServices.mockResolvedValue(true);
+    serviceRepository.hasQuoteServices.mockResolvedValue(false);
+
+    await expect(useCase.execute(service.id)).rejects.toThrow(ResourceConflictException);
+    expect(serviceRepository.delete).not.toHaveBeenCalled();
+  });
+
+  it('should throw ResourceConflictException when service has quote services (line 21)', async () => {
+    const service = createMockService();
+    serviceRepository.findById.mockResolvedValue(service);
+    serviceRepository.hasWorkOrderServices.mockResolvedValue(false);
+    serviceRepository.hasQuoteServices.mockResolvedValue(true);
+
+    await expect(useCase.execute(service.id)).rejects.toThrow(ResourceConflictException);
     expect(serviceRepository.delete).not.toHaveBeenCalled();
   });
 });

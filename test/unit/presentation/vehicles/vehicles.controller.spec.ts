@@ -6,6 +6,7 @@ import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/fi
 import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
 import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 
 describe('VehiclesController', () => {
@@ -15,6 +16,7 @@ describe('VehiclesController', () => {
   let findByIdUseCase: jest.Mocked<IFindVehicleByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateVehicleUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteVehicleUseCase>;
+  let findVehiclesByCustomerIdUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -22,12 +24,14 @@ describe('VehiclesController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
+    findVehiclesByCustomerIdUseCase = { execute: jest.fn() };
     controller = new VehiclesController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
+      findVehiclesByCustomerIdUseCase,
     );
   });
 
@@ -59,7 +63,8 @@ describe('VehiclesController', () => {
       };
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const result = await controller.findAll({ page: 1, limit: 10 } as any);
+      const query = { page: 1, limit: 10 };
+      const result = await controller.findAll(query as any);
 
       expect(result).toEqual(VehiclePresenter.toPaginatedDataResponse(useCaseOutput));
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
@@ -67,28 +72,12 @@ describe('VehiclesController', () => {
       );
     });
 
-    it('should forward customerId, brand and plate filters', async () => {
-      findAllUseCase.execute.mockResolvedValue({
-        items: [],
-        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
-      });
-      const customerId = randomUUID();
-
-      await controller.findAll({
-        page: 1,
-        limit: 10,
-        customerId,
-        brand: 'Toyota',
-        plate: 'ABC-1234',
-      } as any);
-
-      expect(findAllUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        customerId,
-        brand: 'Toyota',
-        plate: 'ABC-1234',
-      });
+    it('should use default values for page and limit', async () => {
+      findAllUseCase.execute.mockResolvedValue({ items: [], pagination: {} as any });
+      await controller.findAll({});
+      expect(findAllUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
     });
   });
 

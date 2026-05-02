@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 import { ApplicationExceptionFilter } from './infrastructure/filters/application-exception.filter';
 import { DomainExceptionFilter } from './infrastructure/filters/domain-exception.filter';
@@ -13,11 +14,28 @@ import { ServiceModule } from './presentation/service/service.module';
 import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplies.module';
 import { CustomersModule } from './presentation/customers/customers.module';
 import { VehiclesModule } from './presentation/vehicles/vehicles.module';
+import { WorkOrderModule } from './presentation/work-order/work-order.module';
+import { QuoteModule } from './presentation/quote/quote.module';
+import { StockModule } from './presentation/stock/stock.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    MailerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get<string>('MAIL_HOST', 'localhost'),
+          port: config.get<number>('MAIL_PORT', 1025),
+          ignoreTLS: true,
+          secure: false,
+        },
+        defaults: {
+          from: config.get<string>('MAIL_FROM', '"Oficina Mecânica" <noreply@oficina.local>'),
+        },
+      }),
     }),
     PrismaModule,
     AuthModule,
@@ -26,6 +44,9 @@ import { VehiclesModule } from './presentation/vehicles/vehicles.module';
     PartsSuppliesModule,
     CustomersModule,
     VehiclesModule,
+    WorkOrderModule,
+    QuoteModule,
+    StockModule,
   ],
   providers: [
     {

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { Prisma } from '@generated/client';
 import { Service } from '@domain/entities/service.entity';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 
@@ -26,5 +27,10 @@ export function createMockServiceRepository(): jest.Mocked<IServiceRepository> {
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    hasWorkOrderServices: jest.fn(),
+    hasQuoteServices: jest.fn(),
+    findServiceMetrics: jest.fn(),
+    findAllServicesMetrics: jest.fn(),
   };
 }
+

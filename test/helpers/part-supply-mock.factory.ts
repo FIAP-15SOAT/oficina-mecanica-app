@@ -18,6 +18,7 @@ export function createMockPartSupply(overrides: Partial<PartSupply> = {}): PartS
     salePrice: 45,
     stock: 10,
     minStock: 2,
+    reservedStock: 0,
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -33,6 +34,13 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     updateStock: jest.fn(),
-    softDelete: jest.fn(),
+    incrementReservedStock: jest.fn(),
+    decrementReservedStock: jest.fn(),
+    decrementStock: jest.fn(),
+    incrementStock: jest.fn(),
+    delete: jest.fn(),
+    hasQuotePartSupplies: jest.fn(),
+    hasWorkOrderPartSupplies: jest.fn(),
   };
 }
+

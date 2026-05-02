@@ -3,21 +3,32 @@ import { Prisma } from '@generated/client';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import {
   IVehicleRepository,
-  PaginatedVehiclesDto,
   VehicleFilters,
 } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { VehicleMapper } from '@infrastructure/mappers/vehicle.mapper';
+import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaVehicleRepository implements IVehicleRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(vehicle: Vehicle): Promise<Vehicle> {
     const record = await this.prisma.vehicle.create({
-      data: VehicleMapper.toPrismaCreate(vehicle),
+      data: {
+        id: vehicle.id,
+        customerId: vehicle.customerId,
+        plate: vehicle.plate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        color: vehicle.color,
+        mileage: vehicle.mileage,
+      },
       include: { customer: true },
     });
+
     return VehicleMapper.toDomain(record);
   }
 
@@ -26,35 +37,48 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       where: { id },
       include: { customer: true },
     });
+
     return record ? VehicleMapper.toDomain(record) : null;
   }
 
   async findByPlate(plate: string): Promise<Vehicle | null> {
     const record = await this.prisma.vehicle.findUnique({ where: { plate } });
+
     return record ? VehicleMapper.toDomain(record) : null;
   }
 
-  async findAllPaginated(filters: VehicleFilters): Promise<PaginatedVehiclesDto> {
-    const { page, limit, customerId, brand, plate } = filters;
-    const skip = (page - 1) * limit;
+  async findAllByCustomerId(customerId: string): Promise<Vehicle[]> {
+    const records = await this.prisma.vehicle.findMany({
+      where: { customerId },
+      orderBy: { createdAt: 'desc' },
+      include: { customer: true },
+    });
+
+    return records.map((record) => VehicleMapper.toDomain(record));
+  }
+
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters: VehicleFilters,
+  ): Promise<PaginatedRepositoryResult<Vehicle>> {
+    const { customerId, brand, plate } = filters;
 
     const where: Prisma.VehicleWhereInput = {};
     if (customerId) where.customerId = customerId;
-    if (brand) where.brand = { contains: brand, mode: 'insensitive' };
-    if (plate) where.plate = plate;
+    if (brand) where.brand = { contains: brand.trim(), mode: 'insensitive' };
+    if (plate) where.plate = plate.trim();
 
-    const [records, total] = await this.prisma.$transaction([
-      this.prisma.vehicle.findMany({
+    const result = await paginate(
+      this.prisma.vehicle,
+      {
         where,
-        skip,
-        take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { customer: true },
-      }),
-      this.prisma.vehicle.count({ where }),
-    ]);
+        include: { customer: true }
+      },
+      pagination,
+    );
 
-    return { items: records.map((r) => VehicleMapper.toDomain(r)), total };
+    return { items: result.items.map((r) => VehicleMapper.toDomain(r)), total: result.total };
   }
 
   async update(id: string, data: Partial<Vehicle>): Promise<Vehicle> {
@@ -71,6 +95,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       },
       include: { customer: true },
     });
+
     return VehicleMapper.toDomain(record);
   }
 
@@ -83,6 +108,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       where: { vehicleId: id },
       select: { id: true },
     });
+
     return !!workOrder;
   }
 }

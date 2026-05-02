@@ -43,4 +43,12 @@ export class JwtTokenService implements ITokenService {
       secret: this.refreshSecret,
     });
   }
+
+  signWithSecret(payload: Record<string, unknown>, secret: string, expiresIn: string): string {
+    return this.jwtService.sign(payload as object, { secret, expiresIn: expiresIn as any });
+  }
+
+  verifyWithSecret<T extends object = Record<string, unknown>>(token: string, secret: string): T {
+    return this.jwtService.verify<T>(token, { secret });
+  }
 }

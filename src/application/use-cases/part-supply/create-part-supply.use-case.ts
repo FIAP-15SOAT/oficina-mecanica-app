@@ -5,14 +5,17 @@ import { CreatePartSupplyDto } from '@domain/interfaces/use-cases/part-supply/dt
 import { ICreatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/create-part-supply.use-case.interface';
 
 export class CreatePartSupplyUseCase implements ICreatePartSupplyUseCase {
-  constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}
+  constructor(private readonly partSupplyRepository: IPartSupplyRepository) { }
 
   async execute(input: CreatePartSupplyDto): Promise<PartSupply> {
     const existing = await this.partSupplyRepository.findBySku(input.sku);
+
     if (existing) {
       throw new ResourceConflictException(`SKU '${input.sku}' já está em uso.`);
     }
+
     const partSupply = PartSupply.create(input);
+
     return this.partSupplyRepository.create(partSupply);
   }
 }

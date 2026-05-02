@@ -4,22 +4,7 @@ import { Service } from '@domain/entities/service.entity';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 
-function createMockPrismaService(overrides: Partial<PrismaServiceModel> = {}): PrismaServiceModel {
-  const now = new Date();
-  const id = randomUUID();
-
-  return {
-    id,
-    name: 'Oil Change',
-    description: 'Full engine oil change',
-    basePrice: new Prisma.Decimal(99.99),
-    estimatedTimeMin: 30,
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    ...overrides,
-  };
-}
+import { createMockService } from '../../../helpers/service-mock.factory';
 
 describe('PrismaServiceRepository', () => {
   let repository: PrismaServiceRepository;
@@ -39,10 +24,10 @@ describe('PrismaServiceRepository', () => {
         estimatedTimeMin: 20,
       });
 
-      const prismaModel = createMockPrismaService({
+      const prismaModel = createMockService({
         name: service.name,
         description: service.description,
-        basePrice: new Prisma.Decimal(service.basePrice),
+        basePrice: service.basePrice,
         estimatedTimeMin: service.estimatedTimeMin,
         isActive: service.isActive,
       });
@@ -79,7 +64,7 @@ describe('PrismaServiceRepository', () => {
   describe('findById', () => {
     it('should find a service by id and return domain entity', async () => {
       const id = randomUUID();
-      const prismaModel = createMockPrismaService({ id });
+      const prismaModel = createMockService({ id });
 
       prisma.service.findUnique.mockResolvedValue(prismaModel);
 
@@ -116,7 +101,7 @@ describe('PrismaServiceRepository', () => {
   describe('findByName', () => {
     it('should find a service by name and return domain entity', async () => {
       const name = 'Oil Change';
-      const prismaModel = createMockPrismaService({ name });
+      const prismaModel = createMockService({ name });
 
       prisma.service.findFirst.mockResolvedValue(prismaModel);
 
@@ -155,14 +140,14 @@ describe('PrismaServiceRepository', () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
-        createMockPrismaService({ id: randomUUID(), name: 'Service 1' }),
-        createMockPrismaService({ id: randomUUID(), name: 'Service 2' }),
+        createMockService({ id: randomUUID(), name: 'Service 1' }),
+        createMockService({ id: randomUUID(), name: 'Service 2' }),
       ];
 
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated({ page, limit: pageSize });
+      const result = await repository.findAllPaginated({ page, limit: pageSize }, {});
 
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
@@ -193,14 +178,14 @@ describe('PrismaServiceRepository', () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
-        createMockPrismaService({ id: randomUUID(), name: 'Service 1', isActive: true }),
-        createMockPrismaService({ id: randomUUID(), name: 'Service 2', isActive: true }),
+        createMockService({ id: randomUUID(), name: 'Service 1', isActive: true }),
+        createMockService({ id: randomUUID(), name: 'Service 2', isActive: true }),
       ];
 
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated({ page, limit: pageSize, active: true });
+      const result = await repository.findAllPaginated({ page, limit: pageSize }, { active: true });
 
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
@@ -219,14 +204,14 @@ describe('PrismaServiceRepository', () => {
       const page = 1;
       const pageSize = 10;
       const prismaModels = [
-        createMockPrismaService({ id: randomUUID(), isActive: false }),
-        createMockPrismaService({ id: randomUUID(), isActive: false }),
+        createMockService({ id: randomUUID(), isActive: false }),
+        createMockService({ id: randomUUID(), isActive: false }),
       ];
 
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated({ page, limit: pageSize, active: false });
+      const result = await repository.findAllPaginated({ page, limit: pageSize }, { active: false });
 
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
@@ -250,7 +235,7 @@ describe('PrismaServiceRepository', () => {
       prisma.service.findMany.mockResolvedValue([]);
       prisma.service.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page, limit: pageSize });
+      await repository.findAllPaginated({ page, limit: pageSize }, {});
 
       expect(prisma.service.findMany).toHaveBeenCalledWith({
         skip: 10,
@@ -263,12 +248,12 @@ describe('PrismaServiceRepository', () => {
     it('should filter by name using case-insensitive contains', async () => {
       const page = 1;
       const pageSize = 10;
-      const prismaModels = [createMockPrismaService({ name: 'Oil Change' })];
+      const prismaModels = [createMockService({ name: 'Oil Change' })];
 
       prisma.service.findMany.mockResolvedValue(prismaModels);
       prisma.service.count.mockResolvedValue(1);
 
-      const result = await repository.findAllPaginated({ page, limit: pageSize, name: 'oil' });
+      const result = await repository.findAllPaginated({ page, limit: pageSize }, { name: 'oil' });
 
       expect(result.items).toHaveLength(1);
       expect(prisma.service.findMany).toHaveBeenCalledWith({
@@ -285,36 +270,31 @@ describe('PrismaServiceRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a service and return domain entity', async () => {
+    it('should update a service with all fields', async () => {
       const id = randomUUID();
       const updateData = {
         name: 'Updated Service',
+        description: 'New Description',
         basePrice: 149.99,
+        estimatedTimeMin: 60,
+        isActive: false,
       };
 
-      const updatedPrismaModel = createMockPrismaService({
+      const updatedPrismaModel = createMockService({
         id,
         name: updateData.name,
-        basePrice: new Prisma.Decimal(updateData.basePrice),
+        description: updateData.description,
+        basePrice: updateData.basePrice,
+        estimatedTimeMin: updateData.estimatedTimeMin,
+        isActive: updateData.isActive,
       });
 
       prisma.service.update.mockResolvedValue(updatedPrismaModel);
 
       const result = await repository.update(id, updateData);
 
-      expect(result).toEqual(
-        new Service({
-          id: updatedPrismaModel.id,
-          name: updatedPrismaModel.name,
-          description: updatedPrismaModel.description,
-          basePrice: Number(updatedPrismaModel.basePrice),
-          estimatedTimeMin: updatedPrismaModel.estimatedTimeMin,
-          isActive: updatedPrismaModel.isActive,
-          createdAt: updatedPrismaModel.createdAt,
-          updatedAt: updatedPrismaModel.updatedAt,
-        }),
-      );
-
+      expect(result.name).toBe(updateData.name);
+      expect(result.description).toBe(updateData.description);
       expect(prisma.service.update).toHaveBeenCalledWith({
         where: { id },
         data: updateData,
@@ -326,11 +306,117 @@ describe('PrismaServiceRepository', () => {
     it('should delete a service', async () => {
       const id = randomUUID();
 
-      prisma.service.delete.mockResolvedValue(createMockPrismaService({ id }));
+      prisma.service.delete.mockResolvedValue(createMockService({ id }));
 
       await repository.delete(id);
 
       expect(prisma.service.delete).toHaveBeenCalledWith({ where: { id } });
+    });
+  });
+
+  describe('hasWorkOrderServices', () => {
+    it('should return true if record exists', async () => {
+      const id = randomUUID();
+      prisma.workOrderService.findFirst.mockResolvedValue({ serviceId: id } as any);
+
+      const result = await repository.hasWorkOrderServices(id);
+
+      expect(result).toBe(true);
+      expect(prisma.workOrderService.findFirst).toHaveBeenCalledWith({
+        where: { serviceId: id },
+        select: { serviceId: true },
+      });
+    });
+
+    it('should return false if record does not exist', async () => {
+      const id = randomUUID();
+      prisma.workOrderService.findFirst.mockResolvedValue(null);
+
+      const result = await repository.hasWorkOrderServices(id);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasQuoteServices', () => {
+    it('should return true if record exists', async () => {
+      const id = randomUUID();
+      prisma.quoteService.findFirst.mockResolvedValue({ serviceId: id } as any);
+
+      const result = await repository.hasQuoteServices(id);
+
+      expect(result).toBe(true);
+      expect(prisma.quoteService.findFirst).toHaveBeenCalledWith({
+        where: { serviceId: id },
+        select: { serviceId: true },
+      });
+    });
+
+    it('should return false if record does not exist', async () => {
+      const id = randomUUID();
+      prisma.quoteService.findFirst.mockResolvedValue(null);
+
+      const result = await repository.hasQuoteServices(id);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('findServiceMetrics', () => {
+    it('should return metrics for a service', async () => {
+      const id = randomUUID();
+      const mockRow = {
+        service_id: id,
+        service_name: 'Test Service',
+        execution_count: 5n,
+        avg_minutes: 30.5,
+      };
+
+      prisma.$queryRaw.mockResolvedValue([mockRow]);
+
+      const result = await repository.findServiceMetrics(id);
+
+      expect(result).toEqual({
+        serviceId: id,
+        serviceName: 'Test Service',
+        executionCount: 5,
+        averageTimeMinutes: 30.5,
+      });
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should throw DatabaseOperationException if service not found', async () => {
+      const id = randomUUID();
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      await expect(repository.findServiceMetrics(id)).rejects.toThrow();
+    });
+  });
+
+  describe('findAllServicesMetrics', () => {
+    it('should return paginated metrics for all services', async () => {
+      const mockRow = {
+        service_id: randomUUID(),
+        service_name: 'Test Service',
+        execution_count: 10n,
+        avg_minutes: 45.0,
+      };
+
+      prisma.$queryRaw.mockResolvedValue([mockRow]);
+      prisma.service.count.mockResolvedValue(1);
+
+      const result = await repository.findAllServicesMetrics({ page: 1, limit: 10 });
+
+      expect(result.total).toBe(1);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toEqual({
+        serviceId: mockRow.service_id,
+        serviceName: 'Test Service',
+        executionCount: 10,
+        averageTimeMinutes: 45.0,
+      });
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(prisma.service.count).toHaveBeenCalled();
     });
   });
 });

@@ -31,7 +31,7 @@ import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
 
-@ApiTags('Auth')
+@ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -43,7 +43,7 @@ export class AuthController {
     private readonly getCurrentUserUseCase: IGetCurrentUserUseCase,
     @Inject('IRefreshTokenUseCase')
     private readonly refreshTokenUseCase: IRefreshTokenUseCase,
-  ) {}
+  ) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Registrar novo usuário' })

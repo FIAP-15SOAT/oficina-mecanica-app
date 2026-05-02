@@ -53,5 +53,7 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     verifyRefreshToken: jest
       .fn()
       .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
+    signWithSecret: jest.fn().mockReturnValue('signed-token'),
+    verifyWithSecret: jest.fn().mockReturnValue({ any: 'payload' }),
   };
 }

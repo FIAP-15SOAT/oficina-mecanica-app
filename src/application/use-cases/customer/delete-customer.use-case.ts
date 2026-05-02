@@ -4,20 +4,25 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
 
 export class DeleteCustomerUseCase implements IDeleteCustomerUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) {}
+  constructor(private readonly customerRepository: ICustomerRepository) { }
 
   async execute(id: string): Promise<void> {
     const existing = await this.customerRepository.findById(id);
+
     if (!existing) {
       throw new ResourceNotFoundException('Cliente', id);
     }
+
     const hasVehicles = await this.customerRepository.hasVehicles(id);
+
     if (hasVehicles) {
       throw new ResourceConflictException(
         'Cliente possui veículos cadastrados e não pode ser excluído.',
       );
     }
+
     const hasWorkOrders = await this.customerRepository.hasWorkOrders(id);
+
     if (hasWorkOrders) {
       throw new ResourceConflictException(
         'Cliente possui ordens de serviço e não pode ser excluído.',

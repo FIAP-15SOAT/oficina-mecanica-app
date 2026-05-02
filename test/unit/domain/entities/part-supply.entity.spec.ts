@@ -207,6 +207,30 @@ describe('PartSupply Entity', () => {
         );
       });
     });
+    describe('expiresAt validation', () => {
+      it('should throw when expiresAt is in the past (validateExpiresAt)', () => {
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 1);
+
+        expect(() => PartSupply.create({ ...validProps, expiresAt: pastDate })).toThrow(
+          DomainValidationException,
+        );
+      });
+
+      it('should not throw when expiresAt is today', () => {
+        const today = new Date();
+        today.setHours(12, 0, 0, 0);
+
+        expect(() => PartSupply.create({ ...validProps, expiresAt: today })).not.toThrow();
+      });
+
+      it('should not throw when expiresAt is in the future', () => {
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+        expect(() => PartSupply.create({ ...validProps, expiresAt: futureDate })).not.toThrow();
+      });
+    });
   });
 
   describe('activate', () => {

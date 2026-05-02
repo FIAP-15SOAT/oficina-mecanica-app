@@ -5,6 +5,8 @@ import { FindServiceByIdUseCase } from '@application/use-cases/service/find-serv
 import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
 import { UpdateServiceStatusUseCase } from '@application/use-cases/service/update-service-status.use-case';
 import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
+import { FindServiceMetricsUseCase } from '@application/use-cases/service/find-service-metrics.use-case';
+import { FindAllServicesMetricsUseCase } from '@application/use-cases/service/find-all-services-metrics.use-case';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { ServiceController } from './service.controller';
 
@@ -49,6 +51,18 @@ import { ServiceController } from './service.controller';
       provide: 'IDeleteServiceUseCase',
       useFactory: (serviceRepository: PrismaServiceRepository) =>
         new DeleteServiceUseCase(serviceRepository),
+      inject: ['IServiceRepository'],
+    },
+    {
+      provide: 'IFindServiceMetricsUseCase',
+      useFactory: (serviceRepository: PrismaServiceRepository) =>
+        new FindServiceMetricsUseCase(serviceRepository),
+      inject: ['IServiceRepository'],
+    },
+    {
+      provide: 'IFindAllServicesMetricsUseCase',
+      useFactory: (serviceRepository: PrismaServiceRepository) =>
+        new FindAllServicesMetricsUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
   ],

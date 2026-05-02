@@ -8,39 +8,75 @@ type MockDelegate = {
   count: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
+  updateMany: jest.Mock;
+  deleteMany: jest.Mock;
+  upsert: jest.Mock;
+  createMany: jest.Mock;
+  fields?: Record<string, any>;
 };
+
+const createMockDelegate = (): MockDelegate => ({
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  count: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  updateMany: jest.fn(),
+  deleteMany: jest.fn(),
+  upsert: jest.fn(),
+  createMany: jest.fn(),
+  fields: {},
+});
 
 export type MockPrismaService = {
   service: MockDelegate;
   user: MockDelegate;
+  customer: MockDelegate;
+  address: MockDelegate;
+  vehicle: MockDelegate;
+  workOrder: MockDelegate;
+  quote: MockDelegate;
+  quotePartSupply: MockDelegate;
+  quoteService: MockDelegate;
+  partSupply: MockDelegate;
+  stockReservation: MockDelegate;
+  stockMovement: MockDelegate;
+  workOrderService: MockDelegate;
+  workOrderPartSupply: MockDelegate;
+  statusHistory: MockDelegate;
   $connect: jest.Mock;
   $disconnect: jest.Mock;
   $transaction: jest.Mock;
+  $queryRaw: jest.Mock;
 } & PrismaService;
 
 export function createMockPrismaClient(): MockPrismaService {
   return {
-    service: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    user: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
+    service: createMockDelegate(),
+    user: createMockDelegate(),
+    customer: createMockDelegate(),
+    address: createMockDelegate(),
+    vehicle: createMockDelegate(),
+    workOrder: createMockDelegate(),
+    quote: createMockDelegate(),
+    quotePartSupply: createMockDelegate(),
+    quoteService: createMockDelegate(),
+    partSupply: { ...createMockDelegate(), fields: { minStock: 'minStockReference' } },
+    stockReservation: createMockDelegate(),
+    stockMovement: createMockDelegate(),
+    workOrderService: createMockDelegate(),
+    workOrderPartSupply: createMockDelegate(),
+    statusHistory: createMockDelegate(),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
-    $transaction: jest
-      .fn()
-      .mockImplementation((queries: Promise<unknown>[]) => Promise.all(queries)),
+    $transaction: jest.fn().mockImplementation((arg: any) => {
+      if (typeof arg === 'function') {
+        return arg(createMockPrismaClient());
+      }
+      return Promise.all(arg);
+    }),
+    $queryRaw: jest.fn(),
   } as unknown as MockPrismaService;
 }

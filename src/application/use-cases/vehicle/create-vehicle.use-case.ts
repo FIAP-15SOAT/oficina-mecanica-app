@@ -10,19 +10,27 @@ export class CreateVehicleUseCase implements ICreateVehicleUseCase {
   constructor(
     private readonly vehicleRepository: IVehicleRepository,
     private readonly customerRepository: ICustomerRepository,
-  ) {}
+  ) { }
 
   async execute(input: CreateVehicleDto): Promise<Vehicle> {
     const customer = await this.customerRepository.findById(input.customerId);
+
     if (!customer) {
       throw new ResourceNotFoundException('Cliente', input.customerId);
     }
-    const plate = input.plate.trim().toUpperCase();
-    const byPlate = await this.vehicleRepository.findByPlate(plate);
-    if (byPlate) {
-      throw new ResourceConflictException(`Placa '${plate}' já está cadastrada.`);
+
+    const sanitizedPlate = input.plate.trim().toUpperCase().replace(/-/g, '');
+    const existingByPlate = await this.vehicleRepository.findByPlate(sanitizedPlate);
+
+    if (existingByPlate) {
+      throw new ResourceConflictException(`Placa '${sanitizedPlate}' já está cadastrada.`);
     }
-    const vehicle = Vehicle.create({ ...input, plate });
+
+    const vehicle = Vehicle.create({
+      ...input,
+      plate: sanitizedPlate
+    });
+
     return this.vehicleRepository.create(vehicle);
   }
 }

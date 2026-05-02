@@ -14,7 +14,7 @@ describe('CreateCustomerUseCase', () => {
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
-    address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
+    address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
   };
 
   beforeEach(() => {
@@ -23,7 +23,8 @@ describe('CreateCustomerUseCase', () => {
   });
 
   it('should create customer when document and email are unique', async () => {
-    const saved = createMockCustomer({ name: validInput.name, document: validInput.document, type: validInput.type, email: validInput.email, phone: validInput.phone });
+    const sanitizedDocument = '12345678909';
+    const saved = createMockCustomer({ ...validInput, document: sanitizedDocument } as any);
     customerRepository.findByDocument.mockResolvedValue(null);
     customerRepository.findByEmail.mockResolvedValue(null);
     customerRepository.create.mockResolvedValue(saved);
@@ -31,7 +32,7 @@ describe('CreateCustomerUseCase', () => {
     const result = await useCase.execute(validInput);
 
     expect(result).toEqual(saved);
-    expect(customerRepository.findByDocument).toHaveBeenCalledWith(validInput.document);
+    expect(customerRepository.findByDocument).toHaveBeenCalledWith(sanitizedDocument);
     expect(customerRepository.create).toHaveBeenCalledTimes(1);
   });
 

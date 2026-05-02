@@ -1,0 +1,163 @@
+import { PrismaStockMovementRepository } from '@infrastructure/repositories/prisma-stock-movement.repository';
+import { StockMovement } from '@domain/entities/stock-movement.entity';
+import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
+import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
+import { randomUUID } from 'crypto';
+
+describe('PrismaStockMovementRepository', () => {
+  let repository: PrismaStockMovementRepository;
+  let prisma: MockPrismaService;
+
+  beforeEach(() => {
+    prisma = createMockPrismaClient();
+    repository = new PrismaStockMovementRepository(prisma as any);
+  });
+
+  describe('create', () => {
+    it('should create a stock movement', async () => {
+      const movement = StockMovement.create({
+        partSupplyId: randomUUID(),
+        type: StockMovementType.ENTRY,
+        quantity: 10,
+        reason: 'Restock',
+      });
+
+      prisma.stockMovement.create.mockResolvedValue({
+        id: movement.id,
+        partSupplyId: movement.partSupplyId,
+        workOrderId: movement.workOrderId,
+        type: movement.type,
+        quantity: movement.quantity,
+        reason: movement.reason,
+        createdAt: movement.createdAt,
+      });
+
+      const result = await repository.create(movement);
+
+      expect(result.id).toBe(movement.id);
+      expect(prisma.stockMovement.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('findByPartId', () => {
+    it('should return movements for a part', async () => {
+      const partId = randomUUID();
+      prisma.stockMovement.findMany.mockResolvedValue([
+        {
+          id: randomUUID(),
+          partSupplyId: partId,
+          type: StockMovementType.ENTRY,
+          quantity: 5,
+          createdAt: new Date(),
+        },
+      ]);
+
+      const result = await repository.findByPartId(partId);
+
+      expect(result.length).toBe(1);
+      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { partSupplyId: partId } }),
+      );
+    });
+  });
+
+  describe('findByWorkOrderId', () => {
+    it('should return movements for a work order', async () => {
+      const workOrderId = randomUUID();
+      prisma.stockMovement.findMany.mockResolvedValue([
+        {
+          id: randomUUID(),
+          partSupplyId: randomUUID(),
+          workOrderId,
+          type: StockMovementType.EXIT,
+          quantity: 2,
+          createdAt: new Date(),
+        },
+      ]);
+
+      const result = await repository.findByWorkOrderId(workOrderId);
+
+      expect(result.length).toBe(1);
+      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workOrderId } }),
+      );
+    });
+  });
+
+  describe('findAllPaginated', () => {
+    it('should return paginated stock movements', async () => {
+      prisma.stockMovement.findMany.mockResolvedValue([
+        {
+          id: randomUUID(),
+          partSupplyId: randomUUID(),
+          workOrderId: null,
+          type: StockMovementType.ENTRY,
+          quantity: 10,
+          reason: null,
+          createdAt: new Date(),
+        },
+      ]);
+      prisma.stockMovement.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      expect(result.total).toBe(1);
+      expect(result.items.length).toBe(1);
+    });
+
+    it('should apply filters correctly', async () => {
+      prisma.stockMovement.findMany.mockResolvedValue([]);
+      prisma.stockMovement.count.mockResolvedValue(0);
+
+      const partSupplyId = randomUUID();
+      const workOrderId = randomUUID();
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-12-31');
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        {
+          partSupplyId,
+          workOrderId,
+          type: StockMovementType.ENTRY,
+          startDate,
+          endDate,
+        },
+      );
+
+      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            partSupplyId,
+            workOrderId,
+            type: StockMovementType.ENTRY,
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        }),
+      );
+    });
+
+    it('should apply startDate filter only', async () => {
+      prisma.stockMovement.findMany.mockResolvedValue([]);
+      prisma.stockMovement.count.mockResolvedValue(0);
+      const startDate = new Date();
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { startDate });
+      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { createdAt: { gte: startDate } } }),
+      );
+    });
+
+    it('should apply endDate filter only', async () => {
+      prisma.stockMovement.findMany.mockResolvedValue([]);
+      prisma.stockMovement.count.mockResolvedValue(0);
+      const endDate = new Date();
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { endDate });
+      expect(prisma.stockMovement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { createdAt: { lte: endDate } } }),
+      );
+    });
+  });
+});

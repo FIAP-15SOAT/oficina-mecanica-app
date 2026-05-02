@@ -8,7 +8,7 @@ describe('Address Entity', () => {
     street: 'Rua das Flores, 123',
     city: 'São Paulo',
     state: 'SP',
-    zipCode: '01310-100',
+    zipCode: '01310100',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -46,7 +46,7 @@ describe('Address Entity', () => {
       street: 'Rua das Flores, 123',
       city: 'São Paulo',
       state: 'SP',
-      zipCode: '01310-100',
+      zipCode: '01310100',
     };
 
     it('should create a valid address with all required fields', () => {
@@ -71,13 +71,13 @@ describe('Address Entity', () => {
         street: '  Rua das Flores, 123  ',
         city: '  São Paulo  ',
         state: ' sp ',
-        zipCode: ' 01310-100 ',
+        zipCode: ' 01310100 ',
       });
 
       expect(address.street).toBe('Rua das Flores, 123');
       expect(address.city).toBe('São Paulo');
       expect(address.state).toBe('SP');
-      expect(address.zipCode).toBe('01310-100');
+      expect(address.zipCode).toBe('01310100');
     });
 
     describe('validações', () => {
@@ -121,10 +121,9 @@ describe('Address Entity', () => {
       });
 
       it('should throw exception when zipCode has invalid format', () => {
-        expect(() => Address.create({ ...createProps, zipCode: '01310100' })).toThrow(
-          DomainValidationException,
-        );
-        expect(() => Address.create({ ...createProps, zipCode: '0131-0100' })).toThrow(
+        expect(() => Address.create({ ...createProps, zipCode: '01310-100' })).not.toThrow();
+        expect(() => Address.create({ ...createProps, zipCode: '01310100' })).not.toThrow();
+        expect(() => Address.create({ ...createProps, zipCode: '0131010' })).toThrow(
           DomainValidationException,
         );
         expect(() => Address.create({ ...createProps, zipCode: '' })).toThrow(

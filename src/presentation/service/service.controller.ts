@@ -41,15 +41,19 @@ import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/s
 import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
 import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
+import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
-import { FilterServicesDto } from './dto/filter-services.dto';
+import { FindAllServicesQueryDto } from './dto/filter-services.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
+import { ServiceMetricsDataResponseDto, ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-response.dto';
 import { ServicePresenter } from './service.presenter';
 
-@ApiTags('Services')
+@ApiTags('Gestão de Serviços')
 @Controller('services')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -67,7 +71,33 @@ export class ServiceController {
     private readonly updateServiceStatusUseCase: IUpdateServiceStatusUseCase,
     @Inject('IDeleteServiceUseCase')
     private readonly deleteServiceUseCase: IDeleteServiceUseCase,
-  ) {}
+    @Inject('IFindServiceMetricsUseCase')
+    private readonly findServiceMetricsUseCase: IFindServiceMetricsUseCase,
+    @Inject('IFindAllServicesMetricsUseCase')
+    private readonly findAllServicesMetricsUseCase: IFindAllServicesMetricsUseCase,
+  ) { }
+
+  @Get('/services-metrics')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Obter métricas de todos os serviços' })
+  @ApiOkResponse({ type: ServiceMetricsPaginatedResponseDto, description: 'Lista paginada de métricas de todos os serviços' })
+  async getAllMetrics(@Query() pagination: PaginationDto) {
+    const result = await this.findAllServicesMetricsUseCase.execute({
+      page: pagination.page ?? 1,
+      limit: pagination.limit ?? 10,
+    });
+    return ServicePresenter.toMetricsPaginatedDataResponse(result);
+  }
+
+  @Get(':id/metrics')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Obter métricas de um serviço específico' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ type: ServiceMetricsDataResponseDto, description: 'Métricas do serviço solicitado' })
+  async getMetrics(@Param('id', ParseUUIDPipe) id: string) {
+    const result = await this.findServiceMetricsUseCase.execute(id);
+    return ServicePresenter.toMetricsDataResponse(result);
+  }
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -89,13 +119,17 @@ export class ServiceController {
   @ApiOkResponse({ type: ServicePaginatedResponseDto, description: 'Lista paginada de serviços' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FilterServicesDto): Promise<ServicePaginatedResponseDto> {
+  async findAll(
+    @Query() query: FindAllServicesQueryDto,
+  ): Promise<ServicePaginatedResponseDto> {
+    const { page, limit, ...filters } = query;
+
     const result = await this.findAllServicesPaginatedUseCase.execute({
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-      active: query.active,
-      name: query.name,
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
     });
+
     return ServicePresenter.toPaginatedDataResponse(result);
   }
 

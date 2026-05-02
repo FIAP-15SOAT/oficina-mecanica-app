@@ -44,7 +44,7 @@ import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/up
 import { CreatePartSupplyRequestDto } from './dto/create-part-supply-request.dto';
 import { UpdatePartSupplyRequestDto } from './dto/update-part-supply-request.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
-import { FilterPartsSuppliesDto } from './dto/filter-parts-supplies.dto';
+import { FindAllPartsSuppliesQueryDto } from './dto/filter-parts-supplies.dto';
 import { PartSupplyDataResponseDto } from './dto/part-supply-response.dto';
 import { PartSupplyPaginatedResponseDto } from './dto/part-supply-paginated-response.dto';
 import { PartSupplyPresenter } from './part-supply.presenter';
@@ -67,7 +67,7 @@ export class PartsSuppliesController {
     private readonly deletePartSupplyUseCase: IDeletePartSupplyUseCase,
     @Inject('IUpdateStockUseCase')
     private readonly updateStockUseCase: IUpdateStockUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -97,15 +97,14 @@ export class PartsSuppliesController {
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FilterPartsSuppliesDto): Promise<PartSupplyPaginatedResponseDto> {
+  async findAll(
+    @Query() query: FindAllPartsSuppliesQueryDto,
+  ): Promise<PartSupplyPaginatedResponseDto> {
+    const { page, limit, ...filters } = query;
     const result = await this.findAllPartsSuppliesUseCase.execute({
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-      name: query.name,
-      sku: query.sku,
-      category: query.category,
-      isActive: query.isActive,
-      lowStock: query.lowStock,
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
     });
     return PartSupplyPresenter.toPaginatedDataResponse(result);
   }

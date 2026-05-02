@@ -1,9 +1,7 @@
-import { WorkOrderPart } from '../../entities/work-order-part.entity';
+import { WorkOrderPartSupply } from '../../entities/work-order-part-supply.entity';
 
-export interface IWorkOrderPartRepository {
-  create(workOrderPart: WorkOrderPart): Promise<WorkOrderPart>;
-  findById(id: string): Promise<WorkOrderPart | null>;
-  findByWorkOrderId(workOrderId: string): Promise<WorkOrderPart[]>;
-  update(id: string, data: Partial<WorkOrderPart>): Promise<WorkOrderPart>;
-  delete(id: string): Promise<void>;
+export interface IWorkOrderPartSupplyRepository {
+  create(workOrderPartSupply: WorkOrderPartSupply): Promise<WorkOrderPartSupply>;
+  findByWorkOrderId(workOrderId: string): Promise<WorkOrderPartSupply[]>;
+  createMany(items: WorkOrderPartSupply[]): Promise<void>;
 }

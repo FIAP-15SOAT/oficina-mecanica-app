@@ -38,6 +38,6 @@ describe('FindAllCustomersUseCase', () => {
 
     await useCase.execute({ page: 2, limit: 5, name: 'João' });
 
-    expect(customerRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5, name: 'João' });
+    expect(customerRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5 }, { name: 'João' });
   });
 });
