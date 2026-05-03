@@ -3,7 +3,6 @@ import { UpdateWorkOrderDto } from '@domain/interfaces/use-cases/work-order/dto/
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 export class UpdateWorkOrderUseCase {
   constructor(

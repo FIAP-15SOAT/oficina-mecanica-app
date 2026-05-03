@@ -8,7 +8,6 @@ import {
   Inject,
   Param,
   ParseUUIDPipe,
-  Patch,
   Post,
   Put,
   Query,
