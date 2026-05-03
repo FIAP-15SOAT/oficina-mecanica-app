@@ -30,6 +30,7 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
   return {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIds: jest.fn(),
     findBySku: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),

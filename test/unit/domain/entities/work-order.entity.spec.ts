@@ -130,6 +130,21 @@ describe('WorkOrder Entity', () => {
       expect(wo.status).toBe(WorkOrderStatus.CANCELLED);
     });
 
+    it('should transition IN_DIAGNOSIS -> CANCELLED with notes', () => {
+      const wo = WorkOrder.create(baseProps);
+      wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS);
+      wo.changeStatus(WorkOrderStatus.CANCELLED, 'Cancelado na oficina');
+      expect(wo.status).toBe(WorkOrderStatus.CANCELLED);
+    });
+
+    it('should transition AWAITING_APPROVAL -> CANCELLED with notes', () => {
+      const wo = WorkOrder.create(baseProps);
+      wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS);
+      wo.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
+      wo.changeStatus(WorkOrderStatus.CANCELLED, 'Cliente desistiu');
+      expect(wo.status).toBe(WorkOrderStatus.CANCELLED);
+    });
+
     it('should throw when transitioning to CANCELLED without notes', () => {
       const wo = WorkOrder.create(baseProps);
       expect(() => wo.changeStatus(WorkOrderStatus.CANCELLED)).toThrow(
@@ -240,6 +255,12 @@ describe('WorkOrder Entity', () => {
     it('should return true for AWAITING_APPROVAL status', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      expect(wo.canCreateQuote()).toBe(true);
+    });
+
+    it('should return true for REJECTED status', () => {
+      const wo = WorkOrder.create(baseProps);
+      wo.status = WorkOrderStatus.REJECTED;
       expect(wo.canCreateQuote()).toBe(true);
     });
 

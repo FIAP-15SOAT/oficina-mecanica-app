@@ -14,27 +14,34 @@ describe('PrismaWorkOrderServiceRepository', () => {
     repository = new PrismaWorkOrderServiceRepository(prisma as any);
   });
 
-  describe('create', () => {
-    it('should create a work order service', async () => {
-      const wos = WorkOrderService.create({
-        workOrderId: randomUUID(),
-        serviceId: randomUUID(),
-        quantity: 2,
-        unitPrice: 100.0,
+
+  describe('createMany', () => {
+    it('should create multiple work order services', async () => {
+      const items = [
+        WorkOrderService.create({
+          workOrderId: randomUUID(),
+          serviceId: randomUUID(),
+          quantity: 1,
+          unitPrice: 50.0,
+        }),
+        WorkOrderService.create({
+          workOrderId: randomUUID(),
+          serviceId: randomUUID(),
+          quantity: 2,
+          unitPrice: 75.0,
+        }),
+      ];
+
+      prisma.workOrderService.createMany.mockResolvedValue({ count: 2 });
+
+      await repository.createMany(items);
+
+      expect(prisma.workOrderService.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ quantity: 1, unitPrice: 50.0 }),
+          expect.objectContaining({ quantity: 2, unitPrice: 75.0 }),
+        ]),
       });
-
-      prisma.workOrderService.create.mockResolvedValue({
-        ...wos,
-        unitPrice: new Prisma.Decimal(wos.unitPrice),
-        totalPrice: new Prisma.Decimal(wos.totalPrice),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const result = await repository.create(wos);
-
-      expect(result.workOrderId).toBe(wos.workOrderId);
-      expect(prisma.workOrderService.create).toHaveBeenCalled();
     });
   });
 

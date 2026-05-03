@@ -25,7 +25,7 @@ export function createMockWorkOrderService(
 
 export function createMockWorkOrderServiceRepository(): jest.Mocked<IWorkOrderServiceRepository> {
   return {
-    create: jest.fn(),
+    createMany: jest.fn(),
     findByWorkOrderAndService: jest.fn(),
     update: jest.fn(),
     isAllCompletedByWorkOrderId: jest.fn(),

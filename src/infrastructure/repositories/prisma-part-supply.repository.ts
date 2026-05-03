@@ -51,6 +51,14 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     return record ? PartSupplyMapper.toDomain(record) : null;
   }
 
+  async findByIds(ids: string[]): Promise<PartSupply[]> {
+    const records = await this.prisma.partSupply.findMany({
+      where: { id: { in: ids } },
+    });
+
+    return records.map((record) => PartSupplyMapper.toDomain(record));
+  }
+
   async findBySku(sku: string): Promise<PartSupply | null> {
     const record = await this.prisma.partSupply.findUnique({ where: { sku } });
     return record ? PartSupplyMapper.toDomain(record) : null;

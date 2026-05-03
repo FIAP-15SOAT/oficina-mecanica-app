@@ -17,6 +17,7 @@ export interface PartSupplyFilters {
 export interface IPartSupplyRepository {
   create(partSupply: PartSupply): Promise<PartSupply>;
   findById(id: string): Promise<PartSupply | null>;
+  findByIds(ids: string[]): Promise<PartSupply[]>;
   findBySku(sku: string): Promise<PartSupply | null>;
   findAllPaginated(
     pagination: PaginationInput,

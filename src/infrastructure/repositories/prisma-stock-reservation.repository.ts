@@ -14,19 +14,6 @@ import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper
 export class PrismaStockReservationRepository implements IStockReservationRepository {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(reservation: StockReservation): Promise<StockReservation> {
-    const record = await this.prisma.stockReservation.create({
-      data: {
-        id: reservation.id,
-        partSupplyId: reservation.partSupplyId,
-        workOrderId: reservation.workOrderId,
-        quantity: reservation.quantity,
-      },
-    });
-
-    return StockReservationMapper.toDomain(record);
-  }
-
   async createMany(reservations: StockReservation[]): Promise<void> {
     await this.prisma.stockReservation.createMany({
       data: reservations.map((r) => ({

@@ -1,12 +1,10 @@
 import { FindStockReservationsUseCase } from '@application/use-cases/stock/find-stock-reservations.use-case';
 import { createMockStockReservationRepository, createMockStockReservation } from '../../../../helpers/stock-reservation-mock.factory';
-import { IStockReservationRepository, StockReservationFilters } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
+import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 
 describe('FindStockReservationsUseCase', () => {
   let useCase: FindStockReservationsUseCase;
   let repository: jest.Mocked<IStockReservationRepository>;
-  let partSupplyRepository: any;
-  let workOrderRepository: any;
 
   beforeEach(() => {
     repository = createMockStockReservationRepository();

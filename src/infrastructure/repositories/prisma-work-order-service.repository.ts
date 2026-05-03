@@ -9,21 +9,20 @@ import { WorkOrderServiceMapper } from '@infrastructure/mappers/work-order-servi
 export class PrismaWorkOrderServiceRepository implements IWorkOrderServiceRepository {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(workOrderService: WorkOrderService): Promise<WorkOrderService> {
-    const record = await this.prisma.workOrderService.create({
-      data: {
-        workOrderId: workOrderService.workOrderId,
-        serviceId: workOrderService.serviceId,
-        quantity: workOrderService.quantity,
-        unitPrice: workOrderService.unitPrice,
-        totalPrice: workOrderService.totalPrice,
-        status: workOrderService.status,
-        startedAt: workOrderService.startedAt,
-        finishedAt: workOrderService.finishedAt,
-      },
-    });
 
-    return WorkOrderServiceMapper.toDomain(record);
+  async createMany(items: WorkOrderService[]): Promise<void> {
+    await this.prisma.workOrderService.createMany({
+      data: items.map((item) => ({
+        workOrderId: item.workOrderId,
+        serviceId: item.serviceId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        status: item.status,
+        startedAt: item.startedAt,
+        finishedAt: item.finishedAt,
+      })),
+    });
   }
 
   async findByWorkOrderAndService(

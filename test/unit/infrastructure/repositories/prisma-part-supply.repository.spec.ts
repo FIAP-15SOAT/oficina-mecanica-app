@@ -93,6 +93,28 @@ describe('PrismaPartSupplyRepository', () => {
     });
   });
 
+  describe('findByIds', () => {
+    it('should find multiple parts/supplies by ids and return domain entities', async () => {
+      const ids = [randomUUID(), randomUUID()];
+      const prismaModels = [
+        createMockPartSupply({ id: ids[0] }),
+        createMockPartSupply({ id: ids[1] }),
+      ];
+
+      prisma.partSupply.findMany.mockResolvedValue(prismaModels);
+
+      const result = await repository.findByIds(ids);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(PartSupply);
+      expect(result[0].id).toBe(ids[0]);
+      expect(result[1].id).toBe(ids[1]);
+      expect(prisma.partSupply.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ids } },
+      });
+    });
+  });
+
   describe('findBySku', () => {
     it('should find a part/supply by sku and return domain entity', async () => {
       const sku = 'FO-001';

@@ -10,7 +10,6 @@ export interface StockReservationFilters {
 }
 
 export interface IStockReservationRepository {
-  create(reservation: StockReservation): Promise<StockReservation>;
   createMany(reservations: StockReservation[]): Promise<void>;
   findByWorkOrderId(workOrderId: string): Promise<StockReservation[]>;
   findAllPaginated(

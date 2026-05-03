@@ -1257,6 +1257,45 @@ describe('Quote (E2E)', () => {
         expect(res.body.data[0].workOrderId).toBe(wo1.workOrderId);
       });
 
+        it('should filter quotes by status (GET /api/quotes?status=...)', async () => {
+        const wo = await createWorkOrderInDiagnosis();
+        const quoteRes = await request(httpServer)
+          .post('/api/quotes')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ workOrderId: wo.workOrderId })
+          .expect(201);
+
+        const quoteId = quoteRes.body.data.id;
+
+        // By default it's PENDING
+        const resPending = await request(httpServer)
+          .get('/api/quotes?status=PENDING')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+
+        const hasPending = resPending.body.data.some((q: any) => q.id === quoteId);
+        expect(hasPending).toBe(true);
+
+        const resSent = await request(httpServer)
+          .get('/api/quotes?status=SENT')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+
+        const hasSent = resSent.body.data.some((q: any) => q.id === quoteId);
+        expect(hasSent).toBe(false);
+      });
+
+      it('should filter quotes by status without page and limit (GET /api/quotes?status=...)', async () => {
+        const res = await request(httpServer)
+          .get('/api/quotes?status=PENDING')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+
+        expect(res.body.pagination).toBeDefined();
+        expect(res.body.pagination.page).toBe(1);
+        expect(res.body.pagination.limit).toBe(10);
+      });
+
       it('should list quotes of a work order (GET /api/work-orders/:id/quotes)', async () => {
         const wo = await createWorkOrderInDiagnosis();
         await request(httpServer)

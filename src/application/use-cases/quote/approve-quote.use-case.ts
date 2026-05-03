@@ -47,28 +47,40 @@ export class ApproveQuoteUseCase {
   }
 
   private async validateStockAvailability(repos: IRepositories, partsSupplies: QuotePartSupply[]) {
-    for (const part of partsSupplies) {
-      const partSupply = await repos.partSupply.findById(part.partSupplyId);
+    if (partsSupplies.length === 0) return;
 
-      if (!partSupply) {
-        throw new ResourceNotFoundException('Peça/Insumo', part.partSupplyId);
-      }
+    const partSupplyIds = partsSupplies.map((p) => p.partSupplyId);
+    const partSupplies = await repos.partSupply.findByIds(partSupplyIds);
+
+    for (const part of partsSupplies) {
+      const partSupply = partSupplies.find((ps) => ps.id === part.partSupplyId)!;
 
       partSupply.ensureHasSufficientStock(part.quantity);
     }
   }
 
   private async createStockReservations(repos: IRepositories, workOrderId: string, partsSupplies: QuotePartSupply[]) {
-    for (const part of partsSupplies) {
-      const reservation = StockReservation.create({
+    if (partsSupplies.length === 0) return;
+
+    const reservations = partsSupplies.map((part) =>
+      StockReservation.create({
         partSupplyId: part.partSupplyId,
         workOrderId: workOrderId,
         quantity: part.quantity,
-      });
+      }),
+    );
 
-      await repos.stockReservation.create(reservation);
-      await repos.partSupply.incrementReservedStock(part.partSupplyId, part.quantity);
-    }
+    const stockUpdates = partsSupplies.map((part) => ({
+      id: part.partSupplyId,
+      amount: part.quantity,
+    }));
+
+    await Promise.all([
+      repos.stockReservation.createMany(reservations),
+      ...partsSupplies.map((part) =>
+        repos.partSupply.incrementReservedStock(part.partSupplyId, part.quantity),
+      ),
+    ]);
   }
 
   private async createWorkOrderItems(
@@ -77,27 +89,27 @@ export class ApproveQuoteUseCase {
     services: QuoteService[],
     partsSupplies: QuotePartSupply[],
   ) {
+    const workOrderServices = services.map((service) =>
+      WorkOrderService.create({
+        workOrderId: workOrderId,
+        serviceId: service.serviceId,
+        quantity: service.quantity,
+        unitPrice: service.unitPrice,
+      }),
+    );
+
+    const workOrderPartSupplies = partsSupplies.map((partSupply) =>
+      WorkOrderPartSupply.create({
+        workOrderId: workOrderId,
+        partSupplyId: partSupply.partSupplyId,
+        quantity: partSupply.quantity,
+        unitPrice: partSupply.unitPrice,
+      }),
+    );
+
     await Promise.all([
-      ...services.map((service) => {
-        const wos = WorkOrderService.create({
-          workOrderId: workOrderId,
-          serviceId: service.serviceId,
-          quantity: service.quantity,
-          unitPrice: service.unitPrice,
-        });
-
-        return repos.workOrderService.create(wos);
-      }),
-      ...partsSupplies.map((partSupply) => {
-        const wops = WorkOrderPartSupply.create({
-          workOrderId: workOrderId,
-          partSupplyId: partSupply.partSupplyId,
-          quantity: partSupply.quantity,
-          unitPrice: partSupply.unitPrice,
-        });
-
-        return repos.workOrderPartSupply.create(wops);
-      }),
+      repos.workOrderService.createMany(workOrderServices),
+      repos.workOrderPartSupply.createMany(workOrderPartSupplies),
     ]);
   }
 

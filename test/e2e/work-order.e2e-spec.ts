@@ -435,6 +435,13 @@ describe('WorkOrder (E2E)', () => {
         .expect(200);
 
       // Now the service is in the work order with status PENDING
+      // Move to IN_PROGRESS first (to move WO to IN_PROGRESS)
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
       const res = await request(httpServer)
         .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)

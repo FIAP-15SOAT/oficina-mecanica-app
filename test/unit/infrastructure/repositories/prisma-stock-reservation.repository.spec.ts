@@ -12,28 +12,6 @@ describe('PrismaStockReservationRepository', () => {
     repository = new PrismaStockReservationRepository(prisma as any);
   });
 
-  describe('create', () => {
-    it('should create a stock reservation', async () => {
-      const reservation = StockReservation.create({
-        partSupplyId: randomUUID(),
-        workOrderId: randomUUID(),
-        quantity: 5,
-      });
-
-      prisma.stockReservation.create.mockResolvedValue({
-        id: reservation.id,
-        partSupplyId: reservation.partSupplyId,
-        workOrderId: reservation.workOrderId,
-        quantity: reservation.quantity,
-        createdAt: reservation.createdAt,
-      });
-
-      const result = await repository.create(reservation);
-
-      expect(result.id).toBe(reservation.id);
-      expect(prisma.stockReservation.create).toHaveBeenCalled();
-    });
-  });
 
   describe('findByWorkOrderId', () => {
     it('should return reservations for a work order', async () => {

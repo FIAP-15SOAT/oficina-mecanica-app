@@ -27,11 +27,6 @@ export interface UpdateWorkOrderProps {
   assignedUserId?: string | null;
 }
 
-export const PATCH_STATUS_ALLOWED = [
-  WorkOrderStatus.IN_DIAGNOSIS,
-  WorkOrderStatus.CANCELLED,
-  WorkOrderStatus.DELIVERED,
-];
 
 export class WorkOrder {
   id!: string;
@@ -93,7 +88,8 @@ export class WorkOrder {
   canCreateQuote(): boolean {
     return (
       this.status === WorkOrderStatus.IN_DIAGNOSIS ||
-      this.status === WorkOrderStatus.AWAITING_APPROVAL
+      this.status === WorkOrderStatus.AWAITING_APPROVAL ||
+      this.status === WorkOrderStatus.REJECTED
     );
   }
 
@@ -127,6 +123,18 @@ export class WorkOrder {
     this.updatedAt = new Date();
   }
 
+  private static readonly STATUS_TRANSITION_MAP: Record<WorkOrderStatus, WorkOrderStatus[]> = {
+    [WorkOrderStatus.RECEIVED]: [WorkOrderStatus.IN_DIAGNOSIS, WorkOrderStatus.CANCELLED],
+    [WorkOrderStatus.IN_DIAGNOSIS]: [WorkOrderStatus.AWAITING_APPROVAL, WorkOrderStatus.CANCELLED],
+    [WorkOrderStatus.AWAITING_APPROVAL]: [WorkOrderStatus.APPROVED, WorkOrderStatus.REJECTED, WorkOrderStatus.CANCELLED],
+    [WorkOrderStatus.REJECTED]: [WorkOrderStatus.AWAITING_APPROVAL],
+    [WorkOrderStatus.APPROVED]: [WorkOrderStatus.IN_PROGRESS],
+    [WorkOrderStatus.IN_PROGRESS]: [WorkOrderStatus.COMPLETED],
+    [WorkOrderStatus.COMPLETED]: [WorkOrderStatus.DELIVERED],
+    [WorkOrderStatus.DELIVERED]: [],
+    [WorkOrderStatus.CANCELLED]: [],
+  };
+
   private validateStatusTransition(newStatus: WorkOrderStatus, notes?: string | null): void {
     if (this.status === newStatus) {
       throw new BusinessRuleViolationException(
@@ -134,28 +142,11 @@ export class WorkOrder {
       );
     }
 
-    if (this.isTerminalStatus(this.status)) {
-      throw new BusinessRuleViolationException(
-        'Não é possível alterar o status de uma ordem de serviço em status terminal.',
-      );
-    }
+    const allowedTransitions = WorkOrder.STATUS_TRANSITION_MAP[this.status] || [];
 
-    if (
-      this.status === WorkOrderStatus.REJECTED &&
-      newStatus !== WorkOrderStatus.AWAITING_APPROVAL
-    ) {
+    if (!allowedTransitions.includes(newStatus)) {
       throw new BusinessRuleViolationException(
-        'Uma ordem de serviço rejeitada só pode voltar ao status AWAITING_APPROVAL.',
-      );
-    }
-
-    if (
-      this.status === WorkOrderStatus.RECEIVED &&
-      newStatus !== WorkOrderStatus.IN_DIAGNOSIS &&
-      newStatus !== WorkOrderStatus.CANCELLED
-    ) {
-      throw new BusinessRuleViolationException(
-        'Transição não permitida a partir do status RECEIVED.',
+        `Transição de status não permitida: de ${this.status} para ${newStatus}.`,
       );
     }
 
@@ -180,10 +171,6 @@ export class WorkOrder {
     } else if (newStatus === WorkOrderStatus.APPROVED) {
       this.approvedAt = now;
     }
-  }
-
-  private isTerminalStatus(status: WorkOrderStatus): boolean {
-    return status === WorkOrderStatus.CANCELLED || status === WorkOrderStatus.DELIVERED;
   }
 
   private validateCustomerId(): void {

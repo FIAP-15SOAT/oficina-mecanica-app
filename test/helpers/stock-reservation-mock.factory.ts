@@ -18,7 +18,6 @@ export function createMockStockReservation(
 
 export function createMockStockReservationRepository(): jest.Mocked<IStockReservationRepository> {
   return {
-    create: jest.fn(),
     createMany: jest.fn(),
     findByWorkOrderId: jest.fn(),
     findAllPaginated: jest.fn(),
