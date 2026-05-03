@@ -5,7 +5,6 @@ import {
 } from '../common/pagination.interface';
 
 export interface ServiceFilters {
-  active?: boolean;
   name?: string;
 }
 

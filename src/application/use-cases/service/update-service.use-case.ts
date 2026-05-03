@@ -5,7 +5,7 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { UpdateServiceDto } from '@domain/interfaces/use-cases/service/dto/update-service.dto';
 
 export class UpdateServiceUseCase {
-  constructor(private readonly serviceRepository: IServiceRepository) {}
+  constructor(private readonly serviceRepository: IServiceRepository) { }
 
   async execute(id: string, updateServiceDto: UpdateServiceDto): Promise<Service> {
     const service = await this.serviceRepository.findById(id);
@@ -25,7 +25,6 @@ export class UpdateServiceUseCase {
       description: updateServiceDto.description,
       basePrice: updateServiceDto.basePrice,
       estimatedTimeMin: updateServiceDto.estimatedTimeMin,
-      isActive: updateServiceDto.isActive,
     });
 
     Object.assign(service, updatedService);

@@ -10,6 +10,8 @@ import { User } from './user.entity';
 const MAX_PROBLEM_DESCRIPTION_LENGTH = 2000;
 const MAX_INTERNAL_NOTES_LENGTH = 2000;
 
+import { UserRole } from '../enums/user-role.enum';
+
 export interface CreateWorkOrderProps {
   number: string;
   customerId: string;
@@ -17,14 +19,14 @@ export interface CreateWorkOrderProps {
   problemDescription?: string | null;
   internalNotes?: string | null;
   mileageAtService?: number | null;
-  assignedUserId?: string | null;
+  assignedUser?: User | null;
 }
 
 export interface UpdateWorkOrderProps {
   problemDescription?: string | null;
   internalNotes?: string | null;
   mileageAtService?: number | null;
-  assignedUserId?: string | null;
+  assignedUser?: User | null;
 }
 
 
@@ -66,7 +68,8 @@ export class WorkOrder {
       internalNotes: props.internalNotes?.trim() ?? null,
       mileageAtService: props.mileageAtService ?? null,
       totalAmount: 0,
-      assignedUserId: props.assignedUserId ?? null,
+      assignedUserId: props.assignedUser?.id ?? null,
+      assignedUser: props.assignedUser ?? null,
       approvedAt: null,
       rejectedAt: null,
       startedAt: null,
@@ -81,6 +84,7 @@ export class WorkOrder {
     workOrder.validateMileage();
     workOrder.validateProblemDescription();
     workOrder.validateInternalNotes();
+    workOrder.validateAssignedUser();
 
     return workOrder;
   }
@@ -111,7 +115,15 @@ export class WorkOrder {
     if (props.problemDescription !== undefined) this.problemDescription = props.problemDescription;
     if (props.internalNotes !== undefined) this.internalNotes = props.internalNotes;
     if (props.mileageAtService !== undefined) this.mileageAtService = props.mileageAtService;
-    if (props.assignedUserId !== undefined) this.assignedUserId = props.assignedUserId;
+    if (props.assignedUser !== undefined) {
+      this.assignedUserId = props.assignedUser?.id ?? null;
+      this.assignedUser = props.assignedUser ?? null;
+    }
+
+    this.validateMileage();
+    this.validateProblemDescription();
+    this.validateInternalNotes();
+    this.validateAssignedUser();
 
     this.updatedAt = new Date();
   }
@@ -222,6 +234,16 @@ export class WorkOrder {
       throw new DomainValidationException(
         `Notas internas devem ter no máximo ${MAX_INTERNAL_NOTES_LENGTH} caracteres.`,
       );
+    }
+  }
+
+  private validateAssignedUser(): void {
+    if (this.assignedUser) {
+      if (this.assignedUser.role !== UserRole.MECHANIC || !this.assignedUser.isActive) {
+        throw new BusinessRuleViolationException(
+          'Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço',
+        );
+      }
     }
   }
 }

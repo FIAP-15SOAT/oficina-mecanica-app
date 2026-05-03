@@ -66,26 +66,4 @@ describe('FindAllServicesPaginatedUseCase', () => {
       {},
     );
   });
-
-  it('should pass active=true to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, active: true });
-
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
-      { active: true },
-    );
-  });
-
-  it('should pass active=false to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, active: false });
-
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
-      { active: false },
-    );
-  });
 });

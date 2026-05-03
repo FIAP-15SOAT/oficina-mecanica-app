@@ -12,7 +12,6 @@ export function createMockService(overrides: Partial<Service> = {}): Service {
     description: 'Full engine oil change',
     basePrice: 99.99,
     estimatedTimeMin: 30,
-    isActive: true,
     createdAt: now,
     updatedAt: now,
     ...overrides,

@@ -19,7 +19,7 @@ export class PartSupplyMapper {
       minStock: prismaRecord.minStock,
       reservedStock: prismaRecord.reservedStock,
       expiresAt: prismaRecord.expiresAt ?? undefined,
-      isActive: prismaRecord.isActive,
+
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });

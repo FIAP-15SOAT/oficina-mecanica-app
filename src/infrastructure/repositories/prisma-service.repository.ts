@@ -25,7 +25,6 @@ export class PrismaServiceRepository implements IServiceRepository {
           description: service.description,
           basePrice: service.basePrice,
           estimatedTimeMin: service.estimatedTimeMin,
-          isActive: service.isActive,
         },
       });
 
@@ -54,13 +53,9 @@ export class PrismaServiceRepository implements IServiceRepository {
     pagination: PaginationInput,
     filters: ServiceFilters,
   ): Promise<PaginatedRepositoryResult<Service>> {
-    const { active, name } = filters;
+    const { name } = filters;
 
     const where: Prisma.ServiceWhereInput = {};
-
-    if (active !== undefined) {
-      where.isActive = active;
-    }
 
     if (name) {
       where.name = { contains: name.trim(), mode: 'insensitive' };
@@ -89,7 +84,6 @@ export class PrismaServiceRepository implements IServiceRepository {
         ...(data.description !== undefined && { description: data.description }),
         ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
         ...(data.estimatedTimeMin !== undefined && { estimatedTimeMin: data.estimatedTimeMin }),
-        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
 

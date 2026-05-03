@@ -11,7 +11,6 @@ export class Service {
   description?: string | null;
   basePrice!: number;
   estimatedTimeMin!: number;
-  isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -24,7 +23,6 @@ export class Service {
     description?: string | null;
     basePrice: number;
     estimatedTimeMin: number;
-    isActive?: boolean;
   }): Service {
     const now = new Date();
 
@@ -34,7 +32,6 @@ export class Service {
       description: props.description?.trim() ?? null,
       basePrice: props.basePrice,
       estimatedTimeMin: props.estimatedTimeMin,
-      isActive: props.isActive ?? true,
       createdAt: now,
       updatedAt: now,
     });
@@ -47,30 +44,6 @@ export class Service {
     return service;
   }
 
-  activate(): void {
-    if (this.isActive) {
-      throw new DomainValidationException('Serviço já está ativo');
-    }
-
-    this.isActive = true;
-  }
-
-  deactivate(): void {
-    if (!this.isActive) {
-      throw new DomainValidationException('Serviço já está desativado');
-    }
-
-    this.isActive = false;
-  }
-
-  setActive(active: boolean): void {
-    if (active) {
-      this.activate();
-      return;
-    }
-
-    this.deactivate();
-  }
 
   private validateName(): void {
     if (!this.name) {

@@ -5,8 +5,9 @@ import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../../helpers/vehicle-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
-
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 describe('CreateWorkOrderUseCase', () => {
   let useCase: CreateWorkOrderUseCase;
@@ -43,11 +44,11 @@ describe('CreateWorkOrderUseCase', () => {
     );
   });
 
-  it('should create a work order with assigned user', async () => {
+  it('should create a work order with assigned user (active mechanic)', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const userId = 'user-uuid';
-    const user = { id: userId, name: 'John' };
+    const user = { id: userId, name: 'John', role: UserRole.MECHANIC, isActive: true };
     const createdWO = createMockWorkOrder({
       customerId: customer.id,
       vehicleId: vehicle.id,
@@ -72,6 +73,37 @@ describe('CreateWorkOrderUseCase', () => {
     expect(mockRepos.workOrder.create).toHaveBeenCalledWith(
       expect.objectContaining({ assignedUserId: userId }),
     );
+  });
+
+  it('should throw BusinessRuleViolationException when assigned user is not a mechanic', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const user = { id: 'user-id', name: 'John', role: UserRole.ADMIN, isActive: true };
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.user.findById as jest.Mock).mockResolvedValue(user);
+
+    await expect(
+      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+    await expect(
+      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+    ).rejects.toThrow('Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço');
+  });
+
+  it('should throw BusinessRuleViolationException when assigned user is inactive', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const user = { id: 'user-id', name: 'John', role: UserRole.MECHANIC, isActive: false };
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.user.findById as jest.Mock).mockResolvedValue(user);
+
+    await expect(
+      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+    ).rejects.toThrow(BusinessRuleViolationException);
   });
 
   it('should throw ResourceNotFoundException when user not found', async () => {

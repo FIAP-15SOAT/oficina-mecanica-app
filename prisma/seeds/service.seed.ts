@@ -180,7 +180,6 @@ export async function seedServices(prisma: PrismaClient): Promise<Record<string,
         description: service.description,
         basePrice: service.basePrice,
         estimatedTimeMin: service.estimatedTimeMin,
-        isActive: true,
       },
     });
 

@@ -107,7 +107,7 @@ describe('PartsSuppliesController', () => {
       );
     });
 
-    it('should forward name, sku, category, isActive and lowStock filters', async () => {
+    it('should forward name, sku, category and lowStock filters', async () => {
       const items = [createMockPartSupply()];
 
       const useCaseOutput = {
@@ -123,7 +123,6 @@ describe('PartsSuppliesController', () => {
         name: 'Filtro',
         sku: 'FO',
         category: PartSupplyCategory.PART,
-        isActive: true,
         lowStock: true,
       };
       await controller.findAll(query);
@@ -135,7 +134,6 @@ describe('PartsSuppliesController', () => {
           name: 'Filtro',
           sku: 'FO',
           category: PartSupplyCategory.PART,
-          isActive: true,
           lowStock: true,
         }),
       );

@@ -5,7 +5,6 @@ import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-q
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
 import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
-import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 interface QuoteEmailDecisionTokenPayload {
   quoteId: string;

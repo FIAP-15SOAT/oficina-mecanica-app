@@ -59,9 +59,6 @@ export class PartSupplyResponseDto {
   })
   expiresAt?: Date | null;
 
-  @ApiProperty({ description: 'Indica se a Peça ou Insumo está ativo no Estoque', example: true })
-  isActive!: boolean;
-
   @ApiProperty({ description: 'Data de cadastro', example: '2026-01-15T10:30:00.000Z' })
   createdAt!: Date;
 

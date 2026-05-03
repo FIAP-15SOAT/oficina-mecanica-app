@@ -38,7 +38,7 @@ export class PartSupply {
   minStock!: number;
   reservedStock!: number;
   expiresAt?: Date | null;
-  isActive!: boolean;
+
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -61,7 +61,7 @@ export class PartSupply {
       minStock: props.minStock ?? 0,
       reservedStock: 0,
       expiresAt: props.expiresAt,
-      isActive: true,
+
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -79,32 +79,7 @@ export class PartSupply {
     return partSupply;
   }
 
-  activate(): void {
-    if (this.isActive) {
-      throw new DomainValidationException('Peça ou Insumo já está ativo');
-    }
 
-    this.isActive = true;
-    this.updatedAt = new Date();
-  }
-
-  deactivate(): void {
-    if (!this.isActive) {
-      throw new DomainValidationException('Peça ou Insumo já está desativado');
-    }
-
-    this.isActive = false;
-    this.updatedAt = new Date();
-  }
-
-  setActive(active: boolean): void {
-    if (active) {
-      this.activate();
-      return;
-    }
-
-    this.deactivate();
-  }
 
   private validateName(): void {
     if (!this.name) {

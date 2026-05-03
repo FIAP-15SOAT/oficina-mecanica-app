@@ -30,12 +30,6 @@ export class FilterPartsSuppliesDto {
   })
   category?: PartSupplyCategory;
 
-  @ApiPropertyOptional({ description: 'Filtrar por status ativo/inativo no Estoque' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  @IsBoolean({ message: 'O filtro de status deve ser true ou false.' })
-  isActive?: boolean;
-
   @ApiPropertyOptional({ description: 'Filtrar apenas itens com estoque abaixo do mínimo' })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

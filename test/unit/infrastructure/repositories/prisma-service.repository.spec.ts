@@ -29,7 +29,6 @@ describe('PrismaServiceRepository', () => {
         description: service.description,
         basePrice: service.basePrice,
         estimatedTimeMin: service.estimatedTimeMin,
-        isActive: service.isActive,
       });
 
       prisma.service.create.mockResolvedValue(prismaModel);
@@ -43,7 +42,6 @@ describe('PrismaServiceRepository', () => {
           description: prismaModel.description,
           basePrice: Number(prismaModel.basePrice),
           estimatedTimeMin: prismaModel.estimatedTimeMin,
-          isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -55,7 +53,6 @@ describe('PrismaServiceRepository', () => {
           description: service.description,
           basePrice: service.basePrice,
           estimatedTimeMin: service.estimatedTimeMin,
-          isActive: service.isActive,
         },
       });
     });
@@ -100,7 +97,6 @@ describe('PrismaServiceRepository', () => {
           description: prismaModel.description,
           basePrice: Number(prismaModel.basePrice),
           estimatedTimeMin: prismaModel.estimatedTimeMin,
-          isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -137,7 +133,6 @@ describe('PrismaServiceRepository', () => {
           description: prismaModel.description,
           basePrice: Number(prismaModel.basePrice),
           estimatedTimeMin: prismaModel.estimatedTimeMin,
-          isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -181,7 +176,6 @@ describe('PrismaServiceRepository', () => {
           description: prismaModels[0].description,
           basePrice: Number(prismaModels[0].basePrice),
           estimatedTimeMin: prismaModels[0].estimatedTimeMin,
-          isActive: prismaModels[0].isActive,
           createdAt: prismaModels[0].createdAt,
           updatedAt: prismaModels[0].updatedAt,
         }),
@@ -195,60 +189,6 @@ describe('PrismaServiceRepository', () => {
       });
 
       expect(prisma.service.count).toHaveBeenCalledWith({ where: {} });
-    });
-
-    it('should return only active services when active is true', async () => {
-      const page = 1;
-      const pageSize = 10;
-      const prismaModels = [
-        createMockService({ id: randomUUID(), name: 'Service 1', isActive: true }),
-        createMockService({ id: randomUUID(), name: 'Service 2', isActive: true }),
-      ];
-
-      prisma.service.findMany.mockResolvedValue(prismaModels);
-      prisma.service.count.mockResolvedValue(2);
-
-      const result = await repository.findAllPaginated({ page, limit: pageSize }, { active: true });
-
-      expect(result.items).toHaveLength(2);
-      expect(result.total).toBe(2);
-
-      expect(prisma.service.findMany).toHaveBeenCalledWith({
-        skip: 0,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        where: { isActive: true },
-      });
-
-      expect(prisma.service.count).toHaveBeenCalledWith({ where: { isActive: true } });
-    });
-
-    it('should return only inactive services when active is false', async () => {
-      const page = 1;
-      const pageSize = 10;
-      const prismaModels = [
-        createMockService({ id: randomUUID(), isActive: false }),
-        createMockService({ id: randomUUID(), isActive: false }),
-      ];
-
-      prisma.service.findMany.mockResolvedValue(prismaModels);
-      prisma.service.count.mockResolvedValue(2);
-
-      const result = await repository.findAllPaginated({ page, limit: pageSize }, { active: false });
-
-      expect(result.items).toHaveLength(2);
-      expect(result.total).toBe(2);
-
-      expect(prisma.service.findMany).toHaveBeenCalledWith({
-        skip: 0,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        where: { isActive: false },
-      });
-
-      expect(prisma.service.count).toHaveBeenCalledWith({
-        where: { isActive: false },
-      });
     });
 
     it('should handle pagination correctly for second page', async () => {
@@ -300,7 +240,6 @@ describe('PrismaServiceRepository', () => {
         description: 'New Description',
         basePrice: 149.99,
         estimatedTimeMin: 60,
-        isActive: false,
       };
 
       const updatedPrismaModel = createMockService({
@@ -309,7 +248,6 @@ describe('PrismaServiceRepository', () => {
         description: updateData.description,
         basePrice: updateData.basePrice,
         estimatedTimeMin: updateData.estimatedTimeMin,
-        isActive: updateData.isActive,
       });
 
       prisma.service.update.mockResolvedValue(updatedPrismaModel);

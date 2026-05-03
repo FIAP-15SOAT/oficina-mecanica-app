@@ -3,12 +3,10 @@ import { ServiceController } from '@presentation/service/service.controller';
 import { createMockService } from '../../../helpers/service-mock.factory';
 import { CreateServiceRequestDto } from '@presentation/service/dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from '@presentation/service/dto/update-service-request.dto';
-import { UpdateServiceStatusRequestDto } from '@presentation/service/dto/update-service-status-request.dto';
 import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
 import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
 import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
-import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
 import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
 import { IFindServiceMetricsUseCase, ServiceMetrics } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
 import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
@@ -19,7 +17,6 @@ describe('ServiceController', () => {
   let findServiceByIdUseCase: jest.Mocked<IFindServiceByIdUseCase>;
   let findAllServicesPaginatedUseCase: jest.Mocked<IFindAllServicesPaginatedUseCase>;
   let updateServiceUseCase: jest.Mocked<IUpdateServiceUseCase>;
-  let updateServiceStatusUseCase: jest.Mocked<IUpdateServiceStatusUseCase>;
   let deleteServiceUseCase: jest.Mocked<IDeleteServiceUseCase>;
   let findServiceMetricsUseCase: jest.Mocked<IFindServiceMetricsUseCase>;
   let findAllServicesMetricsUseCase: jest.Mocked<IFindAllServicesMetricsUseCase>;
@@ -29,7 +26,6 @@ describe('ServiceController', () => {
     findServiceByIdUseCase = { execute: jest.fn() };
     findAllServicesPaginatedUseCase = { execute: jest.fn() };
     updateServiceUseCase = { execute: jest.fn() };
-    updateServiceStatusUseCase = { execute: jest.fn() };
     deleteServiceUseCase = { execute: jest.fn() };
     findServiceMetricsUseCase = { execute: jest.fn() };
     findAllServicesMetricsUseCase = { execute: jest.fn() };
@@ -39,7 +35,6 @@ describe('ServiceController', () => {
       findServiceByIdUseCase,
       findAllServicesPaginatedUseCase,
       updateServiceUseCase,
-      updateServiceStatusUseCase,
       deleteServiceUseCase,
       findServiceMetricsUseCase,
     );
@@ -71,7 +66,7 @@ describe('ServiceController', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated services passing active=true', async () => {
+    it('should return paginated services', async () => {
       const services = [
         createMockService({ id: randomUUID(), name: 'Service 1' }),
         createMockService({ id: randomUUID(), name: 'Service 2' }),
@@ -80,27 +75,6 @@ describe('ServiceController', () => {
       const paginatedResult = {
         items: services,
         pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
-      };
-
-      findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
-
-      const query = { page: 1, limit: 10, active: true };
-      const result = await controller.findAll(query as any);
-
-      expect(result).toEqual({
-        data: paginatedResult.items,
-        pagination: paginatedResult.pagination,
-      });
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 10, active: true }),
-      );
-    });
-
-    it('should return all services when active is undefined', async () => {
-      const services = [createMockService({ id: randomUUID(), name: 'Service 1' })];
-      const paginatedResult = {
-        items: services,
-        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
       };
 
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
@@ -114,23 +88,6 @@ describe('ServiceController', () => {
       });
       expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
-      );
-    });
-
-    it('should return only inactive services when active=false', async () => {
-      const services = [createMockService({ id: randomUUID(), isActive: false })];
-      const paginatedResult = {
-        items: services,
-        pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
-      };
-
-      findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
-
-      const query = { page: 1, limit: 10, active: false };
-      const result = await controller.findAll(query as any);
-
-      expect(findAllServicesPaginatedUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 10, active: false }),
       );
     });
 
@@ -170,7 +127,6 @@ describe('ServiceController', () => {
         description: 'Updated description',
         basePrice: 149.99,
         estimatedTimeMin: 45,
-        isActive: true,
       };
 
       const updatedService = createMockService({
@@ -179,7 +135,6 @@ describe('ServiceController', () => {
         description: request.description,
         basePrice: request.basePrice,
         estimatedTimeMin: request.estimatedTimeMin,
-        isActive: request.isActive,
       });
 
       updateServiceUseCase.execute.mockResolvedValue(updatedService);
@@ -188,46 +143,6 @@ describe('ServiceController', () => {
 
       expect(result).toEqual({ data: updatedService });
       expect(updateServiceUseCase.execute).toHaveBeenCalledWith(id, request);
-    });
-  });
-
-  describe('updateStatus', () => {
-    it('should update service status to inactive', async () => {
-      const id = randomUUID();
-      const request: UpdateServiceStatusRequestDto = {
-        active: false,
-      };
-
-      const updatedService = createMockService({
-        id,
-        isActive: false,
-      });
-
-      updateServiceStatusUseCase.execute.mockResolvedValue(updatedService);
-
-      const result = await controller.updateStatus(id, request);
-
-      expect(result).toEqual({ data: updatedService });
-      expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith(id, false);
-    });
-
-    it('should update service status to active', async () => {
-      const id = randomUUID();
-      const request: UpdateServiceStatusRequestDto = {
-        active: true,
-      };
-
-      const updatedService = createMockService({
-        id,
-        isActive: true,
-      });
-
-      updateServiceStatusUseCase.execute.mockResolvedValue(updatedService);
-
-      const result = await controller.updateStatus(id, request);
-
-      expect(result).toEqual({ data: updatedService });
-      expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith(id, true);
     });
   });
 

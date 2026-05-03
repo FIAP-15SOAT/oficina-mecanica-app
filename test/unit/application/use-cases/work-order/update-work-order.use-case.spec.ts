@@ -1,5 +1,6 @@
 import { UpdateWorkOrderUseCase } from '@application/use-cases/work-order/update-work-order.use-case';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { UserRole } from '@domain/enums/user-role.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
@@ -28,10 +29,10 @@ describe('UpdateWorkOrderUseCase', () => {
     expect(workOrderRepository.update).toHaveBeenCalledTimes(1);
   });
 
-  it('should update a work order and assign a user', async () => {
+  it('should update a work order and assign a user (active mechanic)', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
     const userId = 'user-uuid';
-    const user = { id: userId, name: 'John' };
+    const user = { id: userId, name: 'John', role: UserRole.MECHANIC, isActive: true };
     const updated = createMockWorkOrder({ ...wo, assignedUserId: userId });
 
     workOrderRepository.findById.mockResolvedValue(wo);
@@ -42,6 +43,33 @@ describe('UpdateWorkOrderUseCase', () => {
 
     expect(result.assignedUserId).toBe(userId);
     expect(userRepository.findById).toHaveBeenCalledWith(userId);
+  });
+
+  it('should throw BusinessRuleViolationException when assigned user is not a mechanic', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+    const user = { id: 'user-id', name: 'John', role: UserRole.ADMIN, isActive: true };
+
+    workOrderRepository.findById.mockResolvedValue(wo);
+    userRepository.findById.mockResolvedValue(user);
+
+    await expect(
+      useCase.execute(wo.id, { assignedUserId: user.id }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+    await expect(
+      useCase.execute(wo.id, { assignedUserId: user.id }),
+    ).rejects.toThrow('Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço');
+  });
+
+  it('should throw BusinessRuleViolationException when assigned user is inactive', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+    const user = { id: 'user-id', name: 'John', role: UserRole.MECHANIC, isActive: false };
+
+    workOrderRepository.findById.mockResolvedValue(wo);
+    userRepository.findById.mockResolvedValue(user);
+
+    await expect(
+      useCase.execute(wo.id, { assignedUserId: user.id }),
+    ).rejects.toThrow(BusinessRuleViolationException);
   });
 
   it('should throw ResourceNotFoundException when work order not found', async () => {

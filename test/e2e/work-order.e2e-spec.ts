@@ -134,16 +134,16 @@ describe('WorkOrder (E2E)', () => {
         .expect(404);
     });
 
-    it('should create a work order with assigned user', async () => {
+    it('should create a work order with assigned user (mechanic)', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
 
-      // Get the admin user id (which is already registered)
-      const usersRes = await request(httpServer)
-        .get('/api/users')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-      const adminUserId = usersRes.body.data.find((u: any) => u.email === 'admin@e2e.test').id;
+      // Create a mechanic
+      const mechanic = await registerAndLogin(httpServer, {
+        name: 'Mechanic Assignment',
+        email: `mechanic.assign${Date.now()}@test.com`,
+        role: 'MECHANIC',
+      });
 
       const res = await request(httpServer)
         .post('/api/work-orders')
@@ -151,11 +151,11 @@ describe('WorkOrder (E2E)', () => {
         .send({
           customerId: customer.id,
           vehicleId: vehicle.id,
-          assignedUserId: adminUserId
+          assignedUserId: mechanic.user.id
         })
         .expect(201);
 
-      expect(res.body.data.assignedUserId).toBe(adminUserId);
+      expect(res.body.data.assignedUserId).toBe(mechanic.user.id);
     });
 
     it('should return 404 when assigned user not found', async () => {
@@ -171,6 +171,57 @@ describe('WorkOrder (E2E)', () => {
           assignedUserId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
         })
         .expect(404);
+    });
+
+    it('should return 409 when assigned user is not a mechanic', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      // Admin user is not a mechanic
+      const usersRes = await request(httpServer)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      const adminUserId = usersRes.body.data.find((u: any) => u.role === 'ADMIN').id;
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          assignedUserId: adminUserId
+        })
+        .expect(409);
+    });
+
+    it('should return 409 when assigned user is an inactive mechanic', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      // Create an inactive mechanic
+      const inactiveMechanic = await registerAndLogin(httpServer, {
+        name: 'Inactive Mechanic',
+        email: `inactive${Date.now()}@test.com`,
+        role: 'MECHANIC',
+      });
+
+      // Deactivate the user manually in DB or via API if possible
+      // Let's use Prisma directly since it's easier in E2E helpers
+      await ctx.prisma.user.update({
+        where: { email: inactiveMechanic.user.email },
+        data: { isActive: false }
+      });
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          assignedUserId: inactiveMechanic.user.id
+        })
+        .expect(409);
     });
 
     it('should return 409 when vehicle does not belong to customer', async () => {
@@ -607,25 +658,30 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.data.length).toBe(1);
 
       // Filter by assignedUserId
-      // Create another WO with assigned user
-      const usersRes = await request(httpServer)
-        .get('/api/users')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-      const adminUserId = usersRes.body.data.find((u: any) => u.email === 'admin@e2e.test').id;
+      // Create another WO with assigned user (must be a mechanic)
+      const mechanic = await registerAndLogin(httpServer, {
+        name: 'Mechanic Filter',
+        email: `mechanic.filter${Date.now()}@test.com`,
+        role: 'MECHANIC',
+      });
 
       await request(httpServer)
         .post('/api/work-orders')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: adminUserId, problemDescription: 'Assigned WO' })
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          assignedUserId: mechanic.user.id,
+          problemDescription: 'Assigned WO'
+        })
         .expect(201);
 
       res = await request(httpServer)
-        .get(`/api/work-orders?assignedUserId=${adminUserId}`)
+        .get(`/api/work-orders?assignedUserId=${mechanic.user.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.every((wo: any) => wo.assignedUserId === adminUserId)).toBe(true);
+      expect(res.body.data.every((wo: any) => wo.assignedUserId === mechanic.user.id)).toBe(true);
     });
   });
 });

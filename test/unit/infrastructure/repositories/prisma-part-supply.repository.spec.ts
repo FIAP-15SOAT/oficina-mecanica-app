@@ -194,17 +194,6 @@ describe('PrismaPartSupplyRepository', () => {
       );
     });
 
-    it('should apply isActive filter', async () => {
-      prisma.partSupply.findMany.mockResolvedValue([]);
-      prisma.partSupply.count.mockResolvedValue(0);
-
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { isActive: false });
-
-      expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { isActive: false } }),
-      );
-    });
-
     it('should apply lowStock filter using column reference', async () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
@@ -262,7 +251,6 @@ describe('PrismaPartSupplyRepository', () => {
         salePrice: 59.9,
         minStock: 5,
         expiresAt: new Date('2028-01-01'),
-        isActive: false,
       };
 
       const prismaModel = createMockPartSupply({ id, ...data });

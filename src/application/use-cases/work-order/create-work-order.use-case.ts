@@ -43,7 +43,7 @@ export class CreateWorkOrderUseCase {
       const workOrder = WorkOrder.create({
         customerId: dto.customerId,
         vehicleId: dto.vehicleId,
-        assignedUserId: dto.assignedUserId,
+        assignedUser: assignedUser,
         problemDescription: dto.problemDescription,
         internalNotes: dto.internalNotes,
         mileageAtService: dto.mileageAtService,

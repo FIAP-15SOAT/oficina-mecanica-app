@@ -65,7 +65,6 @@ describe('FindAllPartsSuppliesUseCase', () => {
       name: 'Filtro',
       sku: 'FO',
       category: PartSupplyCategory.PART,
-      isActive: true,
       lowStock: true,
     });
 
@@ -75,20 +74,8 @@ describe('FindAllPartsSuppliesUseCase', () => {
         name: 'Filtro',
         sku: 'FO',
         category: PartSupplyCategory.PART,
-        isActive: true,
         lowStock: true,
       },
-    );
-  });
-
-  it('should pass isActive=false to the repository when explicitly set', async () => {
-    partSupplyRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, isActive: false });
-
-    expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
-      expect.objectContaining({ isActive: false }),
     );
   });
 

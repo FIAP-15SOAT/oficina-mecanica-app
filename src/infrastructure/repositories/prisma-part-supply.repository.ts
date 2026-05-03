@@ -33,7 +33,6 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
           stock: partSupply.stock,
           minStock: partSupply.minStock,
           expiresAt: partSupply.expiresAt,
-          isActive: partSupply.isActive,
         },
       });
 
@@ -68,14 +67,13 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     pagination: PaginationInput,
     filters: PartSupplyFilters,
   ): Promise<PaginatedRepositoryResult<PartSupply>> {
-    const { name, sku, category, isActive, lowStock } = filters;
+    const { name, sku, category, lowStock } = filters;
 
     const where: Prisma.PartSupplyWhereInput = {};
 
     if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
     if (sku) where.sku = { contains: sku.trim(), mode: 'insensitive' };
     if (category) where.category = category;
-    if (isActive !== undefined) where.isActive = isActive;
 
     if (lowStock) {
       where['stock'] = { lte: this.prisma.partSupply.fields.minStock };
@@ -110,7 +108,6 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
         ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
         ...(data.minStock !== undefined && { minStock: data.minStock }),
         ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
-        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
     return PartSupplyMapper.toDomain(record);

@@ -57,7 +57,6 @@ describe('PartSupply (E2E)', () => {
           category: 'PART',
           unit: 'UN',
           stock: 10,
-          isActive: true,
         }),
       );
     });
@@ -225,44 +224,7 @@ describe('PartSupply (E2E)', () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });
 
-    it('should filter by isActive=false returning only inactive items', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/parts-supplies')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Peça Inativa',
-          sku: 'SKU-INACTIVE-FILTER',
-          category: 'PART',
-          unit: 'UN',
-          costPrice: 10,
-          salePrice: 20,
-        })
-        .expect(201);
 
-      await request(httpServer)
-        .put(`/api/parts-supplies/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Peça Inativa',
-          sku: 'SKU-INACTIVE-FILTER',
-          category: 'PART',
-          unit: 'UN',
-          costPrice: 10,
-          salePrice: 20,
-          isActive: false,
-        })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/parts-supplies?isActive=false&limit=100')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
-      res.body.data.forEach((item: { isActive: boolean }) => {
-        expect(item.isActive).toBe(false);
-      });
-    });
   });
 
   // ─── GET /api/parts-supplies/:id ─────────────────────────────────────────
@@ -332,16 +294,7 @@ describe('PartSupply (E2E)', () => {
       expect(res.body.data.salePrice).toBe(59.9);
     });
 
-    it('should deactivate a part/supply', async () => {
-      const { stock, ...updatePayload } = validPartSupply;
-      const res = await request(httpServer)
-        .put(`/api/parts-supplies/${partId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ ...updatePayload, isActive: false })
-        .expect(200);
 
-      expect(res.body.data.isActive).toBe(false);
-    });
 
     it('should return 409 when updating to a duplicate SKU', async () => {
       await request(httpServer)

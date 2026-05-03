@@ -10,7 +10,7 @@ export interface PartSupplyFilters {
   name?: string;
   sku?: string;
   category?: PartSupplyCategory;
-  isActive?: boolean;
+
   lowStock?: boolean;
 }
 

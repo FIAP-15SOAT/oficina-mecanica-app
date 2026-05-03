@@ -10,18 +10,9 @@ export class FilterServicesDto {
   @IsOptional()
   @IsString({ message: 'O nome deve ser um texto.' })
   name?: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Filtrar por status: true = apenas ativos, false = apenas inativos, omitir = todos',
-  })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  @IsBoolean({ message: 'O filtro de status deve ser true ou false.' })
-  active?: boolean;
 }
 
 export class FindAllServicesQueryDto extends IntersectionType(
   PaginationDto,
   FilterServicesDto,
-) {}
+) { }

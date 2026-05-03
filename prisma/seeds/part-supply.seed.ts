@@ -139,7 +139,6 @@ export async function seedPartSupplies(prisma: PrismaClient): Promise<Record<str
         salePrice: part.salePrice,
         stock: part.stock,
         minStock: part.minStock,
-        isActive: true,
       },
     });
 

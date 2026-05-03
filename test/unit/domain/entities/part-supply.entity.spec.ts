@@ -26,7 +26,7 @@ describe('PartSupply Entity', () => {
         expect(partSupply.salePrice).toBe(45.0);
         expect(partSupply.stock).toBe(0);
         expect(partSupply.minStock).toBe(0);
-        expect(partSupply.isActive).toBe(true);
+
         expect(partSupply.id).toBeDefined();
         expect(partSupply.createdAt).toBeInstanceOf(Date);
         expect(partSupply.updatedAt).toBeInstanceOf(Date);
@@ -233,62 +233,5 @@ describe('PartSupply Entity', () => {
     });
   });
 
-  describe('activate', () => {
-    it('should activate an inactive part/supply', () => {
-      const partSupply = new PartSupply({ isActive: false, updatedAt: new Date('2026-01-01') });
 
-      partSupply.activate();
-
-      expect(partSupply.isActive).toBe(true);
-    });
-
-    it('should throw when already active', () => {
-      const partSupply = new PartSupply({ isActive: true });
-
-      expect(() => partSupply.activate()).toThrow('Peça ou Insumo já está ativo');
-    });
-
-    it('should update updatedAt when activated', () => {
-      const before = new Date('2026-01-01');
-      const partSupply = new PartSupply({ isActive: false, updatedAt: before });
-
-      partSupply.activate();
-
-      expect(partSupply.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    });
-  });
-
-  describe('deactivate', () => {
-    it('should deactivate an active part/supply', () => {
-      const partSupply = new PartSupply({ isActive: true, updatedAt: new Date() });
-
-      partSupply.deactivate();
-
-      expect(partSupply.isActive).toBe(false);
-    });
-
-    it('should throw when already inactive', () => {
-      const partSupply = new PartSupply({ isActive: false });
-
-      expect(() => partSupply.deactivate()).toThrow('Peça ou Insumo já está desativado');
-    });
-  });
-
-  describe('setActive', () => {
-    it('should activate when setActive(true) is called on inactive entity', () => {
-      const partSupply = new PartSupply({ isActive: false, updatedAt: new Date() });
-
-      partSupply.setActive(true);
-
-      expect(partSupply.isActive).toBe(true);
-    });
-
-    it('should deactivate when setActive(false) is called on active entity', () => {
-      const partSupply = new PartSupply({ isActive: true, updatedAt: new Date() });
-
-      partSupply.setActive(false);
-
-      expect(partSupply.isActive).toBe(false);
-    });
-  });
 });

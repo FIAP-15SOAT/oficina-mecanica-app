@@ -39,14 +39,13 @@ import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/crea
 import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
 import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
 import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
-import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
+
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { FindAllServicesQueryDto } from './dto/filter-services.dto';
-import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { ServiceMetricsDataResponseDto } from './dto/service-metrics-response.dto';
 import { ServicePresenter } from './service.presenter';
@@ -66,8 +65,6 @@ export class ServiceController {
     private readonly findAllServicesPaginatedUseCase: IFindAllServicesPaginatedUseCase,
     @Inject('IUpdateServiceUseCase')
     private readonly updateServiceUseCase: IUpdateServiceUseCase,
-    @Inject('IUpdateServiceStatusUseCase')
-    private readonly updateServiceStatusUseCase: IUpdateServiceStatusUseCase,
     @Inject('IDeleteServiceUseCase')
     private readonly deleteServiceUseCase: IDeleteServiceUseCase,
     @Inject('IFindServiceMetricsUseCase')
@@ -149,24 +146,6 @@ export class ServiceController {
     @Body() request: UpdateServiceRequestDto,
   ): Promise<ServiceDataResponseDto> {
     const result = await this.updateServiceUseCase.execute(id, request);
-    return ServicePresenter.toDataResponse(result);
-  }
-
-  @Patch(':id')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Alterar status do serviço (somente Admin)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
-  @ApiOkResponse({ type: ServiceDataResponseDto, description: 'Status do serviço atualizado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  @ApiForbiddenResponse({ description: 'Acesso negado' })
-  @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
-  @ApiUnprocessableEntityResponse({ description: 'Serviço já está no status informado' })
-  async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() request: UpdateServiceStatusRequestDto,
-  ): Promise<ServiceDataResponseDto> {
-    const result = await this.updateServiceStatusUseCase.execute(id, request.active);
     return ServicePresenter.toDataResponse(result);
   }
 

@@ -49,7 +49,6 @@ describe('Service (E2E)', () => {
           id: expect.any(String),
           name: 'Troca de Óleo',
           description: 'Troca completa com filtro',
-          isActive: true,
         }),
       );
     });
@@ -160,81 +159,6 @@ describe('Service (E2E)', () => {
       expect(res.body.pagination.totalPages).toBe(3);
     });
 
-    it('should return all services when active is not specified', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(16);
-    });
-
-    it('should return only active services when active=true', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100&active=true')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(15);
-    });
-
-    it('should return only inactive services when active=false', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100&active=false')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(1);
-    });
-
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/services').expect(401);
     });
@@ -311,7 +235,6 @@ describe('Service (E2E)', () => {
           description: 'Com óleo sintético',
           basePrice: 189.9,
           estimatedTimeMin: 90,
-          isActive: true,
         })
         .expect(200);
 
@@ -327,7 +250,6 @@ describe('Service (E2E)', () => {
           name: 'Ghost',
           basePrice: 100,
           estimatedTimeMin: 30,
-          isActive: true,
         })
         .expect(404);
     });
@@ -350,58 +272,8 @@ describe('Service (E2E)', () => {
           name: 'Outro Serviço',
           basePrice: 100,
           estimatedTimeMin: 30,
-          isActive: true,
         })
         .expect(409);
-    });
-  });
-
-  // ─── PATCH /api/services/:id ──────────────────────────────────────────────
-
-  describe('PATCH /api/services/:id', () => {
-    let serviceId: string;
-
-    beforeEach(async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validService)
-        .expect(201);
-      serviceId = createRes.body.data.id;
-    });
-
-    it('should deactivate service', async () => {
-      const res = await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      expect(res.body.data.isActive).toBe(false);
-    });
-
-    it('should reactivate service', async () => {
-      await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: true })
-        .expect(200);
-
-      expect(res.body.data.isActive).toBe(true);
-    });
-
-    it('should return 404 for non-existent service', async () => {
-      await request(httpServer)
-        .patch('/api/services/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(404);
     });
   });
 
@@ -449,7 +321,7 @@ describe('Service (E2E)', () => {
       const res = await request(httpServer)
         .get('/api/services-metrics')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`);
-      
+
       if (res.status !== 200) {
         console.log('All Metrics Error:', res.body);
       }
@@ -537,8 +409,8 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data.executionCount).toBeGreaterThanOrEqual(1);
       // averageTimeMinutes might be a Decimal object in JSON: {"d": [60], "e": 1, "s": 1}
-      const avgTime = res.body.data.averageTimeMinutes?.d 
-        ? res.body.data.averageTimeMinutes.d[0] 
+      const avgTime = res.body.data.averageTimeMinutes?.d
+        ? res.body.data.averageTimeMinutes.d[0]
         : res.body.data.averageTimeMinutes;
       expect(Number(avgTime)).toBeGreaterThan(0);
     });
