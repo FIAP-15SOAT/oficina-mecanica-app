@@ -25,7 +25,6 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
     const updatedQuote = createMockQuote({ ...quote, partsAmount: 240, totalAmount: 240 });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
     (mockRepos.quotePartSupply.findOne as jest.Mock).mockResolvedValue(existing);
     (mockRepos.quotePartSupply.update as jest.Mock).mockResolvedValue(updatedPart);
     (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([]);
@@ -51,20 +50,10 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
-  it('should throw ResourceNotFoundException when work order not found', async () => {
-    const quote = createMockQuote();
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({ quoteId: quote.id, partSupplyId: 'any', quantity: 1 }),
-    ).rejects.toThrow(ResourceNotFoundException);
-  });
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
     const quote = createMockQuote({ status: QuoteStatus.APPROVED });
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
 
     await expect(
       useCase.execute({ quoteId: quote.id, partSupplyId: 'any', quantity: 1 }),
@@ -74,7 +63,6 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
   it('should throw ResourceNotFoundException when part supply item not found in quote', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue({ id: quote.workOrderId });
     (mockRepos.quotePartSupply.findOne as jest.Mock).mockResolvedValue(null);
 
     await expect(

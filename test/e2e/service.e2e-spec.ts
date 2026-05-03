@@ -135,6 +135,8 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBe(10);
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
       expect(res.body.pagination.totalRecords).toBe(15);
       expect(res.body.pagination.totalPages).toBe(2);
     });
@@ -455,6 +457,17 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should use default pagination (page=1, limit=10) for metrics when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/services-metrics')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
     });
 
     it('should return metrics for a specific service', async () => {

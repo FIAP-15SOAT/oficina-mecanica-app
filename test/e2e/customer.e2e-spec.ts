@@ -151,12 +151,6 @@ describe('Customer (E2E)', () => {
     });
 
     it('should return 400 when CNPJ check digits are not numeric', async () => {
-      // CNPJ check digits are at positions 12 and 13 (0-indexed)
-      // We can only test this if we bypass class-validator or use a raw string
-      // But the validator checks this in line 29.
-      // However, the regex [.\-/] will strip non-digits.
-      // Wait, line 24: const cnpj = value.replace(/[.\-/]/g, '').toUpperCase();
-      // If we send '12.345.678/0001-A1', the 'A' will remain.
       await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -189,10 +183,10 @@ describe('Customer (E2E)', () => {
         '11.111.111/1111-11', // CNPJ all same
         '11.222.333/0001-AA', // CNPJ non-numeric check digits
         '12.345.678/0001-951', // neither 11 nor 14 (stripped)
-        '1234567890', // 10 digits (line 6 of validator)
-        '1234567890123', // 13 digits (line 25 of validator)
-        '123.456.789-0A', // Stripped length 11, but digits only length 10 (line 6 hits after inner strip)
-        '123.456.789-10', // Invalid CPF checksum (line 13 of validator)
+        '1234567890', // 10 digits
+        '1234567890123', // 13 digits
+        '123.456.789-0A', // Stripped length 11, but digits only length 10
+        '123.456.789-10', // Invalid CPF checksum
       ];
 
       for (const doc of invalidDocs) {
@@ -245,9 +239,10 @@ describe('Customer (E2E)', () => {
         .expect(200);
 
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(2);
+      expect(res.body.pagination).toBeDefined();
       expect(res.body.pagination.page).toBe(1);
       expect(res.body.pagination.limit).toBe(10);
+      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(2);
     });
 
     it('should filter by name (partial match)', async () => {

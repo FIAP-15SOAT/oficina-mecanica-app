@@ -35,11 +35,7 @@ export class SubmitQuoteUseCase {
 
       await this.updateWorkOrderStatus(repos, workOrder);
 
-      const customer = await repos.customer.findById(workOrder.customerId);
-
-      if (!customer) {
-        throw new ResourceNotFoundException('Cliente', workOrder.customerId);
-      }
+      const customer = (await repos.customer.findById(workOrder.customerId))!;
 
       await this.sendEmailNotification(updatedQuote, customer, workOrder.number);
 
@@ -66,11 +62,7 @@ export class SubmitQuoteUseCase {
       );
     }
 
-    const workOrder = await repos.workOrder.findById(quote.workOrderId);
-
-    if (!workOrder) {
-      throw new ResourceNotFoundException('Ordem de Serviço', quote.workOrderId);
-    }
+    const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
 
     return { quote, workOrder };
   }

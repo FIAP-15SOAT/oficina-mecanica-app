@@ -201,6 +201,8 @@ describe('WorkOrder (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
   });

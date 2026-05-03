@@ -3,6 +3,7 @@ import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase, UpdateQuoteStatusDto } from '@domain/interfaces/use-cases/quote/update-quote-status.use-case.interface';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
   constructor(
@@ -11,11 +12,11 @@ export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
   ) { }
 
   async execute(quoteId: string, userId: string | null, dto: UpdateQuoteStatusDto): Promise<Quote> {
-    if (dto.status === 'APPROVED') {
+    if (dto.status === QuoteStatus.APPROVED) {
       return this.approveQuoteUseCase.execute(quoteId, userId);
     }
 
-    if (dto.status === 'REJECTED') {
+    if (dto.status === QuoteStatus.REJECTED) {
       if (!dto.reason) {
         throw new BusinessRuleViolationException('A justificativa é obrigatória para rejeitar um orçamento.');
       }

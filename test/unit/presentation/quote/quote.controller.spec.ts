@@ -11,8 +11,8 @@ describe('QuoteController', () => {
   let removeQuoteServiceUseCase: any;
   let addQuotePartSupplyUseCase: any;
   let removeQuotePartSupplyUseCase: any;
-  let updateQuoteServiceItemUseCase: any;
-  let updateQuotePartSupplyItemUseCase: any;
+  let updateQuoteServiceQuantityUseCase: any;
+  let updateQuotePartSupplyQuantityUseCase: any;
   let submitQuoteUseCase: any;
   let emailDecisionQuoteUseCase: any;
   let updateQuoteStatusUseCase: any;
@@ -25,8 +25,8 @@ describe('QuoteController', () => {
     removeQuoteServiceUseCase = { execute: jest.fn() };
     addQuotePartSupplyUseCase = { execute: jest.fn() };
     removeQuotePartSupplyUseCase = { execute: jest.fn() };
-    updateQuoteServiceItemUseCase = { execute: jest.fn() };
-    updateQuotePartSupplyItemUseCase = { execute: jest.fn() };
+    updateQuoteServiceQuantityUseCase = { execute: jest.fn() };
+    updateQuotePartSupplyQuantityUseCase = { execute: jest.fn() };
     submitQuoteUseCase = { execute: jest.fn() };
     emailDecisionQuoteUseCase = { execute: jest.fn() };
     updateQuoteStatusUseCase = { execute: jest.fn() };
@@ -39,8 +39,8 @@ describe('QuoteController', () => {
       removeQuoteServiceUseCase,
       addQuotePartSupplyUseCase,
       removeQuotePartSupplyUseCase,
-      updateQuoteServiceItemUseCase,
-      updateQuotePartSupplyItemUseCase,
+      updateQuoteServiceQuantityUseCase,
+      updateQuotePartSupplyQuantityUseCase,
       submitQuoteUseCase,
       emailDecisionQuoteUseCase,
       updateQuoteStatusUseCase,
@@ -88,12 +88,12 @@ describe('QuoteController', () => {
     const serviceId = randomUUID();
     const dto = { quantity: 3 };
     const quote = { id };
-    updateQuoteServiceItemUseCase.execute.mockResolvedValue(quote);
+    updateQuoteServiceQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updateService(id, serviceId, dto as any);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote as any));
-    expect(updateQuoteServiceItemUseCase.execute).toHaveBeenCalledWith({ quoteId: id, serviceId, ...dto });
+    expect(updateQuoteServiceQuantityUseCase.execute).toHaveBeenCalledWith({ quoteId: id, serviceId, ...dto });
   });
 
   it('should remove a service', async () => {
@@ -124,12 +124,12 @@ describe('QuoteController', () => {
     const partSupplyId = randomUUID();
     const dto = { quantity: 3 };
     const quote = { id };
-    updateQuotePartSupplyItemUseCase.execute.mockResolvedValue(quote);
+    updateQuotePartSupplyQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updatePartSupply(id, partSupplyId, dto as any);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote as any));
-    expect(updateQuotePartSupplyItemUseCase.execute).toHaveBeenCalledWith({ quoteId: id, partSupplyId, ...dto });
+    expect(updateQuotePartSupplyQuantityUseCase.execute).toHaveBeenCalledWith({ quoteId: id, partSupplyId, ...dto });
   });
 
   it('should remove a part supply', async () => {

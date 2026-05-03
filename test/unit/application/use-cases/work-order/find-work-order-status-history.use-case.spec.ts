@@ -31,7 +31,7 @@ describe('FindWorkOrderStatusHistoryUseCase', () => {
     expect(statusHistoryRepository.findByWorkOrderId).toHaveBeenCalledWith(workOrder.id);
   });
 
-  it('should throw ResourceNotFoundException when work order not found (line 17)', async () => {
+  it('should throw ResourceNotFoundException when work order not found', async () => {
     workOrderRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('nonexistent-id')).rejects.toThrow(ResourceNotFoundException);

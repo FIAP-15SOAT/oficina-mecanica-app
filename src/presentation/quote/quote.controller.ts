@@ -42,8 +42,8 @@ import { IAddQuoteServiceUseCase } from '@domain/interfaces/use-cases/quote/add-
 import { IRemoveQuoteServiceUseCase } from '@domain/interfaces/use-cases/quote/remove-quote-service.use-case.interface';
 import { IAddQuotePartSupplyUseCase } from '@domain/interfaces/use-cases/quote/add-quote-part-supply.use-case.interface';
 import { IRemoveQuotePartSupplyUseCase } from '@domain/interfaces/use-cases/quote/remove-quote-part-supply.use-case.interface';
-import { IUpdateQuoteServiceItemUseCase } from '@domain/interfaces/use-cases/quote/update-quote-service-item.use-case.interface';
-import { IUpdateQuotePartSupplyItemUseCase } from '@domain/interfaces/use-cases/quote/update-quote-part-supply-item.use-case.interface';
+import { IUpdateQuoteServiceQuantityUseCase } from '@domain/interfaces/use-cases/quote/update-quote-service-quantity.use-case.interface';
+import { IUpdateQuotePartSupplyQuantityUseCase } from '@domain/interfaces/use-cases/quote/update-quote-part-supply-quantity.use-case.interface';
 import { ISubmitQuoteUseCase } from '@domain/interfaces/use-cases/quote/submit-quote.use-case.interface';
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@domain/interfaces/use-cases/quote/update-quote-status.use-case.interface';
@@ -77,9 +77,9 @@ export class QuoteController {
     @Inject('IAddQuotePartSupplyUseCase') private readonly addQuotePartSupplyUseCase: IAddQuotePartSupplyUseCase,
     @Inject('IRemoveQuotePartSupplyUseCase') private readonly removeQuotePartSupplyUseCase: IRemoveQuotePartSupplyUseCase,
     @Inject('IUpdateQuoteServiceQuantityUseCase')
-    private readonly updateQuoteServiceItemUseCase: IUpdateQuoteServiceItemUseCase,
+    private readonly updateQuoteServiceQuantityUseCase: IUpdateQuoteServiceQuantityUseCase,
     @Inject('IUpdateQuotePartSupplyQuantityUseCase')
-    private readonly updateQuotePartSupplyItemUseCase: IUpdateQuotePartSupplyItemUseCase,
+    private readonly updateQuotePartSupplyQuantityUseCase: IUpdateQuotePartSupplyQuantityUseCase,
     @Inject('ISubmitQuoteUseCase') private readonly submitQuoteUseCase: ISubmitQuoteUseCase,
     @Inject('IEmailDecisionQuoteUseCase') private readonly emailDecisionQuoteUseCase: IEmailDecisionQuoteUseCase,
     @Inject('IUpdateQuoteStatusUseCase') private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
@@ -164,7 +164,7 @@ export class QuoteController {
     @Param('serviceId', ParseUUIDPipe) serviceId: string,
     @Body() dto: UpdateQuoteServiceItemRequestDto,
   ) {
-    const quote = await this.updateQuoteServiceItemUseCase.execute({
+    const quote = await this.updateQuoteServiceQuantityUseCase.execute({
       quoteId: id,
       serviceId,
       ...dto,
@@ -230,7 +230,7 @@ export class QuoteController {
     @Param('partSupplyId', ParseUUIDPipe) partSupplyId: string,
     @Body() dto: UpdateQuotePartSupplyItemRequestDto,
   ) {
-    const quote = await this.updateQuotePartSupplyItemUseCase.execute({
+    const quote = await this.updateQuotePartSupplyQuantityUseCase.execute({
       quoteId: id,
       partSupplyId,
       ...dto,

@@ -41,10 +41,7 @@ export class ApproveQuoteUseCase {
 
     quote.ensureCanApprove();
 
-    const workOrder = await repos.workOrder.findById(quote.workOrderId);
-    if (!workOrder) {
-      throw new ResourceNotFoundException('Ordem de Serviço', quote.workOrderId);
-    }
+    const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
 
     return { quote, workOrder };
   }

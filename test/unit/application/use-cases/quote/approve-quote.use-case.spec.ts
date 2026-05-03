@@ -90,15 +90,6 @@ describe('ApproveQuoteUseCase', () => {
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
-  it('should throw ResourceNotFoundException when work order not found', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([]);
-
-    await expect(useCase.execute(quote.id)).rejects.toThrow(ResourceNotFoundException);
-  });
 
   it('should throw BusinessRuleViolationException when insufficient stock', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });

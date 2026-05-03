@@ -1,6 +1,6 @@
 import { Quote } from '@domain/entities/quote.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { UpdateQuoteServiceQuantityDto } from '@domain/interfaces/use-cases/quote/dto/update-quote-service-item.dto';
+import { UpdateQuoteServiceQuantityDto } from '@domain/interfaces/use-cases/quote/dto/update-quote-service-quantity.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateQuoteServiceQuantityUseCase {
@@ -12,12 +12,6 @@ export class UpdateQuoteServiceQuantityUseCase {
 
       if (!quote) {
         throw new ResourceNotFoundException('Orçamento', dto.quoteId);
-      }
-
-      const workOrder = await repos.workOrder.findById(quote.workOrderId);
-
-      if (!workOrder) {
-        throw new ResourceNotFoundException('Ordem de Serviço', quote.workOrderId);
       }
 
       quote.ensureCanChangeItems();

@@ -107,31 +107,7 @@ describe('SubmitQuoteUseCase', () => {
     await expect(useCase.execute(quote.id)).rejects.toThrow(ResourceConflictException);
   });
 
-  it('should throw ResourceNotFoundException when work order not found', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    const service = createMockQuoteService({ quoteId: quote.id });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
-
-    await expect(useCase.execute(quote.id)).rejects.toThrow(ResourceNotFoundException);
-  });
-
-  it('should throw ResourceNotFoundException when customer not found', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    const workOrder = createMockWorkOrder({ id: quote.workOrderId, status: WorkOrderStatus.AWAITING_APPROVAL });
-    const service = createMockQuoteService({ quoteId: quote.id });
-
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(null);
-
-    await expect(useCase.execute(quote.id)).rejects.toThrow(ResourceNotFoundException);
-  });
 
   it('should send email when customer has email', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });

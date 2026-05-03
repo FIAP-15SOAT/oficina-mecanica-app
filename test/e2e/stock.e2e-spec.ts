@@ -67,6 +67,17 @@ describe('Stock (E2E)', () => {
       expect(res.body.data[0].type).toBe('ENTRY');
     });
 
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
     it('should filter by date range', async () => {
       const part = await createPartSupply('Peça Teste 2', 'TEST-002');
       await request(httpServer)
@@ -136,6 +147,17 @@ describe('Stock (E2E)', () => {
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
       expect(res.body.data[0].partSupplyId).toBe(part.id);
+    });
+
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/stock-reservations')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
     });
 
     it('should filter stock reservations by partSupplyId and workOrderId', async () => {

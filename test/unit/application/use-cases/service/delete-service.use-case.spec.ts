@@ -38,7 +38,7 @@ describe('DeleteServiceUseCase', () => {
     expect(serviceRepository.delete).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceConflictException when service has work order services (line 21)', async () => {
+  it('should throw ResourceConflictException when service has work order services', async () => {
     const service = createMockService();
     serviceRepository.findById.mockResolvedValue(service);
     serviceRepository.hasWorkOrderServices.mockResolvedValue(true);
@@ -48,7 +48,7 @@ describe('DeleteServiceUseCase', () => {
     expect(serviceRepository.delete).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceConflictException when service has quote services (line 21)', async () => {
+  it('should throw ResourceConflictException when service has quote services', async () => {
     const service = createMockService();
     serviceRepository.findById.mockResolvedValue(service);
     serviceRepository.hasWorkOrderServices.mockResolvedValue(false);
