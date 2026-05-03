@@ -6,11 +6,11 @@ import { UpdateWorkOrderStatusDto } from '@domain/interfaces/use-cases/work-orde
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
-const PATCH_STATUS_ALLOWED = [
+const PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
   WorkOrderStatus.IN_DIAGNOSIS,
   WorkOrderStatus.CANCELLED,
   WorkOrderStatus.DELIVERED,
-];
+]);
 
 export class UpdateWorkOrderStatusUseCase {
   constructor(private readonly unitOfWork: IUnitOfWork) { }
@@ -23,7 +23,7 @@ export class UpdateWorkOrderStatusUseCase {
         throw new ResourceNotFoundException('Ordem de serviço não encontrada');
       }
 
-      if (!PATCH_STATUS_ALLOWED.includes(dto.status)) {
+      if (!PATCH_STATUS_ALLOWED.has(dto.status)) {
         throw new BusinessRuleViolationException(
           `O status "${dto.status}" não é permitido nesta operação.`,
         );

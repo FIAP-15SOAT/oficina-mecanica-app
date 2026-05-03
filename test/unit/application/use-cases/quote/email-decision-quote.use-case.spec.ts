@@ -122,19 +122,4 @@ describe('EmailDecisionQuoteUseCase', () => {
       UnauthorizedAccessException,
     );
   });
-
-  it('should throw UnauthorizedAccessException when action is unknown', async () => {
-    const action = 'unknown-action';
-    const payload = {
-      quoteId,
-      action,
-      type: 'quote-email-decision',
-    };
-    tokenService.verifyWithSecret.mockReturnValue(payload);
-
-    await expect(useCase.execute(quoteId, action, token)).rejects.toThrow(
-      BadRequestException,
-    );
-    await expect(useCase.execute(quoteId, action, token)).rejects.toThrow('Ação inválida.');
-  });
 });

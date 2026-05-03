@@ -2,6 +2,7 @@ import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-qu
 import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';
 import { randomUUID } from 'node:crypto';
 
@@ -26,7 +27,7 @@ describe('UpdateQuoteStatusUseCase', () => {
     const quote = createMockQuote({ id: quoteId });
     approveQuoteUseCase.execute.mockResolvedValue(quote);
 
-    const result = await useCase.execute(quoteId, userId, { status: 'APPROVED' });
+    const result = await useCase.execute(quoteId, userId, { status: QuoteStatus.APPROVED });
 
     expect(result).toBe(quote);
     expect(approveQuoteUseCase.execute).toHaveBeenCalledWith(quoteId, userId);
@@ -39,7 +40,7 @@ describe('UpdateQuoteStatusUseCase', () => {
     const quote = createMockQuote({ id: quoteId });
     rejectQuoteUseCase.execute.mockResolvedValue(quote);
 
-    const result = await useCase.execute(quoteId, userId, { status: 'REJECTED', reason });
+    const result = await useCase.execute(quoteId, userId, { status: QuoteStatus.REJECTED, reason });
 
     expect(result).toBe(quote);
     expect(rejectQuoteUseCase.execute).toHaveBeenCalledWith(quoteId, reason, userId);
@@ -49,15 +50,7 @@ describe('UpdateQuoteStatusUseCase', () => {
     const quoteId = randomUUID();
     const userId = randomUUID();
 
-    await expect(useCase.execute(quoteId, userId, { status: 'REJECTED' }))
-      .rejects.toThrow(BusinessRuleViolationException);
-  });
-
-  it('should throw BusinessRuleViolationException for invalid status', async () => {
-    const quoteId = randomUUID();
-    const userId = randomUUID();
-
-    await expect(useCase.execute(quoteId, userId, { status: 'INVALID' as any }))
+    await expect(useCase.execute(quoteId, userId, { status: QuoteStatus.REJECTED }))
       .rejects.toThrow(BusinessRuleViolationException);
   });
 });

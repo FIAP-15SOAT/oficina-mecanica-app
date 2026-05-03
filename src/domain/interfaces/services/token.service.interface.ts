@@ -17,6 +17,5 @@ export interface ITokenService {
   signTokenPair(payload: TokenPayload): TokenPair;
   signWithSecret(payload: Record<string, unknown>, secret: string, expiresIn: string): string;
   verifyWithSecret<T extends object = Record<string, unknown>>(token: string, secret: string): T;
-  verifyAccessToken(token: string): TokenPayload;
   verifyRefreshToken(token: string): TokenPayload;
 }

@@ -1,20 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-
-export enum UpdateQuoteStatus {
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 export class UpdateQuoteStatusRequestDto {
   @ApiProperty({
     description: 'Novo status do orçamento',
-    enum: UpdateQuoteStatus,
-    example: UpdateQuoteStatus.APPROVED,
+    enum: [QuoteStatus.APPROVED, QuoteStatus.REJECTED],
+    example: QuoteStatus.APPROVED,
   })
-  @IsEnum(UpdateQuoteStatus, { message: 'O status deve ser APPROVED ou REJECTED' })
+  @IsIn([QuoteStatus.APPROVED, QuoteStatus.REJECTED], { message: 'O status deve ser APPROVED ou REJECTED' })
   @IsNotEmpty({ message: 'O status é obrigatório' })
-  status: UpdateQuoteStatus;
+  status: QuoteStatus.APPROVED | QuoteStatus.REJECTED;
 
   @ApiPropertyOptional({
     description: 'Motivo da rejeição (obrigatório se o status for REJECTED)',

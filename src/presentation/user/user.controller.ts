@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -38,9 +39,11 @@ import { IFindUserByIdUseCase } from '@domain/interfaces/use-cases/user/find-use
 import { IUpdateUserStatusUseCase } from '@domain/interfaces/use-cases/user/update-user-status.use-case.interface';
 import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-user.use-case.interface';
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
+import { FindAllUsersQueryDto } from './dto/filter-users.dto';
 import { UpdateUserStatusRequestDto } from './dto/update-user-status-request.dto';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
-import { UserDataResponseDto, UsersDataResponseDto } from './dto/user-response.dto';
+import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/user-response.dto';
+import { UserPresenter } from './user.presenter';
 
 @ApiTags('Gestão de Usuários')
 @Controller('users')
@@ -72,17 +75,22 @@ export class UserController {
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
   async create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
     const result = await this.createUserUseCase.execute(dto);
-    return { data: result };
+    return UserPresenter.toDataResponse(result);
   }
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Listar todos os usuários (somente Admin)' })
-  @ApiOkResponse({ type: UsersDataResponseDto, description: 'Lista de usuários' })
+  @ApiOperation({ summary: 'Listar usuários de forma paginada (somente Admin)' })
+  @ApiOkResponse({ type: UserPaginatedResponseDto, description: 'Lista paginada de usuários' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(): Promise<UsersDataResponseDto> {
-    const result = await this.findAllUsersUseCase.execute();
-    return { data: result };
+  async findAll(@Query() query: FindAllUsersQueryDto): Promise<UserPaginatedResponseDto> {
+    const result = await this.findAllUsersUseCase.execute({
+      ...query,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+    });
+
+    return UserPresenter.toPaginatedResponse(result);
   }
 
   @Get(':id')
@@ -95,7 +103,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
     const result = await this.findUserByIdUseCase.execute(id);
-    return { data: result };
+    return UserPresenter.toDataResponse(result);
   }
 
   @Put(':id')
@@ -113,7 +121,7 @@ export class UserController {
     @Body() dto: UpdateUserRequestDto,
   ): Promise<UserDataResponseDto> {
     const result = await this.updateUserUseCase.execute(id, dto);
-    return { data: result };
+    return UserPresenter.toDataResponse(result);
   }
 
   @Patch(':id')
@@ -130,7 +138,7 @@ export class UserController {
     @Body() request: UpdateUserStatusRequestDto,
   ): Promise<UserDataResponseDto> {
     const result = await this.updateUserStatusUseCase.execute(id, request.active);
-    return { data: result };
+    return UserPresenter.toDataResponse(result);
   }
 
   @Delete(':id')

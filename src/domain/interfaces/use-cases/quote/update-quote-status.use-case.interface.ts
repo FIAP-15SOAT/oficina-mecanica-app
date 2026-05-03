@@ -1,7 +1,8 @@
 import { Quote } from '@domain/entities/quote.entity';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 export interface UpdateQuoteStatusDto {
-  status: 'APPROVED' | 'REJECTED';
+  status: QuoteStatus.APPROVED | QuoteStatus.REJECTED;
   reason?: string;
 }
 

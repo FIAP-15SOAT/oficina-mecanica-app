@@ -59,15 +59,6 @@ describe('JwtTokenService', () => {
     });
   });
 
-  describe('verifyAccessToken', () => {
-    it('should verify access token', () => {
-      const result = service.verifyAccessToken('some-token');
-
-      expect(result).toEqual(mockPayload);
-      expect(jwtService.verify).toHaveBeenCalledWith('some-token');
-    });
-  });
-
   describe('verifyRefreshToken', () => {
     it('should verify refresh token with specific secret', () => {
       const result = service.verifyRefreshToken('some-refresh-token');

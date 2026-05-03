@@ -179,6 +179,16 @@ describe('Vehicle (E2E)', () => {
       expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(2);
     });
 
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
     it('should include nested customer object in each result', async () => {
       const res = await request(httpServer)
         .get('/api/vehicles')

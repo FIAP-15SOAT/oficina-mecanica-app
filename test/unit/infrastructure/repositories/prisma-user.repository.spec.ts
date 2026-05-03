@@ -136,32 +136,69 @@ describe('PrismaUserRepository', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return all users', async () => {
+  describe('findAllPaginated', () => {
+    it('should return paginated users without filters', async () => {
       const prismaModels = [
         createMockUser({ id: randomUUID(), name: 'User 1' }),
-        createMockUser({ id: randomUUID(), name: 'User 2' }),
       ];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
 
-      const result = await repository.findAll();
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 });
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual(
-        new User({
-          id: prismaModels[0].id,
-          name: prismaModels[0].name,
-          email: prismaModels[0].email,
-          passwordHash: prismaModels[0].passwordHash,
-          role: prismaModels[0].role as UserRole,
-          isActive: prismaModels[0].isActive,
-          createdAt: prismaModels[0].createdAt,
-          updatedAt: prismaModels[0].updatedAt,
-        }),
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: {},
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should return paginated users with role filter', async () => {
+      const prismaModels = [
+        createMockUser({ id: randomUUID(), role: UserRole.ADMIN }),
+      ];
+
+      prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { role: UserRole.ADMIN },
       );
 
+      expect(result.items).toHaveLength(1);
       expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { role: UserRole.ADMIN },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should return paginated users with name filter', async () => {
+      const prismaModels = [
+        createMockUser({ id: randomUUID(), name: 'Target User' }),
+      ];
+
+      prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { name: 'Target' },
+      );
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: {
+          name: { contains: 'Target', mode: 'insensitive' },
+        },
+        skip: 0,
+        take: 10,
         orderBy: { createdAt: 'desc' },
       });
     });

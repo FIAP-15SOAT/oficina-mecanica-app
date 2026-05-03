@@ -16,13 +16,10 @@ export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
       return this.approveQuoteUseCase.execute(quoteId, userId);
     }
 
-    if (dto.status === QuoteStatus.REJECTED) {
-      if (!dto.reason) {
-        throw new BusinessRuleViolationException('A justificativa é obrigatória para rejeitar um orçamento.');
-      }
-      return this.rejectQuoteUseCase.execute(quoteId, dto.reason, userId);
+    if (!dto.reason) {
+      throw new BusinessRuleViolationException('A justificativa é obrigatória para rejeitar um orçamento.');
     }
 
-    throw new BusinessRuleViolationException(`Status ${dto.status} não permitido para esta operação.`);
+    return this.rejectQuoteUseCase.execute(quoteId, dto.reason, userId);
   }
 }

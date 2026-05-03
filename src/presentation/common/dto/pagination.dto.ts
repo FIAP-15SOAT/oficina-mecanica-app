@@ -8,12 +8,12 @@ export class PaginationDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({ description: 'Quantidade de itens por página', minimum: 1, default: 10, example: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 10;
+  limit?: number;
 }

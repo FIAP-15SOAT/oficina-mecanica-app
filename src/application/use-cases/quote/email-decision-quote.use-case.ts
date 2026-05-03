@@ -21,18 +21,16 @@ export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
     private readonly decisionSecret: string,
   ) { }
 
-  async execute(quoteId: string, action: string, token: string): Promise<Quote> {
+  async execute(quoteId: string, action: QuoteEmailDecisionAction, token: string): Promise<Quote> {
     const payload = this.verifyToken(token);
 
     this.validatePayload(payload, quoteId, action);
 
     if (action === QuoteEmailDecisionAction.APPROVE) {
       return this.approveQuoteUseCase.execute(quoteId);
-    } else if (action === QuoteEmailDecisionAction.REJECT) {
-      return this.rejectQuoteUseCase.execute(quoteId);
     }
 
-    throw new BadRequestException('Ação inválida.');
+    return this.rejectQuoteUseCase.execute(quoteId);
   }
 
   private verifyToken(token: string): QuoteEmailDecisionTokenPayload {

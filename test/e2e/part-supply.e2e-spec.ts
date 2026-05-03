@@ -156,6 +156,16 @@ describe('PartSupply (E2E)', () => {
       expect(res.body.pagination.totalPages).toBe(2);
     });
 
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
     it('should return second page', async () => {
       const res = await request(httpServer)
         .get('/api/parts-supplies?page=2&limit=10')

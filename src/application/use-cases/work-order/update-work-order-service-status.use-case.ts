@@ -8,7 +8,6 @@ import { WorkOrder } from '@domain/entities/work-order.entity';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { UpdateWorkOrderServiceStatusDto } from '@domain/interfaces/use-cases/work-order/dto/update-work-order-service-status.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 export class UpdateWorkOrderServiceStatusUseCase {
   constructor(private readonly unitOfWork: IUnitOfWork) { }
@@ -19,10 +18,8 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
       if (dto.status === WorkOrderServiceStatus.IN_PROGRESS) {
         await this.processInProgressStatus(repos, workOrder, workOrderService, dto.userId);
-      } else if (dto.status === WorkOrderServiceStatus.COMPLETED) {
-        await this.processCompletedStatus(repos, workOrder, workOrderService, dto.userId);
       } else {
-        throw new BadRequestException('Status do serviço inválido. Deve ser IN_PROGRESS ou COMPLETED.');
+        await this.processCompletedStatus(repos, workOrder, workOrderService, dto.userId);
       }
 
       return workOrderService;

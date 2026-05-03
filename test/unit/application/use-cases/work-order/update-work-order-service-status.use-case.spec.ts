@@ -153,23 +153,5 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
     });
 
 
-    it('should throw BadRequestException when status is PENDING', async () => {
-      const workOrder = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
-      const woService = createMockWorkOrderService({
-        workOrderId: workOrder.id,
-        status: WorkOrderServiceStatus.PENDING,
-      });
-
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-
-      await expect(useCase.execute({
-        workOrderId: workOrder.id,
-        serviceId: woService.serviceId,
-        status: WorkOrderServiceStatus.PENDING,
-      } as any)).rejects.toThrow(BadRequestException);
-
-      expect(mockRepos.workOrderService.update).not.toHaveBeenCalled();
-    });
   });
 });

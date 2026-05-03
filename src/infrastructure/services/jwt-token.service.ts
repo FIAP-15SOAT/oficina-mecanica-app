@@ -34,10 +34,6 @@ export class JwtTokenService implements ITokenService {
     };
   }
 
-  verifyAccessToken(token: string): TokenPayload {
-    return this.jwtService.verify<TokenPayload>(token);
-  }
-
   verifyRefreshToken(token: string): TokenPayload {
     return this.jwtService.verify<TokenPayload>(token, {
       secret: this.refreshSecret,

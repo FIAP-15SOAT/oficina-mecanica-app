@@ -45,6 +45,20 @@ describe('UpdateWorkOrderStatusUseCase', () => {
     expect(result.status).toBe(WorkOrderStatus.CANCELLED);
   });
 
+  it('should transition COMPLETED -> DELIVERED', async () => {
+    const wo = createMockWorkOrder({ status: WorkOrderStatus.COMPLETED });
+    const updated = createMockWorkOrder({ ...wo, status: WorkOrderStatus.DELIVERED });
+
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(wo);
+    (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(updated);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({} as any);
+
+    const result = await useCase.execute(wo.id, {
+      status: WorkOrderStatus.DELIVERED,
+    });
+    expect(result.status).toBe(WorkOrderStatus.DELIVERED);
+  });
+
   it('should throw ResourceNotFoundException when work order not found', async () => {
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
 

@@ -70,11 +70,6 @@ export class ApproveQuoteUseCase {
       }),
     );
 
-    const stockUpdates = partsSupplies.map((part) => ({
-      id: part.partSupplyId,
-      amount: part.quantity,
-    }));
-
     await Promise.all([
       repos.stockReservation.createMany(reservations),
       ...partsSupplies.map((part) =>
