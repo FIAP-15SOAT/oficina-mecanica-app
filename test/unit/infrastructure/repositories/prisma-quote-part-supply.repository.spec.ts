@@ -1,7 +1,7 @@
 import { PrismaQuotePartSupplyRepository } from '@infrastructure/repositories/prisma-quote-part-supply.repository';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('PrismaQuotePartSupplyRepository', () => {

@@ -3,7 +3,7 @@ import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('UpdateQuoteStatusUseCase', () => {
   let useCase: UpdateQuoteStatusUseCase;

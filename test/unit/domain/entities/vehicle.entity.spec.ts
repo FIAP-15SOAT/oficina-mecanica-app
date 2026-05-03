@@ -1,6 +1,6 @@
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('Vehicle Entity', () => {
   const customerId = randomUUID();

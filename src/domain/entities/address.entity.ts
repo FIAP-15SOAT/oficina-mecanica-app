@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MAX_STREET_LENGTH = 255;

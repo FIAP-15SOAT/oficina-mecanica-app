@@ -1,5 +1,5 @@
 import { WorkOrderPartSupplyMapper } from '@infrastructure/mappers/work-order-part-supply.mapper';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('WorkOrderPartSupplyMapper', () => {

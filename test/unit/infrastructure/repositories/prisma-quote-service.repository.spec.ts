@@ -1,7 +1,7 @@
 import { PrismaQuoteServiceRepository } from '@infrastructure/repositories/prisma-quote-service.repository';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('PrismaQuoteServiceRepository', () => {

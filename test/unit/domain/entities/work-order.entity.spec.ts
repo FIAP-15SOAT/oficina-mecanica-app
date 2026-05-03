@@ -178,6 +178,14 @@ describe('WorkOrder Entity', () => {
       expect(wo.rejectedAt).toBeInstanceOf(Date);
     });
 
+    it('should set approvedAt when transitioning to APPROVED (updateTimestampsForStatus)', () => {
+      const wo = WorkOrder.create(baseProps);
+      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      wo.changeStatus(WorkOrderStatus.APPROVED);
+
+      expect(wo.approvedAt).toBeInstanceOf(Date);
+    });
+
     it('should set startedAt when transitioning to IN_PROGRESS (updateTimestampsForStatus)', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.APPROVED;

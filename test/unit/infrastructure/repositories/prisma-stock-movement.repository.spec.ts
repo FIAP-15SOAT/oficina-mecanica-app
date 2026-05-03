@@ -2,7 +2,7 @@ import { PrismaStockMovementRepository } from '@infrastructure/repositories/pris
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaStockMovementRepository', () => {
   let repository: PrismaStockMovementRepository;

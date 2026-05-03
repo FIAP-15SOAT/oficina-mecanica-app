@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@generated/client';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part.repository.interface';

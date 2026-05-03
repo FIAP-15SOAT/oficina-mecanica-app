@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { PartsSuppliesController } from '@presentation/parts-supplies/parts-supplies.controller';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';

@@ -1,5 +1,5 @@
 import { QuotePartSupplyMapper } from '@infrastructure/mappers/quote-part-supply.mapper';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('QuotePartSupplyMapper', () => {

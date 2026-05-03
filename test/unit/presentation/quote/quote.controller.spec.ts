@@ -1,5 +1,5 @@
 import { QuoteController } from '@presentation/quote/quote.controller';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { QuotePresenter } from '@presentation/quote/quote.presenter';
 import { Quote } from '@domain/entities/quote.entity';
 

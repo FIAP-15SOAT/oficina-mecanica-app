@@ -1,6 +1,6 @@
 import { VehicleMapper } from '@infrastructure/mappers/vehicle.mapper';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('VehicleMapper', () => {
   describe('toDomain', () => {

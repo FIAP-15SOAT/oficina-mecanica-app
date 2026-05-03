@@ -1,5 +1,5 @@
 import { WorkOrderController } from '@presentation/work-order/work-order.controller';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { WorkOrderPresenter } from '@presentation/work-order/work-order.presenter';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 

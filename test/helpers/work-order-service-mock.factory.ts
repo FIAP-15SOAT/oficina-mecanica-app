@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { IWorkOrderServiceRepository } from '@domain/interfaces/repositories/work-order-service.repository.interface';

@@ -1,4 +1,4 @@
-import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import { Customer } from '@domain/entities/customer.entity';
 import { FindAllCustomersInputDto } from './dto/find-all-customers.dto';
 

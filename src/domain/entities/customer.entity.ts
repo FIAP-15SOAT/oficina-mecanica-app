@@ -1,13 +1,14 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
 import { DocumentValidator } from '@infrastructure/validators/document.validator';
+import { PHONE_REGEX } from '../constants/phone.regex';
+
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$/;
 
 export interface AddressProps {
   street: string;

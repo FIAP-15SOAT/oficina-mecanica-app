@@ -1,5 +1,5 @@
 import { validate as isUuid } from 'uuid';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { Customer } from './customer.entity';
 import { PLATE_REGEX } from '@domain/constants/plate.regex';

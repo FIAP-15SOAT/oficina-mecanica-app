@@ -1,8 +1,5 @@
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
-import {
-  IStockReservationRepository,
-  StockReservationFilters,
-} from '@domain/interfaces/repositories/stock-reservation.repository.interface';
+import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-reservations.use-case.interface';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
@@ -17,7 +14,7 @@ export class FindStockReservationsUseCase implements IFindStockReservationsUseCa
     const pagination: PaginationInput = { page, limit };
 
     const result = await this.stockReservationRepository.findAllPaginated(pagination, filters);
-    
+
     return buildPaginatedResult(result, pagination);
   }
 }

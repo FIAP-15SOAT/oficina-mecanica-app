@@ -2,7 +2,7 @@ import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-w
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaWorkOrderRepository', () => {
   let repository: PrismaWorkOrderRepository;

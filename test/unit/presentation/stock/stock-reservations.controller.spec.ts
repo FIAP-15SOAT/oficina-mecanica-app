@@ -1,5 +1,5 @@
 import { StockReservationsController } from '@presentation/stock/stock-reservations.controller';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('StockReservationsController', () => {
   let controller: StockReservationsController;

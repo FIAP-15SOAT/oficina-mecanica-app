@@ -1,5 +1,5 @@
 import { validate as isUuid } from 'uuid';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 

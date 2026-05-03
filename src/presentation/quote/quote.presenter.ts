@@ -1,7 +1,10 @@
 import { Quote } from '@domain/entities/quote.entity';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import {
-  QuoteDataResponseDto,
   QuoteResponseDto,
+  QuoteListResponseDto,
+  QuotePaginatedResponseDto,
+  QuoteDataResponseDto,
   QuoteWithItemsDataResponseDto,
 } from './dto/quote-response.dto';
 
@@ -51,6 +54,3 @@ export class QuotePresenter {
     };
   }
 }
-
-import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
-import { QuoteListResponseDto, QuotePaginatedResponseDto } from './dto/quote-response.dto';

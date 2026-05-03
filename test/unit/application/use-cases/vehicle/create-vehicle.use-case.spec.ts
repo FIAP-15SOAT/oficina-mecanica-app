@@ -5,7 +5,7 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
 import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('CreateVehicleUseCase', () => {
   let useCase: CreateVehicleUseCase;

@@ -1,4 +1,4 @@
-import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { FindAllVehiclesInputDto } from './dto/find-all-vehicles.dto';
 

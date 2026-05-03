@@ -1,7 +1,7 @@
 import { WorkOrderPresenter } from '@presentation/work-order/work-order.presenter';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderPresenter', () => {
   describe('toResponse', () => {

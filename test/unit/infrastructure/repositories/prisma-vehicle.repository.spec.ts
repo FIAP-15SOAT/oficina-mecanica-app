@@ -2,7 +2,7 @@ import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-veh
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaVehicleRepository', () => {
   let repository: PrismaVehicleRepository;

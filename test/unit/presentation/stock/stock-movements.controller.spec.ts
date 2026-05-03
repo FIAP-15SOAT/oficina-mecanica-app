@@ -1,5 +1,5 @@
 import { StockMovementsController } from '@presentation/stock/stock-movements.controller';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 
 describe('StockMovementsController', () => {

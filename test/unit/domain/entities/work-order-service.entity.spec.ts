@@ -1,7 +1,7 @@
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderService Entity', () => {
   const validProps = {

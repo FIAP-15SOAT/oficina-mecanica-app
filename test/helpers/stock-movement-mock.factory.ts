@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';

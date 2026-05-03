@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 

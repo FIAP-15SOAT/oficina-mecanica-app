@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { VehiclesController } from '@presentation/vehicles/vehicles.controller';
 import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
 import { ICreateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/create-vehicle.use-case.interface';

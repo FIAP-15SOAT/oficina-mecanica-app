@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
@@ -177,6 +177,8 @@ export class WorkOrder {
       this.deliveredAt = now;
     } else if (newStatus === WorkOrderStatus.REJECTED) {
       this.rejectedAt = now;
+    } else if (newStatus === WorkOrderStatus.APPROVED) {
+      this.approvedAt = now;
     }
   }
 

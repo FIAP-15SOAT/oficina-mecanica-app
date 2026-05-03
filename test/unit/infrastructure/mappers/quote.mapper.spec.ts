@@ -1,6 +1,6 @@
 import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('QuoteMapper', () => {

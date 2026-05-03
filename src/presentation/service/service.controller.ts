@@ -48,8 +48,9 @@ import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { FindAllServicesQueryDto } from './dto/filter-services.dto';
 import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
-import { ServiceMetricsDataResponseDto, ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-response.dto';
+import { ServiceMetricsDataResponseDto } from './dto/service-metrics-response.dto';
 import { ServicePresenter } from './service.presenter';
+import { ServiceMetricsPresenter } from './service-metrics.presenter';
 
 @ApiTags('Gestão de Serviços')
 @Controller('services')
@@ -81,7 +82,7 @@ export class ServiceController {
   @ApiOkResponse({ type: ServiceMetricsDataResponseDto, description: 'Métricas do serviço solicitado' })
   async getMetrics(@Param('id', ParseUUIDPipe) id: string) {
     const result = await this.findServiceMetricsUseCase.execute(id);
-    return ServicePresenter.toMetricsDataResponse(result);
+    return ServiceMetricsPresenter.toDataResponse(result);
   }
 
   @Post()

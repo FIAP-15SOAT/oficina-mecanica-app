@@ -2,7 +2,7 @@ import { PrismaStatusHistoryRepository } from '@infrastructure/repositories/pris
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaStatusHistoryRepository', () => {
   let repository: PrismaStatusHistoryRepository;

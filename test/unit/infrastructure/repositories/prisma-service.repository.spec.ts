@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Service as PrismaServiceModel, Prisma } from '@generated/client';
 import { Service } from '@domain/entities/service.entity';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';

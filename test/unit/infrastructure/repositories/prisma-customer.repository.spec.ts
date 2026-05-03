@@ -3,7 +3,7 @@ import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaCustomerRepository', () => {
   let repository: PrismaCustomerRepository;
@@ -19,7 +19,7 @@ describe('PrismaCustomerRepository', () => {
       // Valid CPF for testing
       const customer = Customer.create({
         name: 'John Doe',
-        document: '12345678909', 
+        document: '12345678909',
         type: CustomerType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',

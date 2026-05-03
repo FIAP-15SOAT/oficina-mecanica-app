@@ -1,7 +1,7 @@
 import { QuotePresenter } from '@presentation/quote/quote.presenter';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('QuotePresenter', () => {
   const quoteProps = {

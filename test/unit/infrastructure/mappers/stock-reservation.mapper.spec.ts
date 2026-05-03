@@ -1,5 +1,5 @@
 import { StockReservationMapper } from '@infrastructure/mappers/stock-reservation.mapper';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('StockReservationMapper', () => {
   describe('toDomain', () => {

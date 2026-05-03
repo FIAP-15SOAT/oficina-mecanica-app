@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';

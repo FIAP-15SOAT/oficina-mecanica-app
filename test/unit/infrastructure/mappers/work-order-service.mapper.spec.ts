@@ -1,6 +1,6 @@
 import { WorkOrderServiceMapper } from '@infrastructure/mappers/work-order-service.mapper';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
 describe('WorkOrderServiceMapper', () => {

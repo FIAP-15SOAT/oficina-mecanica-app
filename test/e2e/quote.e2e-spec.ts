@@ -468,6 +468,16 @@ describe('Quote (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.status).toBe('APPROVED');
+
+      // Verify WorkOrder is updated
+      const woRes = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woRes.body.data.status).toBe('APPROVED');
+      expect(woRes.body.data.approvedAt).toBeDefined();
+      expect(woRes.body.data.approvedAt).not.toBeNull();
     });
 
     it('should reject a submitted quote', async () => {

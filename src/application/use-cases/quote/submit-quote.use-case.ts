@@ -4,7 +4,7 @@ import { Customer } from '@domain/entities/customer.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
 import { TokenType } from '@domain/enums/token-type.enum';
 import {
@@ -28,30 +28,26 @@ export class SubmitQuoteUseCase {
   ) { }
 
   async execute(quoteId: string): Promise<Quote> {
-    const { updatedQuote, customer, workOrderNumber } = await this.unitOfWork.executeTransaction(async (repos) => {
+    return await this.unitOfWork.executeTransaction(async (repos) => {
       const { quote, workOrder } = await this.validateQuoteAndWorkOrder(repos, quoteId);
 
-      const savedQuote = await this.updateQuoteStatus(repos, quote);
+      const updatedQuote = await this.updateQuoteStatus(repos, quote);
 
       await this.updateWorkOrderStatus(repos, workOrder);
 
-      const customerFound = await repos.customer.findById(workOrder.customerId);
+      const customer = await repos.customer.findById(workOrder.customerId);
 
-      return {
-        updatedQuote: savedQuote,
-        customer: customerFound,
-        workOrderNumber: workOrder.number
-      };
+      if (!customer) {
+        throw new ResourceNotFoundException('Cliente', workOrder.customerId);
+      }
+
+      await this.sendEmailNotification(updatedQuote, customer, workOrder.number);
+
+      return updatedQuote;
     });
-
-    if (customer && (customer as any).email) {
-      await this.sendEmailNotification(updatedQuote, customer as Customer, workOrderNumber);
-    }
-
-    return updatedQuote;
   }
 
-  private async validateQuoteAndWorkOrder(repos: any, quoteId: string) {
+  private async validateQuoteAndWorkOrder(repos: IRepositories, quoteId: string) {
     const quote = await repos.quote.findById(quoteId);
     if (!quote) {
       throw new ResourceNotFoundException('Orçamento', quoteId);
@@ -79,7 +75,7 @@ export class SubmitQuoteUseCase {
     return { quote, workOrder };
   }
 
-  private async updateQuoteStatus(repos: any, quote: Quote): Promise<Quote> {
+  private async updateQuoteStatus(repos: IRepositories, quote: Quote): Promise<Quote> {
     const now = new Date();
     quote.status = QuoteStatus.SENT;
     quote.sentAt = now;
@@ -88,7 +84,7 @@ export class SubmitQuoteUseCase {
     return repos.quote.update(quote);
   }
 
-  private async updateWorkOrderStatus(repos: any, workOrder: any): Promise<void> {
+  private async updateWorkOrderStatus(repos: IRepositories, workOrder: any): Promise<void> {
     if (
       workOrder.status === WorkOrderStatus.IN_DIAGNOSIS ||
       workOrder.status === WorkOrderStatus.REJECTED
@@ -118,9 +114,9 @@ export class SubmitQuoteUseCase {
     customer: Customer,
     workOrderNumber: string,
   ): SendEmailInput {
-    const decisionSecret = process.env.QUOTE_DECISION_TOKEN_SECRET!;
+    const decisionSecret = process.env.QUOTE_DECISION_TOKEN_SECRET;
 
-    if (!process.env.QUOTE_DECISION_TOKEN_SECRET) {
+    if (!decisionSecret) {
       throw new Error('QUOTE_DECISION_TOKEN_SECRET must be defined');
     }
 

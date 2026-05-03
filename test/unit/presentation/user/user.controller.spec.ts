@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { UserController } from '@presentation/user/user.controller';
 import { createMockUser } from '../../../helpers/user-mock.factory';
 import { CreateUserRequestDto } from '@presentation/user/dto/create-user-request.dto';

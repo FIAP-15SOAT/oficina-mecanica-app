@@ -1,7 +1,7 @@
 import { PrismaStockReservationRepository } from '@infrastructure/repositories/prisma-stock-reservation.repository';
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('PrismaStockReservationRepository', () => {
   let repository: PrismaStockReservationRepository;

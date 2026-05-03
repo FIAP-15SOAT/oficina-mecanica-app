@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';

@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { ServiceController } from '@presentation/service/service.controller';
 import { createMockService } from '../../../helpers/service-mock.factory';
 import { CreateServiceRequestDto } from '@presentation/service/dto/create-service-request.dto';

@@ -1,6 +1,6 @@
 import { CustomerMapper } from '@infrastructure/mappers/customer.mapper';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('CustomerMapper', () => {
   describe('toDomain', () => {

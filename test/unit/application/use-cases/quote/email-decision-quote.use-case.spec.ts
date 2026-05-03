@@ -5,7 +5,7 @@ import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('EmailDecisionQuoteUseCase', () => {
   let useCase: EmailDecisionQuoteUseCase;

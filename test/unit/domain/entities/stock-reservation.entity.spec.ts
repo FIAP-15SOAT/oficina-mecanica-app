@@ -1,6 +1,6 @@
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('StockReservation Entity', () => {
   const validProps = {

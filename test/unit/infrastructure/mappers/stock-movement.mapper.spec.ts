@@ -1,6 +1,6 @@
 import { StockMovementMapper } from '@infrastructure/mappers/stock-movement.mapper';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('StockMovementMapper', () => {
   describe('toDomain', () => {

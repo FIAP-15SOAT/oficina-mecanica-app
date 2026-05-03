@@ -20,7 +20,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-response.dto';
-import { ServicePresenter } from './service.presenter';
+import { ServiceMetricsPresenter } from './service-metrics.presenter';
 
 @ApiTags('Gestão de Serviços - Métricas')
 @Controller('services-metrics')
@@ -42,6 +42,6 @@ export class ServicesMetricsController {
       limit: pagination.limit ?? 10,
     });
 
-    return ServicePresenter.toMetricsPaginatedDataResponse(result);
+    return ServiceMetricsPresenter.toPaginatedDataResponse(result);
   }
 }

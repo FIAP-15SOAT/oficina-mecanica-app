@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { QuoteStatus } from '../enums/quote-status.enum';
 import { QuoteService } from './quote-service.entity';
 import { QuotePartSupply } from './quote-part-supply.entity';
