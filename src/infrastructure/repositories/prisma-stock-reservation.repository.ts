@@ -10,6 +10,17 @@ import { StockReservationMapper } from '@infrastructure/mappers/stock-reservatio
 import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
+const STOCK_RESERVATION_INCLUDE = {
+  partSupply: true,
+  workOrder: {
+    include: {
+      customer: true,
+      vehicle: true,
+      assignedUser: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class PrismaStockReservationRepository implements IStockReservationRepository {
   constructor(private readonly prisma: PrismaService) { }
@@ -25,11 +36,11 @@ export class PrismaStockReservationRepository implements IStockReservationReposi
     });
   }
 
-
   async findByWorkOrderId(workOrderId: string): Promise<StockReservation[]> {
     const records = await this.prisma.stockReservation.findMany({ where: { workOrderId } });
     return records.map((r) => StockReservationMapper.toDomain(r));
   }
+
   async findAllPaginated(
     pagination: PaginationInput,
     filters: StockReservationFilters,
@@ -45,17 +56,17 @@ export class PrismaStockReservationRepository implements IStockReservationReposi
       this.prisma.stockReservation,
       {
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: STOCK_RESERVATION_INCLUDE,
       },
       pagination,
     );
 
     return {
-      items: result.items.map((r) => StockReservationMapper.toDomain(r)),
+      items: result.items.map((r) => StockReservationMapper.toDomain(r as Parameters<typeof StockReservationMapper.toDomain>[0])),
       total: result.total,
     };
   }
-
 
   async deleteByWorkOrderId(workOrderId: string): Promise<void> {
     await this.prisma.stockReservation.deleteMany({ where: { workOrderId } });

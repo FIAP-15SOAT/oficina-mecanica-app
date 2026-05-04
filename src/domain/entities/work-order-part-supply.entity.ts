@@ -1,4 +1,5 @@
 ﻿import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { PartSupply } from './part-supply.entity';
 
 export interface CreateWorkOrderPartSupplyProps {
   workOrderId: string;
@@ -15,6 +16,8 @@ export class WorkOrderPartSupply {
   totalPrice!: number;
   createdAt!: Date;
   updatedAt!: Date;
+
+  partSupply?: PartSupply;
 
   constructor(partial: Partial<WorkOrderPartSupply>) {
     Object.assign(this, partial);

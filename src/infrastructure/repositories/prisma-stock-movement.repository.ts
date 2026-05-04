@@ -10,6 +10,17 @@ import { StockMovementMapper } from '@infrastructure/mappers/stock-movement.mapp
 import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
+const STOCK_MOVEMENT_INCLUDE = {
+  partSupply: true,
+  workOrder: {
+    include: {
+      customer: true,
+      vehicle: true,
+      assignedUser: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class PrismaStockMovementRepository implements IStockMovementRepository {
   private readonly prisma: PrismaService | Prisma.TransactionClient;
@@ -33,7 +44,6 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
     return StockMovementMapper.toDomain(record);
   }
 
-
   async findAllPaginated(
     pagination: PaginationInput,
     filters: StockMovementFilters,
@@ -45,7 +55,7 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
     if (partSupplyId) where.partSupplyId = partSupplyId;
     if (workOrderId) where.workOrderId = workOrderId;
     if (type) where.type = type;
-    
+
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = startDate;
@@ -56,13 +66,14 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
       this.prisma.stockMovement,
       {
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: STOCK_MOVEMENT_INCLUDE,
       },
       pagination,
     );
 
     return {
-      items: result.items.map((r) => StockMovementMapper.toDomain(r)),
+      items: result.items.map((r) => StockMovementMapper.toDomain(r as Parameters<typeof StockMovementMapper.toDomain>[0])),
       total: result.total,
     };
   }

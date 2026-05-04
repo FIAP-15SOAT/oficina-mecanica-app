@@ -6,6 +6,8 @@ import { BusinessRuleViolationException } from '../exceptions/business-rule-viol
 import { Customer } from './customer.entity';
 import { Vehicle } from './vehicle.entity';
 import { User } from './user.entity';
+import { WorkOrderService } from './work-order-service.entity';
+import { WorkOrderPartSupply } from './work-order-part-supply.entity';
 
 const MAX_PROBLEM_DESCRIPTION_LENGTH = 2000;
 const MAX_INTERNAL_NOTES_LENGTH = 2000;
@@ -52,6 +54,8 @@ export class WorkOrder {
   customer?: Customer;
   vehicle?: Vehicle;
   assignedUser?: User | null;
+  services?: WorkOrderService[];
+  partSupplies?: WorkOrderPartSupply[];
 
   constructor(partial: Partial<WorkOrder>) {
     Object.assign(this, partial);

@@ -10,6 +10,20 @@ import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/c
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
+const WORK_ORDER_LIST_INCLUDE = {
+  customer: true,
+  vehicle: true,
+  assignedUser: true,
+} as const;
+
+const WORK_ORDER_DETAIL_INCLUDE = {
+  customer: true,
+  vehicle: true,
+  assignedUser: true,
+  services: { include: { service: true } },
+  partSupplies: { include: { partSupply: true } },
+} as const;
+
 @Injectable()
 export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   constructor(private readonly prisma: PrismaService) { }
@@ -33,13 +47,17 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
         finishedAt: workOrder.finishedAt,
         deliveredAt: workOrder.deliveredAt,
       },
+      include: WORK_ORDER_DETAIL_INCLUDE,
     });
 
     return WorkOrderMapper.toDomain(record);
   }
 
   async findById(id: string): Promise<WorkOrder | null> {
-    const record = await this.prisma.workOrder.findUnique({ where: { id } });
+    const record = await this.prisma.workOrder.findUnique({
+      where: { id },
+      include: WORK_ORDER_DETAIL_INCLUDE,
+    });
     return record ? WorkOrderMapper.toDomain(record) : null;
   }
 
@@ -58,13 +76,14 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       this.prisma.workOrder,
       {
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: WORK_ORDER_LIST_INCLUDE,
       },
       pagination,
     );
 
     return {
-      items: result.items.map((r) => WorkOrderMapper.toDomain(r)),
+      items: result.items.map((r) => WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0])),
       total: result.total,
     };
   }
@@ -90,6 +109,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
         ...(workOrder.deliveredAt !== undefined && { deliveredAt: workOrder.deliveredAt }),
         updatedAt: workOrder.updatedAt,
       },
+      include: WORK_ORDER_DETAIL_INCLUDE,
     });
     return WorkOrderMapper.toDomain(record);
   }

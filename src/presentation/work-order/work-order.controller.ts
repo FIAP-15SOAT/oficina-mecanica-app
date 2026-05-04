@@ -10,7 +10,6 @@ import {
   Put,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -27,6 +26,7 @@ import {
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
+import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { ICreateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/create-work-order.use-case.interface';
@@ -46,7 +46,9 @@ import { UpdateWorkOrderServiceStatusRequestDto } from './dto/update-work-order-
 import {
   WorkOrderDataResponseDto,
   WorkOrderPaginatedResponseDto,
+  WorkOrderServiceItemDataResponseDto,
 } from './dto/work-order-response.dto';
+import { StatusHistoryListResponseDto } from './dto/status-history-response.dto';
 import { QuoteListResponseDto } from '../quote/dto/quote-response.dto';
 import { WorkOrderPresenter } from './work-order.presenter';
 import { QuotePresenter } from '../quote/quote.presenter';
@@ -57,19 +59,23 @@ import { QuotePresenter } from '../quote/quote.presenter';
 @ApiBearerAuth('access-token')
 export class WorkOrderController {
   constructor(
-    @Inject('ICreateWorkOrderUseCase') private readonly createWorkOrderUseCase: ICreateWorkOrderUseCase,
-    @Inject('IFindWorkOrderByIdUseCase') private readonly findWorkOrderByIdUseCase: IFindWorkOrderByIdUseCase,
+    @Inject('ICreateWorkOrderUseCase')
+    private readonly createWorkOrderUseCase: ICreateWorkOrderUseCase,
+    @Inject('IFindWorkOrderByIdUseCase')
+    private readonly findWorkOrderByIdUseCase: IFindWorkOrderByIdUseCase,
     @Inject('IFindAllWorkOrdersPaginatedUseCase')
     private readonly findAllWorkOrdersPaginatedUseCase: IFindAllWorkOrdersPaginatedUseCase,
-    @Inject('IUpdateWorkOrderUseCase') private readonly updateWorkOrderUseCase: IUpdateWorkOrderUseCase,
-    @Inject('IUpdateWorkOrderStatusUseCase') private readonly updateWorkOrderStatusUseCase: IUpdateWorkOrderStatusUseCase,
+    @Inject('IUpdateWorkOrderUseCase')
+    private readonly updateWorkOrderUseCase: IUpdateWorkOrderUseCase,
+    @Inject('IUpdateWorkOrderStatusUseCase')
+    private readonly updateWorkOrderStatusUseCase: IUpdateWorkOrderStatusUseCase,
     @Inject('IUpdateWorkOrderServiceStatusUseCase')
     private readonly updateWorkOrderServiceStatusUseCase: IUpdateWorkOrderServiceStatusUseCase,
     @Inject('IFindWorkOrderStatusHistoryUseCase')
     private readonly findWorkOrderStatusHistoryUseCase: IFindWorkOrderStatusHistoryUseCase,
     @Inject('IFindWorkOrderQuotesUseCase')
     private readonly findWorkOrderQuotesUseCase: IFindWorkOrderQuotesUseCase,
-  ) { }
+  ) {}
 
   @Get(':id/quotes')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
@@ -88,8 +94,11 @@ export class WorkOrderController {
   @ApiOkResponse({ type: WorkOrderDataResponseDto })
   @ApiUnauthorizedResponse()
   @ApiForbiddenResponse()
-  async create(@Body() dto: CreateWorkOrderRequestDto) {
-    const workOrder = await this.createWorkOrderUseCase.execute(dto);
+  async create(@Body() dto: CreateWorkOrderRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    const workOrder = await this.createWorkOrderUseCase.execute({
+      ...dto,
+      userId: user.sub,
+    });
     return WorkOrderPresenter.toDataResponse(workOrder);
   }
 
@@ -97,9 +106,7 @@ export class WorkOrderController {
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar Ordens de Serviço paginado' })
   @ApiOkResponse({ type: WorkOrderPaginatedResponseDto })
-  async findAll(
-    @Query() query: FindAllWorkOrdersPaginatedQueryDto,
-  ) {
+  async findAll(@Query() query: FindAllWorkOrdersPaginatedQueryDto) {
     const { page, limit, ...filters } = query;
 
     const result = await this.findAllWorkOrdersPaginatedUseCase.execute({
@@ -132,8 +139,12 @@ export class WorkOrderController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkOrderRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    const workOrder = await this.updateWorkOrderUseCase.execute(id, dto);
+    const workOrder = await this.updateWorkOrderUseCase.execute(id, {
+      ...dto,
+      userId: user.sub,
+    });
     return WorkOrderPresenter.toDataResponse(workOrder);
   }
 
@@ -147,12 +158,12 @@ export class WorkOrderController {
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkOrderStatusRequestDto,
-    @Request() req: { user?: { id?: string } },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const workOrder = await this.updateWorkOrderStatusUseCase.execute(id, {
       status: dto.status,
       notes: dto.notes,
-      userId: req.user?.id ?? null,
+      userId: user.sub,
     });
     return WorkOrderPresenter.toDataResponse(workOrder);
   }
@@ -160,7 +171,7 @@ export class WorkOrderController {
   @Patch(':workOrderId/services/:serviceId')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC)
   @ApiOperation({ summary: 'Atualizar status de serviço da Ordem de Serviço' })
-  @ApiOkResponse()
+  @ApiOkResponse({ type: WorkOrderServiceItemDataResponseDto })
   @ApiNotFoundResponse()
   @ApiParam({ name: 'workOrderId', format: 'uuid' })
   @ApiParam({ name: 'serviceId', format: 'uuid' })
@@ -168,35 +179,25 @@ export class WorkOrderController {
     @Param('workOrderId', ParseUUIDPipe) workOrderId: string,
     @Param('serviceId', ParseUUIDPipe) serviceId: string,
     @Body() dto: UpdateWorkOrderServiceStatusRequestDto,
-    @Request() req: { user?: { id?: string } },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.updateWorkOrderServiceStatusUseCase.execute({
       workOrderId,
       serviceId,
       status: dto.status,
-      userId: req.user?.id ?? null,
+      userId: user.sub,
     });
-    return { data: result };
+    return WorkOrderPresenter.toServiceItemDataResponse(result);
   }
 
   @Get(':id/status-history')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Histórico de status da Ordem de Serviço' })
-  @ApiOkResponse()
+  @ApiOkResponse({ type: StatusHistoryListResponseDto })
   @ApiNotFoundResponse()
   @ApiParam({ name: 'id', format: 'uuid' })
   async getStatusHistory(@Param('id', ParseUUIDPipe) id: string) {
     const history = await this.findWorkOrderStatusHistoryUseCase.execute(id);
-
-    return {
-      data: history.map((entry) => ({
-        id: entry.id,
-        changedById: entry.changedById,
-        previousStatus: entry.previousStatus,
-        newStatus: entry.newStatus,
-        notes: entry.notes,
-        createdAt: entry.createdAt,
-      })),
-    };
+    return WorkOrderPresenter.toStatusHistoryListResponse(history);
   }
 }

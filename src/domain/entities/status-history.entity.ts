@@ -2,6 +2,7 @@ import { validate as isUuid } from 'uuid';
 import { randomUUID } from 'node:crypto';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { User } from './user.entity';
 
 const MAX_NOTES_LENGTH = 2000;
 
@@ -21,6 +22,8 @@ export class StatusHistory {
   newStatus!: WorkOrderStatus;
   notes!: string | null;
   createdAt!: Date;
+
+  changedBy?: User | null;
 
   constructor(partial: Partial<StatusHistory>) {
     Object.assign(this, partial);

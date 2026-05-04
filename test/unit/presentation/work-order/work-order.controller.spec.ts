@@ -41,10 +41,11 @@ describe('WorkOrderController', () => {
     const workOrder = { id: randomUUID(), ...dto };
     createUseCase.execute.mockResolvedValue(workOrder);
 
-    const result = await controller.create(dto as any);
+    const userId = randomUUID();
+    const result = await controller.create(dto as any, { sub: userId } as any);
 
     expect(result).toEqual(WorkOrderPresenter.toDataResponse(workOrder as any));
-    expect(createUseCase.execute).toHaveBeenCalledWith(dto);
+    expect(createUseCase.execute).toHaveBeenCalledWith({ ...dto, userId });
   });
 
   it('should find all work orders', async () => {
@@ -80,10 +81,11 @@ describe('WorkOrderController', () => {
     const workOrder = { id, ...dto };
     updateUseCase.execute.mockResolvedValue(workOrder);
 
-    const result = await controller.update(id, dto as any);
+    const userId = randomUUID();
+    const result = await controller.update(id, dto as any, { sub: userId } as any);
 
     expect(result).toEqual(WorkOrderPresenter.toDataResponse(workOrder as any));
-    expect(updateUseCase.execute).toHaveBeenCalledWith(id, dto);
+    expect(updateUseCase.execute).toHaveBeenCalledWith(id, { ...dto, userId });
   });
 
   it('should update status', async () => {
@@ -93,7 +95,7 @@ describe('WorkOrderController', () => {
     const workOrder = { id, ...dto };
     updateStatusUseCase.execute.mockResolvedValue(workOrder);
 
-    const result = await controller.updateStatus(id, dto as any, { user: { id: userId } } as any);
+    const result = await controller.updateStatus(id, dto as any, { sub: userId } as any);
 
     expect(result).toEqual(WorkOrderPresenter.toDataResponse(workOrder as any));
     expect(updateStatusUseCase.execute).toHaveBeenCalledWith(id, { ...dto, userId });
@@ -103,7 +105,7 @@ describe('WorkOrderController', () => {
     const id = randomUUID();
     const dto = { status: WorkOrderStatus.IN_PROGRESS };
     updateStatusUseCase.execute.mockResolvedValue({ id, ...dto });
-    await controller.updateStatus(id, dto as any, {});
+    await controller.updateStatus(id, dto as any, { sub: null } as any);
     expect(updateStatusUseCase.execute).toHaveBeenCalledWith(id, { ...dto, userId: null });
   });
 
@@ -112,11 +114,25 @@ describe('WorkOrderController', () => {
     const serviceId = randomUUID();
     const userId = randomUUID();
     const dto = { status: 'COMPLETED' };
-    updateServiceStatusUseCase.execute.mockResolvedValue({ success: true });
+    const mockService = {
+      serviceId,
+      quantity: 1,
+      unitPrice: 100,
+      totalPrice: 100,
+      status: 'COMPLETED',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    updateServiceStatusUseCase.execute.mockResolvedValue(mockService);
 
-    const result = await controller.updateServiceStatus(workOrderId, serviceId, dto as any, { user: { id: userId } } as any);
+    const result = await controller.updateServiceStatus(workOrderId, serviceId, dto as any, { sub: userId } as any);
 
-    expect(result).toEqual({ data: { success: true } });
+    expect(result).toEqual({
+      data: expect.objectContaining({
+        id: serviceId,
+        status: 'COMPLETED',
+      }),
+    });
     expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith({
       workOrderId,
       serviceId,
@@ -129,8 +145,25 @@ describe('WorkOrderController', () => {
     const workOrderId = randomUUID();
     const serviceId = randomUUID();
     const dto = { status: 'COMPLETED' };
-    updateServiceStatusUseCase.execute.mockResolvedValue({ success: true });
-    await controller.updateServiceStatus(workOrderId, serviceId, dto as any, {});
+    const mockService = {
+      serviceId,
+      quantity: 1,
+      unitPrice: 100,
+      totalPrice: 100,
+      status: 'COMPLETED',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    updateServiceStatusUseCase.execute.mockResolvedValue(mockService);
+
+    const result = await controller.updateServiceStatus(workOrderId, serviceId, dto as any, { sub: null } as any);
+
+    expect(result).toEqual({
+      data: expect.objectContaining({
+        id: serviceId,
+        status: 'COMPLETED',
+      }),
+    });
     expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith({
       workOrderId,
       serviceId,
@@ -148,6 +181,24 @@ describe('WorkOrderController', () => {
 
     expect(result.data).toHaveLength(1);
     expect(findStatusHistoryUseCase.execute).toHaveBeenCalledWith(id);
+  });
+
+  it('should get status history with changedBy populated', async () => {
+    const id = randomUUID();
+    const userId = randomUUID();
+    const history = [
+      {
+        id: randomUUID(),
+        newStatus: 'IN_DIAGNOSIS',
+        createdAt: new Date(),
+        changedBy: { id: userId, name: 'Mechanic', role: 'MECHANIC', email: 'mech@test.com' },
+      },
+    ];
+    findStatusHistoryUseCase.execute.mockResolvedValue(history);
+
+    const result = await controller.getStatusHistory(id);
+
+    expect(result.data[0].changedBy).toEqual({ id: userId, name: 'Mechanic', role: 'MECHANIC', email: 'mech@test.com' });
   });
 
   it('should find quotes of a work order', async () => {

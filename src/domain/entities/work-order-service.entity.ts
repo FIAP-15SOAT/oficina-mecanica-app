@@ -2,6 +2,7 @@ import { validate as isUuid } from 'uuid';
 import { randomUUID } from 'node:crypto';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { Service } from './service.entity';
 
 export interface CreateWorkOrderServiceProps {
   workOrderId: string;
@@ -22,6 +23,8 @@ export class WorkOrderService {
   finishedAt!: Date | null;
   createdAt!: Date;
   updatedAt!: Date;
+
+  service?: Service;
 
   constructor(partial: Partial<WorkOrderService>) {
     Object.assign(this, partial);

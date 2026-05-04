@@ -3,4 +3,5 @@ export interface UpdateWorkOrderDto {
   problemDescription?: string | null;
   internalNotes?: string | null;
   mileageAtService?: number | null;
+  userId: string;
 }

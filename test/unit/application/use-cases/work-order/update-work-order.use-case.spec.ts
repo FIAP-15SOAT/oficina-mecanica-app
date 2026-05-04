@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { UpdateWorkOrderUseCase } from '@application/use-cases/work-order/update-work-order.use-case';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
@@ -23,7 +24,10 @@ describe('UpdateWorkOrderUseCase', () => {
     workOrderRepository.findById.mockResolvedValue(wo);
     workOrderRepository.update.mockResolvedValue(updated);
 
-    const result = await useCase.execute(wo.id, { problemDescription: 'Barulho na suspensão' });
+    const result = await useCase.execute(wo.id, {
+      problemDescription: 'Barulho na suspensão',
+      userId: randomUUID(),
+    });
 
     expect(result.problemDescription).toBe('Barulho na suspensão');
     expect(workOrderRepository.update).toHaveBeenCalledTimes(1);
@@ -39,7 +43,10 @@ describe('UpdateWorkOrderUseCase', () => {
     userRepository.findById.mockResolvedValue(user);
     workOrderRepository.update.mockResolvedValue(updated);
 
-    const result = await useCase.execute(wo.id, { assignedUserId: userId });
+    const result = await useCase.execute(wo.id, {
+      assignedUserId: userId,
+      userId: randomUUID(),
+    });
 
     expect(result.assignedUserId).toBe(userId);
     expect(userRepository.findById).toHaveBeenCalledWith(userId);
@@ -53,10 +60,10 @@ describe('UpdateWorkOrderUseCase', () => {
     userRepository.findById.mockResolvedValue(user);
 
     await expect(
-      useCase.execute(wo.id, { assignedUserId: user.id }),
+      useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
     ).rejects.toThrow(BusinessRuleViolationException);
     await expect(
-      useCase.execute(wo.id, { assignedUserId: user.id }),
+      useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
     ).rejects.toThrow('Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço');
   });
 
@@ -68,7 +75,7 @@ describe('UpdateWorkOrderUseCase', () => {
     userRepository.findById.mockResolvedValue(user);
 
     await expect(
-      useCase.execute(wo.id, { assignedUserId: user.id }),
+      useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
     ).rejects.toThrow(BusinessRuleViolationException);
   });
 
@@ -76,7 +83,7 @@ describe('UpdateWorkOrderUseCase', () => {
     workOrderRepository.findById.mockResolvedValue(null);
 
     await expect(
-      useCase.execute('bad-id', { problemDescription: 'any' }),
+      useCase.execute('bad-id', { problemDescription: 'any', userId: randomUUID() }),
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
@@ -85,7 +92,7 @@ describe('UpdateWorkOrderUseCase', () => {
     workOrderRepository.findById.mockResolvedValue(wo);
 
     await expect(
-      useCase.execute(wo.id, { problemDescription: 'any' }),
+      useCase.execute(wo.id, { problemDescription: 'any', userId: randomUUID() }),
     ).rejects.toThrow(BusinessRuleViolationException);
   });
 
@@ -95,7 +102,7 @@ describe('UpdateWorkOrderUseCase', () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(
-      useCase.execute(wo.id, { assignedUserId: 'bad-user' }),
+      useCase.execute(wo.id, { assignedUserId: 'bad-user', userId: randomUUID() }),
     ).rejects.toThrow(ResourceNotFoundException);
 
     expect(userRepository.findById).toHaveBeenCalledWith('bad-user');

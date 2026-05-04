@@ -55,6 +55,7 @@ export class CreateWorkOrderUseCase {
       await repos.statusHistory.create(
         StatusHistory.create({
           workOrderId: saved.id,
+          changedById: dto.userId ?? null,
           newStatus: WorkOrderStatus.RECEIVED,
           previousStatus: null,
           notes: 'Ordem de serviço criada',

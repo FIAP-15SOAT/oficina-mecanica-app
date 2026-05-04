@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { PartSupply } from './part-supply.entity';
+import { WorkOrder } from './work-order.entity';
 
 export interface CreateStockReservationProps {
   partSupplyId: string;
@@ -14,6 +16,9 @@ export class StockReservation {
   workOrderId!: string;
   quantity!: number;
   createdAt!: Date;
+
+  partSupply?: PartSupply;
+  workOrder?: WorkOrder;
 
   constructor(partial: Partial<StockReservation>) {
     Object.assign(this, partial);

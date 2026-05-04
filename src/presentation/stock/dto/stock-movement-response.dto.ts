@@ -1,36 +1,137 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
+import { CustomerType } from '@domain/enums/customer-type.enum';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
+import { Unit } from '@domain/enums/unit.enum';
 import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
 
-export class StockMovementResponseDto {
-  @ApiProperty({ description: 'ID da movimentação', example: 'f9b6e8e0-1c2d-4e5f-8a9b-0c1d2e3f4a5b' })
+export class StockMovementPartSupplyDto {
+  @ApiProperty({ description: 'ID único da Peça ou Insumo', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
   id: string;
 
-  @ApiProperty({ description: 'ID da peça/insumo', example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
-  partSupplyId: string;
+  @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Filtro de Óleo' })
+  name: string;
 
-  @ApiProperty({ description: 'ID da Ordem de Serviço associada', required: false, nullable: true, example: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' })
-  workOrderId?: string | null;
+  @ApiPropertyOptional({ description: 'Descrição detalhada', example: 'Filtro para motor 1.0', nullable: true })
+  description: string | null;
 
-  @ApiProperty({ description: 'Tipo de movimentação', enum: StockMovementType, example: StockMovementType.ENTRY })
+  @ApiProperty({ description: 'SKU único no Estoque', example: 'FO-001' })
+  sku: string;
+
+  @ApiPropertyOptional({ description: 'Número de referência do fabricante', example: 'MANN-W712', nullable: true })
+  partNumber: string | null;
+
+  @ApiProperty({ enum: PartSupplyCategory, description: 'Categoria: PART (Peça) ou SUPPLY (Insumo)', example: PartSupplyCategory.PART })
+  category: PartSupplyCategory;
+
+  @ApiProperty({ enum: Unit, description: 'Unidade de medida', example: Unit.UN })
+  unit: Unit;
+
+  @ApiProperty({ description: 'Quantidade atual em estoque', example: 10 })
+  quantity: number;
+}
+
+export class StockMovementWorkOrderCustomerDto {
+  @ApiProperty({ description: 'ID único do Cliente', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Nome do Cliente', example: 'João da Silva' })
+  name: string;
+
+  @ApiProperty({ enum: CustomerType, description: 'Tipo de pessoa', example: CustomerType.INDIVIDUAL })
+  type: CustomerType;
+
+  @ApiProperty({ description: 'CPF ou CNPJ', example: '123.456.789-09' })
+  document: string;
+
+  @ApiProperty({ description: 'Telefone', example: '(11) 99999-9999' })
+  phone: string;
+
+  @ApiProperty({ description: 'E-mail', example: 'joao@email.com' })
+  email: string;
+}
+
+export class StockMovementWorkOrderVehicleDto {
+  @ApiProperty({ description: 'ID único do Veículo', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Placa do veículo', example: 'ABC-1234' })
+  plate: string;
+
+  @ApiProperty({ description: 'Marca', example: 'Toyota' })
+  brand: string;
+
+  @ApiProperty({ description: 'Modelo', example: 'Corolla' })
+  model: string;
+
+  @ApiProperty({ description: 'Ano de fabricação', example: 2020 })
+  year: number;
+
+  @ApiPropertyOptional({ description: 'Cor', example: 'Prata', nullable: true })
+  color: string | null;
+}
+
+export class StockMovementWorkOrderAssignedUserDto {
+  @ApiProperty({ description: 'ID único do Usuário', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Nome do Usuário', example: 'Carlos Mecânico' })
+  name: string;
+
+  @ApiProperty({ description: 'E-mail do Usuário', example: 'carlos@oficina.com' })
+  email: string;
+
+  @ApiProperty({ enum: UserRole, description: 'Perfil de acesso', example: UserRole.MECHANIC })
+  role: UserRole;
+}
+
+export class StockMovementWorkOrderDto {
+  @ApiProperty({ description: 'ID único da Ordem de Serviço', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Número sequencial da Ordem de Serviço', example: '000042' })
+  number: string;
+
+  @ApiPropertyOptional({ type: StockMovementWorkOrderCustomerDto, description: 'Dados do Cliente', nullable: true })
+  customer: StockMovementWorkOrderCustomerDto | null;
+
+  @ApiPropertyOptional({ type: StockMovementWorkOrderVehicleDto, description: 'Dados do Veículo', nullable: true })
+  vehicle: StockMovementWorkOrderVehicleDto | null;
+
+  @ApiPropertyOptional({ type: StockMovementWorkOrderAssignedUserDto, description: 'Mecânico responsável', nullable: true })
+  assignedUser: StockMovementWorkOrderAssignedUserDto | null;
+}
+
+export class StockMovementResponseDto {
+  @ApiProperty({ description: 'ID único da Movimentação de Estoque', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ type: StockMovementPartSupplyDto, description: 'Peça ou Insumo movimentado' })
+  partSupply: StockMovementPartSupplyDto;
+
+  @ApiPropertyOptional({ type: StockMovementWorkOrderDto, description: 'Ordem de Serviço vinculada à saída (somente em EXIT)', nullable: true })
+  workOrder: StockMovementWorkOrderDto | null;
+
+  @ApiProperty({ enum: StockMovementType, description: 'Tipo da movimentação: ENTRY (entrada), EXIT (saída), ADJUSTMENT (ajuste)', example: StockMovementType.ENTRY })
   type: StockMovementType;
 
-  @ApiProperty({ description: 'Quantidade movimentada', example: 10 })
+  @ApiProperty({ description: 'Quantidade movimentada', example: 5 })
   quantity: number;
 
-  @ApiProperty({ description: 'Motivo da movimentação', required: false, nullable: true, example: 'Recebimento de pedido' })
-  reason?: string | null;
+  @ApiPropertyOptional({ description: 'Motivo da movimentação', example: 'Reposição de estoque', nullable: true })
+  reason: string | null;
 
-  @ApiProperty({ description: 'Data de criação', example: '2023-10-27T10:00:00Z' })
+  @ApiProperty({ description: 'Data/hora da movimentação', example: '2026-04-21T10:30:00.000Z', format: 'date-time' })
   createdAt: Date;
 }
 
 export class StockMovementDataResponseDto {
-  @ApiProperty({ type: StockMovementResponseDto })
+  @ApiProperty({ type: StockMovementResponseDto, description: 'Dados da Movimentação de Estoque' })
   data: StockMovementResponseDto;
 }
 
 export class StockMovementPaginatedResponseDto extends PaginatedResponseDto<StockMovementResponseDto> {
-  @ApiProperty({ type: [StockMovementResponseDto] })
+  @ApiProperty({ type: [StockMovementResponseDto], description: 'Movimentações da página atual' })
   data: StockMovementResponseDto[];
 }

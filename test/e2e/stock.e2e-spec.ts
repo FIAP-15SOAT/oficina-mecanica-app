@@ -146,7 +146,7 @@ describe('Stock (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data[0].partSupplyId).toBe(part.id);
+      expect(res.body.data[0].partSupply.id).toBe(part.id);
     });
 
     it('should use default pagination (page=1, limit=10) when not provided', async () => {
@@ -236,7 +236,7 @@ describe('Stock (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].workOrderId).toBe(workOrder.id);
+      expect(res.body.data[0].workOrder.id).toBe(workOrder.id);
     });
   });
 });

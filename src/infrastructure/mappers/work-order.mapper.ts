@@ -1,10 +1,32 @@
-﻿import type { WorkOrder as PrismaWorkOrder } from '@generated/client';
+import type {
+  WorkOrder as PrismaWorkOrder,
+  Customer as PrismaCustomer,
+  Vehicle as PrismaVehicle,
+  User as PrismaUser,
+  WorkOrderService as PrismaWorkOrderService,
+  WorkOrderPartSupply as PrismaWorkOrderPartSupply,
+  Service as PrismaService,
+  PartSupply as PrismaPartSupply,
+} from '@generated/client';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { CustomerMapper } from './customer.mapper';
+import { VehicleMapper } from './vehicle.mapper';
+import { UserMapper } from './user.mapper';
+import { WorkOrderServiceMapper } from './work-order-service.mapper';
+import { WorkOrderPartSupplyMapper } from './work-order-part-supply.mapper';
+
+type PrismaWorkOrderRecord = PrismaWorkOrder & {
+  customer?: PrismaCustomer | null;
+  vehicle?: PrismaVehicle | null;
+  assignedUser?: PrismaUser | null;
+  services?: (PrismaWorkOrderService & { service: PrismaService })[];
+  partSupplies?: (PrismaWorkOrderPartSupply & { partSupply: PrismaPartSupply })[];
+};
 
 export class WorkOrderMapper {
-  static toDomain(record: PrismaWorkOrder): WorkOrder {
-    return new WorkOrder({
+  static toDomain(record: PrismaWorkOrderRecord): WorkOrder {
+    const entity = new WorkOrder({
       id: record.id,
       number: record.number,
       customerId: record.customerId,
@@ -23,5 +45,27 @@ export class WorkOrderMapper {
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
+
+    if (record.customer) {
+      entity.customer = CustomerMapper.toDomain(record.customer);
+    }
+
+    if (record.vehicle) {
+      entity.vehicle = VehicleMapper.toDomain(record.vehicle);
+    }
+
+    if (record.assignedUser) {
+      entity.assignedUser = UserMapper.toDomain(record.assignedUser);
+    }
+
+    if (record.services) {
+      entity.services = record.services.map((s) => WorkOrderServiceMapper.toDomain(s));
+    }
+
+    if (record.partSupplies) {
+      entity.partSupplies = record.partSupplies.map((p) => WorkOrderPartSupplyMapper.toDomain(p));
+    }
+
+    return entity;
   }
 }

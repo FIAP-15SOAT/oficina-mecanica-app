@@ -5,4 +5,5 @@ export interface CreateWorkOrderDto {
   problemDescription?: string | null;
   internalNotes?: string | null;
   mileageAtService?: number | null;
+  userId: string;
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { CreateWorkOrderUseCase } from '@application/use-cases/work-order/create-work-order.use-case';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
@@ -35,6 +36,7 @@ describe('CreateWorkOrderUseCase', () => {
     const result = await useCase.execute({
       customerId: customer.id,
       vehicleId: vehicle.id,
+      userId: randomUUID(),
     });
 
     expect(result).toBe(createdWO);
@@ -66,6 +68,7 @@ describe('CreateWorkOrderUseCase', () => {
       customerId: customer.id,
       vehicleId: vehicle.id,
       assignedUserId: userId,
+      userId: randomUUID(),
     });
 
     expect(result).toBe(createdWO);
@@ -85,10 +88,20 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.user.findById as jest.Mock).mockResolvedValue(user);
 
     await expect(
-      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: user.id,
+        userId: randomUUID(),
+      }),
     ).rejects.toThrow(BusinessRuleViolationException);
     await expect(
-      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: user.id,
+        userId: randomUUID(),
+      }),
     ).rejects.toThrow('Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço');
   });
 
@@ -102,7 +115,12 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.user.findById as jest.Mock).mockResolvedValue(user);
 
     await expect(
-      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: user.id }),
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: user.id,
+        userId: randomUUID(),
+      }),
     ).rejects.toThrow(BusinessRuleViolationException);
   });
 
@@ -115,7 +133,12 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.user.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: 'bad-user' }),
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: 'bad-user',
+        userId: randomUUID(),
+      }),
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
@@ -123,7 +146,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ customerId: 'bad-id', vehicleId: 'any' }),
+      useCase.execute({ customerId: 'bad-id', vehicleId: 'any', userId: randomUUID() }),
     ).rejects.toThrow(ResourceNotFoundException);
 
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
@@ -134,7 +157,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ customerId: 'c-id', vehicleId: 'bad-id' }),
+      useCase.execute({ customerId: 'c-id', vehicleId: 'bad-id', userId: randomUUID() }),
     ).rejects.toThrow(ResourceNotFoundException);
 
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
@@ -148,7 +171,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
 
     await expect(
-      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id }),
+      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, userId: randomUUID() }),
     ).rejects.toThrow();
 
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();

@@ -5,204 +5,199 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
+import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
 
 export class WorkOrderCustomerResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ description: 'ID único do Cliente', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
   id!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Nome do Cliente', example: 'João da Silva' })
   name!: string;
 
-  @ApiProperty({ enum: CustomerType })
+  @ApiProperty({ enum: CustomerType, description: 'Tipo de pessoa', example: CustomerType.INDIVIDUAL })
   type!: CustomerType;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'CPF ou CNPJ', example: '123.456.789-09' })
   document!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'E-mail', example: 'joao@email.com' })
   email!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Telefone', example: '(11) 99999-9999' })
   phone!: string;
 }
 
 export class WorkOrderVehicleResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ description: 'ID único do Veículo', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
   id!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Placa do veículo', example: 'ABC-1234' })
   plate!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Marca', example: 'Toyota' })
   brand!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Modelo', example: 'Corolla' })
   model!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Ano de fabricação', example: 2020 })
   year!: number;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Cor', example: 'Prata', nullable: true })
   color!: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Quilometragem atual', example: 50000, nullable: true })
   mileage!: number | null;
 }
 
 export class WorkOrderAssignedUserResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ description: 'ID único do Usuário', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
   id!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Nome do Usuário', example: 'Carlos Mecânico' })
   name!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'E-mail do Usuário', example: 'carlos@oficina.com' })
   email!: string;
 
-  @ApiProperty({ enum: UserRole })
+  @ApiProperty({ enum: UserRole, description: 'Perfil de acesso', example: UserRole.MECHANIC })
   role!: UserRole;
 }
 
 export class WorkOrderServiceItemResponseDto {
-  @ApiProperty({ format: 'uuid' })
-  serviceId!: string;
+  @ApiProperty({ description: 'ID único do Serviço', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Nome do Serviço', example: 'Troca de óleo' })
   name!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Descrição do Serviço', example: 'Troca de óleo com filtro', nullable: true })
   description!: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Quantidade', example: 1 })
   quantity!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Preço unitário cobrado', example: 129.9 })
   unitPrice!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Preço total (unitário × quantidade)', example: 129.9 })
   totalPrice!: number;
 
-  @ApiProperty({ enum: WorkOrderServiceStatus })
+  @ApiProperty({ enum: WorkOrderServiceStatus, description: 'Status de execução do serviço', example: WorkOrderServiceStatus.PENDING })
   status!: WorkOrderServiceStatus;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de início da execução', example: '2026-04-21T09:00:00.000Z', nullable: true })
   startedAt!: Date | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de conclusão', example: '2026-04-21T10:00:00.000Z', nullable: true })
   finishedAt!: Date | null;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Data de cadastro do item', example: '2026-04-20T08:00:00.000Z', format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Data da última atualização', example: '2026-04-21T10:00:00.000Z', format: 'date-time' })
   updatedAt!: Date;
 }
 
-export class WorkOrderPartSupplyItemResponseDto {
-  @ApiProperty({ format: 'uuid' })
-  partSupplyId!: string;
+export class WorkOrderServiceItemDataResponseDto {
+  @ApiProperty({ type: WorkOrderServiceItemResponseDto, description: 'Dados do Serviço na Ordem de Serviço' })
+  data!: WorkOrderServiceItemResponseDto;
+}
 
-  @ApiProperty()
+export class WorkOrderPartSupplyItemResponseDto {
+  @ApiProperty({ description: 'ID único da Peça ou Insumo', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Filtro de Óleo' })
   name!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Descrição detalhada', example: 'Filtro para motor 1.0', nullable: true })
   description!: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'SKU único no Estoque', example: 'FO-001' })
   sku!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Número de referência do fabricante', example: 'MANN-W712', nullable: true })
   partNumber!: string | null;
 
-  @ApiProperty({ enum: PartSupplyCategory })
+  @ApiProperty({ enum: PartSupplyCategory, description: 'Categoria: PART (Peça) ou SUPPLY (Insumo)', example: PartSupplyCategory.PART })
   category!: PartSupplyCategory;
 
-  @ApiProperty({ enum: Unit })
+  @ApiProperty({ enum: Unit, description: 'Unidade de medida', example: Unit.UN })
   unit!: Unit;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Quantidade utilizada', example: 2 })
   quantity!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Preço unitário cobrado', example: 45.0 })
   unitPrice!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Preço total (unitário × quantidade)', example: 90.0 })
   totalPrice!: number;
 }
 
 export class WorkOrderResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ description: 'ID único da Ordem de Serviço', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ example: '000001' })
+  @ApiProperty({ description: 'Número sequencial da Ordem de Serviço', example: '000001' })
   number!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  customerId!: string;
-
-  @ApiProperty({ format: 'uuid' })
-  vehicleId!: string;
-
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
-  assignedUserId!: string | null;
-
-  @ApiProperty({ type: WorkOrderCustomerResponseDto })
+  @ApiProperty({ type: WorkOrderCustomerResponseDto, description: 'Dados do Cliente proprietário do veículo' })
   customer!: WorkOrderCustomerResponseDto;
 
-  @ApiProperty({ type: WorkOrderVehicleResponseDto })
+  @ApiProperty({ type: WorkOrderVehicleResponseDto, description: 'Dados do Veículo em atendimento' })
   vehicle!: WorkOrderVehicleResponseDto;
 
-  @ApiPropertyOptional({ type: WorkOrderAssignedUserResponseDto, nullable: true })
+  @ApiPropertyOptional({ type: WorkOrderAssignedUserResponseDto, description: 'Mecânico responsável pela OS', nullable: true })
   assignedUser!: WorkOrderAssignedUserResponseDto | null;
 
-  @ApiProperty({ enum: WorkOrderStatus })
+  @ApiProperty({ enum: WorkOrderStatus, description: 'Status atual da Ordem de Serviço', example: WorkOrderStatus.RECEIVED })
   status!: WorkOrderStatus;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Descrição do problema relatado pelo cliente', example: 'Barulho ao frear', nullable: true })
   problemDescription!: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Notas internas dos mecânicos', example: 'Pastilhas traseiras desgastadas', nullable: true })
   internalNotes!: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Quilometragem no momento do atendimento', example: 52000, nullable: true })
   mileageAtService!: number | null;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Valor total da Ordem de Serviço', example: 350.0 })
   totalAmount!: number;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de aprovação pelo cliente', example: '2026-04-21T11:00:00.000Z', nullable: true })
   approvedAt!: Date | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de início do atendimento', example: '2026-04-21T09:00:00.000Z', nullable: true })
   startedAt!: Date | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de conclusão', example: '2026-04-21T17:00:00.000Z', nullable: true })
   finishedAt!: Date | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Data/hora de entrega do veículo', example: '2026-04-22T10:00:00.000Z', nullable: true })
   deliveredAt!: Date | null;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Data de abertura da Ordem de Serviço', example: '2026-04-20T08:00:00.000Z', format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Data da última atualização', example: '2026-04-21T17:00:00.000Z', format: 'date-time' })
   updatedAt!: Date;
 
-  @ApiPropertyOptional({ type: [WorkOrderServiceItemResponseDto] })
+  @ApiPropertyOptional({ type: [WorkOrderServiceItemResponseDto], description: 'Serviços incluídos na OS (presente apenas no detalhe)' })
   services?: WorkOrderServiceItemResponseDto[];
 
-  @ApiPropertyOptional({ type: [WorkOrderPartSupplyItemResponseDto] })
+  @ApiPropertyOptional({ type: [WorkOrderPartSupplyItemResponseDto], description: 'Peças e insumos utilizados (presente apenas no detalhe)' })
   partSupplies?: WorkOrderPartSupplyItemResponseDto[];
 }
 
 export class WorkOrderDataResponseDto {
-  @ApiProperty({ type: WorkOrderResponseDto })
+  @ApiProperty({ type: WorkOrderResponseDto, description: 'Dados da Ordem de Serviço' })
   data!: WorkOrderResponseDto;
 }
 
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
-
 export class WorkOrderPaginatedResponseDto extends PaginatedResponseDto<WorkOrderResponseDto> {
-  @ApiProperty({ type: [WorkOrderResponseDto] })
+  @ApiProperty({ type: [WorkOrderResponseDto], description: 'Ordens de Serviço da página atual' })
   data!: WorkOrderResponseDto[];
 }

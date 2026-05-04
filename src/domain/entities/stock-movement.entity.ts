@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { PartSupply } from './part-supply.entity';
+import { WorkOrder } from './work-order.entity';
 
 /**
  * Entidade de domínio que representa uma movimentação no Estoque.
@@ -17,6 +19,9 @@ export class StockMovement {
   readonly quantity: number;
   readonly reason?: string | null;
   readonly createdAt: Date;
+
+  partSupply?: PartSupply;
+  workOrder?: WorkOrder | null;
 
   constructor(props: {
     id: string;

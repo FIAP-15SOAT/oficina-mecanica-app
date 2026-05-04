@@ -17,6 +17,7 @@ export function createMockWorkOrder(overrides: Partial<WorkOrder> = {}): WorkOrd
     mileageAtService: null,
     totalAmount: 0,
     approvedAt: null,
+    rejectedAt: null,
     startedAt: null,
     finishedAt: null,
     deliveredAt: null,

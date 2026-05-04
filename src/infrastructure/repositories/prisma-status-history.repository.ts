@@ -32,6 +32,7 @@ export class PrismaStatusHistoryRepository implements IStatusHistoryRepository {
     const records = await this.prisma.statusHistory.findMany({
       where: { workOrderId },
       orderBy: { createdAt: 'asc' },
+      include: { changedBy: true },
     });
 
     return records.map((r) => StatusHistoryMapper.toDomain(r));

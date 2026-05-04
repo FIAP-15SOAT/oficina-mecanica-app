@@ -107,8 +107,8 @@ describe('WorkOrder (E2E)', () => {
           id: expect.any(String),
           number: expect.stringMatching(/^\d{6}$/),
           status: 'RECEIVED',
-          customerId: customer.id,
-          vehicleId: vehicle.id,
+          customer: expect.objectContaining({ id: customer.id }),
+          vehicle: expect.objectContaining({ id: vehicle.id }),
         }),
       );
     });
@@ -155,7 +155,7 @@ describe('WorkOrder (E2E)', () => {
         })
         .expect(201);
 
-      expect(res.body.data.assignedUserId).toBe(mechanic.user.id);
+      expect(res.body.data.assignedUser.id).toBe(mechanic.user.id);
     });
 
     it('should return 404 when assigned user not found', async () => {
@@ -387,7 +387,10 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
       expect(res.body.data[0]).toEqual(
-        expect.objectContaining({ newStatus: 'RECEIVED' }),
+        expect.objectContaining({
+          newStatus: 'RECEIVED',
+          changedBy: expect.objectContaining({ id: expect.any(String) }),
+        }),
       );
     });
   });
@@ -681,7 +684,7 @@ describe('WorkOrder (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.every((wo: any) => wo.assignedUserId === mechanic.user.id)).toBe(true);
+      expect(res.body.data.every((wo: any) => wo.assignedUser?.id === mechanic.user.id)).toBe(true);
     });
   });
 });

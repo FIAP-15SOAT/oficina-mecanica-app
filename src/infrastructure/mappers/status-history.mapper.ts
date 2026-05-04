@@ -1,10 +1,15 @@
-import type { StatusHistory as PrismaStatusHistory } from '@generated/client';
+import type { StatusHistory as PrismaStatusHistory, User as PrismaUser } from '@generated/client';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { UserMapper } from './user.mapper';
+
+type PrismaStatusHistoryRecord = PrismaStatusHistory & {
+  changedBy?: PrismaUser | null;
+};
 
 export class StatusHistoryMapper {
-  static toDomain(record: PrismaStatusHistory): StatusHistory {
-    return new StatusHistory({
+  static toDomain(record: PrismaStatusHistoryRecord): StatusHistory {
+    const entity = new StatusHistory({
       id: record.id,
       workOrderId: record.workOrderId,
       changedById: record.changedById ?? null,
@@ -13,7 +18,11 @@ export class StatusHistoryMapper {
       notes: record.notes ?? null,
       createdAt: record.createdAt,
     });
+
+    if (record.changedBy) {
+      entity.changedBy = UserMapper.toDomain(record.changedBy);
+    }
+
+    return entity;
   }
-
-
 }
