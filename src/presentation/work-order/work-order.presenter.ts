@@ -24,7 +24,7 @@ import {
 } from './dto/status-history-response.dto';
 
 export class WorkOrderPresenter {
-  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
+  static toResponse(this: void, workOrder: WorkOrder): WorkOrderResponseDto {
     return {
       id: workOrder.id,
       number: workOrder.number,
@@ -49,10 +49,10 @@ export class WorkOrderPresenter {
       createdAt: workOrder.createdAt,
       updatedAt: workOrder.updatedAt,
       ...(workOrder.services !== undefined && {
-        services: workOrder.services.map(WorkOrderPresenter.toServiceItem),
+        services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
       }),
       ...(workOrder.partSupplies !== undefined && {
-        partSupplies: workOrder.partSupplies.map(WorkOrderPresenter.toPartSupplyItem),
+        partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
       }),
     };
   }
@@ -61,26 +61,28 @@ export class WorkOrderPresenter {
     return { data: WorkOrderPresenter.toResponse(workOrder) };
   }
 
-  static toPaginatedResponse(paginatedResult: PaginatedResult<WorkOrder>): WorkOrderPaginatedResponseDto {
+  static toPaginatedResponse(
+    paginatedResult: PaginatedResult<WorkOrder>,
+  ): WorkOrderPaginatedResponseDto {
     const { items, pagination } = paginatedResult;
     return {
-      data: items.map(WorkOrderPresenter.toResponse),
+      data: items.map((wo) => WorkOrderPresenter.toResponse(wo)),
       pagination,
     };
   }
 
   static toStatusHistoryListResponse(history: StatusHistory[]): StatusHistoryListResponseDto {
     return {
-      data: history.map((entry): StatusHistoryResponseDto => ({
-        id: entry.id,
-        changedBy: entry.changedBy
-          ? WorkOrderPresenter.toChangedBy(entry.changedBy)
-          : null,
-        previousStatus: entry.previousStatus,
-        newStatus: entry.newStatus,
-        notes: entry.notes,
-        createdAt: entry.createdAt,
-      })),
+      data: history.map(
+        (entry): StatusHistoryResponseDto => ({
+          id: entry.id,
+          changedBy: entry.changedBy ? WorkOrderPresenter.toChangedBy(entry.changedBy) : null,
+          previousStatus: entry.previousStatus,
+          newStatus: entry.newStatus,
+          notes: entry.notes,
+          createdAt: entry.createdAt,
+        }),
+      ),
     };
   }
 
@@ -121,15 +123,10 @@ export class WorkOrderPresenter {
   }
 
   private static toChangedBy(user: User): StatusHistoryChangedByDto {
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    };
+    return WorkOrderPresenter.toUser(user);
   }
 
-  static toServiceItem(item: WorkOrderService): WorkOrderServiceItemResponseDto {
+  static toServiceItem(this: void, item: WorkOrderService): WorkOrderServiceItemResponseDto {
     return {
       id: item.serviceId,
       name: item.service?.name ?? '',
@@ -145,7 +142,10 @@ export class WorkOrderPresenter {
     };
   }
 
-  private static toPartSupplyItem(item: WorkOrderPartSupply): WorkOrderPartSupplyItemResponseDto {
+  private static toPartSupplyItem(
+    this: void,
+    item: WorkOrderPartSupply,
+  ): WorkOrderPartSupplyItemResponseDto {
     return {
       id: item.partSupplyId,
       name: item.partSupply!.name,
