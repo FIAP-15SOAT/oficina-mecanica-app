@@ -53,121 +53,149 @@ describe('Vehicle Entity', () => {
 
     describe('customerId validation', () => {
       it('should throw if customerId is empty', () => {
-        expect(() => Vehicle.create({ ...validProps, customerId: '' }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, customerId: '' }))
-          .toThrow('ID do cliente é obrigatório');
+        expect(() => Vehicle.create({ ...validProps, customerId: '' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, customerId: '' })).toThrow(
+          'ID do cliente é obrigatório',
+        );
       });
 
       it('should throw if customerId is missing', () => {
-        expect(() => Vehicle.create({ ...validProps, customerId: undefined as any }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, customerId: undefined as any }))
-          .toThrow('ID do cliente é obrigatório');
+        expect(() =>
+          Vehicle.create({ ...validProps, customerId: undefined as unknown as string }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Vehicle.create({ ...validProps, customerId: undefined as unknown as string }),
+        ).toThrow('ID do cliente é obrigatório');
       });
 
       it('should throw if customerId is not a valid UUID', () => {
-        expect(() => Vehicle.create({ ...validProps, customerId: 'invalid-uuid' }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, customerId: 'invalid-uuid' }))
-          .toThrow('ID do cliente deve ser um UUID válido');
+        expect(() => Vehicle.create({ ...validProps, customerId: 'invalid-uuid' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, customerId: 'invalid-uuid' })).toThrow(
+          'ID do cliente deve ser um UUID válido',
+        );
       });
     });
 
     describe('plate validation', () => {
       it('should throw for invalid plate format', () => {
-        expect(() => Vehicle.create({ ...validProps, plate: '1234ABC' }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, plate: '1234ABC' }))
-          .toThrow('Placa inválida');
+        expect(() => Vehicle.create({ ...validProps, plate: '1234ABC' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, plate: '1234ABC' })).toThrow('Placa inválida');
       });
 
       it('should throw if plate is missing', () => {
-        expect(() => Vehicle.create({ ...validProps, plate: undefined as any }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, plate: undefined as any }))
-          .toThrow('Placa é obrigatória');
+        expect(() =>
+          Vehicle.create({ ...validProps, plate: undefined as unknown as string }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Vehicle.create({ ...validProps, plate: undefined as unknown as string }),
+        ).toThrow('Placa é obrigatória');
       });
     });
 
     describe('brand validation', () => {
       it('should throw if brand is too short (< 2 chars)', () => {
-        expect(() => Vehicle.create({ ...validProps, brand: 'A' }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, brand: 'A' }))
-          .toThrow('Marca deve ter no mínimo 2 caracteres');
+        expect(() => Vehicle.create({ ...validProps, brand: 'A' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, brand: 'A' })).toThrow(
+          'Marca deve ter no mínimo 2 caracteres',
+        );
       });
 
       it('should throw if brand is too long (> 60 chars)', () => {
-        expect(() => Vehicle.create({ ...validProps, brand: 'A'.repeat(61) }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, brand: 'A'.repeat(61) }))
-          .toThrow('Marca deve ter no máximo 60 caracteres');
+        expect(() => Vehicle.create({ ...validProps, brand: 'A'.repeat(61) })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, brand: 'A'.repeat(61) })).toThrow(
+          'Marca deve ter no máximo 60 caracteres',
+        );
       });
 
       it('should throw if brand is missing', () => {
-        expect(() => Vehicle.create({ ...validProps, brand: undefined as any }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, brand: undefined as any }))
-          .toThrow('Marca é obrigatória');
+        expect(() =>
+          Vehicle.create({ ...validProps, brand: undefined as unknown as string }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Vehicle.create({ ...validProps, brand: undefined as unknown as string }),
+        ).toThrow('Marca é obrigatória');
       });
     });
 
     describe('model validation', () => {
       it('should throw if model is too short (< 2 chars)', () => {
-        expect(() => Vehicle.create({ ...validProps, model: 'X' }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, model: 'X' }))
-          .toThrow('Modelo deve ter no mínimo 2 caracteres');
+        expect(() => Vehicle.create({ ...validProps, model: 'X' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, model: 'X' })).toThrow(
+          'Modelo deve ter no mínimo 2 caracteres',
+        );
       });
 
       it('should throw if model is too long (> 60 chars)', () => {
-        expect(() => Vehicle.create({ ...validProps, model: 'M'.repeat(61) }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, model: 'M'.repeat(61) }))
-          .toThrow('Modelo deve ter no máximo 60 caracteres');
+        expect(() => Vehicle.create({ ...validProps, model: 'M'.repeat(61) })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, model: 'M'.repeat(61) })).toThrow(
+          'Modelo deve ter no máximo 60 caracteres',
+        );
       });
 
       it('should throw if model is missing', () => {
-        expect(() => Vehicle.create({ ...validProps, model: undefined as any }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, model: undefined as any }))
-          .toThrow('Modelo é obrigatório');
+        expect(() =>
+          Vehicle.create({ ...validProps, model: undefined as unknown as string }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Vehicle.create({ ...validProps, model: undefined as unknown as string }),
+        ).toThrow('Modelo é obrigatório');
       });
     });
 
     describe('year validation', () => {
       it('should throw if year is before 1950', () => {
-        expect(() => Vehicle.create({ ...validProps, year: 1949 }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, year: 1949 }))
-          .toThrow('Ano do veículo deve ser entre 1950');
+        expect(() => Vehicle.create({ ...validProps, year: 1949 })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, year: 1949 })).toThrow(
+          'Ano do veículo deve ser entre 1950',
+        );
       });
 
       it('should throw if year is after current year', () => {
         const futureYear = new Date().getFullYear() + 1;
-        expect(() => Vehicle.create({ ...validProps, year: futureYear }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, year: futureYear }))
-          .toThrow('Ano do veículo deve ser entre 1950');
+        expect(() => Vehicle.create({ ...validProps, year: futureYear })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, year: futureYear })).toThrow(
+          'Ano do veículo deve ser entre 1950',
+        );
       });
     });
 
     describe('mileage validation', () => {
       it('should throw if mileage is negative', () => {
-        expect(() => Vehicle.create({ ...validProps, mileage: -1 }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, mileage: -1 }))
-          .toThrow('Quilometragem não pode ser negativa');
+        expect(() => Vehicle.create({ ...validProps, mileage: -1 })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, mileage: -1 })).toThrow(
+          'Quilometragem não pode ser negativa',
+        );
       });
     });
 
     describe('color validation', () => {
       it('should throw if color exceeds 40 chars', () => {
-        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) }))
-          .toThrow(DomainValidationException);
-        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) }))
-          .toThrow('Cor deve ter no máximo 40 caracteres');
+        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Vehicle.create({ ...validProps, color: 'A'.repeat(41) })).toThrow(
+          'Cor deve ter no máximo 40 caracteres',
+        );
       });
     });
   });

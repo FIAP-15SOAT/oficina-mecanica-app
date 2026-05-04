@@ -9,7 +9,7 @@ export class FindQuoteByIdUseCase {
     private readonly quoteRepository: IQuoteRepository,
     private readonly quoteServiceRepository: IQuoteServiceRepository,
     private readonly quotePartSupplyRepository: IQuotePartSupplyRepository,
-  ) { }
+  ) {}
 
   async execute(id: string): Promise<Quote> {
     const quote = await this.quoteRepository.findById(id);

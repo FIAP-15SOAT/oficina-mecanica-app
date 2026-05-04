@@ -5,7 +5,10 @@ import { BusinessRuleViolationException } from '@domain/exceptions/business-rule
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { createMockQuote, createMockQuoteRepository } from '../../../../helpers/quote-mock.factory';
-import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
+import {
+  createMockWorkOrder,
+  createMockWorkOrderRepository,
+} from '../../../../helpers/work-order-mock.factory';
 
 describe('CreateQuoteUseCase', () => {
   let useCase: CreateQuoteUseCase;

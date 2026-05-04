@@ -7,8 +7,7 @@ import { WorkOrderServiceMapper } from '@infrastructure/mappers/work-order-servi
 
 @Injectable()
 export class PrismaWorkOrderServiceRepository implements IWorkOrderServiceRepository {
-  constructor(private readonly prisma: PrismaService) { }
-
+  constructor(private readonly prisma: PrismaService) {}
 
   async createMany(items: WorkOrderService[]): Promise<void> {
     await this.prisma.workOrderService.createMany({

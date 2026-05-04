@@ -20,11 +20,15 @@ describe('User (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   // ─── POST /api/users ─────────────────────────────────────────────────────
@@ -94,27 +98,16 @@ describe('User (E2E)', () => {
         .expect(401);
     });
 
-    it('should create user with isActive false when isActive is false', async () => {
-      const res = await request(httpServer)
-        .post('/api/users')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inactive User',
-          email: 'inactive-create@e2e.test',
-          password: 'Senha@123',
-          isActive: false,
-        })
-        .expect(201);
-
-      expect(res.body.data.isActive).toBe(false);
-    });
-
     it('should return 403 for non-admin role', async () => {
-      const mechanic = await registerAndLogin(httpServer, {
-        name: 'Mechanic',
-        email: 'mechanic@e2e.test',
-        role: 'MECHANIC',
-      });
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic',
+          email: 'mechanic@e2e.test',
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .post('/api/users')
@@ -170,7 +163,7 @@ describe('User (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      res.body.data.forEach((user: any) => {
+      res.body.data.forEach((user: { role: string }) => {
         expect(user.role).toBe('MECHANIC');
       });
     });
@@ -202,11 +195,15 @@ describe('User (E2E)', () => {
     });
 
     it('should return 403 for non-admin role', async () => {
-      const attendant = await registerAndLogin(httpServer, {
-        name: 'Attendant',
-        email: 'attendant@e2e.test',
-        role: 'ATTENDANT',
-      });
+      const attendant = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Attendant',
+          email: 'attendant@e2e.test',
+          role: 'ATTENDANT',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .get('/api/users')

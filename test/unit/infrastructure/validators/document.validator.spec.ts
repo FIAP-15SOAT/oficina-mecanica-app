@@ -1,4 +1,8 @@
-import { DocumentValidator, IsValidCpfCnpjConstraint, IsValidCpfCnpj } from '@infrastructure/validators/document.validator';
+import {
+  DocumentValidator,
+  IsValidCpfCnpjConstraint,
+  IsValidCpfCnpj,
+} from '@infrastructure/validators/document.validator';
 
 describe('DocumentValidator', () => {
   describe('validateCpf', () => {
@@ -84,7 +88,7 @@ describe('DocumentValidator', () => {
     });
 
     it('should return false for non-string values', () => {
-      expect(constraint.validate(123 as any)).toBe(false);
+      expect(constraint.validate(123 as unknown as string)).toBe(false);
     });
 
     it('should return default error message', () => {
@@ -105,6 +109,6 @@ describe('DocumentValidator', () => {
   });
 });
 
-// Since IsValidCpfCnpjConstraint is not exported, we can't test it directly easily 
-// unless we export it or test it via a decorated class. 
+// Since IsValidCpfCnpjConstraint is not exported, we can't test it directly easily
+// unless we export it or test it via a decorated class.
 // However, the logic is all in DocumentValidator.

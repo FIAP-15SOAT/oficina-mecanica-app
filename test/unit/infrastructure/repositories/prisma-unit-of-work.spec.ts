@@ -7,7 +7,7 @@ describe('PrismaUnitOfWork', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    unitOfWork = new PrismaUnitOfWork(prisma as any);
+    unitOfWork = new PrismaUnitOfWork(prisma);
   });
 
   describe('executeTransaction', () => {

@@ -15,7 +15,4 @@ export class FilterQuotesDto {
   status?: QuoteStatus;
 }
 
-export class FindAllQuotesQueryDto extends IntersectionType(
-  PaginationDto,
-  FilterQuotesDto,
-) { }
+export class FindAllQuotesQueryDto extends IntersectionType(PaginationDto, FilterQuotesDto) {}

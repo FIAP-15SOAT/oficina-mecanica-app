@@ -16,9 +16,7 @@ describe('DateSerializerInterceptor', () => {
 
   it('should convert a Date to ISO string with -03:00 offset', async () => {
     const date = new Date('2026-04-24T12:00:00.000Z');
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(date)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(date)));
 
     expect(result).toBe('2026-04-24T09:00:00.000-03:00');
   });
@@ -27,9 +25,7 @@ describe('DateSerializerInterceptor', () => {
     const now = new Date('2026-04-24T15:00:00.000Z');
     const data = { name: 'Oil Change', createdAt: now };
 
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(data)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(data)));
 
     expect(result).toEqual({
       name: 'Oil Change',
@@ -55,14 +51,9 @@ describe('DateSerializerInterceptor', () => {
     const date2 = new Date('2026-04-25T12:00:00.000Z');
     const data = [date1, date2];
 
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(data)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(data)));
 
-    expect(result).toEqual([
-      '2026-04-24T09:00:00.000-03:00',
-      '2026-04-25T09:00:00.000-03:00',
-    ]);
+    expect(result).toEqual(['2026-04-24T09:00:00.000-03:00', '2026-04-25T09:00:00.000-03:00']);
   });
 
   it('should convert Dates in objects inside arrays', async () => {
@@ -77,9 +68,7 @@ describe('DateSerializerInterceptor', () => {
   });
 
   it('should pass through null unchanged', async () => {
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(null)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(null)));
 
     expect(result).toBeNull();
   });
@@ -101,9 +90,7 @@ describe('DateSerializerInterceptor', () => {
   });
 
   it('should pass through numbers unchanged', async () => {
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(42)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(42)));
 
     expect(result).toBe(42);
   });
@@ -111,9 +98,7 @@ describe('DateSerializerInterceptor', () => {
   it('should pass through null values inside objects', async () => {
     const data = { value: null };
 
-    const result = await lastValueFrom(
-      interceptor.intercept(mockContext, createCallHandler(data)),
-    );
+    const result = await lastValueFrom(interceptor.intercept(mockContext, createCallHandler(data)));
 
     expect(result).toEqual({ value: null });
   });

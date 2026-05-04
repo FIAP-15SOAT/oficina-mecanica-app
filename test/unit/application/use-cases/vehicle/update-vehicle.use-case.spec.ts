@@ -4,8 +4,14 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { UpdateVehicleDto } from '@domain/interfaces/use-cases/vehicle/dto/update-vehicle.dto';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
-import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleRepository,
+} from '../../../../helpers/vehicle-mock.factory';
 
 describe('UpdateVehicleUseCase', () => {
   let useCase: UpdateVehicleUseCase;
@@ -36,14 +42,18 @@ describe('UpdateVehicleUseCase', () => {
     const result = await useCase.execute('veh-1', { ...validInput, brand: 'Honda' });
 
     expect(result).toEqual(updated);
-    expect(vehicleRepository.update).toHaveBeenCalledWith('veh-1', expect.objectContaining({ brand: 'Honda' }));
+    expect(vehicleRepository.update).toHaveBeenCalledWith(
+      'veh-1',
+      expect.objectContaining({ brand: 'Honda' }),
+    );
   });
 
   it('should throw ResourceNotFoundException when vehicle not found', async () => {
     vehicleRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('non-existent', validInput))
-      .rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('non-existent', validInput)).rejects.toThrow(
+      ResourceNotFoundException,
+    );
     expect(vehicleRepository.update).not.toHaveBeenCalled();
   });
 
@@ -54,8 +64,9 @@ describe('UpdateVehicleUseCase', () => {
     customerRepository.findById.mockResolvedValue(createMockCustomer({ id: 'cust-1' }));
     vehicleRepository.findByPlate.mockResolvedValue(other);
 
-    await expect(useCase.execute('veh-1', { ...validInput, plate: 'XYZ-9999' }))
-      .rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('veh-1', { ...validInput, plate: 'XYZ-9999' })).rejects.toThrow(
+      ResourceConflictException,
+    );
     expect(vehicleRepository.update).not.toHaveBeenCalled();
   });
 
@@ -64,8 +75,9 @@ describe('UpdateVehicleUseCase', () => {
     vehicleRepository.findById.mockResolvedValue(existing);
     customerRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('veh-1', { ...validInput, customerId: 'cust-999' }))
-      .rejects.toThrow(ResourceNotFoundException);
+    await expect(
+      useCase.execute('veh-1', { ...validInput, customerId: 'cust-999' }),
+    ).rejects.toThrow(ResourceNotFoundException);
     expect(vehicleRepository.update).not.toHaveBeenCalled();
   });
 
@@ -91,6 +103,9 @@ describe('UpdateVehicleUseCase', () => {
     await useCase.execute('veh-1', { ...validInput, plate: 'xyz-9999' });
 
     expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('XYZ9999');
-    expect(vehicleRepository.update).toHaveBeenCalledWith('veh-1', expect.objectContaining({ plate: 'XYZ9999' }));
+    expect(vehicleRepository.update).toHaveBeenCalledWith(
+      'veh-1',
+      expect.objectContaining({ plate: 'XYZ9999' }),
+    );
   });
 });

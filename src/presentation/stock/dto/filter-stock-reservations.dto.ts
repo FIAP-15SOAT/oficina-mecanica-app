@@ -3,7 +3,6 @@ import { IsOptional, IsUUID } from 'class-validator';
 import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 
 export class FilterStockReservationsDto {
-
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID()
@@ -18,4 +17,4 @@ export class FilterStockReservationsDto {
 export class FindStockReservationsQueryDto extends IntersectionType(
   PaginationDto,
   FilterStockReservationsDto,
-) { }
+) {}

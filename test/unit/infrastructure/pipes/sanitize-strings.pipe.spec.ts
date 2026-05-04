@@ -1,4 +1,5 @@
 import { SanitizeStringsPipe } from '@infrastructure/pipes/sanitize-strings.pipe';
+import { ArgumentMetadata } from '@nestjs/common';
 
 describe('SanitizeStringsPipe', () => {
   let pipe: SanitizeStringsPipe;
@@ -14,7 +15,7 @@ describe('SanitizeStringsPipe', () => {
   it('should remove null characters from string', () => {
     const input = 'Hello\0World';
     const output = 'HelloWorld';
-    expect(pipe.transform(input, {} as any)).toBe(output);
+    expect(pipe.transform(input, {} as unknown as ArgumentMetadata)).toBe(output);
   });
 
   it('should recursively sanitize objects', () => {
@@ -32,21 +33,21 @@ describe('SanitizeStringsPipe', () => {
         count: 10,
       },
     };
-    expect(pipe.transform(input, {} as any)).toEqual(output);
+    expect(pipe.transform(input, {} as unknown as ArgumentMetadata)).toEqual(output);
   });
 
   it('should recursively sanitize arrays', () => {
     const input = ['Item\0One', { key: 'Val\0ue' }, 123];
     const output = ['ItemOne', { key: 'Value' }, 123];
-    expect(pipe.transform(input, {} as any)).toEqual(output);
+    expect(pipe.transform(input, {} as unknown as ArgumentMetadata)).toEqual(output);
   });
 
   it('should return null/undefined as is', () => {
-    expect(pipe.transform(null, {} as any)).toBeNull();
-    expect(pipe.transform(undefined, {} as any)).toBeUndefined();
+    expect(pipe.transform(null, {} as unknown as ArgumentMetadata)).toBeNull();
+    expect(pipe.transform(undefined, {} as unknown as ArgumentMetadata)).toBeUndefined();
   });
 
   it('should return numbers as is', () => {
-    expect(pipe.transform(123, {} as any)).toBe(123);
+    expect(pipe.transform(123, {} as unknown as ArgumentMetadata)).toBe(123);
   });
 });

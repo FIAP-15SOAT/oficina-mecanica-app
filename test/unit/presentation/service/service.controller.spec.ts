@@ -8,7 +8,10 @@ import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/fi
 import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
 import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
-import { IFindServiceMetricsUseCase, ServiceMetrics } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import {
+  IFindServiceMetricsUseCase,
+  ServiceMetrics,
+} from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
 import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
 
 describe('ServiceController', () => {
@@ -19,7 +22,7 @@ describe('ServiceController', () => {
   let updateServiceUseCase: jest.Mocked<IUpdateServiceUseCase>;
   let deleteServiceUseCase: jest.Mocked<IDeleteServiceUseCase>;
   let findServiceMetricsUseCase: jest.Mocked<IFindServiceMetricsUseCase>;
-  let findAllServicesMetricsUseCase: jest.Mocked<IFindAllServicesMetricsUseCase>;
+  let _findAllServicesMetricsUseCase: jest.Mocked<IFindAllServicesMetricsUseCase>;
 
   beforeEach(() => {
     createServiceUseCase = { execute: jest.fn() };
@@ -28,7 +31,7 @@ describe('ServiceController', () => {
     updateServiceUseCase = { execute: jest.fn() };
     deleteServiceUseCase = { execute: jest.fn() };
     findServiceMetricsUseCase = { execute: jest.fn() };
-    findAllServicesMetricsUseCase = { execute: jest.fn() };
+    _findAllServicesMetricsUseCase = { execute: jest.fn() };
 
     controller = new ServiceController(
       createServiceUseCase,
@@ -80,7 +83,7 @@ describe('ServiceController', () => {
       findAllServicesPaginatedUseCase.execute.mockResolvedValue(paginatedResult);
 
       const query = { page: 1, limit: 10 };
-      const result = await controller.findAll(query as any);
+      const result = await controller.findAll(query);
 
       expect(result).toEqual({
         data: paginatedResult.items,
@@ -176,5 +179,4 @@ describe('ServiceController', () => {
       expect(findServiceMetricsUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
-
 });

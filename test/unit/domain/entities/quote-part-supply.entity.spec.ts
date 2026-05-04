@@ -20,39 +20,39 @@ describe('QuotePartSupply Entity', () => {
     });
 
     it('should throw when quantity is zero (validateQuantity)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, quantity: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, quantity: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is negative (validateQuantity)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, quantity: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, quantity: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is not an integer (validateQuantity)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, quantity: 1.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, quantity: 1.5 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is zero (validateUnitPrice)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, unitPrice: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, unitPrice: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is negative (validateUnitPrice)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, unitPrice: -10 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, unitPrice: -10 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is NaN (validateUnitPrice)', () => {
-      expect(() =>
-        QuotePartSupply.create({ ...validProps, unitPrice: NaN }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuotePartSupply.create({ ...validProps, unitPrice: NaN })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 

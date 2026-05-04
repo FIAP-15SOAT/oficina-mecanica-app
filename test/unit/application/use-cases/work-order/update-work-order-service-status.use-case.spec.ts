@@ -1,6 +1,5 @@
 import { UpdateWorkOrderServiceStatusUseCase } from '@application/use-cases/work-order/update-work-order-service-status.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
@@ -30,7 +29,9 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
       });
       const reservation = createMockStockReservation({ workOrderId: workOrder.id });
 
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
       (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.stockReservation.findByWorkOrderId as jest.Mock).mockResolvedValue([reservation]);
       (mockRepos.stockMovement.create as jest.Mock).mockResolvedValue({});
@@ -62,7 +63,9 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         status: WorkOrderServiceStatus.PENDING,
       });
 
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
       (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrderService.update as jest.Mock).mockResolvedValue(woService);
 
@@ -91,7 +94,9 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
 
     it('should throw ResourceNotFoundException when work order not found', async () => {
       const woService = createMockWorkOrderService();
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
       (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
 
       await expect(
@@ -112,7 +117,9 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         status: WorkOrderServiceStatus.IN_PROGRESS,
       });
 
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
       (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrderService.update as jest.Mock).mockResolvedValue(woService);
       (mockRepos.workOrderService.isAllCompletedByWorkOrderId as jest.Mock).mockResolvedValue(true);
@@ -137,10 +144,14 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         status: WorkOrderServiceStatus.IN_PROGRESS,
       });
 
-      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(woService);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
       (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrderService.update as jest.Mock).mockResolvedValue(woService);
-      (mockRepos.workOrderService.isAllCompletedByWorkOrderId as jest.Mock).mockResolvedValue(false);
+      (mockRepos.workOrderService.isAllCompletedByWorkOrderId as jest.Mock).mockResolvedValue(
+        false,
+      );
 
       await useCase.execute({
         workOrderId: workOrder.id,
@@ -151,7 +162,5 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
       expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
       expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
     });
-
-
   });
 });

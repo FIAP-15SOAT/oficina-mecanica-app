@@ -1,12 +1,11 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, IsString, Matches, Min, IsUUID, IsDateString } from 'class-validator';
+import { IsEnum, IsOptional, Matches, IsUUID, IsDateString } from 'class-validator';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class FilterStockMovementsDto {
-
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID()
@@ -38,4 +37,4 @@ export class FilterStockMovementsDto {
 export class FindStockMovementsQueryDto extends IntersectionType(
   PaginationDto,
   FilterStockMovementsDto,
-) { }
+) {}

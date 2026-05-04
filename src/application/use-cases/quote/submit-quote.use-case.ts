@@ -5,7 +5,7 @@ import { StatusHistory } from '@domain/entities/status-history.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
+import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 import { TokenType } from '@domain/enums/token-type.enum';
 import {
   IEmailSenderService,
@@ -13,10 +13,11 @@ import {
 } from '@domain/interfaces/services/email-sender.service.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { WorkOrder } from '@domain/entities/work-order.entity';
 
 interface QuoteEmailDecisionTokenPayload extends Record<string, unknown> {
   quoteId: string;
-  action: QuoteEmailDecisionAction;
+  action: QuoteDecisionAction;
   type: TokenType;
 }
 
@@ -25,7 +26,7 @@ export class SubmitQuoteUseCase {
     private readonly unitOfWork: IUnitOfWork,
     private readonly emailSender: IEmailSenderService,
     private readonly tokenService: ITokenService,
-  ) { }
+  ) {}
 
   async execute(quoteId: string): Promise<Quote> {
     return await this.unitOfWork.executeTransaction(async (repos) => {
@@ -76,7 +77,7 @@ export class SubmitQuoteUseCase {
     return repos.quote.update(quote);
   }
 
-  private async updateWorkOrderStatus(repos: IRepositories, workOrder: any): Promise<void> {
+  private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder): Promise<void> {
     if (
       workOrder.status === WorkOrderStatus.IN_DIAGNOSIS ||
       workOrder.status === WorkOrderStatus.REJECTED
@@ -96,7 +97,11 @@ export class SubmitQuoteUseCase {
     }
   }
 
-  private async sendEmailNotification(quote: Quote, customer: Customer, workOrderNumber: string): Promise<void> {
+  private async sendEmailNotification(
+    quote: Quote,
+    customer: Customer,
+    workOrderNumber: string,
+  ): Promise<void> {
     const emailContent = this.buildEmailContent(quote, customer, workOrderNumber);
     await this.emailSender.send(emailContent);
   }
@@ -113,13 +118,12 @@ export class SubmitQuoteUseCase {
     }
 
     const apiBaseUrl =
-      process.env.QUOTE_DECISION_BASE_URL ??
-      `http://localhost:${process.env.PORT ?? '3000'}/api`;
+      process.env.QUOTE_DECISION_BASE_URL ?? `http://localhost:${process.env.PORT ?? '3000'}/api`;
 
     const approveToken = this.tokenService.signWithSecret(
       {
         quoteId: quote.id,
-        action: QuoteEmailDecisionAction.APPROVE,
+        action: QuoteDecisionAction.APPROVE,
         type: TokenType.QUOTE_EMAIL_DECISION,
       } satisfies QuoteEmailDecisionTokenPayload,
       decisionSecret,
@@ -129,15 +133,15 @@ export class SubmitQuoteUseCase {
     const rejectToken = this.tokenService.signWithSecret(
       {
         quoteId: quote.id,
-        action: QuoteEmailDecisionAction.REJECT,
+        action: QuoteDecisionAction.REJECT,
         type: TokenType.QUOTE_EMAIL_DECISION,
       } satisfies QuoteEmailDecisionTokenPayload,
       decisionSecret,
       '7d',
     );
 
-    const approveLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=approve&token=${encodeURIComponent(approveToken)}`;
-    const rejectLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=reject&token=${encodeURIComponent(rejectToken)}`;
+    const approveLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.APPROVE}&token=${encodeURIComponent(approveToken)}`;
+    const rejectLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
 
     return {
       toEmail: customer.email,

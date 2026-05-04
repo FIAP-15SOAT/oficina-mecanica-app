@@ -1,10 +1,19 @@
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
+import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { createMockWorkOrderRepository } from './work-order-mock.factory';
 import { createMockWorkOrderServiceRepository } from './work-order-service-mock.factory';
 import { createMockStatusHistoryRepository } from './status-history-mock.factory';
 import { createMockStockMovementRepository } from './stock-movement-mock.factory';
 import { createMockStockReservationRepository } from './stock-reservation-mock.factory';
-import { createMockQuoteRepository, createMockQuoteServiceRepository, createMockQuotePartSupplyRepository } from './quote-mock.factory';
+import {
+  createMockQuoteRepository,
+  createMockQuoteServiceRepository,
+  createMockQuotePartSupplyRepository,
+} from './quote-mock.factory';
 import { createMockPartSupplyRepository } from './part-supply-mock.factory';
 
 export function createMockRepositories(): jest.Mocked<IRepositories> {
@@ -18,7 +27,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       delete: jest.fn(),
       hasVehicles: jest.fn(),
       hasWorkOrders: jest.fn(),
-    } as any,
+    } as unknown as jest.Mocked<ICustomerRepository>,
     vehicle: {
       create: jest.fn(),
       findById: jest.fn(),
@@ -28,19 +37,19 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       update: jest.fn(),
       delete: jest.fn(),
       hasWorkOrders: jest.fn(),
-    } as any,
-    workOrder: createMockWorkOrderRepository() as any,
+    } as unknown as jest.Mocked<IVehicleRepository>,
+    workOrder: createMockWorkOrderRepository(),
     workOrderService: createMockWorkOrderServiceRepository(),
     workOrderPartSupply: {
       create: jest.fn(),
       createMany: jest.fn(),
-    } as any,
+    } as unknown as jest.Mocked<IWorkOrderPartSupplyRepository>,
     quote: createMockQuoteRepository(),
     quoteService: createMockQuoteServiceRepository(),
     quotePartSupply: createMockQuotePartSupplyRepository(),
     statusHistory: createMockStatusHistoryRepository(),
     stockReservation: createMockStockReservationRepository(),
-    stockMovement: createMockStockMovementRepository() as any,
+    stockMovement: createMockStockMovementRepository(),
     partSupply: createMockPartSupplyRepository(),
     service: {
       create: jest.fn(),
@@ -53,7 +62,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       hasQuoteServices: jest.fn(),
       getServiceMetrics: jest.fn(),
       getAllServicesMetrics: jest.fn(),
-    } as any,
+    } as unknown as jest.Mocked<IServiceRepository>,
     user: {
       create: jest.fn(),
       findById: jest.fn(),
@@ -62,14 +71,16 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       findAllPaginated: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-    } as any,
+    } as unknown as jest.Mocked<IUserRepository>,
   };
 }
 
 export function createMockUnitOfWork(): jest.Mocked<IUnitOfWork> {
   const repos = createMockRepositories();
   return {
-    executeTransaction: jest.fn().mockImplementation((work) => work(repos)),
+    executeTransaction: jest
+      .fn()
+      .mockImplementation((work: (repos: IRepositories) => Promise<unknown>) => work(repos)),
   };
 }
 
@@ -79,7 +90,9 @@ export function createMockUnitOfWorkWithRepos(): {
 } {
   const repos = createMockRepositories();
   const unitOfWork: jest.Mocked<IUnitOfWork> = {
-    executeTransaction: jest.fn().mockImplementation((work) => work(repos)),
+    executeTransaction: jest
+      .fn()
+      .mockImplementation((work: (repos: IRepositories) => Promise<unknown>) => work(repos)),
   };
   return { unitOfWork, repos };
 }

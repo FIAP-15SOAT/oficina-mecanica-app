@@ -63,7 +63,7 @@ export class UserController {
     private readonly updateUserStatusUseCase: IUpdateUserStatusUseCase,
     @Inject('IDeleteUserUseCase')
     private readonly deleteUserUseCase: IDeleteUserUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN)

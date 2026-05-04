@@ -3,7 +3,7 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindWorkOrderByIdUseCase {
-  constructor(private readonly workOrderRepository: IWorkOrderRepository) { }
+  constructor(private readonly workOrderRepository: IWorkOrderRepository) {}
 
   async execute(id: string): Promise<WorkOrder> {
     const workOrder = await this.workOrderRepository.findById(id);

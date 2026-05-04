@@ -6,7 +6,7 @@ import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repo
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllVehiclesUseCase implements IFindAllVehiclesUseCase {
-  constructor(private readonly vehicleRepository: IVehicleRepository) { }
+  constructor(private readonly vehicleRepository: IVehicleRepository) {}
 
   async execute(input: FindAllVehiclesInputDto): Promise<PaginatedResult<Vehicle>> {
     const { page, limit, ...filters } = input;

@@ -11,7 +11,7 @@ import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class ApproveQuoteUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(quoteId: string, userId?: string | null): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {
@@ -59,7 +59,11 @@ export class ApproveQuoteUseCase {
     }
   }
 
-  private async createStockReservations(repos: IRepositories, workOrderId: string, partsSupplies: QuotePartSupply[]) {
+  private async createStockReservations(
+    repos: IRepositories,
+    workOrderId: string,
+    partsSupplies: QuotePartSupply[],
+  ) {
     if (partsSupplies.length === 0) return;
 
     const reservations = partsSupplies.map((part) =>

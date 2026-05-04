@@ -1,3 +1,4 @@
+import { User } from '@domain/entities/user.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { UpdateWorkOrderDto } from '@domain/interfaces/use-cases/work-order/dto/update-work-order.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
@@ -8,7 +9,7 @@ export class UpdateWorkOrderUseCase {
   constructor(
     private readonly workOrderRepository: IWorkOrderRepository,
     private readonly userRepository: IUserRepository,
-  ) { }
+  ) {}
 
   async execute(id: string, dto: UpdateWorkOrderDto): Promise<WorkOrder> {
     const workOrder = await this.workOrderRepository.findById(id);
@@ -17,7 +18,7 @@ export class UpdateWorkOrderUseCase {
       throw new ResourceNotFoundException('Ordem de serviço', id);
     }
 
-    let assignedUser: any = undefined;
+    let assignedUser: User | null | undefined = undefined;
 
     if (dto.assignedUserId) {
       assignedUser = await this.userRepository.findById(dto.assignedUserId);

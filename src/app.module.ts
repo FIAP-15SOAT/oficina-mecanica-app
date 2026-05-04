@@ -29,7 +29,7 @@ import { StockModule } from './presentation/stock/stock.module';
       useFactory: (config: ConfigService) => ({
         transport: {
           host: config.get<string>('MAIL_HOST', 'localhost'),
-          port: config.get<number>('MAIL_PORT', 1025),
+          port: parseInt(config.get<string>('MAIL_PORT', '1025'), 10),
           ignoreTLS: true,
           secure: false,
         },

@@ -41,7 +41,13 @@ describe('CreatePartSupplyUseCase', () => {
 
   it('should register a Supply in Stock successfully', async () => {
     const supplyInput = { ...input, sku: 'OL-001', category: PartSupplyCategory.SUPPLY };
-    const saved = createMockPartSupply({ id: 'uuid-2', sku: 'OL-001', category: PartSupplyCategory.SUPPLY, stock: 0, minStock: 0 });
+    const saved = createMockPartSupply({
+      id: 'uuid-2',
+      sku: 'OL-001',
+      category: PartSupplyCategory.SUPPLY,
+      stock: 0,
+      minStock: 0,
+    });
     partSupplyRepository.findBySku.mockResolvedValue(null);
     partSupplyRepository.create.mockResolvedValue(saved);
 

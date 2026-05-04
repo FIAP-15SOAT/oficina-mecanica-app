@@ -23,39 +23,39 @@ describe('WorkOrderPartSupply Entity', () => {
     });
 
     it('should throw when quantity is zero', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, quantity: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, quantity: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is negative', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, quantity: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, quantity: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is not an integer', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, quantity: 1.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, quantity: 1.5 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is zero', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, unitPrice: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, unitPrice: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is negative', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, unitPrice: -10 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, unitPrice: -10 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is NaN', () => {
-      expect(() =>
-        WorkOrderPartSupply.create({ ...validProps, unitPrice: NaN }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderPartSupply.create({ ...validProps, unitPrice: NaN })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 

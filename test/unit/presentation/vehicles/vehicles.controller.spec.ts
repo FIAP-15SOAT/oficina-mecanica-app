@@ -47,7 +47,7 @@ describe('VehiclesController', () => {
       const created = createMockVehicle(dto);
       createUseCase.execute.mockResolvedValue(created);
 
-      const result = await controller.create(dto as any);
+      const result = await controller.create(dto);
 
       expect(result).toEqual(VehiclePresenter.toDataResponse(created));
       expect(createUseCase.execute).toHaveBeenCalledWith(dto);
@@ -64,7 +64,7 @@ describe('VehiclesController', () => {
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
       const query = { page: 1, limit: 10 };
-      const result = await controller.findAll(query as any);
+      const result = await controller.findAll(query);
 
       expect(result).toEqual(VehiclePresenter.toPaginatedDataResponse(useCaseOutput));
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
@@ -73,7 +73,10 @@ describe('VehiclesController', () => {
     });
 
     it('should use default values for page and limit', async () => {
-      findAllUseCase.execute.mockResolvedValue({ items: [], pagination: {} as any });
+      findAllUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
       await controller.findAll({});
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
@@ -98,7 +101,9 @@ describe('VehiclesController', () => {
       const updated = createMockVehicle({ brand: 'Honda' });
       updateUseCase.execute.mockResolvedValue(updated);
 
-      const result = await controller.update(updated.id, { brand: 'Honda' } as any);
+      const result = await controller.update(updated.id, {
+        brand: 'Honda',
+      } as unknown as Parameters<typeof controller.update>[1]);
 
       expect(result).toEqual(VehiclePresenter.toDataResponse(updated));
       expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { brand: 'Honda' });

@@ -67,7 +67,7 @@ export class PartsSuppliesController {
     private readonly deletePartSupplyUseCase: IDeletePartSupplyUseCase,
     @Inject('IUpdateStockUseCase')
     private readonly updateStockUseCase: IUpdateStockUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN)

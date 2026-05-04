@@ -8,7 +8,7 @@ export class CreateQuoteUseCase {
   constructor(
     private readonly quoteRepository: IQuoteRepository,
     private readonly workOrderRepository: IWorkOrderRepository,
-  ) { }
+  ) {}
 
   async execute(dto: CreateQuoteDto): Promise<Quote> {
     const workOrder = await this.workOrderRepository.findById(dto.workOrderId);

@@ -39,10 +39,18 @@ export class VehicleResponseDto {
   @ApiProperty({ type: CustomerSummaryDto, description: 'Dados resumidos do cliente' })
   customer: CustomerSummaryDto;
 
-  @ApiProperty({ description: 'Data de cadastro', example: '2026-01-15T10:30:00.000Z', format: 'date-time' })
+  @ApiProperty({
+    description: 'Data de cadastro',
+    example: '2026-01-15T10:30:00.000Z',
+    format: 'date-time',
+  })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Data da última atualização', example: '2026-04-21T08:00:00.000Z', format: 'date-time' })
+  @ApiProperty({
+    description: 'Data da última atualização',
+    example: '2026-04-21T08:00:00.000Z',
+    format: 'date-time',
+  })
   updatedAt: Date;
 }
 

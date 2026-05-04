@@ -1,9 +1,6 @@
 import { StockMovement } from '../../entities/stock-movement.entity';
 import { StockMovementType } from '../../enums/stock-movement-type.enum';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface StockMovementFilters {
   partSupplyId?: string;

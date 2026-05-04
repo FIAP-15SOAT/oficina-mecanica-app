@@ -11,9 +11,8 @@ describe('PrismaWorkOrderServiceRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaWorkOrderServiceRepository(prisma as any);
+    repository = new PrismaWorkOrderServiceRepository(prisma);
   });
-
 
   describe('createMany', () => {
     it('should create multiple work order services', async () => {
@@ -71,7 +70,6 @@ describe('PrismaWorkOrderServiceRepository', () => {
     });
   });
 
-
   describe('update', () => {
     it('should update a work order service', async () => {
       const wos = WorkOrderService.create({
@@ -94,7 +92,6 @@ describe('PrismaWorkOrderServiceRepository', () => {
       expect(prisma.workOrderService.update).toHaveBeenCalled();
     });
   });
-
 
   describe('isAllCompletedByWorkOrderId', () => {
     it('should return true if no non-completed items', async () => {

@@ -31,7 +31,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
     (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
     (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
-    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({} as any);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
 
     const result = await useCase.execute({
       customerId: customer.id,
@@ -62,7 +62,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.user.findById as jest.Mock).mockResolvedValue(user);
     (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
     (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
-    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({} as any);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
 
     const result = await useCase.execute({
       customerId: customer.id,

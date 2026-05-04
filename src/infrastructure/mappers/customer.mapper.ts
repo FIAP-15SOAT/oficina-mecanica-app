@@ -32,6 +32,4 @@ export class CustomerMapper {
       updatedAt: prismaRecord.updatedAt,
     });
   }
-
-
 }

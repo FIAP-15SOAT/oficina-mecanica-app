@@ -18,10 +18,7 @@ describe('Service Entity', () => {
         expect(service.description).toBe('Troca de óleo do motor com filtro');
         expect(service.basePrice).toBe(150.0);
         expect(service.estimatedTimeMin).toBe(30);
-
       });
-
-
 
       it('should trim the name', () => {
         const service = Service.create({ ...validProps, name: '  Troca de óleo  ' });

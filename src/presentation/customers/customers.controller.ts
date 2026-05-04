@@ -65,16 +65,21 @@ export class CustomersController {
     private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
     @Inject('IFindVehiclesByCustomerIdUseCase')
     private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Cadastrar Cliente' })
-  @ApiCreatedResponse({ type: CustomerDataResponseDto, description: 'Cliente cadastrado com sucesso' })
+  @ApiCreatedResponse({
+    type: CustomerDataResponseDto,
+    description: 'Cliente cadastrado com sucesso',
+  })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
-  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio (documento inválido)' })
+  @ApiUnprocessableEntityResponse({
+    description: 'Erro de validação de domínio (documento inválido)',
+  })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
   async create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
     const result = await this.createCustomerUseCase.execute(dto);
@@ -87,9 +92,7 @@ export class CustomersController {
   @ApiOkResponse({ type: CustomerPaginatedResponseDto, description: 'Lista paginada de Clientes' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(
-    @Query() query: FindAllCustomersQueryDto,
-  ): Promise<CustomerPaginatedResponseDto> {
+  async findAll(@Query() query: FindAllCustomersQueryDto): Promise<CustomerPaginatedResponseDto> {
     const { page, limit, ...filters } = query;
     const result = await this.findAllCustomersUseCase.execute({
       page: page ?? 1,
@@ -122,7 +125,9 @@ export class CustomersController {
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
-  @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio (documento inválido)' })
+  @ApiUnprocessableEntityResponse({
+    description: 'Erro de validação de domínio (documento inválido)',
+  })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado para outro cliente' })
   async update(

@@ -68,14 +68,16 @@ export class ServiceController {
     private readonly deleteServiceUseCase: IDeleteServiceUseCase,
     @Inject('IFindServiceMetricsUseCase')
     private readonly findServiceMetricsUseCase: IFindServiceMetricsUseCase,
-  ) { }
-
+  ) {}
 
   @Get(':id/metrics')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obter métricas de um serviço específico' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  @ApiOkResponse({ type: ServiceMetricsDataResponseDto, description: 'Métricas do serviço solicitado' })
+  @ApiOkResponse({
+    type: ServiceMetricsDataResponseDto,
+    description: 'Métricas do serviço solicitado',
+  })
   async getMetrics(@Param('id', ParseUUIDPipe) id: string) {
     const result = await this.findServiceMetricsUseCase.execute(id);
     return ServiceMetricsPresenter.toDataResponse(result);
@@ -101,9 +103,7 @@ export class ServiceController {
   @ApiOkResponse({ type: ServicePaginatedResponseDto, description: 'Lista paginada de serviços' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(
-    @Query() query: FindAllServicesQueryDto,
-  ): Promise<ServicePaginatedResponseDto> {
+  async findAll(@Query() query: FindAllServicesQueryDto): Promise<ServicePaginatedResponseDto> {
     const { page, limit, ...filters } = query;
 
     const result = await this.findAllServicesPaginatedUseCase.execute({

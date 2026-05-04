@@ -37,7 +37,10 @@ describe('UpdatePartSupplyUseCase', () => {
     const result = await useCase.execute('uuid-1', { ...validInput, salePrice: 50 });
 
     expect(result).toEqual(updated);
-    expect(partSupplyRepository.update).toHaveBeenCalledWith('uuid-1', expect.objectContaining({ salePrice: 50 }));
+    expect(partSupplyRepository.update).toHaveBeenCalledWith(
+      'uuid-1',
+      expect.objectContaining({ salePrice: 50 }),
+    );
   });
 
   it('should throw ResourceNotFoundException when item does not exist in Stock', async () => {
@@ -54,7 +57,9 @@ describe('UpdatePartSupplyUseCase', () => {
     partSupplyRepository.findById.mockResolvedValue(existing);
     partSupplyRepository.findBySku.mockResolvedValue(other);
 
-    await expect(useCase.execute('uuid-1', { ...validInput, sku: 'FO-002' })).rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('uuid-1', { ...validInput, sku: 'FO-002' })).rejects.toThrow(
+      ResourceConflictException,
+    );
     expect(partSupplyRepository.update).not.toHaveBeenCalled();
   });
 });

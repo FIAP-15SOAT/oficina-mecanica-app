@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { User as PrismaUserModel } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
@@ -43,7 +42,7 @@ describe('PrismaUserRepository', () => {
           name: prismaModel.name,
           email: prismaModel.email,
           passwordHash: prismaModel.passwordHash,
-          role: prismaModel.role as UserRole,
+          role: prismaModel.role,
           isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
@@ -77,7 +76,7 @@ describe('PrismaUserRepository', () => {
           name: prismaModel.name,
           email: prismaModel.email,
           passwordHash: prismaModel.passwordHash,
-          role: prismaModel.role as UserRole,
+          role: prismaModel.role,
           isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
@@ -114,7 +113,7 @@ describe('PrismaUserRepository', () => {
           name: prismaModel.name,
           email: prismaModel.email,
           passwordHash: prismaModel.passwordHash,
-          role: prismaModel.role as UserRole,
+          role: prismaModel.role,
           isActive: prismaModel.isActive,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
@@ -138,9 +137,7 @@ describe('PrismaUserRepository', () => {
 
   describe('findAllPaginated', () => {
     it('should return paginated users without filters', async () => {
-      const prismaModels = [
-        createMockUser({ id: randomUUID(), name: 'User 1' }),
-      ];
+      const prismaModels = [createMockUser({ id: randomUUID(), name: 'User 1' })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
@@ -158,9 +155,7 @@ describe('PrismaUserRepository', () => {
     });
 
     it('should return paginated users with role filter', async () => {
-      const prismaModels = [
-        createMockUser({ id: randomUUID(), role: UserRole.ADMIN }),
-      ];
+      const prismaModels = [createMockUser({ id: randomUUID(), role: UserRole.ADMIN })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
@@ -180,17 +175,12 @@ describe('PrismaUserRepository', () => {
     });
 
     it('should return paginated users with name filter', async () => {
-      const prismaModels = [
-        createMockUser({ id: randomUUID(), name: 'Target User' }),
-      ];
+      const prismaModels = [createMockUser({ id: randomUUID(), name: 'Target User' })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
 
-      const result = await repository.findAllPaginated(
-        { page: 1, limit: 10 },
-        { name: 'Target' },
-      );
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { name: 'Target' });
 
       expect(result.items).toHaveLength(1);
       expect(prisma.user.findMany).toHaveBeenCalledWith({

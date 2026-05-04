@@ -1,4 +1,7 @@
-import type { WorkOrderPartSupply as PrismaWorkOrderPartSupply, PartSupply as PrismaPartSupply } from '@generated/client';
+import type {
+  WorkOrderPartSupply as PrismaWorkOrderPartSupply,
+  PartSupply as PrismaPartSupply,
+} from '@generated/client';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { PartSupplyMapper } from './part-supply.mapper';
 

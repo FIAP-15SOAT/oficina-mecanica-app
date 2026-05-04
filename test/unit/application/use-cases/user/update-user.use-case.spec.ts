@@ -22,8 +22,8 @@ describe('UpdateUserUseCase', () => {
   it('should update user name', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation(async (_id, data) =>
-      createMockUser({ name: data.name }),
+    userRepository.update.mockImplementation((_id, data) =>
+      Promise.resolve(createMockUser({ name: data.name })),
     );
 
     const result = await useCase.execute('user-uuid-123', { name: 'Novo Nome' });
@@ -35,8 +35,8 @@ describe('UpdateUserUseCase', () => {
     const user = createMockUser({ email: 'antigo@email.com' });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.update.mockImplementation(async (_id, data) =>
-      createMockUser({ email: data.email }),
+    userRepository.update.mockImplementation((_id, data) =>
+      Promise.resolve(createMockUser({ email: data.email })),
     );
 
     const result = await useCase.execute('user-uuid-123', { email: 'novo@email.com' });
@@ -48,7 +48,7 @@ describe('UpdateUserUseCase', () => {
   it('should allow keeping the same email', async () => {
     const user = createMockUser({ email: 'rafael@email.com' });
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation(async () => user);
+    userRepository.update.mockImplementation(() => Promise.resolve(user));
 
     await useCase.execute('user-uuid-123', { email: 'rafael@email.com' });
 
@@ -68,8 +68,8 @@ describe('UpdateUserUseCase', () => {
   it('should update role', async () => {
     const user = createMockUser({ role: UserRole.ATTENDANT });
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation(async (_id, data) =>
-      createMockUser({ role: data.role }),
+    userRepository.update.mockImplementation((_id, data) =>
+      Promise.resolve(createMockUser({ role: data.role })),
     );
 
     const result = await useCase.execute('user-uuid-123', { role: UserRole.ADMIN });
@@ -80,7 +80,7 @@ describe('UpdateUserUseCase', () => {
   it('should update password with hash', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation(async () => createMockUser());
+    userRepository.update.mockImplementation(() => Promise.resolve(createMockUser()));
 
     await useCase.execute('user-uuid-123', { password: 'NovaSenha@123' });
 

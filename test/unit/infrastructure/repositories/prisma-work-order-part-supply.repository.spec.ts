@@ -2,7 +2,6 @@ import { PrismaWorkOrderPartSupplyRepository } from '@infrastructure/repositorie
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '@generated/client';
 
 describe('PrismaWorkOrderPartSupplyRepository', () => {
   let repository: PrismaWorkOrderPartSupplyRepository;
@@ -10,10 +9,8 @@ describe('PrismaWorkOrderPartSupplyRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaWorkOrderPartSupplyRepository(prisma as any);
+    repository = new PrismaWorkOrderPartSupplyRepository(prisma);
   });
-
-
 
   describe('createMany', () => {
     it('should create multiple items', async () => {

@@ -22,7 +22,4 @@ export class FilterUsersDto {
   name?: string;
 }
 
-export class FindAllUsersQueryDto extends IntersectionType(
-  PaginationDto,
-  FilterUsersDto,
-) { }
+export class FindAllUsersQueryDto extends IntersectionType(PaginationDto, FilterUsersDto) {}

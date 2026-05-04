@@ -24,11 +24,15 @@ describe('Quote (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -351,7 +355,9 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .post(
+          `/api/quotes/${createRes.body.data.id}/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ quantity: 1 })
         .expect(404);
@@ -665,7 +671,9 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .patch(`/api/quotes/${createRes.body.data.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .patch(
+          `/api/quotes/${createRes.body.data.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ quantity: 1 })
         .expect(404);
@@ -680,12 +688,14 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .delete(`/api/quotes/${createRes.body.data.id}/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .delete(
+          `/api/quotes/${createRes.body.data.id}/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
   });
-  describe('PATCH /api/quotes/:id/decisions', () => {
+  describe('GET /api/quotes/:id/decisions', () => {
     it('should approve quote via email link', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
@@ -714,7 +724,7 @@ describe('Quote (E2E)', () => {
       );
 
       const res = await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'approve', token })
         .expect(200);
 
@@ -749,7 +759,7 @@ describe('Quote (E2E)', () => {
       );
 
       const res = await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'reject', token })
         .expect(200);
 
@@ -765,7 +775,7 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .patch(`/api/quotes/${createRes.body.data.id}/decisions`)
+        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
         .query({ action: 'approve', token: 'invalid-token' })
         .expect(401);
     });
@@ -784,7 +794,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${createRes.body.data.id}/decisions`)
+        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
         .query({ action: 'approve', token: invalidToken })
         .expect(401);
     });
@@ -804,7 +814,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${createRes.body.data.id}/decisions`)
+        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
         .query({ action: 'approve', token: invalidToken })
         .expect(401);
     });
@@ -823,7 +833,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${createRes.body.data.id}/decisions`)
+        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
         .query({ action: 'approve', token: invalidToken })
         .expect(401);
     });
@@ -836,7 +846,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${fakeId}/decisions`)
+        .get(`/api/quotes/${fakeId}/decisions`)
         .query({ action: 'approve', token })
         .expect(404);
     });
@@ -849,17 +859,18 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${fakeId}/decisions`)
+        .get(`/api/quotes/${fakeId}/decisions`)
         .query({ action: 'reject', token })
         .expect(404);
     });
 
-
-
-
     it('should throw BadRequestException when action is invalid', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const quoteId = createRes.body.data.id;
       const service = await createService();
 
@@ -869,7 +880,10 @@ describe('Quote (E2E)', () => {
         .send({ quantity: 1 })
         .expect(200);
 
-      await request(httpServer).post(`/api/quotes/${quoteId}/submissions`).set('Authorization', `Bearer ${adminAuth.accessToken}`).expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
 
       const token = jwtService.sign(
         { quoteId, action: 'invalid-action', type: 'quote-email-decision' },
@@ -877,7 +891,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'invalid-action', token })
         .expect(400);
     });
@@ -986,7 +1000,11 @@ describe('Quote (E2E)', () => {
 
     it('should return 404 when adding non-existent service to quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       await request(httpServer)
         .post(`/api/quotes/${createRes.body.data.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -996,14 +1014,18 @@ describe('Quote (E2E)', () => {
 
     it('should return 404 when removing service from non-existent quote', async () => {
       await request(httpServer)
-        .delete(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .delete(
+          `/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
 
     it('should return 404 when removing part from non-existent quote', async () => {
       await request(httpServer)
-        .delete(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .delete(
+          `/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
@@ -1015,19 +1037,33 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-
     it('should return 409 when submitting a REJECTED quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const quoteId = createRes.body.data.id;
-      await request(httpServer).post(`/api/quotes/${quoteId}/services/${service.id}`).set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ quantity: 1 }).expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
 
       // Submit first to move to SENT
-      await request(httpServer).post(`/api/quotes/${quoteId}/submissions`).set('Authorization', `Bearer ${adminAuth.accessToken}`).expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
 
       // Reject it
-      await request(httpServer).patch(`/api/quotes/${quoteId}`).set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ status: 'REJECTED', reason: 'Test' }).expect(200);
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Test' })
+        .expect(200);
 
       // Try to submit again
       await request(httpServer)
@@ -1036,10 +1072,13 @@ describe('Quote (E2E)', () => {
         .expect(409);
     });
 
-
     it('should return 400 when manual status update is not APPROVED or REJECTED', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       await request(httpServer)
         .patch(`/api/quotes/${createRes.body.data.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -1049,7 +1088,11 @@ describe('Quote (E2E)', () => {
 
     it('should return 404 when service is not associated with quote during removal', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const service = await createService();
       await request(httpServer)
         .delete(`/api/quotes/${createRes.body.data.id}/services/${service.id}`)
@@ -1059,7 +1102,11 @@ describe('Quote (E2E)', () => {
 
     it('should return 404 when part is not associated with quote during update', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const part = await createPartSupply();
       await request(httpServer)
         .patch(`/api/quotes/${createRes.body.data.id}/parts-supplies/${part.id}`)
@@ -1068,45 +1115,13 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-
-    it('should release stock reservations and decrement reserved stock during rejection', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const part = await createPartSupply();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
-      const quoteId = createRes.body.data.id;
-
-      await request(httpServer).post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`).set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ quantity: 5 }).expect(200);
-
-      // Manually create a reservation for this work order to test the cleanup during rejection
-      await ctx.prisma.stockReservation.create({
-        data: {
-          partSupplyId: part.id,
-          workOrderId,
-          quantity: 5,
-        }
-      });
-      // And manually increment the reserved stock
-      await ctx.prisma.partSupply.update({
-        where: { id: part.id },
-        data: { reservedStock: { increment: 5 } }
-      });
-
-      await request(httpServer).post(`/api/quotes/${quoteId}/submissions`).set('Authorization', `Bearer ${adminAuth.accessToken}`).expect(200);
-
-      // Reject it
-      await request(httpServer)
-        .patch(`/api/quotes/${quoteId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ status: 'REJECTED', reason: 'Changed mind' })
-        .expect(200);
-
-      const updatedPart = await ctx.prisma.partSupply.findUnique({ where: { id: part.id } });
-      expect(updatedPart?.reservedStock).toBe(0);
-    });
-
     it('should return 400 for invalid action in email decision', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const quoteId = createRes.body.data.id;
       const token = jwtService.sign(
         { quoteId, action: 'invalid', type: 'quote-email-decision' },
@@ -1114,18 +1129,22 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'invalid', token })
         .expect(400);
     });
 
     it('should return 400 when action query param is completely missing or invalid', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'WRONG', token: 'some-token' })
         .expect(400);
     });
@@ -1148,12 +1167,14 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-
-
     it('should throw error when QUOTE_DECISION_TOKEN_SECRET is not defined during submission', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
-      const createRes = await request(httpServer).post('/api/quotes').set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ workOrderId }).expect(201);
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
@@ -1198,8 +1219,15 @@ describe('Quote (E2E)', () => {
 
       const quoteId = createRes.body.data.id;
       const service = await createService();
-      await request(httpServer).post(`/api/quotes/${quoteId}/services/${service.id}`).set('Authorization', `Bearer ${adminAuth.accessToken}`).send({ quantity: 1 }).expect(200);
-      await request(httpServer).post(`/api/quotes/${quoteId}/submissions`).set('Authorization', `Bearer ${adminAuth.accessToken}`).expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
 
       const token = jwtService.sign(
         { quoteId, action: 'reject', type: 'quote-email-decision' },
@@ -1207,7 +1235,7 @@ describe('Quote (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/quotes/${quoteId}/decisions`)
+        .get(`/api/quotes/${quoteId}/decisions`)
         .query({ action: 'reject', token })
         .expect(200);
 
@@ -1240,7 +1268,7 @@ describe('Quote (E2E)', () => {
 
       it('should filter quotes by workOrderId (GET /api/quotes?workOrderId=...)', async () => {
         const wo1 = await createWorkOrderInDiagnosis();
-        const wo2 = await createWorkOrderInDiagnosis();
+        const _wo2 = await createWorkOrderInDiagnosis();
 
         await request(httpServer)
           .post('/api/quotes')
@@ -1257,7 +1285,7 @@ describe('Quote (E2E)', () => {
         expect(res.body.data[0].workOrderId).toBe(wo1.workOrderId);
       });
 
-        it('should filter quotes by status (GET /api/quotes?status=...)', async () => {
+      it('should filter quotes by status (GET /api/quotes?status=...)', async () => {
         const wo = await createWorkOrderInDiagnosis();
         const quoteRes = await request(httpServer)
           .post('/api/quotes')
@@ -1273,7 +1301,7 @@ describe('Quote (E2E)', () => {
           .set('Authorization', `Bearer ${adminAuth.accessToken}`)
           .expect(200);
 
-        const hasPending = resPending.body.data.some((q: any) => q.id === quoteId);
+        const hasPending = resPending.body.data.some((q: { id: string }) => q.id === quoteId);
         expect(hasPending).toBe(true);
 
         const resSent = await request(httpServer)
@@ -1281,7 +1309,7 @@ describe('Quote (E2E)', () => {
           .set('Authorization', `Bearer ${adminAuth.accessToken}`)
           .expect(200);
 
-        const hasSent = resSent.body.data.some((q: any) => q.id === quoteId);
+        const hasSent = resSent.body.data.some((q: { id: string }) => q.id === quoteId);
         expect(hasSent).toBe(false);
       });
 

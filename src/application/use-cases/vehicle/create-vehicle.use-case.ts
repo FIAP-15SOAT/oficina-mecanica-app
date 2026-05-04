@@ -10,7 +10,7 @@ export class CreateVehicleUseCase implements ICreateVehicleUseCase {
   constructor(
     private readonly vehicleRepository: IVehicleRepository,
     private readonly customerRepository: ICustomerRepository,
-  ) { }
+  ) {}
 
   async execute(input: CreateVehicleDto): Promise<Vehicle> {
     const customer = await this.customerRepository.findById(input.customerId);
@@ -28,7 +28,7 @@ export class CreateVehicleUseCase implements ICreateVehicleUseCase {
 
     const vehicle = Vehicle.create({
       ...input,
-      plate: sanitizedPlate
+      plate: sanitizedPlate,
     });
 
     return this.vehicleRepository.create(vehicle);

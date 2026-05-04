@@ -9,7 +9,6 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  Req,
   Patch,
   Query,
   UseGuards,
@@ -33,8 +32,9 @@ import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { Public } from '@infrastructure/auth/public.decorator';
+import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
+import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 
 import { ICreateQuoteUseCase } from '@domain/interfaces/use-cases/quote/create-quote.use-case.interface';
 import { IFindQuoteByIdUseCase } from '@domain/interfaces/use-cases/quote/find-quote-by-id.use-case.interface';
@@ -72,20 +72,26 @@ export class QuoteController {
   constructor(
     @Inject('ICreateQuoteUseCase') private readonly createQuoteUseCase: ICreateQuoteUseCase,
     @Inject('IFindQuoteByIdUseCase') private readonly findQuoteByIdUseCase: IFindQuoteByIdUseCase,
-    @Inject('IAddQuoteServiceUseCase') private readonly addQuoteServiceUseCase: IAddQuoteServiceUseCase,
-    @Inject('IRemoveQuoteServiceUseCase') private readonly removeQuoteServiceUseCase: IRemoveQuoteServiceUseCase,
-    @Inject('IAddQuotePartSupplyUseCase') private readonly addQuotePartSupplyUseCase: IAddQuotePartSupplyUseCase,
-    @Inject('IRemoveQuotePartSupplyUseCase') private readonly removeQuotePartSupplyUseCase: IRemoveQuotePartSupplyUseCase,
+    @Inject('IAddQuoteServiceUseCase')
+    private readonly addQuoteServiceUseCase: IAddQuoteServiceUseCase,
+    @Inject('IRemoveQuoteServiceUseCase')
+    private readonly removeQuoteServiceUseCase: IRemoveQuoteServiceUseCase,
+    @Inject('IAddQuotePartSupplyUseCase')
+    private readonly addQuotePartSupplyUseCase: IAddQuotePartSupplyUseCase,
+    @Inject('IRemoveQuotePartSupplyUseCase')
+    private readonly removeQuotePartSupplyUseCase: IRemoveQuotePartSupplyUseCase,
     @Inject('IUpdateQuoteServiceQuantityUseCase')
     private readonly updateQuoteServiceQuantityUseCase: IUpdateQuoteServiceQuantityUseCase,
     @Inject('IUpdateQuotePartSupplyQuantityUseCase')
     private readonly updateQuotePartSupplyQuantityUseCase: IUpdateQuotePartSupplyQuantityUseCase,
     @Inject('ISubmitQuoteUseCase') private readonly submitQuoteUseCase: ISubmitQuoteUseCase,
-    @Inject('IEmailDecisionQuoteUseCase') private readonly emailDecisionQuoteUseCase: IEmailDecisionQuoteUseCase,
-    @Inject('IUpdateQuoteStatusUseCase') private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
+    @Inject('IEmailDecisionQuoteUseCase')
+    private readonly emailDecisionQuoteUseCase: IEmailDecisionQuoteUseCase,
+    @Inject('IUpdateQuoteStatusUseCase')
+    private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
     @Inject('IFindAllQuotesPaginatedUseCase')
     private readonly findAllQuotesPaginatedUseCase: IFindAllQuotesPaginatedUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
@@ -281,12 +287,16 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  async updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateQuoteStatusRequestDto, @Req() req: any) {
-    const quote = await this.updateQuoteStatusUseCase.execute(id, req.user?.id, dto);
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateQuoteStatusRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const quote = await this.updateQuoteStatusUseCase.execute(id, user.sub, dto);
     return QuotePresenter.toDataResponse(quote);
   }
 
-  @Patch(':id/decisions')
+  @Get(':id/decisions')
   @Public()
   @ApiOperation({ summary: 'Aprovar ou rejeitar orçamento via link de email' })
   @ApiOkResponse({ type: QuoteDataResponseDto, description: 'Decisão registrada com sucesso' })
@@ -294,7 +304,11 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiQuery({ name: 'action', enum: QuoteEmailDecisionAction, description: 'Ação a ser tomada (approve/reject)' })
+  @ApiQuery({
+    name: 'action',
+    enum: QuoteDecisionAction,
+    description: 'Ação a ser tomada (approve/reject)',
+  })
   @ApiQuery({ name: 'token', description: 'Token assinado para decisão do orçamento' })
   async emailDecision(
     @Param('id', ParseUUIDPipe) id: string,

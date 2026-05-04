@@ -6,7 +6,10 @@ import {
   IWorkOrderRepository,
   WorkOrderFilters,
 } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
@@ -26,7 +29,7 @@ const WORK_ORDER_DETAIL_INCLUDE = {
 
 @Injectable()
 export class PrismaWorkOrderRepository implements IWorkOrderRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(workOrder: WorkOrder): Promise<WorkOrder> {
     const record = await this.prisma.workOrder.create({
@@ -61,7 +64,10 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     return record ? WorkOrderMapper.toDomain(record) : null;
   }
 
-  async findAllPaginated(pagination: PaginationInput, filters: WorkOrderFilters): Promise<PaginatedRepositoryResult<WorkOrder>> {
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters: WorkOrderFilters,
+  ): Promise<PaginatedRepositoryResult<WorkOrder>> {
     const { number, customerId, vehicleId, assignedUserId, status } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
@@ -83,7 +89,9 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     );
 
     return {
-      items: result.items.map((r) => WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0])),
+      items: result.items.map((r) =>
+        WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
+      ),
       total: result.total,
     };
   }

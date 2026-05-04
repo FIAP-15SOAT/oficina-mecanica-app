@@ -1,9 +1,6 @@
 import { Quote } from '../../entities/quote.entity';
 import { QuoteStatus } from '../../enums/quote-status.enum';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface QuoteFilters {
   workOrderId?: string;

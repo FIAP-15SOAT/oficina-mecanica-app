@@ -33,4 +33,4 @@ export class FilterWorkOrdersDto {
 export class FindAllWorkOrdersPaginatedQueryDto extends IntersectionType(
   PaginationDto,
   FilterWorkOrdersDto,
-) { }
+) {}

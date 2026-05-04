@@ -8,7 +8,9 @@ export class UpdateQuoteStatusRequestDto {
     enum: [QuoteStatus.APPROVED, QuoteStatus.REJECTED],
     example: QuoteStatus.APPROVED,
   })
-  @IsIn([QuoteStatus.APPROVED, QuoteStatus.REJECTED], { message: 'O status deve ser APPROVED ou REJECTED' })
+  @IsIn([QuoteStatus.APPROVED, QuoteStatus.REJECTED], {
+    message: 'O status deve ser APPROVED ou REJECTED',
+  })
   @IsNotEmpty({ message: 'O status é obrigatório' })
   status: QuoteStatus.APPROVED | QuoteStatus.REJECTED;
 

@@ -4,13 +4,15 @@ import { CustomerType } from '@domain/enums/customer-type.enum';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class FilterCustomersDto {
-
   @ApiPropertyOptional({ description: 'Filtrar por nome (busca parcial)', example: 'João' })
   @IsOptional()
   @IsString({ message: 'O nome deve ser um texto.' })
   name?: string;
 
-  @ApiPropertyOptional({ enum: CustomerType, description: 'Filtrar por tipo: INDIVIDUAL ou COMPANY' })
+  @ApiPropertyOptional({
+    enum: CustomerType,
+    description: 'Filtrar por tipo: INDIVIDUAL ou COMPANY',
+  })
   @IsOptional()
   @IsEnum(CustomerType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
   type?: CustomerType;
@@ -21,7 +23,4 @@ export class FilterCustomersDto {
   document?: string;
 }
 
-export class FindAllCustomersQueryDto extends IntersectionType(
-  PaginationDto,
-  FilterCustomersDto,
-) { }
+export class FindAllCustomersQueryDto extends IntersectionType(PaginationDto, FilterCustomersDto) {}

@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Inject,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -31,17 +25,19 @@ import { FindStockReservationsQueryDto } from './dto/filter-stock-reservations.d
 @ApiBearerAuth('access-token')
 export class StockReservationsController {
   constructor(
-    @Inject('IFindStockReservationsUseCase') private readonly findStockReservationsUseCase: IFindStockReservationsUseCase,
-  ) { }
+    @Inject('IFindStockReservationsUseCase')
+    private readonly findStockReservationsUseCase: IFindStockReservationsUseCase,
+  ) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar reservas de estoque' })
-  @ApiOkResponse({ type: StockReservationPaginatedResponseDto, description: 'Lista paginada de reservas' })
+  @ApiOkResponse({
+    type: StockReservationPaginatedResponseDto,
+    description: 'Lista paginada de reservas',
+  })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  async getStockReservations(
-    @Query() query: FindStockReservationsQueryDto,
-  ) {
+  async getStockReservations(@Query() query: FindStockReservationsQueryDto) {
     const { page, limit, ...filters } = query;
 
     const result = await this.findStockReservationsUseCase.execute({

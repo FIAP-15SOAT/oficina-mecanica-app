@@ -34,12 +34,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
     });
   }
 
-  private resolveMessage(status: HttpStatus, exception: unknown): string {
+  private resolveMessage(status: HttpStatus, exception: unknown): string | string[] {
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       return 'An unexpected error occurred';
     }
 
-    return exception instanceof HttpException ? exception.message : 'Bad request';
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      if (typeof response === 'object' && response !== null && 'message' in response) {
+        return (response as Record<string, unknown>).message as string | string[];
+      }
+      return exception.message;
+    }
+
+    return 'Bad request';
   }
 
   private resolveStatus(exception: unknown): HttpStatus {

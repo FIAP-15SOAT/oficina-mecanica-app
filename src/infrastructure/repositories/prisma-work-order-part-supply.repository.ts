@@ -5,7 +5,7 @@ import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/
 
 @Injectable()
 export class PrismaWorkOrderPartSupplyRepository implements IWorkOrderPartSupplyRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createMany(items: WorkOrderPartSupply[]): Promise<void> {
     await this.prisma.workOrderPartSupply.createMany({

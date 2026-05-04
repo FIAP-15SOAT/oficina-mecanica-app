@@ -10,7 +10,7 @@ describe('PrismaStatusHistoryRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaStatusHistoryRepository(prisma as any);
+    repository = new PrismaStatusHistoryRepository(prisma);
   });
 
   describe('create', () => {

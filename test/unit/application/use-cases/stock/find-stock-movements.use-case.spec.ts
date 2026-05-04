@@ -1,5 +1,8 @@
 import { FindStockMovementsUseCase } from '@application/use-cases/stock/find-stock-movements.use-case';
-import { createMockStockMovementRepository, createMockStockMovement } from '../../../../helpers/stock-movement-mock.factory';
+import {
+  createMockStockMovementRepository,
+  createMockStockMovement,
+} from '../../../../helpers/stock-movement-mock.factory';
 import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
 
 describe('FindStockMovementsUseCase', () => {
@@ -7,7 +10,7 @@ describe('FindStockMovementsUseCase', () => {
   let repository: jest.Mocked<IStockMovementRepository>;
 
   beforeEach(() => {
-    repository = createMockStockMovementRepository() as jest.Mocked<IStockMovementRepository>;
+    repository = createMockStockMovementRepository();
     useCase = new FindStockMovementsUseCase(repository);
   });
 

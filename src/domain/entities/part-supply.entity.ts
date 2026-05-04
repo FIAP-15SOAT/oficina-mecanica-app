@@ -79,8 +79,6 @@ export class PartSupply {
     return partSupply;
   }
 
-
-
   private validateName(): void {
     if (!this.name) {
       throw new DomainValidationException('Nome é obrigatório');

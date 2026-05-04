@@ -20,39 +20,39 @@ describe('QuoteService Entity', () => {
     });
 
     it('should throw when quantity is zero (validateQuantity)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, quantity: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, quantity: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is negative (validateQuantity)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, quantity: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, quantity: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is not an integer (validateQuantity)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, quantity: 2.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, quantity: 2.5 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is zero (validateUnitPrice)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, unitPrice: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, unitPrice: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is negative (validateUnitPrice)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, unitPrice: -50 }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, unitPrice: -50 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when unitPrice is NaN (validateUnitPrice)', () => {
-      expect(() =>
-        QuoteService.create({ ...validProps, unitPrice: NaN }),
-      ).toThrow(DomainValidationException);
+      expect(() => QuoteService.create({ ...validProps, unitPrice: NaN })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 

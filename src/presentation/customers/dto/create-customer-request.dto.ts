@@ -19,23 +19,23 @@ export class AddressRequestDto {
   @IsString({ message: 'Logradouro deve ser um texto.' })
   @IsNotEmpty({ message: 'Logradouro é obrigatório.' })
   @MaxLength(255, { message: 'Logradouro deve ter no máximo 255 caracteres.' })
-  street: string;
+  street!: string;
 
   @ApiProperty({ description: 'Cidade', example: 'São Paulo' })
   @IsString({ message: 'Cidade deve ser um texto.' })
   @IsNotEmpty({ message: 'Cidade é obrigatória.' })
   @MaxLength(100, { message: 'Cidade deve ter no máximo 100 caracteres.' })
-  city: string;
+  city!: string;
 
   @ApiProperty({ description: 'UF (2 letras)', example: 'SP' })
   @IsString({ message: 'Estado deve ser um texto.' })
   @Length(2, 2, { message: 'Estado deve ter exatamente 2 caracteres (ex: SP).' })
-  state: string;
+  state!: string;
 
   @ApiProperty({ description: 'CEP', example: '01310-100' })
   @IsString({ message: 'CEP deve ser um texto.' })
   @Matches(/^\d{5}-\d{3}$/, { message: 'CEP inválido. Formato esperado: 00000-000.' })
-  zipCode: string;
+  zipCode!: string;
 }
 
 export class CreateCustomerRequestDto {
@@ -43,17 +43,17 @@ export class CreateCustomerRequestDto {
   @IsString({ message: 'O nome deve ser um texto.' })
   @IsNotEmpty({ message: 'O nome é obrigatório.' })
   @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'CPF (000.000.000-00) ou CNPJ válido (suporta formato alfanumérico)',
     example: '123.456.789-09',
   })
-  @Transform(({ value }) => value?.replace(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) => value?.replace(/[.\-/]/g, '').toUpperCase())
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsNotEmpty({ message: 'O documento é obrigatório.' })
   @IsValidCpfCnpj()
-  document: string;
+  document!: string;
 
   @ApiProperty({
     enum: CustomerType,
@@ -61,23 +61,25 @@ export class CreateCustomerRequestDto {
     example: CustomerType.INDIVIDUAL,
   })
   @IsEnum(CustomerType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
-  type: CustomerType;
+  type!: CustomerType;
 
   @ApiProperty({ description: 'E-mail do Cliente', example: 'joao@email.com' })
   @IsString({ message: 'O e-mail deve ser um texto.' })
   @IsNotEmpty({ message: 'O e-mail é obrigatório.' })
   @IsEmail({}, { message: 'E-mail inválido.' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'Telefone do Cliente', example: '(11) 99999-9999' })
-  @Transform(({ value }) => value?.replace(/\D/g, ''))
+  @Transform(({ value }: { value: string }) => value?.replace(/\D/g, ''))
   @IsString({ message: 'O telefone deve ser um texto.' })
   @IsNotEmpty({ message: 'O telefone é obrigatório.' })
-  @Matches(PHONE_REGEX, { message: 'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999.' })
-  phone: string;
+  @Matches(PHONE_REGEX, {
+    message: 'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999.',
+  })
+  phone!: string;
 
   @ApiProperty({ type: AddressRequestDto, description: 'Endereço do Cliente' })
   @ValidateNested()
   @Type(() => AddressRequestDto)
-  address: AddressRequestDto;
+  address!: AddressRequestDto;
 }

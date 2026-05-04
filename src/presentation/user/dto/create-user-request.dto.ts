@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsEmail,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 export class CreateUserRequestDto {
@@ -31,9 +23,4 @@ export class CreateUserRequestDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Role inválida' })
   role?: UserRole;
-
-  @ApiPropertyOptional({ example: true, description: 'Usuário ativo (padrão: true)' })
-  @IsOptional()
-  @IsBoolean({ message: 'isActive deve ser um booleano' })
-  isActive?: boolean;
 }

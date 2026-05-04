@@ -20,11 +20,15 @@ describe('Vehicle (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   async function createCustomer(token: string) {
@@ -137,10 +141,7 @@ describe('Vehicle (E2E)', () => {
     });
 
     it('should return 401 when no token is provided', async () => {
-      await request(httpServer)
-        .post('/api/vehicles')
-        .send(validVehicle)
-        .expect(401);
+      await request(httpServer).post('/api/vehicles').send(validVehicle).expect(401);
     });
   });
 
@@ -226,7 +227,7 @@ describe('Vehicle (E2E)', () => {
         .expect(200);
 
       expect(res.body.pagination.totalRecords).toBe(2);
-      res.body.data.forEach((v: any) => expect(v.customerId).toBe(customerId));
+      res.body.data.forEach((v: { customerId: string }) => expect(v.customerId).toBe(customerId));
     });
   });
 
@@ -321,7 +322,13 @@ describe('Vehicle (E2E)', () => {
       const second = await request(httpServer)
         .post('/api/vehicles')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ plate: 'XYZ-9999', brand: 'Honda', model: 'Civic', year: 2021, customerId: customer.id })
+        .send({
+          plate: 'XYZ-9999',
+          brand: 'Honda',
+          model: 'Civic',
+          year: 2021,
+          customerId: customer.id,
+        })
         .expect(201);
 
       await request(httpServer)

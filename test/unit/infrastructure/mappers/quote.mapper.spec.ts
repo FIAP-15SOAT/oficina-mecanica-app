@@ -80,7 +80,7 @@ describe('QuoteMapper', () => {
         ],
       };
 
-      const domainEntity = QuoteMapper.toDomain(prismaRecord as any);
+      const domainEntity = QuoteMapper.toDomain(prismaRecord);
 
       expect(domainEntity.services).toHaveLength(1);
       expect(domainEntity.partsSupplies).toHaveLength(1);

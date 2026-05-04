@@ -2,8 +2,14 @@ import { FindWorkOrderStatusHistoryUseCase } from '@application/use-cases/work-o
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
-import { createMockStatusHistory, createMockStatusHistoryRepository } from '../../../../helpers/status-history-mock.factory';
+import {
+  createMockWorkOrder,
+  createMockWorkOrderRepository,
+} from '../../../../helpers/work-order-mock.factory';
+import {
+  createMockStatusHistory,
+  createMockStatusHistoryRepository,
+} from '../../../../helpers/status-history-mock.factory';
 
 describe('FindWorkOrderStatusHistoryUseCase', () => {
   let useCase: FindWorkOrderStatusHistoryUseCase;

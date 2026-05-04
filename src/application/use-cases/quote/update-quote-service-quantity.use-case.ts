@@ -4,7 +4,7 @@ import { UpdateQuoteServiceQuantityDto } from '@domain/interfaces/use-cases/quot
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateQuoteServiceQuantityUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: UpdateQuoteServiceQuantityDto): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {
@@ -24,7 +24,6 @@ export class UpdateQuoteServiceQuantityUseCase {
 
       existing.updateQuantity(dto.quantity);
 
-
       await repos.quoteService.update(existing);
 
       const [allServices, allParts] = await Promise.all([
@@ -40,4 +39,3 @@ export class UpdateQuoteServiceQuantityUseCase {
     });
   }
 }
-

@@ -10,12 +10,15 @@ import {
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ServiceMapper } from '@infrastructure/mappers/service.mapper';
 import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaServiceRepository implements IServiceRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(service: Service): Promise<Service> {
     try {
@@ -65,7 +68,7 @@ export class PrismaServiceRepository implements IServiceRepository {
       this.prisma.service,
       {
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       },
       pagination,
     );
@@ -152,7 +155,9 @@ export class PrismaServiceRepository implements IServiceRepository {
     };
   }
 
-  async findAllServicesMetrics(input: PaginationInput): Promise<PaginatedRepositoryResult<ServiceMetrics>> {
+  async findAllServicesMetrics(
+    input: PaginationInput,
+  ): Promise<PaginatedRepositoryResult<ServiceMetrics>> {
     const { page, limit } = input;
 
     const [rows, total] = await Promise.all([

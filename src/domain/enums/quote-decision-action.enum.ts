@@ -1,4 +1,4 @@
 export enum QuoteDecisionAction {
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+  APPROVE = 'approve',
+  REJECT = 'reject',
 }

@@ -5,7 +5,7 @@ import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagi
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllServicesPaginatedUseCase {
-  constructor(private readonly serviceRepository: IServiceRepository) { }
+  constructor(private readonly serviceRepository: IServiceRepository) {}
 
   async execute(input: FindAllServicesPaginatedInputDto): Promise<PaginatedResult<Service>> {
     const { page, limit, ...filters } = input;

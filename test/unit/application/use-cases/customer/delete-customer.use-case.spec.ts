@@ -2,7 +2,10 @@ import { DeleteCustomerUseCase } from '@application/use-cases/customer/delete-cu
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
 
 describe('DeleteCustomerUseCase', () => {
   let useCase: DeleteCustomerUseCase;
@@ -26,8 +29,7 @@ describe('DeleteCustomerUseCase', () => {
   it('should throw ResourceNotFoundException when customer does not exist', async () => {
     customerRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('non-existent'))
-      .rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('non-existent')).rejects.toThrow(ResourceNotFoundException);
     expect(customerRepository.delete).not.toHaveBeenCalled();
   });
 
@@ -36,8 +38,7 @@ describe('DeleteCustomerUseCase', () => {
     customerRepository.hasVehicles.mockResolvedValue(true);
     customerRepository.hasWorkOrders.mockResolvedValue(false);
 
-    await expect(useCase.execute('some-id'))
-      .rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('some-id')).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.delete).not.toHaveBeenCalled();
   });
 
@@ -46,8 +47,7 @@ describe('DeleteCustomerUseCase', () => {
     customerRepository.hasVehicles.mockResolvedValue(false);
     customerRepository.hasWorkOrders.mockResolvedValue(true);
 
-    await expect(useCase.execute('some-id'))
-      .rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('some-id')).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.delete).not.toHaveBeenCalled();
   });
 });

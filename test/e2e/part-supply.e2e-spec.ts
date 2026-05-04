@@ -20,11 +20,15 @@ describe('PartSupply (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   const validPartSupply = {
@@ -107,11 +111,15 @@ describe('PartSupply (E2E)', () => {
     });
 
     it('should return 403 for non-admin role', async () => {
-      const mechanic = await registerAndLogin(httpServer, {
-        name: 'Mechanic',
-        email: 'mechanic@e2e.test',
-        role: 'MECHANIC',
-      });
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic',
+          email: 'mechanic@e2e.test',
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .post('/api/parts-supplies')
@@ -223,8 +231,6 @@ describe('PartSupply (E2E)', () => {
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });
-
-
   });
 
   // ─── GET /api/parts-supplies/:id ─────────────────────────────────────────
@@ -279,7 +285,8 @@ describe('PartSupply (E2E)', () => {
     });
 
     it('should update part/supply data', async () => {
-      const { stock, ...updatePayload } = validPartSupply;
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
       const res = await request(httpServer)
         .put(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -294,8 +301,6 @@ describe('PartSupply (E2E)', () => {
       expect(res.body.data.salePrice).toBe(59.9);
     });
 
-
-
     it('should return 409 when updating to a duplicate SKU', async () => {
       await request(httpServer)
         .post('/api/parts-supplies')
@@ -303,7 +308,8 @@ describe('PartSupply (E2E)', () => {
         .send({ ...validPartSupply, name: 'Outro Item', sku: 'FO-002' })
         .expect(201);
 
-      const { stock, ...updatePayload } = validPartSupply;
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
       await request(httpServer)
         .put(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -312,7 +318,8 @@ describe('PartSupply (E2E)', () => {
     });
 
     it('should return 404 for non-existent part/supply', async () => {
-      const { stock, ...updatePayload } = validPartSupply;
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
       await request(httpServer)
         .put('/api/parts-supplies/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -437,19 +444,42 @@ describe('PartSupply (E2E)', () => {
       // Manually create a link in DB to trigger hasWorkOrderPartSupplies or hasQuotePartSupplies
       // We'll use a quote link for this example
       const customer = await ctx.prisma.customer.create({
-        data: { name: 'Test', document: '12345678909', type: 'INDIVIDUAL', email: 'test@test.com', phone: '123' }
+        data: {
+          name: 'Test',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: 'test@test.com',
+          phone: '123',
+        },
       });
       const vehicle = await ctx.prisma.vehicle.create({
-        data: { customerId: customer.id, plate: 'LNK-0001', brand: 'Test', model: 'Test', year: 2020 }
+        data: {
+          customerId: customer.id,
+          plate: 'LNK-0001',
+          brand: 'Test',
+          model: 'Test',
+          year: 2020,
+        },
       });
       const workOrder = await ctx.prisma.workOrder.create({
-        data: { customerId: customer.id, vehicleId: vehicle.id, number: 'LINKED', status: 'RECEIVED' }
+        data: {
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          number: 'LINKED',
+          status: 'RECEIVED',
+        },
       });
       const quote = await ctx.prisma.quote.create({
-        data: { workOrderId: workOrder.id, status: 'PENDING', totalAmount: 0 }
+        data: { workOrderId: workOrder.id, status: 'PENDING', totalAmount: 0 },
       });
       await ctx.prisma.quotePartSupply.create({
-        data: { quoteId: quote.id, partSupplyId: created.body.data.id, quantity: 1, unitPrice: 10, totalPrice: 10 }
+        data: {
+          quoteId: quote.id,
+          partSupplyId: created.body.data.id,
+          quantity: 1,
+          unitPrice: 10,
+          totalPrice: 10,
+        },
       });
 
       await request(httpServer)
@@ -468,7 +498,7 @@ describe('PartSupply (E2E)', () => {
       // Manually set reserved stock
       await ctx.prisma.partSupply.update({
         where: { id: created.body.data.id },
-        data: { reservedStock: 5 }
+        data: { reservedStock: 5 },
       });
 
       await request(httpServer)

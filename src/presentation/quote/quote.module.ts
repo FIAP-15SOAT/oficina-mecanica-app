@@ -97,20 +97,20 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IUpdateQuoteServiceQuantityUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new UpdateQuoteServiceQuantityUseCase(unitOfWork),
+      useFactory: (unitOfWork: PrismaUnitOfWork) =>
+        new UpdateQuoteServiceQuantityUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IUpdateQuotePartSupplyQuantityUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new UpdateQuotePartSupplyQuantityUseCase(unitOfWork),
+      useFactory: (unitOfWork: PrismaUnitOfWork) =>
+        new UpdateQuotePartSupplyQuantityUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IUpdateQuoteStatusUseCase',
-      useFactory: (
-        approveUseCase: ApproveQuoteUseCase,
-        rejectUseCase: RejectQuoteUseCase,
-      ) => new UpdateQuoteStatusUseCase(approveUseCase, rejectUseCase),
+      useFactory: (approveUseCase: ApproveQuoteUseCase, rejectUseCase: RejectQuoteUseCase) =>
+        new UpdateQuoteStatusUseCase(approveUseCase, rejectUseCase),
       inject: ['IApproveQuoteUseCase', 'IRejectQuoteUseCase'],
     },
     {
@@ -131,7 +131,8 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IFindAllQuotesPaginatedUseCase',
-      useFactory: (quoteRepo: PrismaQuoteRepository) => new FindAllQuotesPaginatedUseCase(quoteRepo),
+      useFactory: (quoteRepo: PrismaQuoteRepository) =>
+        new FindAllQuotesPaginatedUseCase(quoteRepo),
       inject: ['IQuoteRepository'],
     },
     {
@@ -142,4 +143,4 @@ import { QuoteController } from './quote.controller';
     },
   ],
 })
-export class QuoteModule { }
+export class QuoteModule {}

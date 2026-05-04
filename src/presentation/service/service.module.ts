@@ -61,4 +61,4 @@ import { ServicesMetricsController } from './services-metrics.controller';
     },
   ],
 })
-export class ServiceModule { }
+export class ServiceModule {}

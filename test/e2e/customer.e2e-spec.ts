@@ -22,16 +22,24 @@ describe('Customer (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
-    attendantAuth = await registerAndLogin(httpServer, {
-      name: 'Atendente E2E',
-      email: 'attendant@e2e.test',
-      role: 'ATTENDANT',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
+    attendantAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Atendente E2E',
+        email: 'attendant@e2e.test',
+        role: 'ATTENDANT',
+      },
+      ctx.prisma,
+    );
   });
 
   const validCustomer = {
@@ -78,11 +86,15 @@ describe('Customer (E2E)', () => {
     });
 
     it('should return 403 for MECHANIC role', async () => {
-      const mechanicAuth = await registerAndLogin(httpServer, {
-        name: 'Mecânico E2E',
-        email: 'mechanic@e2e.test',
-        role: 'MECHANIC',
-      });
+      const mechanicAuth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mecânico E2E',
+          email: 'mechanic@e2e.test',
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
       await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
@@ -193,16 +205,17 @@ describe('Customer (E2E)', () => {
         await request(httpServer)
           .post('/api/customers')
           .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-          .send({ ...validCustomer, document: doc, email: `test-${doc.replace(/\D/g, '')}@email.com` })
+          .send({
+            ...validCustomer,
+            document: doc,
+            email: `test-${doc.replace(/\D/g, '')}@email.com`,
+          })
           .expect(400);
       }
     });
 
     it('should return 401 when no token is provided', async () => {
-      await request(httpServer)
-        .post('/api/customers')
-        .send(validCustomer)
-        .expect(401);
+      await request(httpServer).post('/api/customers').send(validCustomer).expect(401);
     });
   });
 

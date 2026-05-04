@@ -11,8 +11,10 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 - **ORM**: Prisma 7
 - **Banco de dados**: PostgreSQL 16
 - **Autenticação**: JWT (access + refresh token) com bcrypt
+- **E-mail**: Nodemailer + `@nestjs-modules/mailer` (SMTP via MailHog em desenvolvimento)
+- **Segurança HTTP**: Helmet, CORS configurável via `ALLOWED_ORIGINS`
 - **Documentação**: Swagger/OpenAPI
-- **Testes**: Jest + ts-jest (unitários e E2E)
+- **Testes**: Jest + ts-jest (unitários e E2E com Testcontainers)
 - **Containerização**: Docker + Docker Compose
 - **Linting**: ESLint + Prettier
 
@@ -30,7 +32,7 @@ src/
 │
 ├── application/                     # Camada de aplicação (orquestração de casos de uso)
 │   ├── use-cases/
-│   │   ├── auth/                    # Register, Authenticate, RefreshToken, GetCurrentUser
+│   │   ├── auth/                    # Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD + atualização de status
 │   │   ├── customer/                # CRUD completo de clientes
 │   │   ├── vehicle/                 # CRUD + busca por cliente
@@ -43,11 +45,15 @@ src/
 │
 ├── infrastructure/                  # Implementações concretas (framework e serviços externos)
 │   ├── auth/                        # JWT Strategy, Guards (JwtAuthGuard, RolesGuard), @CurrentUser, @Roles, @Public
+│   ├── database/                    # PrismaService (singleton de conexão)
+│   ├── exceptions/                  # AuthenticationFailedException, DatabaseOperationException, ServiceIntegrationException
 │   ├── filters/                     # Exception Filters: Domain, Application, Infrastructure, AllExceptions
 │   ├── interceptors/                # DateSerializerInterceptor (ISO 8601 com timezone)
 │   ├── mappers/                     # Conversão Prisma model → Entidade de domínio
-│   ├── repositories/                # Implementações Prisma de todos os repositórios
-│   └── services/                    # BcryptHashService, JwtTokenService
+│   ├── pipes/                       # SanitizeStringsPipe (global — sanitiza strings em DTOs)
+│   ├── repositories/                # Implementações Prisma de todos os repositórios + PrismaUnitOfWork
+│   ├── services/                    # BcryptHashService, JwtTokenService, MailerEmailSenderService
+│   └── validators/                  # DocumentValidator (validação de CPF e CNPJ com dígito verificador)
 │
 ├── presentation/                    # Camada de apresentação (controllers, DTOs, presenters)
 │   ├── auth/                        # AuthController + DTOs
@@ -62,15 +68,16 @@ src/
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
-└── main.ts
+└── main.ts                          # helmet, CORS (ALLOWED_ORIGINS), SanitizeStringsPipe, ValidationPipe, DateSerializerInterceptor
 
 test/
-├── helpers/                         # Factories de mocks reutilizáveis por entidade
-├── unit/                            # 128 suites de testes unitários (espelham src/)
+├── helpers/                         # Factories de mocks reutilizáveis por entidade (incluindo UnitOfWorkMockFactory)
+├── unit/                            # 127 suites de testes unitários (espelham src/)
 │   ├── domain/entities/
 │   ├── application/use-cases/
-│   └── infrastructure/
-└── e2e/                             # 9 suites de testes E2E
+│   ├── infrastructure/              # auth, exceptions, filters, interceptors, mappers, pipes, repositories, services, validators
+│   └── presentation/               # controllers e presenters
+└── e2e/                             # 9 suites de testes E2E (Testcontainers / PostgreSQL real)
     ├── auth.e2e-spec.ts
     ├── customer.e2e-spec.ts
     ├── part-supply.e2e-spec.ts
@@ -93,6 +100,10 @@ prisma/
 
 `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`.
 
+### Unit of Work
+
+Operações críticas que envolvem múltiplos repositórios (criação e atualização de status de OS, atualização de status de serviço) são executadas dentro de uma transação Prisma gerenciada pelo `IUnitOfWork`. O `PrismaUnitOfWork` implementa esse contrato e injeta todos os repositórios já conectados à transação ativa.
+
 ### Exceções por Camada
 
 Cada camada tem suas próprias exceções, sem dependência de framework HTTP. O mapeamento para status HTTP acontece exclusivamente nos **Exception Filters** da infraestrutura:
@@ -108,6 +119,7 @@ Cada camada tem suas próprias exceções, sem dependência de framework HTTP. O
 | Application | `BadRequestException` | 400 |
 | Infrastructure | `AuthenticationFailedException` | 401 |
 | Infrastructure | `DatabaseOperationException` | 503 |
+| Infrastructure | `ServiceIntegrationException` | 503 |
 
 ## Rodando com Docker (recomendado)
 
@@ -221,7 +233,6 @@ Após iniciar a aplicação:
 
 | Método | Rota | Descrição | Acesso |
 |---|---|---|---|
-| POST | `/register` | Registrar novo usuário | Público |
 | POST | `/login` | Autenticar e obter tokens | Público |
 | POST | `/refresh` | Renovar tokens com refresh token | Público |
 | GET | `/me` | Dados do usuário autenticado | JWT |
@@ -332,7 +343,7 @@ Status da OS: `RECEIVED` → `IN_DIAGNOSIS` → `AWAITING_APPROVAL` → `APPROVE
 | DELETE | `/:id/parts-supplies/:partSupplyId` | Remover peça/insumo do orçamento | ADMIN, MECHANIC, ATTENDANT |
 | POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id` | Aprovar ou rejeitar orçamento | ADMIN, ATTENDANT |
-| PATCH | `/:id/decisions` | Decisão via link de e-mail (token assinado) | Público |
+| GET | `/:id/decisions` | Decisão via link de e-mail (token assinado) | Público |
 
 Status do orçamento: `PENDING` → `SENT` → `APPROVED` / `REJECTED`
 
@@ -393,7 +404,7 @@ npm test          # executa os testes
 npm run test:cov  # com relatório de cobertura
 ```
 
-128 suites cobrindo `application/` e `domain/`. Cada use-case é instanciado diretamente com mocks do tipo `jest.Mocked<IRepository>` — sem NestJS DI, sem banco de dados. As factories de mocks estão em `test/helpers/`.
+127 suites cobrindo todas as camadas (`application/`, `domain/`, `infrastructure/`, `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks estão em `test/helpers/`.
 
 ### E2E
 
@@ -402,7 +413,7 @@ npm run test:e2e      # executa os testes
 npm run test:e2e:cov  # com cobertura
 ```
 
-9 suites cobrindo todos os domínios: auth, user, customer, vehicle, service, part-supply, work-order, quote, stock.
+9 suites cobrindo todos os domínios: auth, user, customer, vehicle, service, part-supply, work-order, quote, stock. Os testes E2E sobem um PostgreSQL real via **Testcontainers**, sem necessidade de banco externo.
 
 ### Postman / Newman
 
@@ -429,6 +440,10 @@ JWT_EXPIRATION=15m
 JWT_REFRESH_SECRET=your-refresh-secret-key
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
+ALLOWED_ORIGINS=http://localhost:3000   # separar múltiplas origens por vírgula
+MAIL_HOST=localhost
+MAIL_PORT=1025
+MAIL_FROM=noreply@oficina.local
 ```
 
 ## Seed

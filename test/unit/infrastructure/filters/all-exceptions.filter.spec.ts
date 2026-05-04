@@ -94,9 +94,34 @@ describe('AllExceptionsFilter', () => {
     expect(loggerErrorSpy).not.toHaveBeenCalled();
   });
 
+  it('should return the message array from HttpException response object (e.g. validation errors)', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new HttpException(
+      {
+        message: ['name must not be empty', 'email must be an email'],
+        error: 'Bad Request',
+        statusCode: 400,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      error: 'Bad Request',
+      message: ['name must not be empty', 'email must be an email'],
+    });
+    expect(loggerErrorSpy).not.toHaveBeenCalled();
+  });
+
   it('should return 400 for SyntaxError with status and code properties (Express body-parser)', () => {
     const { host, statusFn, jsonFn } = createMockHost();
-    const exception = Object.assign(new SyntaxError('Unexpected token'), { status: 400, code: 'INVALID_JSON' });
+    const exception = Object.assign(new SyntaxError('Unexpected token'), {
+      status: 400,
+      code: 'INVALID_JSON',
+    });
 
     filter.catch(exception, host);
 

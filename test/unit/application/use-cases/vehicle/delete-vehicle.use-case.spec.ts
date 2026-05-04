@@ -2,7 +2,10 @@ import { DeleteVehicleUseCase } from '@application/use-cases/vehicle/delete-vehi
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleRepository,
+} from '../../../../helpers/vehicle-mock.factory';
 
 describe('DeleteVehicleUseCase', () => {
   let useCase: DeleteVehicleUseCase;

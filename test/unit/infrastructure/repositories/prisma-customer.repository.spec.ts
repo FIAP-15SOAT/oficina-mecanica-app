@@ -3,6 +3,7 @@ import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { Address } from '@domain/entities/address.entity';
 import { randomUUID } from 'node:crypto';
 
 describe('PrismaCustomerRepository', () => {
@@ -11,7 +12,7 @@ describe('PrismaCustomerRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaCustomerRepository(prisma as any);
+    repository = new PrismaCustomerRepository(prisma);
   });
 
   describe('create', () => {
@@ -112,13 +113,15 @@ describe('PrismaCustomerRepository', () => {
           city: 'City',
           state: 'ST',
           zipCode: '12345678',
-        } as any,
+        } as unknown as Address,
       };
 
-      prisma.customer.update.mockResolvedValue(createMockCustomer({
-        id,
-        ...data,
-      }));
+      prisma.customer.update.mockResolvedValue(
+        createMockCustomer({
+          id,
+          ...data,
+        }),
+      );
 
       const result = await repository.update(id, data);
 
@@ -128,7 +131,7 @@ describe('PrismaCustomerRepository', () => {
 
     it('should delete address when address is null', async () => {
       const id = randomUUID();
-      const data: Partial<Customer> = { address: null as any };
+      const data: Partial<Customer> = { address: null };
 
       prisma.customer.update.mockResolvedValue({
         id,

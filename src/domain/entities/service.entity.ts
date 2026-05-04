@@ -44,7 +44,6 @@ export class Service {
     return service;
   }
 
-
   private validateName(): void {
     if (!this.name) {
       throw new DomainValidationException('Nome é obrigatório');

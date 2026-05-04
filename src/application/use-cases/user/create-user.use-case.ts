@@ -31,10 +31,6 @@ export class CreateUserUseCase {
       role: createUserDto.role,
     });
 
-    if (createUserDto.isActive === false) {
-      user.deactivate();
-    }
-
     const created = await this.userRepository.create(user);
 
     return created.toPublicView();

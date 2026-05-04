@@ -1,4 +1,5 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { User } from '@domain/entities/user.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
@@ -40,9 +41,9 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw DomainValidationException when mileage is negative', () => {
-      expect(() =>
-        WorkOrder.create({ ...baseProps, mileageAtService: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrder.create({ ...baseProps, mileageAtService: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should accept zero mileage', () => {
@@ -69,27 +70,27 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw DomainValidationException when internalNotes exceed 2000 chars', () => {
-      expect(() =>
-        WorkOrder.create({ ...baseProps, internalNotes: 'N'.repeat(2001) }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrder.create({ ...baseProps, internalNotes: 'N'.repeat(2001) })).toThrow(
+        DomainValidationException,
+      );
     });
     it('should throw BusinessRuleViolationException when assigned user is not a mechanic', () => {
       const nonMechanic = { id: 'u1', name: 'John', role: UserRole.ADMIN, isActive: true };
       expect(() =>
-        WorkOrder.create({ ...baseProps, assignedUser: nonMechanic as any }),
+        WorkOrder.create({ ...baseProps, assignedUser: nonMechanic as unknown as User }),
       ).toThrow(BusinessRuleViolationException);
     });
 
     it('should throw BusinessRuleViolationException when assigned user is inactive', () => {
       const inactiveMechanic = { id: 'u1', name: 'John', role: UserRole.MECHANIC, isActive: false };
       expect(() =>
-        WorkOrder.create({ ...baseProps, assignedUser: inactiveMechanic as any }),
+        WorkOrder.create({ ...baseProps, assignedUser: inactiveMechanic as unknown as User }),
       ).toThrow(BusinessRuleViolationException);
     });
 
     it('should allow creating with mechanic', () => {
       const mechanic = { id: 'u1', name: 'John', role: UserRole.MECHANIC, isActive: true };
-      const wo = WorkOrder.create({ ...baseProps, assignedUser: mechanic as any });
+      const wo = WorkOrder.create({ ...baseProps, assignedUser: mechanic as unknown as User });
       expect(wo.assignedUserId).toBe(mechanic.id);
       expect(wo.assignedUser).toEqual(mechanic);
     });
@@ -133,24 +134,24 @@ describe('WorkOrder Entity', () => {
     it('should update assignedUserId and assignedUser', () => {
       const wo = WorkOrder.create(baseProps);
       const mechanic = { id: 'u3', name: 'Joe', role: UserRole.MECHANIC, isActive: true };
-      wo.update({ assignedUser: mechanic as any });
+      wo.update({ assignedUser: mechanic as unknown as User });
       expect(wo.assignedUserId).toBe(mechanic.id);
     });
 
     it('should throw BusinessRuleViolationException when updating with non-mechanic', () => {
       const wo = WorkOrder.create(baseProps);
       const nonMechanic = { id: 'u3', name: 'Joe', role: UserRole.ADMIN, isActive: true };
-      expect(() =>
-        wo.update({ assignedUser: nonMechanic as any }),
-      ).toThrow(BusinessRuleViolationException);
+      expect(() => wo.update({ assignedUser: nonMechanic as unknown as User })).toThrow(
+        BusinessRuleViolationException,
+      );
     });
 
     it('should throw BusinessRuleViolationException when updating with inactive mechanic', () => {
       const wo = WorkOrder.create(baseProps);
       const inactiveMechanic = { id: 'u3', name: 'Joe', role: UserRole.MECHANIC, isActive: false };
-      expect(() =>
-        wo.update({ assignedUser: inactiveMechanic as any }),
-      ).toThrow(BusinessRuleViolationException);
+      expect(() => wo.update({ assignedUser: inactiveMechanic as unknown as User })).toThrow(
+        BusinessRuleViolationException,
+      );
     });
 
     it('should throw DomainValidationException for invalid fields on update', () => {

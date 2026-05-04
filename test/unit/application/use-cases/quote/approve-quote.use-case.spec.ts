@@ -4,7 +4,11 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { createMockQuote, createMockQuotePartSupply, createMockQuoteService } from '../../../../helpers/quote-mock.factory';
+import {
+  createMockQuote,
+  createMockQuotePartSupply,
+  createMockQuoteService,
+} from '../../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
 import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
 
@@ -25,10 +29,17 @@ describe('ApproveQuoteUseCase', () => {
 
   it('should approve quote, create WO services, WO parts, stock reservations and update work order', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT, totalAmount: 500 });
-    const workOrder = createMockWorkOrder({ id: quote.workOrderId, status: WorkOrderStatus.AWAITING_APPROVAL });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.AWAITING_APPROVAL,
+    });
     const partSupplyId = randomUUID();
     const partSupply = createMockPartSupply({ id: partSupplyId, stock: 10, reservedStock: 2 });
-    const qPart = createMockQuotePartSupply({ quoteId: quote.id, partSupplyId: partSupply.id, quantity: 2 });
+    const qPart = createMockQuotePartSupply({
+      quoteId: quote.id,
+      partSupplyId: partSupply.id,
+      quantity: 2,
+    });
     const qService = createMockQuoteService({ quoteId: quote.id });
     const updatedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.APPROVED });
 
@@ -52,9 +63,11 @@ describe('ApproveQuoteUseCase', () => {
 
     expect(mockRepos.quote.update).toHaveBeenCalled();
     expect(mockRepos.workOrder.update).toHaveBeenCalled();
-    expect(mockRepos.statusHistory.create).toHaveBeenCalledWith(expect.objectContaining({
-      changedById: '550e8400-e29b-41d4-a716-446655440099',
-    }));
+    expect(mockRepos.statusHistory.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changedById: '550e8400-e29b-41d4-a716-446655440099',
+      }),
+    );
     expect(mockRepos.stockReservation.createMany).toHaveBeenCalledTimes(1);
     expect(mockRepos.workOrderService.createMany).toHaveBeenCalledTimes(1);
     expect(mockRepos.workOrderPartSupply.createMany).toHaveBeenCalledTimes(1);
@@ -63,7 +76,10 @@ describe('ApproveQuoteUseCase', () => {
 
   it('should handle null userId when not provided', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
-    const workOrder = createMockWorkOrder({ id: quote.workOrderId, status: WorkOrderStatus.AWAITING_APPROVAL });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.AWAITING_APPROVAL,
+    });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
@@ -72,9 +88,11 @@ describe('ApproveQuoteUseCase', () => {
 
     await useCase.execute(quote.id);
 
-    expect(mockRepos.statusHistory.create).toHaveBeenCalledWith(expect.objectContaining({
-      changedById: null,
-    }));
+    expect(mockRepos.statusHistory.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changedById: null,
+      }),
+    );
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
@@ -90,12 +108,18 @@ describe('ApproveQuoteUseCase', () => {
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
-
   it('should throw BusinessRuleViolationException when insufficient stock', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
-    const workOrder = createMockWorkOrder({ id: quote.workOrderId, status: WorkOrderStatus.AWAITING_APPROVAL });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.AWAITING_APPROVAL,
+    });
     const partSupply = createMockPartSupply({ stock: 1, reservedStock: 1 }); // 0 available
-    const qPart = createMockQuotePartSupply({ quoteId: quote.id, partSupplyId: partSupply.id, quantity: 2 });
+    const qPart = createMockQuotePartSupply({
+      quoteId: quote.id,
+      partSupplyId: partSupply.id,
+      quantity: 2,
+    });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
@@ -105,5 +129,4 @@ describe('ApproveQuoteUseCase', () => {
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
-
 });

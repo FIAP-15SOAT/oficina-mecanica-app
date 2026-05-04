@@ -44,7 +44,6 @@ export class QuotePartSupply {
     this.updatedAt = new Date();
   }
 
-
   private validateQuantity(): void {
     if (!Number.isInteger(this.quantity)) {
       throw new DomainValidationException('Quantidade deve ser um número inteiro');
