@@ -99,7 +99,7 @@ export class ServiceController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT, UserRole.MECHANIC)
   @ApiOperation({ summary: 'Listar serviços paginados (somente Admin)' })
   @ApiOkResponse({ type: ServicePaginatedResponseDto, description: 'Lista paginada de serviços' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })

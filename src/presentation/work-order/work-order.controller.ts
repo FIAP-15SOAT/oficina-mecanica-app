@@ -89,7 +89,7 @@ export class WorkOrderController {
   }
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Criar nova Ordem de Serviço' })
   @ApiOkResponse({ type: WorkOrderDataResponseDto })
   @ApiUnauthorizedResponse()
@@ -169,7 +169,7 @@ export class WorkOrderController {
   }
 
   @Patch(':workOrderId/services/:serviceId')
-  @Roles(UserRole.ADMIN, UserRole.MECHANIC)
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT, UserRole.MECHANIC)
   @ApiOperation({ summary: 'Atualizar status de serviço da Ordem de Serviço' })
   @ApiOkResponse({ type: WorkOrderServiceItemDataResponseDto })
   @ApiNotFoundResponse()

@@ -89,7 +89,7 @@ export class PartsSuppliesController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Consulta de Estoque de Peças e Insumos' })
   @ApiOkResponse({
     type: PartSupplyPaginatedResponseDto,
@@ -110,7 +110,7 @@ export class PartsSuppliesController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Buscar Peça ou Insumo por ID' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
   @ApiOkResponse({ type: PartSupplyDataResponseDto, description: 'Peça ou Insumo encontrado' })
@@ -162,7 +162,7 @@ export class PartsSuppliesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Movimentar Estoque' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
   @ApiOkResponse({ type: PartSupplyDataResponseDto, description: 'Estoque atualizado com sucesso' })

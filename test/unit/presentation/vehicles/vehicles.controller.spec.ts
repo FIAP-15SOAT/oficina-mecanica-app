@@ -6,7 +6,6 @@ import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/fi
 import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
 import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 
 describe('VehiclesController', () => {
@@ -16,7 +15,6 @@ describe('VehiclesController', () => {
   let findByIdUseCase: jest.Mocked<IFindVehicleByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateVehicleUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteVehicleUseCase>;
-  let findVehiclesByCustomerIdUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -24,14 +22,12 @@ describe('VehiclesController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
-    findVehiclesByCustomerIdUseCase = { execute: jest.fn() };
     controller = new VehiclesController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
-      findVehiclesByCustomerIdUseCase,
     );
   });
 

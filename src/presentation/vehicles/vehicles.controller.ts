@@ -37,7 +37,6 @@ import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/fi
 import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
 import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { CreateVehicleRequestDto } from './dto/create-vehicle-request.dto';
 import { UpdateVehicleRequestDto } from './dto/update-vehicle-request.dto';
 import { FindAllVehiclesQueryDto } from './dto/filter-vehicles.dto';
@@ -61,8 +60,6 @@ export class VehiclesController {
     private readonly updateVehicleUseCase: IUpdateVehicleUseCase,
     @Inject('IDeleteVehicleUseCase')
     private readonly deleteVehicleUseCase: IDeleteVehicleUseCase,
-    @Inject('IFindVehiclesByCustomerIdUseCase')
-    private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
   ) {}
 
   @Post()
