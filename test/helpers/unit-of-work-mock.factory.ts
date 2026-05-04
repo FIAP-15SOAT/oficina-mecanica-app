@@ -1,7 +1,7 @@
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part.repository.interface';
+import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part-supply.repository.interface';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { createMockWorkOrderRepository } from './work-order-mock.factory';
@@ -25,8 +25,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       findAllPaginated: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      hasVehicles: jest.fn(),
-      hasWorkOrders: jest.fn(),
+      isCustomerInUse: jest.fn(),
     } as unknown as jest.Mocked<ICustomerRepository>,
     vehicle: {
       create: jest.fn(),
@@ -36,7 +35,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       findByCustomerId: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      hasWorkOrders: jest.fn(),
+      isVehicleInUse: jest.fn(),
     } as unknown as jest.Mocked<IVehicleRepository>,
     workOrder: createMockWorkOrderRepository(),
     workOrderService: createMockWorkOrderServiceRepository(),
@@ -58,8 +57,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       findAllPaginated: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      hasWorkOrderServices: jest.fn(),
-      hasQuoteServices: jest.fn(),
+      isServiceInUse: jest.fn(),
       getServiceMetrics: jest.fn(),
       getAllServicesMetrics: jest.fn(),
     } as unknown as jest.Mocked<IServiceRepository>,

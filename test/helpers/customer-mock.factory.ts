@@ -28,7 +28,6 @@ export function createMockCustomerRepository(): jest.Mocked<ICustomerRepository>
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    hasVehicles: jest.fn(),
-    hasWorkOrders: jest.fn(),
+    isCustomerInUse: jest.fn(),
   };
 }

@@ -123,9 +123,10 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   }
 
   async generateNextNumber(): Promise<string> {
-    const count = await this.prisma.workOrder.count();
-    const padded = String(count + 1).padStart(6, '0');
+    const rows = await this.prisma.$queryRaw<{ next: bigint }[]>`
+      SELECT nextval('work_order_number_seq') AS next
+    `;
 
-    return padded;
+    return String(rows[0].next).padStart(6, '0');
   }
 }

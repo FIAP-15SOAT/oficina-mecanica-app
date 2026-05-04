@@ -19,6 +19,7 @@ describe('DeletePartSupplyUseCase', () => {
   it('should delete a Part or Supply from Stock successfully', async () => {
     const existing = createMockPartSupply({ id: 'uuid-1', reservedStock: 0 });
     partSupplyRepository.findById.mockResolvedValue(existing);
+    partSupplyRepository.isPartSupplyInUse.mockResolvedValue(false);
     partSupplyRepository.delete.mockResolvedValue(undefined);
 
     await expect(useCase.execute('uuid-1')).resolves.toBeUndefined();
@@ -40,23 +41,10 @@ describe('DeletePartSupplyUseCase', () => {
     expect(partSupplyRepository.delete).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceConflictException when item is associated with Work Orders', async () => {
+  it('should throw ResourceConflictException when item is in use', async () => {
     const existing = createMockPartSupply({ id: 'uuid-1', reservedStock: 0 });
     partSupplyRepository.findById.mockResolvedValue(existing);
-    partSupplyRepository.hasWorkOrderPartSupplies.mockResolvedValue(true);
-    partSupplyRepository.hasQuotePartSupplies.mockResolvedValue(false);
-
-    await expect(useCase.execute('uuid-1')).rejects.toThrow(
-      'Peça ou insumo não pode ser excluído pois está vinculado a ordens de serviço ou orçamentos.',
-    );
-    expect(partSupplyRepository.delete).not.toHaveBeenCalled();
-  });
-
-  it('should throw ResourceConflictException when item is associated with Quotes', async () => {
-    const existing = createMockPartSupply({ id: 'uuid-1', reservedStock: 0 });
-    partSupplyRepository.findById.mockResolvedValue(existing);
-    partSupplyRepository.hasWorkOrderPartSupplies.mockResolvedValue(false);
-    partSupplyRepository.hasQuotePartSupplies.mockResolvedValue(true);
+    partSupplyRepository.isPartSupplyInUse.mockResolvedValue(true);
 
     await expect(useCase.execute('uuid-1')).rejects.toThrow(
       'Peça ou insumo não pode ser excluído pois está vinculado a ordens de serviço ou orçamentos.',

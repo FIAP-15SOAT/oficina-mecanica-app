@@ -19,6 +19,5 @@ export interface ICustomerRepository {
   ): Promise<PaginatedRepositoryResult<Customer>>;
   update(id: string, data: Partial<Customer>): Promise<Customer>;
   delete(id: string): Promise<void>;
-  hasVehicles(id: string): Promise<boolean>;
-  hasWorkOrders(id: string): Promise<boolean>;
+  isCustomerInUse(id: string): Promise<boolean>;
 }

@@ -1,5 +1,8 @@
 import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
-import { createMockVehicle, createMockVehicleCustomer } from '../../../helpers/vehicle-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleCustomer,
+} from '../../../helpers/vehicle-mock.factory';
 import { randomUUID } from 'node:crypto';
 
 describe('VehiclePresenter', () => {

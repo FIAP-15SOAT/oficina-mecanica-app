@@ -15,6 +15,7 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { existsBy } from '@infrastructure/database/prisma/prisma-exists.helper';
 
 @Injectable()
 export class PrismaPartSupplyRepository implements IPartSupplyRepository {
@@ -143,22 +144,13 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     await this.prisma.partSupply.delete({ where: { id } });
   }
 
-  async hasQuotePartSupplies(id: string): Promise<boolean> {
-    const record = await this.prisma.quotePartSupply.findFirst({
-      where: { partSupplyId: id },
-      select: { partSupplyId: true },
-    });
+  async isPartSupplyInUse(id: string): Promise<boolean> {
+    const [hasWorkOrders, hasQuotes] = await Promise.all([
+      existsBy(this.prisma.workOrderPartSupply, { partSupplyId: id }),
+      existsBy(this.prisma.quotePartSupply, { partSupplyId: id }),
+    ]);
 
-    return !!record;
-  }
-
-  async hasWorkOrderPartSupplies(id: string): Promise<boolean> {
-    const record = await this.prisma.workOrderPartSupply.findFirst({
-      where: { partSupplyId: id },
-      select: { partSupplyId: true },
-    });
-
-    return !!record;
+    return hasWorkOrders || hasQuotes;
   }
 
   async incrementReservedStock(id: string, amount: number): Promise<void> {

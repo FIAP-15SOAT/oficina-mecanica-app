@@ -20,8 +20,7 @@ describe('DeleteServiceUseCase', () => {
     const service = createMockService();
 
     serviceRepository.findById.mockResolvedValue(service);
-    serviceRepository.hasWorkOrderServices.mockResolvedValue(false);
-    serviceRepository.hasQuoteServices.mockResolvedValue(false);
+    serviceRepository.isServiceInUse.mockResolvedValue(false);
     serviceRepository.delete.mockResolvedValue(undefined);
 
     await useCase.execute(service.id);
@@ -38,21 +37,10 @@ describe('DeleteServiceUseCase', () => {
     expect(serviceRepository.delete).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceConflictException when service has work order services', async () => {
+  it('should throw ResourceConflictException when service is already in use', async () => {
     const service = createMockService();
     serviceRepository.findById.mockResolvedValue(service);
-    serviceRepository.hasWorkOrderServices.mockResolvedValue(true);
-    serviceRepository.hasQuoteServices.mockResolvedValue(false);
-
-    await expect(useCase.execute(service.id)).rejects.toThrow(ResourceConflictException);
-    expect(serviceRepository.delete).not.toHaveBeenCalled();
-  });
-
-  it('should throw ResourceConflictException when service has quote services', async () => {
-    const service = createMockService();
-    serviceRepository.findById.mockResolvedValue(service);
-    serviceRepository.hasWorkOrderServices.mockResolvedValue(false);
-    serviceRepository.hasQuoteServices.mockResolvedValue(true);
+    serviceRepository.isServiceInUse.mockResolvedValue(true);
 
     await expect(useCase.execute(service.id)).rejects.toThrow(ResourceConflictException);
     expect(serviceRepository.delete).not.toHaveBeenCalled();

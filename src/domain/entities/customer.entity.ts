@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
-import { DocumentValidator } from '@infrastructure/validators/document.validator';
+import { DocumentValidator } from '../validators/document.validator';
 import { PHONE_REGEX } from '../constants/phone.regex';
 
 const MIN_NAME_LENGTH = 3;

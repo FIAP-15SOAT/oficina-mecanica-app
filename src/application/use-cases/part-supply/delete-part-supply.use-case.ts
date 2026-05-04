@@ -15,12 +15,9 @@ export class DeletePartSupplyUseCase implements IDeletePartSupplyUseCase {
 
     existing.ensureCanDelete();
 
-    const [hasWorkOrderPartSupplies, hasQuoteParts] = await Promise.all([
-      this.partSupplyRepository.hasWorkOrderPartSupplies(id),
-      this.partSupplyRepository.hasQuotePartSupplies(id),
-    ]);
+    const inUse = await this.partSupplyRepository.isPartSupplyInUse(id);
 
-    if (hasWorkOrderPartSupplies || hasQuoteParts) {
+    if (inUse) {
       throw new ResourceConflictException(
         'Peça ou insumo não pode ser excluído pois está vinculado a ordens de serviço ou orçamentos.',
       );

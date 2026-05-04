@@ -25,8 +25,7 @@ export function createMockServiceRepository(): jest.Mocked<IServiceRepository> {
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    hasWorkOrderServices: jest.fn(),
-    hasQuoteServices: jest.fn(),
+    isServiceInUse: jest.fn(),
     findServiceMetrics: jest.fn(),
     findAllServicesMetrics: jest.fn(),
   };

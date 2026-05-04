@@ -159,19 +159,19 @@ describe('PrismaVehicleRepository', () => {
     });
   });
 
-  describe('hasWorkOrders', () => {
+  describe('isVehicleInUse', () => {
     it('should return true if vehicle has work orders', async () => {
-      prisma.workOrder.findFirst.mockResolvedValue({ id: randomUUID() });
+      prisma.workOrder.count.mockResolvedValue(1);
 
-      const result = await repository.hasWorkOrders(randomUUID());
+      const result = await repository.isVehicleInUse(randomUUID());
 
       expect(result).toBe(true);
     });
 
     it('should return false if vehicle has no work orders', async () => {
-      prisma.workOrder.findFirst.mockResolvedValue(null);
+      prisma.workOrder.count.mockResolvedValue(0);
 
-      const result = await repository.hasWorkOrders(randomUUID());
+      const result = await repository.isVehicleInUse(randomUUID());
 
       expect(result).toBe(false);
     });

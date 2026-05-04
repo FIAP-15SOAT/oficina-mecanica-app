@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
-import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part.repository.interface';
+import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part-supply.repository.interface';
 
 @Injectable()
 export class PrismaWorkOrderPartSupplyRepository implements IWorkOrderPartSupplyRepository {

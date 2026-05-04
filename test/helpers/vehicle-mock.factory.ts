@@ -47,6 +47,6 @@ export function createMockVehicleRepository(): jest.Mocked<IVehicleRepository> {
     findAllByCustomerId: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    hasWorkOrders: jest.fn(),
+    isVehicleInUse: jest.fn(),
   };
 }

@@ -199,30 +199,25 @@ describe('PrismaCustomerRepository', () => {
     });
   });
 
-  describe('hasVehicles', () => {
+  describe('isCustomerInUse', () => {
     it('should return true if customer has vehicles', async () => {
-      prisma.vehicle.findFirst.mockResolvedValue({ id: randomUUID() });
-      const result = await repository.hasVehicles(randomUUID());
+      prisma.vehicle.count.mockResolvedValue(1);
+      prisma.workOrder.count.mockResolvedValue(0);
+      const result = await repository.isCustomerInUse(randomUUID());
       expect(result).toBe(true);
     });
 
-    it('should return false if customer has no vehicles', async () => {
-      prisma.vehicle.findFirst.mockResolvedValue(null);
-      const result = await repository.hasVehicles(randomUUID());
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('hasWorkOrders', () => {
     it('should return true if customer has work orders', async () => {
-      prisma.workOrder.findFirst.mockResolvedValue({ id: randomUUID() });
-      const result = await repository.hasWorkOrders(randomUUID());
+      prisma.vehicle.count.mockResolvedValue(0);
+      prisma.workOrder.count.mockResolvedValue(1);
+      const result = await repository.isCustomerInUse(randomUUID());
       expect(result).toBe(true);
     });
 
-    it('should return false if customer has no work orders', async () => {
-      prisma.workOrder.findFirst.mockResolvedValue(null);
-      const result = await repository.hasWorkOrders(randomUUID());
+    it('should return false if customer has no dependencies', async () => {
+      prisma.vehicle.count.mockResolvedValue(0);
+      prisma.workOrder.count.mockResolvedValue(0);
+      const result = await repository.isCustomerInUse(randomUUID());
       expect(result).toBe(false);
     });
   });

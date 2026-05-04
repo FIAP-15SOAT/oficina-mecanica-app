@@ -2,7 +2,7 @@ import { ICustomerRepository } from './customer.repository.interface';
 import { IVehicleRepository } from './vehicle.repository.interface';
 import { IWorkOrderRepository } from './work-order.repository.interface';
 import { IWorkOrderServiceRepository } from './work-order-service.repository.interface';
-import { IWorkOrderPartSupplyRepository } from './work-order-part.repository.interface';
+import { IWorkOrderPartSupplyRepository } from './work-order-part-supply.repository.interface';
 import { IQuoteRepository } from './quote.repository.interface';
 import { IQuoteServiceRepository } from './quote-service.repository.interface';
 import { IQuotePartSupplyRepository } from './quote-part-supply.repository.interface';

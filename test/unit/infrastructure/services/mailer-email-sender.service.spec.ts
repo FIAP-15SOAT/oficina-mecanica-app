@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailerService } from '@nestjs-modules/mailer';
 import { MailerEmailSenderService } from '@infrastructure/services/mailer-email-sender.service';
-import { ServiceIntegrationException } from '@infrastructure/exceptions/service-intergration.exception';
+import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 import { Logger } from '@nestjs/common';
 
 describe('MailerEmailSenderService', () => {

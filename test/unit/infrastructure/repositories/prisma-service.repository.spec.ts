@@ -271,49 +271,41 @@ describe('PrismaServiceRepository', () => {
     });
   });
 
-  describe('hasWorkOrderServices', () => {
-    it('should return true if record exists', async () => {
+  describe('isServiceInUse', () => {
+    it('should return true when service is referenced by a work order', async () => {
       const id = randomUUID();
-      prisma.workOrderService.findFirst.mockResolvedValue({ serviceId: id });
+      prisma.workOrderService.count.mockResolvedValue(1);
+      prisma.quoteService.count.mockResolvedValue(0);
 
-      const result = await repository.hasWorkOrderServices(id);
+      const result = await repository.isServiceInUse(id);
 
       expect(result).toBe(true);
-      expect(prisma.workOrderService.findFirst).toHaveBeenCalledWith({
+      expect(prisma.workOrderService.count).toHaveBeenCalledWith({
         where: { serviceId: id },
-        select: { serviceId: true },
+        take: 1,
+      });
+      expect(prisma.quoteService.count).toHaveBeenCalledWith({
+        where: { serviceId: id },
+        take: 1,
       });
     });
 
-    it('should return false if record does not exist', async () => {
+    it('should return true when service is referenced by a quote', async () => {
       const id = randomUUID();
-      prisma.workOrderService.findFirst.mockResolvedValue(null);
+      prisma.workOrderService.count.mockResolvedValue(0);
+      prisma.quoteService.count.mockResolvedValue(1);
 
-      const result = await repository.hasWorkOrderServices(id);
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('hasQuoteServices', () => {
-    it('should return true if record exists', async () => {
-      const id = randomUUID();
-      prisma.quoteService.findFirst.mockResolvedValue({ serviceId: id });
-
-      const result = await repository.hasQuoteServices(id);
+      const result = await repository.isServiceInUse(id);
 
       expect(result).toBe(true);
-      expect(prisma.quoteService.findFirst).toHaveBeenCalledWith({
-        where: { serviceId: id },
-        select: { serviceId: true },
-      });
     });
 
-    it('should return false if record does not exist', async () => {
+    it('should return false when no references exist', async () => {
       const id = randomUUID();
-      prisma.quoteService.findFirst.mockResolvedValue(null);
+      prisma.workOrderService.count.mockResolvedValue(0);
+      prisma.quoteService.count.mockResolvedValue(0);
 
-      const result = await repository.hasQuoteServices(id);
+      const result = await repository.isServiceInUse(id);
 
       expect(result).toBe(false);
     });

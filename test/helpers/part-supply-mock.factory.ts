@@ -38,7 +38,6 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     decrementReservedStock: jest.fn(),
     decrementStock: jest.fn(),
     delete: jest.fn(),
-    hasQuotePartSupplies: jest.fn(),
-    hasWorkOrderPartSupplies: jest.fn(),
+    isPartSupplyInUse: jest.fn(),
   };
 }

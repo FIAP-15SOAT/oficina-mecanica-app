@@ -18,8 +18,7 @@ describe('DeleteCustomerUseCase', () => {
 
   it('should delete customer when no dependencies exist', async () => {
     customerRepository.findById.mockResolvedValue(createMockCustomer());
-    customerRepository.hasVehicles.mockResolvedValue(false);
-    customerRepository.hasWorkOrders.mockResolvedValue(false);
+    customerRepository.isCustomerInUse.mockResolvedValue(false);
     customerRepository.delete.mockResolvedValue(undefined);
 
     await expect(useCase.execute('some-id')).resolves.toBeUndefined();
@@ -33,19 +32,9 @@ describe('DeleteCustomerUseCase', () => {
     expect(customerRepository.delete).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceConflictException when customer has vehicles', async () => {
+  it('should throw ResourceConflictException when customer is in use', async () => {
     customerRepository.findById.mockResolvedValue(createMockCustomer());
-    customerRepository.hasVehicles.mockResolvedValue(true);
-    customerRepository.hasWorkOrders.mockResolvedValue(false);
-
-    await expect(useCase.execute('some-id')).rejects.toThrow(ResourceConflictException);
-    expect(customerRepository.delete).not.toHaveBeenCalled();
-  });
-
-  it('should throw ResourceConflictException when customer has work orders', async () => {
-    customerRepository.findById.mockResolvedValue(createMockCustomer());
-    customerRepository.hasVehicles.mockResolvedValue(false);
-    customerRepository.hasWorkOrders.mockResolvedValue(true);
+    customerRepository.isCustomerInUse.mockResolvedValue(true);
 
     await expect(useCase.execute('some-id')).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.delete).not.toHaveBeenCalled();

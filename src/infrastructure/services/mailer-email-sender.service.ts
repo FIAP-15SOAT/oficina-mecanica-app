@@ -4,7 +4,7 @@ import {
   IEmailSenderService,
   SendEmailInput,
 } from '@domain/interfaces/services/email-sender.service.interface';
-import { ServiceIntegrationException } from '@infrastructure/exceptions/service-intergration.exception';
+import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 
 @Injectable()
 export class MailerEmailSenderService implements IEmailSenderService {

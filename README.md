@@ -36,7 +36,8 @@ src/
 │   ├── entities/                    # Entidades ricas com validação de domínio
 │   ├── enums/                       # Enums de negócio (UserRole, WorkOrderStatus, QuoteStatus, etc.)
 │   ├── exceptions/                  # DomainValidationException, EntityNotFoundException, BusinessRuleViolationException
-│   └── interfaces/                  # Contratos de repositórios e DTOs de use-cases
+│   ├── interfaces/                  # Contratos de repositórios e DTOs de use-cases
+│   └── validators/                  # DocumentValidator (validação de CPF e CNPJ com dígito verificador)
 │
 ├── application/                     # Camada de aplicação (orquestração de casos de uso)
 │   ├── use-cases/
@@ -61,7 +62,7 @@ src/
 │   ├── pipes/                       # SanitizeStringsPipe (global — sanitiza strings em DTOs)
 │   ├── repositories/                # Implementações Prisma de todos os repositórios + PrismaUnitOfWork
 │   ├── services/                    # BcryptHashService, JwtTokenService, MailerEmailSenderService
-│   └── validators/                  # DocumentValidator (validação de CPF e CNPJ com dígito verificador)
+│   └── validators/                  # IsValidCpfCnpj / IsValidCpfCnpjConstraint (adapter class-validator que delega ao DocumentValidator do domain)
 │
 ├── presentation/                    # Camada de apresentação (controllers, DTOs, presenters)
 │   ├── auth/                        # AuthController + DTOs
@@ -80,8 +81,8 @@ src/
 
 test/
 ├── helpers/                         # Factories de mocks reutilizáveis por entidade (incluindo UnitOfWorkMockFactory)
-├── unit/                            # 127 suites de testes unitários (espelham src/)
-│   ├── domain/entities/
+├── unit/                            # 129 suites de testes unitários (espelham src/)
+│   ├── domain/                      # entities/, validators/
 │   ├── application/use-cases/
 │   ├── infrastructure/              # auth, exceptions, filters, interceptors, mappers, pipes, repositories, services, validators
 │   └── presentation/               # controllers e presenters

@@ -1,4 +1,4 @@
-import { ServiceIntegrationException } from '@infrastructure/exceptions/service-intergration.exception';
+import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 import { InfrastructureException } from '@infrastructure/exceptions/infrastructure.exception';
 
 describe('ServiceIntegrationException', () => {

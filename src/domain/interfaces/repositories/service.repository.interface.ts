@@ -22,8 +22,7 @@ export interface IServiceRepository {
   ): Promise<PaginatedRepositoryResult<Service>>;
   update(id: string, data: Partial<Service>): Promise<Service>;
   delete(id: string): Promise<void>;
-  hasWorkOrderServices(serviceId: string): Promise<boolean>;
-  hasQuoteServices(serviceId: string): Promise<boolean>;
+  isServiceInUse(serviceId: string): Promise<boolean>;
   findServiceMetrics(serviceId: string): Promise<ServiceMetrics>;
   findAllServicesMetrics(
     input: PaginationInput,

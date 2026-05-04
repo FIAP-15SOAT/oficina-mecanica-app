@@ -13,12 +13,9 @@ export class DeleteCustomerUseCase implements IDeleteCustomerUseCase {
       throw new ResourceNotFoundException('Cliente', id);
     }
 
-    const [hasVehicles, hasWorkOrders] = await Promise.all([
-      this.customerRepository.hasVehicles(id),
-      this.customerRepository.hasWorkOrders(id),
-    ]);
+    const inUse = await this.customerRepository.isCustomerInUse(id);
 
-    if (hasVehicles || hasWorkOrders) {
+    if (inUse) {
       throw new ResourceConflictException(
         'Cliente possui veículos cadastrados ou o rdens de serviço e não pode ser excluído.',
       );

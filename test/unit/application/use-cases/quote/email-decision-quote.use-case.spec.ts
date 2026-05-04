@@ -5,6 +5,7 @@ import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
+import { TokenType } from '@domain/enums/token-type.enum';
 import { randomUUID } from 'node:crypto';
 
 describe('EmailDecisionQuoteUseCase', () => {
@@ -40,7 +41,7 @@ describe('EmailDecisionQuoteUseCase', () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.APPROVE,
-      type: 'quote-email-decision',
+      type: TokenType.QUOTE_EMAIL_DECISION,
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
     approveUseCase.execute.mockResolvedValue({ id: quoteId } as unknown as Quote);
@@ -56,7 +57,7 @@ describe('EmailDecisionQuoteUseCase', () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.REJECT,
-      type: 'quote-email-decision',
+      type: TokenType.QUOTE_EMAIL_DECISION,
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
     rejectUseCase.execute.mockResolvedValue({ id: quoteId } as unknown as Quote);
@@ -101,7 +102,7 @@ describe('EmailDecisionQuoteUseCase', () => {
     const payload = {
       quoteId: 'different-id',
       action: QuoteDecisionAction.APPROVE,
-      type: 'quote-email-decision',
+      type: TokenType.QUOTE_EMAIL_DECISION,
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
 
@@ -114,7 +115,7 @@ describe('EmailDecisionQuoteUseCase', () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.REJECT,
-      type: 'quote-email-decision',
+      type: TokenType.QUOTE_EMAIL_DECISION,
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
 

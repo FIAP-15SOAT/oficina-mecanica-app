@@ -12,6 +12,7 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { existsBy } from '@infrastructure/database/prisma/prisma-exists.helper';
 
 @Injectable()
 export class PrismaVehicleRepository implements IVehicleRepository {
@@ -106,12 +107,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
     await this.prisma.vehicle.delete({ where: { id } });
   }
 
-  async hasWorkOrders(id: string): Promise<boolean> {
-    const workOrder = await this.prisma.workOrder.findFirst({
-      where: { vehicleId: id },
-      select: { id: true },
-    });
-
-    return !!workOrder;
+  async isVehicleInUse(id: string): Promise<boolean> {
+    return existsBy(this.prisma.workOrder, { vehicleId: id });
   }
 }

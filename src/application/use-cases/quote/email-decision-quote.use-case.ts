@@ -4,6 +4,7 @@ import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
 import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
+import { TokenType } from '@domain/enums/token-type.enum';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
 interface QuoteEmailDecisionTokenPayload {
@@ -49,7 +50,7 @@ export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
     action: string,
   ): void {
     if (
-      payload.type !== 'quote-email-decision' ||
+      payload.type !== (TokenType.QUOTE_EMAIL_DECISION as string) ||
       payload.quoteId !== quoteId ||
       payload.action !== action
     ) {

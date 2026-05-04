@@ -371,32 +371,27 @@ describe('PrismaPartSupplyRepository', () => {
     });
   });
 
-  describe('hasQuotePartSupplies', () => {
-    it('should return true if associated with quotes', async () => {
-      const id = randomUUID();
-      prisma.quotePartSupply.findFirst.mockResolvedValue({ partSupplyId: id });
-      const result = await repository.hasQuotePartSupplies(id);
-      expect(result).toBe(true);
-    });
-
-    it('should return false if not associated with quotes', async () => {
-      prisma.quotePartSupply.findFirst.mockResolvedValue(null);
-      const result = await repository.hasQuotePartSupplies(randomUUID());
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('hasWorkOrderPartSupplies', () => {
+  describe('isPartSupplyInUse', () => {
     it('should return true if associated with work orders', async () => {
       const id = randomUUID();
-      prisma.workOrderPartSupply.findFirst.mockResolvedValue({ partSupplyId: id });
-      const result = await repository.hasWorkOrderPartSupplies(id);
+      prisma.workOrderPartSupply.count.mockResolvedValue(1);
+      prisma.quotePartSupply.count.mockResolvedValue(0);
+      const result = await repository.isPartSupplyInUse(id);
       expect(result).toBe(true);
     });
 
-    it('should return false if not associated with work orders', async () => {
-      prisma.workOrderPartSupply.findFirst.mockResolvedValue(null);
-      const result = await repository.hasWorkOrderPartSupplies(randomUUID());
+    it('should return true if associated with quotes', async () => {
+      const id = randomUUID();
+      prisma.workOrderPartSupply.count.mockResolvedValue(0);
+      prisma.quotePartSupply.count.mockResolvedValue(1);
+      const result = await repository.isPartSupplyInUse(id);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if not associated with work orders or quotes', async () => {
+      prisma.workOrderPartSupply.count.mockResolvedValue(0);
+      prisma.quotePartSupply.count.mockResolvedValue(0);
+      const result = await repository.isPartSupplyInUse(randomUUID());
       expect(result).toBe(false);
     });
   });

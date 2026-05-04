@@ -2,7 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nest
 import { Response } from 'express';
 import { InfrastructureException } from '../exceptions/infrastructure.exception';
 import { AuthenticationFailedException } from '../exceptions/authentication-failed.exception';
-import { ServiceIntegrationException } from '@infrastructure/exceptions/service-intergration.exception';
+import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
 
 @Catch(InfrastructureException)

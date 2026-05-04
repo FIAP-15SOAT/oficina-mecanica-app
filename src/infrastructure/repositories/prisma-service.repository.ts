@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, Service as PrismaServiceModel } from '@generated/client';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Service } from '@domain/entities/service.entity';
+import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import {
   IServiceRepository,
   ServiceFilters,
@@ -15,6 +16,7 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { existsBy } from '@infrastructure/database/prisma/prisma-exists.helper';
 
 @Injectable()
 export class PrismaServiceRepository implements IServiceRepository {
@@ -97,22 +99,13 @@ export class PrismaServiceRepository implements IServiceRepository {
     await this.prisma.service.delete({ where: { id } });
   }
 
-  async hasWorkOrderServices(serviceId: string): Promise<boolean> {
-    const record = await this.prisma.workOrderService.findFirst({
-      where: { serviceId },
-      select: { serviceId: true },
-    });
+  async isServiceInUse(serviceId: string): Promise<boolean> {
+    const [workOrderUsage, quoteUsage] = await Promise.all([
+      existsBy(this.prisma.workOrderService, { serviceId }),
+      existsBy(this.prisma.quoteService, { serviceId }),
+    ]);
 
-    return !!record;
-  }
-
-  async hasQuoteServices(serviceId: string): Promise<boolean> {
-    const record = await this.prisma.quoteService.findFirst({
-      where: { serviceId },
-      select: { serviceId: true },
-    });
-
-    return !!record;
+    return workOrderUsage || quoteUsage;
   }
 
   async findServiceMetrics(serviceId: string): Promise<ServiceMetrics> {
@@ -135,7 +128,7 @@ export class PrismaServiceRepository implements IServiceRepository {
       LEFT JOIN work_order_services wos
         ON wos.service_id = s.id
       WHERE s.id = ${serviceId}
-        AND wos.status = 'COMPLETED'
+        AND wos.status = ${WorkOrderServiceStatus.COMPLETED}::"WorkOrderServiceStatus"
         AND wos.started_at IS NOT NULL
         AND wos.finished_at IS NOT NULL
       GROUP BY s.id, s.name
@@ -182,7 +175,7 @@ export class PrismaServiceRepository implements IServiceRepository {
           ) AS avg_minutes
         FROM services s
         LEFT JOIN work_order_services wos
-          ON wos.service_id = s.id AND wos.status = 'COMPLETED'
+          ON wos.service_id = s.id AND wos.status = ${WorkOrderServiceStatus.COMPLETED}::"WorkOrderServiceStatus"
           AND wos.started_at IS NOT NULL
           AND wos.finished_at IS NOT NULL
         GROUP BY s.id, s.name

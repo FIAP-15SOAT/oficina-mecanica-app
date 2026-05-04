@@ -8,11 +8,14 @@ export class DeleteVehicleUseCase implements IDeleteVehicleUseCase {
 
   async execute(id: string): Promise<void> {
     const existing = await this.vehicleRepository.findById(id);
+
     if (!existing) {
       throw new ResourceNotFoundException('Veículo', id);
     }
-    const hasWorkOrders = await this.vehicleRepository.hasWorkOrders(id);
-    if (hasWorkOrders) {
+
+    const inUse = await this.vehicleRepository.isVehicleInUse(id);
+
+    if (inUse) {
       throw new ResourceConflictException(
         'Veículo possui ordens de serviço e não pode ser excluído.',
       );

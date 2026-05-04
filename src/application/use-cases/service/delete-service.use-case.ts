@@ -12,12 +12,9 @@ export class DeleteServiceUseCase {
       throw new ResourceNotFoundException('Serviço', id);
     }
 
-    const [hasWorkOrders, hasQuotes] = await Promise.all([
-      this.serviceRepository.hasWorkOrderServices(id),
-      this.serviceRepository.hasQuoteServices(id),
-    ]);
+    const inUse = await this.serviceRepository.isServiceInUse(id);
 
-    if (hasWorkOrders || hasQuotes) {
+    if (inUse) {
       throw new ResourceConflictException(
         'Serviço não pode ser excluído pois está vinculado a ordens de serviço ou orçamentos.',
       );

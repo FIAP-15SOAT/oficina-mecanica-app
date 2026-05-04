@@ -138,20 +138,21 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('generateNextNumber', () => {
-    it('should return 000001 when count is 0', async () => {
-      prisma.workOrder.count.mockResolvedValue(0);
+    it('should return the next padded value from the sequence', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ next: 1n }]);
 
       const result = await repository.generateNextNumber();
 
       expect(result).toBe('000001');
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
-    it('should increment the current count', async () => {
-      prisma.workOrder.count.mockResolvedValue(5);
+    it('should pad larger sequence values to 6 digits', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ next: 42n }]);
 
       const result = await repository.generateNextNumber();
 
-      expect(result).toBe('000006');
+      expect(result).toBe('000042');
     });
   });
 });

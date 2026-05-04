@@ -12,6 +12,7 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { existsBy } from '@infrastructure/database/prisma/prisma-exists.helper';
 
 const ADDRESS_INCLUDE = { address: true } as const;
 
@@ -140,19 +141,12 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     await this.prisma.customer.delete({ where: { id } });
   }
 
-  async hasVehicles(id: string): Promise<boolean> {
-    const vehicle = await this.prisma.vehicle.findFirst({
-      where: { customerId: id },
-      select: { id: true },
-    });
-    return !!vehicle;
-  }
+  async isCustomerInUse(id: string): Promise<boolean> {
+    const [hasVehicles, hasWorkOrders] = await Promise.all([
+      existsBy(this.prisma.vehicle, { customerId: id }),
+      existsBy(this.prisma.workOrder, { customerId: id }),
+    ]);
 
-  async hasWorkOrders(id: string): Promise<boolean> {
-    const workOrder = await this.prisma.workOrder.findFirst({
-      where: { customerId: id },
-      select: { id: true },
-    });
-    return !!workOrder;
+    return hasVehicles || hasWorkOrders;
   }
 }

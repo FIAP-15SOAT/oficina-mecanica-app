@@ -18,5 +18,5 @@ export interface IVehicleRepository {
   ): Promise<PaginatedRepositoryResult<Vehicle>>;
   update(id: string, data: Partial<Vehicle>): Promise<Vehicle>;
   delete(id: string): Promise<void>;
-  hasWorkOrders(id: string): Promise<boolean>;
+  isVehicleInUse(id: string): Promise<boolean>;
 }
