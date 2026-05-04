@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { UserRole } from '../enums/user-role.enum';
+import { EMAIL_REGEX } from '../constants/email.regex';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
 const MAX_EMAIL_LENGTH = 150;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_ROLES = Object.values(UserRole);
 
 export class User {

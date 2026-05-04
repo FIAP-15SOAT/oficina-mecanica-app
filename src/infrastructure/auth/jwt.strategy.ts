@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: TokenPayload): Promise<TokenPayload> {
     const user = await this.userRepository.findById(payload.sub);
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('Usuário inválido ou desativado');
     }
 

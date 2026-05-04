@@ -4,11 +4,10 @@ import { CustomerType } from '../enums/customer-type.enum';
 import { Address } from './address.entity';
 import { DocumentValidator } from '../validators/document.validator';
 import { PHONE_REGEX } from '../constants/phone.regex';
+import { EMAIL_REGEX } from '../constants/email.regex';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface AddressProps {
   street: string;

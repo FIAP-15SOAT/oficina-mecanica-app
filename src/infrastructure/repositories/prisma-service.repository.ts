@@ -145,7 +145,7 @@ export class PrismaServiceRepository implements IServiceRepository {
       serviceName: row.service_name,
       executionCount: Number(row.execution_count),
       averageTimeMinutes:
-        row?.avg_minutes == null ? null : parseFloat(Number(row.avg_minutes).toFixed(2)),
+        row?.avg_minutes == null ? null : Number.parseFloat(Number(row.avg_minutes).toFixed(2)),
     };
   }
 
@@ -192,7 +192,7 @@ export class PrismaServiceRepository implements IServiceRepository {
         serviceName: row.service_name,
         executionCount: Number(row.execution_count),
         averageTimeMinutes:
-          row.avg_minutes == null ? null : parseFloat(Number(row.avg_minutes).toFixed(2)),
+          row.avg_minutes == null ? null : Number.parseFloat(Number(row.avg_minutes).toFixed(2)),
       })),
       total,
     };

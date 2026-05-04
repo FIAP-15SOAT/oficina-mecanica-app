@@ -27,7 +27,7 @@ export class RefreshTokenUseCase {
 
     const user = await this.userRepository.findById(payload.sub);
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedAccessException('Usuário inválido ou desativado');
     }
 

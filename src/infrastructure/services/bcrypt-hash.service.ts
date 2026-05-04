@@ -8,7 +8,10 @@ export class BcryptHashService implements IHashService {
   private readonly saltRounds: number;
 
   constructor(configService: ConfigService) {
-    this.saltRounds = parseInt(String(configService.get<number>('BCRYPT_SALT_ROUNDS', 12)), 10);
+    this.saltRounds = Number.parseInt(
+      String(configService.get<number>('BCRYPT_SALT_ROUNDS', 12)),
+      10,
+    );
   }
 
   async hash(value: string): Promise<string> {

@@ -78,7 +78,7 @@ export class Address {
   }
 
   private validateState(): void {
-    if (!this.state || this.state.length !== STATE_LENGTH) {
+    if (this.state?.length !== STATE_LENGTH) {
       throw new DomainValidationException('Estado deve ter exatamente 2 caracteres (ex: SP)');
     }
   }
