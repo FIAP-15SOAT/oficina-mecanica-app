@@ -1,3 +1,4 @@
+import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
@@ -34,9 +35,7 @@ export class StockPresenter {
       partSupply: item.partSupply
         ? StockPresenter.toMovementPartSupply(item)
         : ({ id: item.partSupplyId } as StockMovementPartSupplyDto),
-      workOrder: item.workOrder
-        ? StockPresenter.toMovementWorkOrder(item.workOrder)
-        : null,
+      workOrder: item.workOrder ? StockPresenter.toMovementWorkOrder(item.workOrder) : null,
       type: item.type,
       quantity: item.quantity,
       reason: item.reason ?? null,
@@ -58,8 +57,7 @@ export class StockPresenter {
     };
   }
 
-  private static toMovementPartSupply(item: StockMovement): StockMovementPartSupplyDto {
-    const p = item.partSupply!;
+  private static mapPartSupplyData(p: PartSupply) {
     return {
       id: p.id,
       name: p.name,
@@ -72,49 +70,54 @@ export class StockPresenter {
     };
   }
 
+  private static toMovementPartSupply(item: StockMovement): StockMovementPartSupplyDto {
+    return StockPresenter.mapPartSupplyData(item.partSupply!);
+  }
+
   private static toReservationPartSupply(item: StockReservation): StockReservationPartSupplyDto {
-    const p = item.partSupply!;
+    return StockPresenter.mapPartSupplyData(item.partSupply!);
+  }
+
+  private static mapWorkOrderData(wo: WorkOrder) {
     return {
-      id: p.id,
-      name: p.name,
-      description: p.description ?? null,
-      sku: p.sku,
-      partNumber: p.partNumber ?? null,
-      category: p.category,
-      unit: p.unit,
-      quantity: p.stock,
+      id: wo.id,
+      number: wo.number,
+      customer: wo.customer
+        ? {
+            id: wo.customer.id,
+            name: wo.customer.name,
+            type: wo.customer.type,
+            document: wo.customer.document,
+            phone: wo.customer.phone,
+            email: wo.customer.email,
+          }
+        : null,
+      vehicle: wo.vehicle
+        ? {
+            id: wo.vehicle.id,
+            plate: wo.vehicle.plate,
+            brand: wo.vehicle.brand,
+            model: wo.vehicle.model,
+            year: wo.vehicle.year,
+            color: wo.vehicle.color ?? null,
+          }
+        : null,
+      assignedUser: wo.assignedUser
+        ? {
+            id: wo.assignedUser.id,
+            name: wo.assignedUser.name,
+            email: wo.assignedUser.email,
+            role: wo.assignedUser.role,
+          }
+        : null,
     };
   }
 
   private static toMovementWorkOrder(wo: WorkOrder): StockMovementWorkOrderDto {
-    return {
-      id: wo.id,
-      number: wo.number,
-      customer: wo.customer
-        ? { id: wo.customer.id, name: wo.customer.name, type: wo.customer.type, document: wo.customer.document, phone: wo.customer.phone, email: wo.customer.email }
-        : null,
-      vehicle: wo.vehicle
-        ? { id: wo.vehicle.id, plate: wo.vehicle.plate, brand: wo.vehicle.brand, model: wo.vehicle.model, year: wo.vehicle.year, color: wo.vehicle.color ?? null }
-        : null,
-      assignedUser: wo.assignedUser
-        ? { id: wo.assignedUser.id, name: wo.assignedUser.name, email: wo.assignedUser.email, role: wo.assignedUser.role }
-        : null,
-    };
+    return StockPresenter.mapWorkOrderData(wo);
   }
 
   private static toReservationWorkOrder(wo: WorkOrder): StockReservationWorkOrderDto {
-    return {
-      id: wo.id,
-      number: wo.number,
-      customer: wo.customer
-        ? { id: wo.customer.id, name: wo.customer.name, type: wo.customer.type, document: wo.customer.document, phone: wo.customer.phone, email: wo.customer.email }
-        : null,
-      vehicle: wo.vehicle
-        ? { id: wo.vehicle.id, plate: wo.vehicle.plate, brand: wo.vehicle.brand, model: wo.vehicle.model, year: wo.vehicle.year, color: wo.vehicle.color ?? null }
-        : null,
-      assignedUser: wo.assignedUser
-        ? { id: wo.assignedUser.id, name: wo.assignedUser.name, email: wo.assignedUser.email, role: wo.assignedUser.role }
-        : null,
-    };
+    return StockPresenter.mapWorkOrderData(wo);
   }
 }
