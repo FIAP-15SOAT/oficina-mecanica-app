@@ -268,73 +268,73 @@ Após iniciar a aplicação:
 
 **Usuários** (`/api/users`) — *ADMIN*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/` | Criar usuário |
-| GET | `/` | Listar (paginado) |
-| GET | `/:id` | Buscar por ID |
-| PUT | `/:id` | Atualizar dados |
-| PATCH | `/:id` | Alterar status (ativo/inativo) |
-| DELETE | `/:id` | Remover |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/` | Criar usuário | ADMIN |
+| GET | `/` | Listar (paginado) | ADMIN |
+| GET | `/:id` | Buscar por ID | ADMIN |
+| PUT | `/:id` | Atualizar dados | ADMIN |
+| PATCH | `/:id` | Alterar status (ativo/inativo) | ADMIN |
+| DELETE | `/:id` | Remover | ADMIN |
 
 ---
 
-**Serviços** (`/api/services`) — *ADMIN*
+**Serviços** (`/api/services`)
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/` | Cadastrar serviço |
-| GET | `/` | Listar (paginado) |
-| GET | `/:id` | Buscar por ID |
-| GET | `/:id/metrics` | Métricas de uso do serviço |
-| PUT | `/:id` | Atualizar |
-| DELETE | `/:id` | Remover |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/` | Cadastrar serviço | ADMIN |
+| GET | `/` | Listar (paginado) | ADMIN, MECHANIC, ATTENDANT |
+| GET | `/:id` | Buscar por ID | ADMIN |
+| GET | `/:id/metrics` | Métricas de uso do serviço | ADMIN |
+| PUT | `/:id` | Atualizar | ADMIN |
+| DELETE | `/:id` | Remover | ADMIN |
 
 ---
 
 **Métricas de Serviços** (`/api/services-metrics`) — *ADMIN*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/` | Listar métricas de todos os serviços (paginado) |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| GET | `/` | Listar métricas de todos os serviços (paginado) | ADMIN |
 
 ---
 
-**Peças e Insumos** (`/api/parts-supplies`) — *ADMIN*
+**Peças e Insumos** (`/api/parts-supplies`)
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/` | Cadastrar peça ou insumo |
-| GET | `/` | Listar estoque (paginado; filtros: name, sku, category, isActive, lowStock) |
-| GET | `/:id` | Buscar por ID |
-| PUT | `/:id` | Atualizar dados |
-| PATCH | `/:id/stock` | Movimentar estoque (`ENTRY` / `EXIT` / `ADJUSTMENT`) |
-| DELETE | `/:id` | Remover |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/` | Cadastrar peça ou insumo | ADMIN |
+| GET | `/` | Listar estoque (paginado; filtros: name, sku, category, isActive, lowStock) | ADMIN, MECHANIC, ATTENDANT |
+| GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
+| PUT | `/:id` | Atualizar dados | ADMIN |
+| PATCH | `/:id` | Movimentar estoque (`ENTRY` / `EXIT` / `ADJUSTMENT`) | ADMIN, ATTENDANT |
+| DELETE | `/:id` | Remover | ADMIN |
 
 ---
 
 **Clientes** (`/api/customers`) — *ADMIN, ATTENDANT*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório) |
-| GET | `/` | Listar (paginado; filtros: name, type, document) |
-| GET | `/:id` | Buscar por ID |
-| GET | `/:id/vehicles` | Listar veículos do cliente (paginado) |
-| PUT | `/:id` | Atualizar dados (incluindo endereço) |
-| DELETE | `/:id` | Remover (bloqueado se houver veículos vinculados) |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório) | ADMIN, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: name, type, document) | ADMIN, ATTENDANT |
+| GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
+| GET | `/:id/vehicles` | Listar veículos do cliente (paginado) | ADMIN, ATTENDANT |
+| PUT | `/:id` | Atualizar dados (incluindo endereço) | ADMIN, ATTENDANT |
+| DELETE | `/:id` | Remover (bloqueado se houver veículos vinculados) | ADMIN, ATTENDANT |
 
 ---
 
 **Veículos** (`/api/vehicles`) — *ADMIN, ATTENDANT*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/` | Cadastrar veículo (placa `ABC-1234` ou Mercosul `ABC1D23`) |
-| GET | `/` | Listar (paginado; filtros: plate, brand, customerId) |
-| GET | `/:id` | Buscar por ID (retorna cliente aninhado) |
-| PUT | `/:id` | Atualizar dados (placa normalizada para maiúsculas) |
-| DELETE | `/:id` | Remover (bloqueado se houver ordens de serviço vinculadas) |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/` | Cadastrar veículo (placa `ABC-1234` ou Mercosul `ABC1D23`) | ADMIN, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: plate, brand, customerId) | ADMIN, ATTENDANT |
+| GET | `/:id` | Buscar por ID (retorna cliente aninhado) | ADMIN, ATTENDANT |
+| PUT | `/:id` | Atualizar dados (placa normalizada para maiúsculas) | ADMIN, ATTENDANT |
+| DELETE | `/:id` | Remover (bloqueado se houver ordens de serviço vinculadas) | ADMIN, ATTENDANT |
 
 ---
 
@@ -342,7 +342,7 @@ Após iniciar a aplicação:
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/` | Criar nova OS (`userId` extraído do JWT) | ADMIN, MECHANIC, ATTENDANT |
+| POST | `/` | Criar nova OS (`userId` extraído do JWT) | ADMIN, ATTENDANT |
 | GET | `/` | Listar (paginado; filtros: status, customerId, vehicleId, assignedUserId) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, MECHANIC, ATTENDANT |
 | PUT | `/:id` | Atualizar OS (`userId` extraído do JWT) | ADMIN, MECHANIC, ATTENDANT |
@@ -378,17 +378,17 @@ Status do orçamento: `PENDING` → `SENT` → `APPROVED` / `REJECTED`
 
 **Movimentações de Estoque** (`/api/stock-movements`) — *ADMIN, ATTENDANT*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/` | Listar movimentações (paginado; filtros: partSupplyId, type, workOrderId) |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| GET | `/` | Listar movimentações (paginado; filtros: partSupplyId, type, workOrderId) | ADMIN, ATTENDANT |
 
 ---
 
 **Reservas de Estoque** (`/api/stock-reservations`) — *ADMIN, ATTENDANT*
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/` | Listar reservas ativas (paginado; filtros: partSupplyId, workOrderId) |
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| GET | `/` | Listar reservas ativas (paginado; filtros: partSupplyId, workOrderId) | ADMIN, ATTENDANT |
 
 ---
 
@@ -431,7 +431,7 @@ npm test          # executa os testes
 npm run test:cov  # com relatório de cobertura
 ```
 
-127 suites cobrindo todas as camadas (`application/`, `domain/`, `infrastructure/`, `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks estão em `test/helpers/`.
+129 suites cobrindo todas as camadas (`application/`, `domain/`, `infrastructure/`, `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks estão em `test/helpers/`.
 
 ### E2E
 
