@@ -1,5 +1,6 @@
 import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
 import { Vehicle } from '@domain/entities/vehicle.entity';
+import { Customer } from '@domain/entities/customer.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { randomUUID } from 'node:crypto';
@@ -10,7 +11,7 @@ describe('PrismaVehicleRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaVehicleRepository(prisma as any);
+    repository = new PrismaVehicleRepository(prisma);
   });
 
   describe('create', () => {
@@ -23,10 +24,12 @@ describe('PrismaVehicleRepository', () => {
         year: 2020,
       });
 
-      prisma.vehicle.create.mockResolvedValue(createMockVehicle({
-        ...vehicle,
-        customer: { id: vehicle.customerId, name: 'John' } as any,
-      }));
+      prisma.vehicle.create.mockResolvedValue(
+        createMockVehicle({
+          ...vehicle,
+          customer: { id: vehicle.customerId, name: 'John' } as unknown as Customer,
+        }),
+      );
 
       const result = await repository.create(vehicle);
 
@@ -38,11 +41,13 @@ describe('PrismaVehicleRepository', () => {
   describe('findById', () => {
     it('should return a vehicle when found', async () => {
       const id = randomUUID();
-      prisma.vehicle.findUnique.mockResolvedValue(createMockVehicle({
-        id,
-        plate: 'ABC-1234',
-        customer: { id: randomUUID(), name: 'John' } as any,
-      }));
+      prisma.vehicle.findUnique.mockResolvedValue(
+        createMockVehicle({
+          id,
+          plate: 'ABC-1234',
+          customer: { id: randomUUID(), name: 'John' } as unknown as Customer,
+        }),
+      );
 
       const result = await repository.findById(id);
 
@@ -79,7 +84,11 @@ describe('PrismaVehicleRepository', () => {
     it('should filter by customerId', async () => {
       const customerId = randomUUID();
       prisma.vehicle.findMany.mockResolvedValue([
-        createMockVehicle({ id: randomUUID(), customerId, customer: { id: customerId, name: 'John' } as any }),
+        createMockVehicle({
+          id: randomUUID(),
+          customerId,
+          customer: { id: customerId, name: 'John' } as unknown as Customer,
+        }),
       ]);
       prisma.vehicle.count.mockResolvedValue(1);
 
@@ -95,7 +104,10 @@ describe('PrismaVehicleRepository', () => {
       prisma.vehicle.findMany.mockResolvedValue([]);
       prisma.vehicle.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { brand: 'Toyota', plate: 'ABC-1234' });
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { brand: 'Toyota', plate: 'ABC-1234' },
+      );
 
       expect(prisma.vehicle.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -121,11 +133,13 @@ describe('PrismaVehicleRepository', () => {
         mileage: 10000,
       };
 
-      prisma.vehicle.update.mockResolvedValue(createMockVehicle({
-        id,
-        ...data,
-        customer: { id: data.customerId, name: 'John' } as any,
-      }));
+      prisma.vehicle.update.mockResolvedValue(
+        createMockVehicle({
+          id,
+          ...data,
+          customer: { id: data.customerId, name: 'John' } as unknown as Customer,
+        }),
+      );
 
       const result = await repository.update(id, data);
 
@@ -167,8 +181,14 @@ describe('PrismaVehicleRepository', () => {
     it('should return all vehicles for a customer', async () => {
       const customerId = randomUUID();
       const mockVehicles = [
-        createMockVehicle({ customerId, customer: { id: customerId, name: 'John' } as any }),
-        createMockVehicle({ customerId, customer: { id: customerId, name: 'John' } as any }),
+        createMockVehicle({
+          customerId,
+          customer: { id: customerId, name: 'John' } as unknown as Customer,
+        }),
+        createMockVehicle({
+          customerId,
+          customer: { id: customerId, name: 'John' } as unknown as Customer,
+        }),
       ];
       prisma.vehicle.findMany.mockResolvedValue(mockVehicles);
 

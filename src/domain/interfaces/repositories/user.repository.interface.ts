@@ -1,6 +1,9 @@
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 
 export interface UserFilters {
   role?: UserRole;

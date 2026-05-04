@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { ITokenService, TokenPair, TokenPayload } from '@domain/interfaces/services/token.service.interface';
+import {
+  ITokenService,
+  TokenPair,
+  TokenPayload,
+} from '@domain/interfaces/services/token.service.interface';
 
 @Injectable()
 export class JwtTokenService implements ITokenService {
@@ -41,7 +45,10 @@ export class JwtTokenService implements ITokenService {
   }
 
   signWithSecret(payload: Record<string, unknown>, secret: string, expiresIn: string): string {
-    return this.jwtService.sign(payload as object, { secret, expiresIn: expiresIn as any });
+    return this.jwtService.sign(payload as object, {
+      secret,
+      expiresIn: expiresIn as unknown as `${number}m`,
+    });
   }
 
   verifyWithSecret<T extends object = Record<string, unknown>>(token: string, secret: string): T {

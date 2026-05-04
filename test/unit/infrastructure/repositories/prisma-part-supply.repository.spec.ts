@@ -5,8 +5,6 @@ import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PrismaPartSupplyRepository } from '@infrastructure/repositories/prisma-part-supply.repository';
-import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
-
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 
@@ -54,9 +52,7 @@ describe('PrismaPartSupplyRepository', () => {
       });
       prisma.partSupply.create.mockRejectedValue(error);
 
-      await expect(repository.create(partSupply as any)).rejects.toThrow(
-        'Peça ou insumo já cadastrado',
-      );
+      await expect(repository.create(partSupply)).rejects.toThrow('Peça ou insumo já cadastrado');
     });
 
     it('should rethrow unknown errors', async () => {
@@ -64,9 +60,7 @@ describe('PrismaPartSupplyRepository', () => {
       const error = new Error('Database connection failed');
       prisma.partSupply.create.mockRejectedValue(error);
 
-      await expect(repository.create(partSupply as any)).rejects.toThrow(
-        'Database connection failed',
-      );
+      await expect(repository.create(partSupply)).rejects.toThrow('Database connection failed');
     });
   });
 
@@ -187,7 +181,10 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { category: PartSupplyCategory.PART });
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { category: PartSupplyCategory.PART },
+      );
 
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { category: PartSupplyCategory.PART } }),
@@ -364,9 +361,7 @@ describe('PrismaPartSupplyRepository', () => {
   describe('delete', () => {
     it('should delete the part supply', async () => {
       const id = randomUUID();
-      prisma.partSupply.delete.mockResolvedValue(
-        createMockPartSupply({ id }),
-      );
+      prisma.partSupply.delete.mockResolvedValue(createMockPartSupply({ id }));
 
       await repository.delete(id);
 

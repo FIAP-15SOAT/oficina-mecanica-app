@@ -7,7 +7,10 @@ import {
   StockReservationFilters,
 } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 import { StockReservationMapper } from '@infrastructure/mappers/stock-reservation.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 const STOCK_RESERVATION_INCLUDE = {
@@ -23,7 +26,7 @@ const STOCK_RESERVATION_INCLUDE = {
 
 @Injectable()
 export class PrismaStockReservationRepository implements IStockReservationRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createMany(reservations: StockReservation[]): Promise<void> {
     await this.prisma.stockReservation.createMany({
@@ -63,7 +66,9 @@ export class PrismaStockReservationRepository implements IStockReservationReposi
     );
 
     return {
-      items: result.items.map((r) => StockReservationMapper.toDomain(r as Parameters<typeof StockReservationMapper.toDomain>[0])),
+      items: result.items.map((r) =>
+        StockReservationMapper.toDomain(r as Parameters<typeof StockReservationMapper.toDomain>[0]),
+      ),
       total: result.total,
     };
   }

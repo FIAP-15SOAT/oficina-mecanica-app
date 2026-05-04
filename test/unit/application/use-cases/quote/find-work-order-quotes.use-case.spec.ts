@@ -14,10 +14,10 @@ describe('FindWorkOrderQuotesUseCase', () => {
   beforeEach(() => {
     quoteRepository = {
       findByWorkOrderId: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<IQuoteRepository>;
     workOrderRepository = {
       findById: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<IWorkOrderRepository>;
     useCase = new FindWorkOrderQuotesUseCase(quoteRepository, workOrderRepository);
   });
 

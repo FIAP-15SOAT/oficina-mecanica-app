@@ -13,7 +13,7 @@ const PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
 ]);
 
 export class UpdateWorkOrderStatusUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(id: string, dto: UpdateWorkOrderStatusDto): Promise<WorkOrder> {
     return this.unitOfWork.executeTransaction(async (repos) => {

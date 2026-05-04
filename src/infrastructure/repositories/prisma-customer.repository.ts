@@ -7,14 +7,17 @@ import {
 } from '@domain/interfaces/repositories/customer.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { CustomerMapper } from '@infrastructure/mappers/customer.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 const ADDRESS_INCLUDE = { address: true } as const;
 
 @Injectable()
 export class PrismaCustomerRepository implements ICustomerRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(customer: Customer): Promise<Customer> {
     const record = await this.prisma.customer.create({
@@ -86,7 +89,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
       {
         where,
         orderBy: { createdAt: 'desc' },
-        include: ADDRESS_INCLUDE
+        include: ADDRESS_INCLUDE,
       },
       pagination,
     );
@@ -109,22 +112,22 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         ...(data.address !== undefined && {
           address: data.address
             ? {
-              upsert: {
-                create: {
-                  id: data.address.id,
-                  street: data.address.street,
-                  city: data.address.city,
-                  state: data.address.state,
-                  zipCode: data.address.zipCode,
+                upsert: {
+                  create: {
+                    id: data.address.id,
+                    street: data.address.street,
+                    city: data.address.city,
+                    state: data.address.state,
+                    zipCode: data.address.zipCode,
+                  },
+                  update: {
+                    street: data.address.street,
+                    city: data.address.city,
+                    state: data.address.state,
+                    zipCode: data.address.zipCode,
+                  },
                 },
-                update: {
-                  street: data.address.street,
-                  city: data.address.city,
-                  state: data.address.state,
-                  zipCode: data.address.zipCode,
-                },
-              },
-            }
+              }
             : { delete: true },
         }),
       },

@@ -21,97 +21,20 @@ describe('Auth (E2E)', () => {
     await cleanDatabase(ctx.prisma);
   });
 
-  // ─── POST /api/auth/register ──────────────────────────────────────────────
-
-  describe('POST /api/auth/register', () => {
-    it('should register a new user and return 201', async () => {
-      const res = await request(httpServer)
-        .post('/api/auth/register')
-        .send({
-          name: 'João Silva',
-          email: 'joao@e2e.test',
-          password: 'Senha@123',
-          role: 'ADMIN',
-        })
-        .expect(201);
-
-      expect(res.body.data).toEqual(
-        expect.objectContaining({
-          id: expect.any(String),
-          name: 'João Silva',
-          email: 'joao@e2e.test',
-          role: 'ADMIN',
-          isActive: true,
-        }),
-      );
-    });
-
-    it('should register with default role ATTENDANT when role is omitted', async () => {
-      const res = await request(httpServer)
-        .post('/api/auth/register')
-        .send({
-          name: 'Maria Santos',
-          email: 'maria@e2e.test',
-          password: 'Senha@123',
-        })
-        .expect(201);
-
-      expect(res.body.data.role).toBe('ATTENDANT');
-    });
-
-    it('should return 409 when registering with duplicate email', async () => {
-      await request(httpServer)
-        .post('/api/auth/register')
-        .send({
-          name: 'João Silva',
-          email: 'duplicate@e2e.test',
-          password: 'Senha@123',
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .post('/api/auth/register')
-        .send({
-          name: 'Outro Nome',
-          email: 'duplicate@e2e.test',
-          password: 'Senha@123',
-        })
-        .expect(409);
-    });
-
-    it('should return 400 when body is invalid', async () => {
-      await request(httpServer)
-        .post('/api/auth/register')
-        .send({ name: '', email: 'invalid', password: '12' })
-        .expect(400);
-    });
-
-    it('should return 400 when extra fields are sent', async () => {
-      await request(httpServer)
-        .post('/api/auth/register')
-        .send({
-          name: 'João',
-          email: 'joao@e2e.test',
-          password: 'Senha@123',
-          unknownField: 'value',
-        })
-        .expect(400);
-    });
-  });
-
   // ─── POST /api/auth/login ─────────────────────────────────────────────────
 
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
-      await request(httpServer)
-        .post('/api/auth/register')
-        .send({
+      await registerAndLogin(
+        httpServer,
+        {
           name: 'Login User',
           email: 'login@e2e.test',
           password: 'Senha@123',
           role: 'ADMIN',
-        })
-        .expect(201);
+        },
+        ctx.prisma,
+      );
     });
 
     it('should login successfully and return tokens', async () => {
@@ -172,7 +95,7 @@ describe('Auth (E2E)', () => {
 
   describe('POST /api/auth/refresh', () => {
     it('should refresh tokens successfully', async () => {
-      const auth = await registerAndLogin(httpServer);
+      const auth = await registerAndLogin(httpServer, {}, ctx.prisma);
 
       const res = await request(httpServer)
         .post('/api/auth/refresh')
@@ -199,10 +122,14 @@ describe('Auth (E2E)', () => {
     });
 
     it('should return 401 when user is deactivated after token issued', async () => {
-      const auth = await registerAndLogin(httpServer, {
-        name: 'Refresh Inactive',
-        email: 'refresh-inactive@e2e.test',
-      });
+      const auth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Refresh Inactive',
+          email: 'refresh-inactive@e2e.test',
+        },
+        ctx.prisma,
+      );
 
       await ctx.prisma.user.update({
         where: { id: auth.user.id },
@@ -220,7 +147,11 @@ describe('Auth (E2E)', () => {
 
   describe('GET /api/auth/me', () => {
     it('should return current user data', async () => {
-      const auth = await registerAndLogin(httpServer, { name: 'Me User', email: 'me@e2e.test' });
+      const auth = await registerAndLogin(
+        httpServer,
+        { name: 'Me User', email: 'me@e2e.test' },
+        ctx.prisma,
+      );
 
       const res = await request(httpServer)
         .get('/api/auth/me')
@@ -250,10 +181,14 @@ describe('Auth (E2E)', () => {
     });
 
     it('should return 401 when user is deactivated after token issued', async () => {
-      const auth = await registerAndLogin(httpServer, {
-        name: 'Me Inactive',
-        email: 'me-inactive@e2e.test',
-      });
+      const auth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Me Inactive',
+          email: 'me-inactive@e2e.test',
+        },
+        ctx.prisma,
+      );
 
       await ctx.prisma.user.update({
         where: { id: auth.user.id },
@@ -267,10 +202,14 @@ describe('Auth (E2E)', () => {
     });
 
     it('should return dates with Brazil timezone offset in response', async () => {
-      const auth = await registerAndLogin(httpServer, {
-        name: 'Date User',
-        email: 'date-user@e2e.test',
-      });
+      const auth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Date User',
+          email: 'date-user@e2e.test',
+        },
+        ctx.prisma,
+      );
 
       const res = await request(httpServer)
         .get('/api/auth/me')

@@ -4,17 +4,26 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
-import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
+import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { User } from '@domain/entities/user.entity';
+import {
+  createMockWorkOrder,
+  createMockWorkOrderRepository,
+} from '../../../../helpers/work-order-mock.factory';
 
 describe('UpdateWorkOrderUseCase', () => {
   let useCase: UpdateWorkOrderUseCase;
-  let workOrderRepository: any;
-  let userRepository: any;
+  let workOrderRepository: jest.Mocked<IWorkOrderRepository>;
+  let userRepository: Pick<jest.Mocked<IUserRepository>, 'findById'>;
 
   beforeEach(() => {
     workOrderRepository = createMockWorkOrderRepository();
     userRepository = { findById: jest.fn() };
-    useCase = new UpdateWorkOrderUseCase(workOrderRepository, userRepository);
+    useCase = new UpdateWorkOrderUseCase(
+      workOrderRepository,
+      userRepository as unknown as jest.Mocked<IUserRepository>,
+    );
   });
 
   it('should update a work order in RECEIVED status', async () => {
@@ -40,7 +49,7 @@ describe('UpdateWorkOrderUseCase', () => {
     const updated = createMockWorkOrder({ ...wo, assignedUserId: userId });
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user);
+    userRepository.findById.mockResolvedValue(user as unknown as User);
     workOrderRepository.update.mockResolvedValue(updated);
 
     const result = await useCase.execute(wo.id, {
@@ -57,7 +66,7 @@ describe('UpdateWorkOrderUseCase', () => {
     const user = { id: 'user-id', name: 'John', role: UserRole.ADMIN, isActive: true };
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user);
+    userRepository.findById.mockResolvedValue(user as unknown as User);
 
     await expect(
       useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
@@ -72,7 +81,7 @@ describe('UpdateWorkOrderUseCase', () => {
     const user = { id: 'user-id', name: 'John', role: UserRole.MECHANIC, isActive: false };
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user);
+    userRepository.findById.mockResolvedValue(user as unknown as User);
 
     await expect(
       useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),

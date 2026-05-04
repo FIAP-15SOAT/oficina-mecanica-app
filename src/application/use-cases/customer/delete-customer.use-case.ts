@@ -4,7 +4,7 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
 
 export class DeleteCustomerUseCase implements IDeleteCustomerUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) { }
+  constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(id: string): Promise<void> {
     const existing = await this.customerRepository.findById(id);

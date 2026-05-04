@@ -20,13 +20,15 @@ describe('CreateUserUseCase', () => {
 
   it('should create user successfully', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.create.mockImplementation(async (user) =>
-      createMockUser({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-      }),
+    userRepository.create.mockImplementation((user) =>
+      Promise.resolve(
+        createMockUser({
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+        }),
+      ),
     );
 
     const result = await useCase.execute({
@@ -39,22 +41,6 @@ describe('CreateUserUseCase', () => {
     expect(result.name).toBe('Lucas Almeida');
     expect(result.role).toBe(UserRole.MECHANIC);
     expect(hashService.hash).toHaveBeenCalledWith('Senha@123');
-  });
-
-  it('should create deactivated user when isActive=false', async () => {
-    userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.create.mockImplementation(async (user) =>
-      createMockUser({ isActive: user.isActive }),
-    );
-
-    const result = await useCase.execute({
-      name: 'Ramoon Camacho',
-      email: 'ramoon@email.com',
-      password: 'Senha@123',
-      isActive: false,
-    });
-
-    expect(result.isActive).toBe(false);
   });
 
   it('should throw ResourceConflictException if email already exists', async () => {

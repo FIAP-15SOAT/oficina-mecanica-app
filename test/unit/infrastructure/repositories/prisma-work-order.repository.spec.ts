@@ -10,7 +10,7 @@ describe('PrismaWorkOrderRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaWorkOrderRepository(prisma as any);
+    repository = new PrismaWorkOrderRepository(prisma);
   });
 
   describe('create', () => {
@@ -51,7 +51,6 @@ describe('PrismaWorkOrderRepository', () => {
       expect(result).toBeNull();
     });
   });
-
 
   describe('findAllPaginated', () => {
     it('should filter by customerId', async () => {

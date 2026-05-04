@@ -8,7 +8,7 @@ export class FindVehiclesByCustomerIdUseCase implements IFindVehiclesByCustomerI
   constructor(
     private readonly vehicleRepository: IVehicleRepository,
     private readonly customerRepository: ICustomerRepository,
-  ) { }
+  ) {}
 
   async execute(customerId: string): Promise<Vehicle[]> {
     const customer = await this.customerRepository.findById(customerId);

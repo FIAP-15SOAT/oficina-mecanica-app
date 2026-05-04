@@ -9,9 +9,8 @@ describe('PrismaStockReservationRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaStockReservationRepository(prisma as any);
+    repository = new PrismaStockReservationRepository(prisma);
   });
-
 
   describe('findByWorkOrderId', () => {
     it('should return reservations for a work order', async () => {
@@ -46,13 +45,10 @@ describe('PrismaStockReservationRepository', () => {
       await repository.createMany(reservations);
 
       expect(prisma.stockReservation.createMany).toHaveBeenCalledWith({
-        data: expect.arrayContaining([
-          expect.objectContaining({ id: reservations[0].id }),
-        ]),
+        data: expect.arrayContaining([expect.objectContaining({ id: reservations[0].id })]),
       });
     });
   });
-
 
   describe('deleteByWorkOrderId', () => {
     it('should delete reservations for a work order', async () => {

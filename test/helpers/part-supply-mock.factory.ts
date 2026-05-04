@@ -42,4 +42,3 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     hasWorkOrderPartSupplies: jest.fn(),
   };
 }
-

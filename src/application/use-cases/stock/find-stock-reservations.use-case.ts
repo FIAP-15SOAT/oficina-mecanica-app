@@ -7,7 +7,7 @@ import { buildPaginatedResult } from '@application/utils/pagination.util';
 import { FindStockReservationsInputDto } from '@domain/interfaces/use-cases/reporting/dto/find-stock-reservations.dto';
 
 export class FindStockReservationsUseCase implements IFindStockReservationsUseCase {
-  constructor(private readonly stockReservationRepository: IStockReservationRepository) { }
+  constructor(private readonly stockReservationRepository: IStockReservationRepository) {}
 
   async execute(input: FindStockReservationsInputDto): Promise<PaginatedResult<StockReservation>> {
     const { page, limit, ...filters } = input;

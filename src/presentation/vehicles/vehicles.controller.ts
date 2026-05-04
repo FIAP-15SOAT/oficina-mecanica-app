@@ -63,16 +63,21 @@ export class VehiclesController {
     private readonly deleteVehicleUseCase: IDeleteVehicleUseCase,
     @Inject('IFindVehiclesByCustomerIdUseCase')
     private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Cadastrar Veículo' })
-  @ApiCreatedResponse({ type: VehicleDataResponseDto, description: 'Veículo cadastrado com sucesso' })
+  @ApiCreatedResponse({
+    type: VehicleDataResponseDto,
+    description: 'Veículo cadastrado com sucesso',
+  })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
-  @ApiUnprocessableEntityResponse({ description: 'Placa em formato inválido ou ano fora do intervalo permitido' })
+  @ApiUnprocessableEntityResponse({
+    description: 'Placa em formato inválido ou ano fora do intervalo permitido',
+  })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Placa já cadastrada' })
   async create(@Body() dto: CreateVehicleRequestDto): Promise<VehicleDataResponseDto> {
@@ -86,9 +91,7 @@ export class VehiclesController {
   @ApiOkResponse({ type: VehiclePaginatedResponseDto, description: 'Lista paginada de Veículos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(
-    @Query() query: FindAllVehiclesQueryDto,
-  ): Promise<VehiclePaginatedResponseDto> {
+  async findAll(@Query() query: FindAllVehiclesQueryDto): Promise<VehiclePaginatedResponseDto> {
     const { page, limit, ...filters } = query;
 
     const result = await this.findAllVehiclesUseCase.execute({
@@ -122,7 +125,9 @@ export class VehiclesController {
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
-  @ApiUnprocessableEntityResponse({ description: 'Placa em formato inválido ou ano fora do intervalo permitido' })
+  @ApiUnprocessableEntityResponse({
+    description: 'Placa em formato inválido ou ano fora do intervalo permitido',
+  })
   @ApiNotFoundResponse({ description: 'Veículo ou cliente não encontrado' })
   @ApiConflictResponse({ description: 'Placa já cadastrada para outro veículo' })
   async update(

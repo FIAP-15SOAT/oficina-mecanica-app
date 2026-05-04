@@ -1,8 +1,5 @@
 import { Service } from '../../entities/service.entity';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface ServiceFilters {
   name?: string;
@@ -28,5 +25,7 @@ export interface IServiceRepository {
   hasWorkOrderServices(serviceId: string): Promise<boolean>;
   hasQuoteServices(serviceId: string): Promise<boolean>;
   findServiceMetrics(serviceId: string): Promise<ServiceMetrics>;
-  findAllServicesMetrics(input: PaginationInput): Promise<PaginatedRepositoryResult<ServiceMetrics>>;
+  findAllServicesMetrics(
+    input: PaginationInput,
+  ): Promise<PaginatedRepositoryResult<ServiceMetrics>>;
 }

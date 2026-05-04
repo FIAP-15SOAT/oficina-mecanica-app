@@ -56,4 +56,4 @@ import { CustomersController } from './customers.controller';
   ],
   exports: ['ICustomerRepository', 'IVehicleRepository'],
 })
-export class CustomersModule { }
+export class CustomersModule {}

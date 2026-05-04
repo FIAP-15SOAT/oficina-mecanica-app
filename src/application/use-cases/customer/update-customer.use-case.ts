@@ -7,7 +7,7 @@ import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/upd
 import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
 
 export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) { }
+  constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(id: string, input: UpdateCustomerDto): Promise<Customer> {
     const sanitizedDocument = input.document.replace(/[.\-/]/g, '').trim();

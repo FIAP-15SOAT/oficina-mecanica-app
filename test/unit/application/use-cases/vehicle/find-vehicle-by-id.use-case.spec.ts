@@ -1,7 +1,10 @@
 import { FindVehicleByIdUseCase } from '@application/use-cases/vehicle/find-vehicle-by-id.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleRepository,
+} from '../../../../helpers/vehicle-mock.factory';
 
 describe('FindVehicleByIdUseCase', () => {
   let useCase: FindVehicleByIdUseCase;

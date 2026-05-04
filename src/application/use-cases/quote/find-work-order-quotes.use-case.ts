@@ -10,7 +10,7 @@ export class FindWorkOrderQuotesUseCase implements IFindWorkOrderQuotesUseCase {
   constructor(
     private readonly quoteRepository: IQuoteRepository,
     private readonly workOrderRepository: IWorkOrderRepository,
-  ) { }
+  ) {}
 
   async execute(workOrderId: string): Promise<Quote[]> {
     const workOrder = await this.workOrderRepository.findById(workOrderId);

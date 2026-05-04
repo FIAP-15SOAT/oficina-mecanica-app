@@ -61,9 +61,6 @@ describe('FindAllServicesPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10 });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
-      {},
-    );
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({ page: 1, limit: 10 }, {});
   });
 });

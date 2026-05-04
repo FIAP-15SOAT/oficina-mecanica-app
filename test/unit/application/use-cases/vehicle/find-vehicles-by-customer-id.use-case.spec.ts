@@ -2,8 +2,14 @@ import { FindVehiclesByCustomerIdUseCase } from '@application/use-cases/vehicle/
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleRepository,
+} from '../../../../helpers/vehicle-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
 
 describe('FindVehiclesByCustomerIdUseCase', () => {
   let useCase: FindVehiclesByCustomerIdUseCase;
@@ -34,9 +40,7 @@ describe('FindVehiclesByCustomerIdUseCase', () => {
   it('should throw ResourceNotFoundException when customer not found', async () => {
     customerRepository.findById.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute('nonexistent-id'),
-    ).rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('nonexistent-id')).rejects.toThrow(ResourceNotFoundException);
 
     expect(vehicleRepository.findAllByCustomerId).not.toHaveBeenCalled();
   });

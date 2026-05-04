@@ -3,7 +3,7 @@ import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class RemoveQuotePartSupplyUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(quoteId: string, partSupplyId: string): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {

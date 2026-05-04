@@ -6,7 +6,7 @@ import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagi
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllPartsSuppliesUseCase implements IFindAllPartsSuppliesUseCase {
-  constructor(private readonly partSupplyRepository: IPartSupplyRepository) { }
+  constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}
 
   async execute(input: FindAllPartsSuppliesInputDto): Promise<PaginatedResult<PartSupply>> {
     const { page, limit, ...filters } = input;

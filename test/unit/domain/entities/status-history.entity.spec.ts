@@ -98,7 +98,7 @@ describe('StatusHistory Entity', () => {
       expect(() =>
         StatusHistory.create({
           workOrderId: validWorkOrderId,
-          newStatus: undefined as any,
+          newStatus: undefined as unknown as WorkOrderStatus,
         }),
       ).toThrow(DomainValidationException);
     });

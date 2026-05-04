@@ -7,7 +7,10 @@ import {
   StockMovementFilters,
 } from '@domain/interfaces/repositories/stock-movement.repository.interface';
 import { StockMovementMapper } from '@infrastructure/mappers/stock-movement.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 const STOCK_MOVEMENT_INCLUDE = {
@@ -73,7 +76,9 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
     );
 
     return {
-      items: result.items.map((r) => StockMovementMapper.toDomain(r as Parameters<typeof StockMovementMapper.toDomain>[0])),
+      items: result.items.map((r) =>
+        StockMovementMapper.toDomain(r as Parameters<typeof StockMovementMapper.toDomain>[0]),
+      ),
       total: result.total,
     };
   }

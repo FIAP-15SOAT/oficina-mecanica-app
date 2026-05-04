@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Inject,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -31,17 +25,19 @@ import { FindStockMovementsQueryDto } from './dto/filter-stock-movements.dto';
 @ApiBearerAuth('access-token')
 export class StockMovementsController {
   constructor(
-    @Inject('IFindStockMovementsUseCase') private readonly findStockMovementsUseCase: IFindStockMovementsUseCase,
-  ) { }
+    @Inject('IFindStockMovementsUseCase')
+    private readonly findStockMovementsUseCase: IFindStockMovementsUseCase,
+  ) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar movimentações de estoque' })
-  @ApiOkResponse({ type: StockMovementPaginatedResponseDto, description: 'Lista paginada de movimentações' })
+  @ApiOkResponse({
+    type: StockMovementPaginatedResponseDto,
+    description: 'Lista paginada de movimentações',
+  })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  async getStockMovements(
-    @Query() query: FindStockMovementsQueryDto,
-  ) {
+  async getStockMovements(@Query() query: FindStockMovementsQueryDto) {
     const { page, limit, ...filters } = query;
 
     const result = await this.findStockMovementsUseCase.execute({

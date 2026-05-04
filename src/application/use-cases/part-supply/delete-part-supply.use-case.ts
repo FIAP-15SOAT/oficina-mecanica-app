@@ -4,7 +4,7 @@ import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supp
 import { IDeletePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/delete-part-supply.use-case.interface';
 
 export class DeletePartSupplyUseCase implements IDeletePartSupplyUseCase {
-  constructor(private readonly partSupplyRepository: IPartSupplyRepository) { }
+  constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}
 
   async execute(id: string): Promise<void> {
     const existing = await this.partSupplyRepository.findById(id);

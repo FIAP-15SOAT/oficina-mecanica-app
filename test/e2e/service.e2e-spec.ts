@@ -20,11 +20,15 @@ describe('Service (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   const validService = {
@@ -95,11 +99,15 @@ describe('Service (E2E)', () => {
     });
 
     it('should return 403 for non-admin role', async () => {
-      const mechanic = await registerAndLogin(httpServer, {
-        name: 'Mechanic',
-        email: 'mechanic@e2e.test',
-        role: 'MECHANIC',
-      });
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic',
+          email: 'mechanic@e2e.test',
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .post('/api/services')
@@ -322,9 +330,6 @@ describe('Service (E2E)', () => {
         .get('/api/services-metrics')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`);
 
-      if (res.status !== 200) {
-        console.log('All Metrics Error:', res.body);
-      }
       expect(res.status).toBe(200);
 
       expect(res.body.data).toBeInstanceOf(Array);
@@ -363,10 +368,10 @@ describe('Service (E2E)', () => {
               street: 'Rua Teste',
               city: 'São Paulo',
               state: 'SP',
-              zipCode: '01234-567'
-            }
-          }
-        }
+              zipCode: '01234-567',
+            },
+          },
+        },
       });
 
       const vehicle = await ctx.prisma.vehicle.create({
@@ -375,8 +380,8 @@ describe('Service (E2E)', () => {
           plate: 'MET-0001',
           brand: 'Test',
           model: 'Test',
-          year: 2020
-        }
+          year: 2020,
+        },
       });
 
       const workOrder = await ctx.prisma.workOrder.create({
@@ -384,8 +389,8 @@ describe('Service (E2E)', () => {
           customerId: customer.id,
           vehicleId: vehicle.id,
           number: 'WO-MET-001',
-          status: 'COMPLETED'
-        }
+          status: 'COMPLETED',
+        },
       });
 
       // Manually create a completed service in DB to have metrics
@@ -398,8 +403,8 @@ describe('Service (E2E)', () => {
           totalPrice: 50,
           status: 'COMPLETED',
           startedAt: new Date(Date.now() - 3600000), // 1 hour ago
-          finishedAt: new Date()
-        }
+          finishedAt: new Date(),
+        },
       });
 
       const res = await request(httpServer)
@@ -416,11 +421,15 @@ describe('Service (E2E)', () => {
     });
 
     it('should return 403 for metrics when user is not ADMIN', async () => {
-      const mechanicAuth = await registerAndLogin(httpServer, {
-        name: 'Mecânico Teste',
-        email: 'mechanic-metrics@test.com',
-        role: 'MECHANIC',
-      });
+      const mechanicAuth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mecânico Teste',
+          email: 'mechanic-metrics@test.com',
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .get('/api/services/metrics')
@@ -490,8 +499,8 @@ describe('Service (E2E)', () => {
           serviceId,
           quantity: 1,
           unitPrice: 100,
-          totalPrice: 100
-        }
+          totalPrice: 100,
+        },
       });
 
       await request(httpServer)
@@ -544,8 +553,8 @@ describe('Service (E2E)', () => {
           quantity: 1,
           unitPrice: 100,
           totalPrice: 100,
-          status: 'PENDING'
-        }
+          status: 'PENDING',
+        },
       });
 
       await request(httpServer)

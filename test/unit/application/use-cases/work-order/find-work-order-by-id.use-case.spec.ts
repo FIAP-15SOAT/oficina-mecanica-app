@@ -1,7 +1,10 @@
 import { FindWorkOrderByIdUseCase } from '@application/use-cases/work-order/find-work-order-by-id.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
+import {
+  createMockWorkOrder,
+  createMockWorkOrderRepository,
+} from '../../../../helpers/work-order-mock.factory';
 
 describe('FindWorkOrderByIdUseCase', () => {
   let useCase: FindWorkOrderByIdUseCase;

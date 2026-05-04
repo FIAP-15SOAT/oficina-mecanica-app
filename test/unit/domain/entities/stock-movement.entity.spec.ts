@@ -46,39 +46,39 @@ describe('StockMovement Entity', () => {
     });
 
     it('should throw when partSupplyId is empty', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, partSupplyId: '' }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockMovement.create({ ...validProps, partSupplyId: '' })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when partSupplyId is not a valid UUID', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, partSupplyId: 'invalid-uuid' }),
-      ).toThrow('ID da peça/insumo inválido.');
+      expect(() => StockMovement.create({ ...validProps, partSupplyId: 'invalid-uuid' })).toThrow(
+        'ID da peça/insumo inválido.',
+      );
     });
 
     it('should throw when workOrderId is not a valid UUID', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, workOrderId: 'invalid-uuid' }),
-      ).toThrow('ID da ordem de serviço inválido.');
+      expect(() => StockMovement.create({ ...validProps, workOrderId: 'invalid-uuid' })).toThrow(
+        'ID da ordem de serviço inválido.',
+      );
     });
 
     it('should throw when quantity is zero', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, quantity: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockMovement.create({ ...validProps, quantity: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is negative', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, quantity: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockMovement.create({ ...validProps, quantity: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is not an integer', () => {
-      expect(() =>
-        StockMovement.create({ ...validProps, quantity: 1.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockMovement.create({ ...validProps, quantity: 1.5 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should support ENTRY and ADJUSTMENT types', () => {

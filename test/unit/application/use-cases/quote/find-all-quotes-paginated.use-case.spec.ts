@@ -10,7 +10,7 @@ describe('FindAllQuotesPaginatedUseCase', () => {
   beforeEach(() => {
     quoteRepository = {
       findAllPaginated: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<IQuoteRepository>;
     useCase = new FindAllQuotesPaginatedUseCase(quoteRepository);
   });
 

@@ -6,7 +6,7 @@ import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagi
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllCustomersUseCase implements IFindAllCustomersUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) { }
+  constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(input: FindAllCustomersInputDto): Promise<PaginatedResult<Customer>> {
     const { page, limit, ...filters } = input;

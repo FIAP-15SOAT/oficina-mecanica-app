@@ -32,7 +32,8 @@ export class InfrastructureExceptionFilter implements ExceptionFilter {
       return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
     }
 
-    if (exception instanceof ServiceIntegrationException ||
+    if (
+      exception instanceof ServiceIntegrationException ||
       exception instanceof DatabaseOperationException
     ) {
       return { status: HttpStatus.SERVICE_UNAVAILABLE, error: 'Service Unavailable' };

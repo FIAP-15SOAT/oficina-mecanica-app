@@ -7,7 +7,7 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 export class CreateWorkOrderUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: CreateWorkOrderDto): Promise<WorkOrder> {
     return this.unitOfWork.executeTransaction(async (repos) => {

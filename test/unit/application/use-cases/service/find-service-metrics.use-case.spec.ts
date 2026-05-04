@@ -1,7 +1,10 @@
 import { FindServiceMetricsUseCase } from '@application/use-cases/service/find-service-metrics.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
-import { createMockService, createMockServiceRepository } from '../../../../helpers/service-mock.factory';
+import {
+  createMockService,
+  createMockServiceRepository,
+} from '../../../../helpers/service-mock.factory';
 
 describe('FindServiceMetricsUseCase', () => {
   let useCase: FindServiceMetricsUseCase;

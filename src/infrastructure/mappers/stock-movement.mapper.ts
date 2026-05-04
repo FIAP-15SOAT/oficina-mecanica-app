@@ -13,11 +13,13 @@ import { WorkOrderMapper } from './work-order.mapper';
 
 type PrismaStockMovementRecord = PrismaStockMovement & {
   partSupply?: PrismaPartSupply | null;
-  workOrder?: (PrismaWorkOrder & {
-    customer?: PrismaCustomer | null;
-    vehicle?: PrismaVehicle | null;
-    assignedUser?: PrismaUser | null;
-  }) | null;
+  workOrder?:
+    | (PrismaWorkOrder & {
+        customer?: PrismaCustomer | null;
+        vehicle?: PrismaVehicle | null;
+        assignedUser?: PrismaUser | null;
+      })
+    | null;
 };
 
 export class StockMovementMapper {

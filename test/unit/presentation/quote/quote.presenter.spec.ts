@@ -40,8 +40,8 @@ describe('QuotePresenter', () => {
     it('should include services and parts', () => {
       const quoteWithItems = new Quote({
         ...quoteProps,
-        services: [{ id: 's1' }] as any,
-        partsSupplies: [{ id: 'p1' }] as any,
+        services: [{ id: 's1' }] as unknown as Quote['services'],
+        partsSupplies: [{ id: 'p1' }] as unknown as Quote['partsSupplies'],
       });
       const response = QuotePresenter.toWithItemsResponse(quoteWithItems);
       expect(response.data.services).toHaveLength(1);

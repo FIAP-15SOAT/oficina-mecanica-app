@@ -1,6 +1,9 @@
 import { FindAllVehiclesUseCase } from '@application/use-cases/vehicle/find-all-vehicles.use-case';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { createMockVehicle, createMockVehicleRepository } from '../../../../helpers/vehicle-mock.factory';
+import {
+  createMockVehicle,
+  createMockVehicleRepository,
+} from '../../../../helpers/vehicle-mock.factory';
 
 describe('FindAllVehiclesUseCase', () => {
   let useCase: FindAllVehiclesUseCase;
@@ -38,6 +41,9 @@ describe('FindAllVehiclesUseCase', () => {
 
     await useCase.execute({ page: 2, limit: 5, brand: 'Toyota' });
 
-    expect(vehicleRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5 }, { brand: 'Toyota' });
+    expect(vehicleRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 2, limit: 5 },
+      { brand: 'Toyota' },
+    );
   });
 });

@@ -10,7 +10,7 @@ describe('PrismaQuoteServiceRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaQuoteServiceRepository(prisma as any);
+    repository = new PrismaQuoteServiceRepository(prisma);
   });
 
   describe('create', () => {

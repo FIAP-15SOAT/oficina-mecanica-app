@@ -10,7 +10,10 @@ import {
   createMockQuoteServiceRepository,
   createMockQuotePartSupplyRepository,
 } from '../../../../helpers/quote-mock.factory';
-import { createMockPartSupplyRepository, createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
+import {
+  createMockPartSupplyRepository,
+  createMockPartSupply,
+} from '../../../../helpers/part-supply-mock.factory';
 
 describe('AddQuotePartSupplyUseCase', () => {
   let useCase: AddQuotePartSupplyUseCase;
@@ -29,15 +32,23 @@ describe('AddQuotePartSupplyUseCase', () => {
   beforeEach(() => {
     mockRepos = buildMockRepos();
     mockUow = {
-      executeTransaction: jest.fn().mockImplementation(async (work: any) => work(mockRepos)),
+      executeTransaction: jest
+        .fn()
+        .mockImplementation((work: (repos: ReturnType<typeof buildMockRepos>) => unknown) =>
+          work(mockRepos),
+        ),
     };
-    useCase = new AddQuotePartSupplyUseCase(mockUow as any);
+    useCase = new AddQuotePartSupplyUseCase(mockUow);
   });
 
   it('should add a part supply and recalculate totals', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
     const partSupply = createMockPartSupply({ salePrice: 80 });
-    const qp = createMockQuotePartSupply({ quoteId: quote.id, partSupplyId: partSupply.id, totalPrice: 160 });
+    const qp = createMockQuotePartSupply({
+      quoteId: quote.id,
+      partSupplyId: partSupply.id,
+      totalPrice: 160,
+    });
     const updatedQuote = createMockQuote({ ...quote, partsAmount: 160, totalAmount: 160 });
 
     mockRepos.quote.findById.mockResolvedValue(quote);

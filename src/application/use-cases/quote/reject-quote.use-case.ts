@@ -6,13 +6,12 @@ import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class RejectQuoteUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {
       const { quote, workOrder } = await this.validateAndGetQuoteAndWorkOrder(repos, quoteId);
 
-      await this.releaseStockReservations(repos, workOrder.id);
       return this.updateQuoteAndWorkOrder(repos, quote, workOrder, notes, userId);
     });
   }
@@ -29,18 +28,6 @@ export class RejectQuoteUseCase {
     const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
 
     return { quote, workOrder };
-  }
-
-  private async releaseStockReservations(repos: IRepositories, workOrderId: string) {
-    const reservations = await repos.stockReservation.findByWorkOrderId(workOrderId);
-
-    await Promise.all(
-      reservations.map((reservation: any) =>
-        repos.partSupply.decrementReservedStock(reservation.partSupplyId, reservation.quantity),
-      ),
-    );
-
-    await repos.stockReservation.deleteByWorkOrderId(workOrderId);
   }
 
   private async updateQuoteAndWorkOrder(

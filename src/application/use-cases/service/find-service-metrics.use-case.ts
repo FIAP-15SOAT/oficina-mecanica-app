@@ -6,7 +6,7 @@ import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindServiceMetricsUseCase implements IFindServiceMetricsUseCase {
-  constructor(private readonly serviceRepository: IServiceRepository) { }
+  constructor(private readonly serviceRepository: IServiceRepository) {}
 
   async execute(serviceId: string): Promise<ServiceMetrics> {
     const service = await this.serviceRepository.findById(serviceId);
@@ -15,7 +15,8 @@ export class FindServiceMetricsUseCase implements IFindServiceMetricsUseCase {
       throw new ResourceNotFoundException('Serviço', serviceId);
     }
 
-    const { serviceName, executionCount, averageTimeMinutes } = await this.serviceRepository.findServiceMetrics(serviceId);
+    const { serviceName, executionCount, averageTimeMinutes } =
+      await this.serviceRepository.findServiceMetrics(serviceId);
 
     return {
       serviceId,

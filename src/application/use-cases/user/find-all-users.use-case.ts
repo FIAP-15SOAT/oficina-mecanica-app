@@ -6,7 +6,7 @@ import { FindAllUsersPaginatedInput } from '@domain/interfaces/use-cases/user/dt
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllUsersUseCase implements IFindAllUsersUseCase {
-  constructor(private readonly userRepository: IUserRepository) { }
+  constructor(private readonly userRepository: IUserRepository) {}
 
   async execute(input: FindAllUsersPaginatedInput): Promise<PaginatedResult<UserPublicView>> {
     const { page, limit, ...filters } = input;
@@ -19,7 +19,7 @@ export class FindAllUsersUseCase implements IFindAllUsersUseCase {
         items: result.items.map((user) => user.toPublicView()),
         total: result.total,
       },
-      pagination
+      pagination,
     );
   }
 }

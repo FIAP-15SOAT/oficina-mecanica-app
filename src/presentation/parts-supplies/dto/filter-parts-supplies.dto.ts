@@ -1,12 +1,11 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsBoolean, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 /** Filtros para Consulta de Estoque de Peças e Insumos */
 export class FilterPartsSuppliesDto {
-
   @ApiPropertyOptional({
     description: 'Filtrar por nome da Peça ou Insumo',
     example: 'Filtro de Óleo',
@@ -40,4 +39,4 @@ export class FilterPartsSuppliesDto {
 export class FindAllPartsSuppliesQueryDto extends IntersectionType(
   PaginationDto,
   FilterPartsSuppliesDto,
-) { }
+) {}

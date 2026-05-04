@@ -1,5 +1,8 @@
 import { FindStockReservationsUseCase } from '@application/use-cases/stock/find-stock-reservations.use-case';
-import { createMockStockReservationRepository, createMockStockReservation } from '../../../../helpers/stock-reservation-mock.factory';
+import {
+  createMockStockReservationRepository,
+  createMockStockReservation,
+} from '../../../../helpers/stock-reservation-mock.factory';
 import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 
 describe('FindStockReservationsUseCase', () => {

@@ -30,50 +30,48 @@ describe('WorkOrderService Entity', () => {
 
     it('should throw if workOrderId is missing', () => {
       expect(() =>
-        WorkOrderService.create({ ...validProps, workOrderId: undefined as any }),
+        WorkOrderService.create({ ...validProps, workOrderId: undefined as unknown as string }),
       ).toThrow(DomainValidationException);
     });
 
     it('should throw if workOrderId is not a valid UUID', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, workOrderId: 'invalid-uuid' }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderService.create({ ...validProps, workOrderId: 'invalid-uuid' })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw if serviceId is missing', () => {
       expect(() =>
-        WorkOrderService.create({ ...validProps, serviceId: undefined as any }),
+        WorkOrderService.create({ ...validProps, serviceId: undefined as unknown as string }),
       ).toThrow(DomainValidationException);
     });
 
     it('should throw if serviceId is not a valid UUID', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, serviceId: 'invalid-uuid' }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderService.create({ ...validProps, serviceId: 'invalid-uuid' })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw if quantity is not an integer', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, quantity: 1.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderService.create({ ...validProps, quantity: 1.5 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw if quantity is less than 1', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, quantity: 0 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderService.create({ ...validProps, quantity: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw if unitPrice is negative', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, unitPrice: -10 }),
-      ).toThrow(DomainValidationException);
+      expect(() => WorkOrderService.create({ ...validProps, unitPrice: -10 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should not throw if unitPrice is zero', () => {
-      expect(() =>
-        WorkOrderService.create({ ...validProps, unitPrice: 0 }),
-      ).not.toThrow();
+      expect(() => WorkOrderService.create({ ...validProps, unitPrice: 0 })).not.toThrow();
     });
   });
 

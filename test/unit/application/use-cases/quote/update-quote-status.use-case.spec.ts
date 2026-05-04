@@ -14,10 +14,10 @@ describe('UpdateQuoteStatusUseCase', () => {
   beforeEach(() => {
     approveQuoteUseCase = {
       execute: jest.fn(),
-    } as any;
+    };
     rejectQuoteUseCase = {
       execute: jest.fn(),
-    } as any;
+    };
     useCase = new UpdateQuoteStatusUseCase(approveQuoteUseCase, rejectQuoteUseCase);
   });
 
@@ -50,7 +50,8 @@ describe('UpdateQuoteStatusUseCase', () => {
     const quoteId = randomUUID();
     const userId = randomUUID();
 
-    await expect(useCase.execute(quoteId, userId, { status: QuoteStatus.REJECTED }))
-      .rejects.toThrow(BusinessRuleViolationException);
+    await expect(
+      useCase.execute(quoteId, userId, { status: QuoteStatus.REJECTED }),
+    ).rejects.toThrow(BusinessRuleViolationException);
   });
 });

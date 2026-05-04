@@ -31,7 +31,6 @@ export interface UpdateWorkOrderProps {
   assignedUser?: User | null;
 }
 
-
 export class WorkOrder {
   id!: string;
   number!: string;
@@ -142,7 +141,11 @@ export class WorkOrder {
   private static readonly STATUS_TRANSITION_MAP: Record<WorkOrderStatus, WorkOrderStatus[]> = {
     [WorkOrderStatus.RECEIVED]: [WorkOrderStatus.IN_DIAGNOSIS, WorkOrderStatus.CANCELLED],
     [WorkOrderStatus.IN_DIAGNOSIS]: [WorkOrderStatus.AWAITING_APPROVAL, WorkOrderStatus.CANCELLED],
-    [WorkOrderStatus.AWAITING_APPROVAL]: [WorkOrderStatus.APPROVED, WorkOrderStatus.REJECTED, WorkOrderStatus.CANCELLED],
+    [WorkOrderStatus.AWAITING_APPROVAL]: [
+      WorkOrderStatus.APPROVED,
+      WorkOrderStatus.REJECTED,
+      WorkOrderStatus.CANCELLED,
+    ],
     [WorkOrderStatus.REJECTED]: [WorkOrderStatus.AWAITING_APPROVAL],
     [WorkOrderStatus.APPROVED]: [WorkOrderStatus.IN_PROGRESS],
     [WorkOrderStatus.IN_PROGRESS]: [WorkOrderStatus.COMPLETED],
@@ -231,10 +234,7 @@ export class WorkOrder {
   }
 
   private validateInternalNotes(): void {
-    if (
-      this.internalNotes &&
-      this.internalNotes.length > MAX_INTERNAL_NOTES_LENGTH
-    ) {
+    if (this.internalNotes && this.internalNotes.length > MAX_INTERNAL_NOTES_LENGTH) {
       throw new DomainValidationException(
         `Notas internas devem ter no máximo ${MAX_INTERNAL_NOTES_LENGTH} caracteres.`,
       );

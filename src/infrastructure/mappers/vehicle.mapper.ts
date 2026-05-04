@@ -17,13 +17,9 @@ export class VehicleMapper {
       year: prismaRecord.year,
       color: prismaRecord.color ?? null,
       mileage: prismaRecord.mileage ?? null,
-      customer: prismaRecord.customer
-        ? CustomerMapper.toDomain(prismaRecord.customer)
-        : undefined,
+      customer: prismaRecord.customer ? CustomerMapper.toDomain(prismaRecord.customer) : undefined,
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });
   }
-
-
 }

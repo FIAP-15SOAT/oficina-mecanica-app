@@ -10,7 +10,7 @@ describe('PrismaStockMovementRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaStockMovementRepository(prisma as any);
+    repository = new PrismaStockMovementRepository(prisma);
   });
 
   describe('create', () => {
@@ -38,7 +38,6 @@ describe('PrismaStockMovementRepository', () => {
       expect(prisma.stockMovement.create).toHaveBeenCalled();
     });
   });
-
 
   describe('findAllPaginated', () => {
     it('should return paginated stock movements', async () => {

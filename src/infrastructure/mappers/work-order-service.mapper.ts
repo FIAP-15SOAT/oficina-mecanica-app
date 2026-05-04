@@ -1,4 +1,7 @@
-import type { WorkOrderService as PrismaWorkOrderService, Service as PrismaService } from '@generated/client';
+import type {
+  WorkOrderService as PrismaWorkOrderService,
+  Service as PrismaService,
+} from '@generated/client';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { ServiceMapper } from './service.mapper';

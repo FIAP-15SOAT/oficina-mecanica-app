@@ -1,16 +1,5 @@
-import {
-  Controller,
-  Get,
-  Inject,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
@@ -30,12 +19,15 @@ export class ServicesMetricsController {
   constructor(
     @Inject('IFindAllServicesMetricsUseCase')
     private readonly findAllServicesMetricsUseCase: IFindAllServicesMetricsUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obter métricas de todos os serviços' })
-  @ApiOkResponse({ type: ServiceMetricsPaginatedResponseDto, description: 'Lista paginada de métricas de todos os serviços' })
+  @ApiOkResponse({
+    type: ServiceMetricsPaginatedResponseDto,
+    description: 'Lista paginada de métricas de todos os serviços',
+  })
   async getAllMetrics(@Query() pagination: PaginationDto) {
     const result = await this.findAllServicesMetricsUseCase.execute({
       page: pagination.page ?? 1,

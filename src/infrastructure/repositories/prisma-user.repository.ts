@@ -1,15 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, User as PrismaUser } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
-import { IUserRepository, UserFilters } from '@domain/interfaces/repositories/user.repository.interface';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  IUserRepository,
+  UserFilters,
+} from '@domain/interfaces/repositories/user.repository.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { UserMapper } from '../mappers/user.mapper';
 import { paginate } from '../database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(user: User): Promise<User> {
     const created = await this.prisma.user.create({

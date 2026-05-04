@@ -1,5 +1,6 @@
 import { RemoveQuoteServiceUseCase } from '@application/use-cases/quote/remove-quote-service.use-case';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { QuoteService } from '@domain/entities/quote-service.entity';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import {
@@ -25,17 +26,25 @@ describe('RemoveQuoteServiceUseCase', () => {
   beforeEach(() => {
     mockRepos = buildMockRepos();
     mockUow = {
-      executeTransaction: jest.fn().mockImplementation(async (work: any) => work(mockRepos)),
+      executeTransaction: jest
+        .fn()
+        .mockImplementation((work: (repos: ReturnType<typeof buildMockRepos>) => unknown) =>
+          work(mockRepos),
+        ),
     };
-    useCase = new RemoveQuoteServiceUseCase(mockUow as any);
+    useCase = new RemoveQuoteServiceUseCase(mockUow);
   });
 
   it('should remove a service and recalculate totals', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING, servicesAmount: 100, totalAmount: 100 });
+    const quote = createMockQuote({
+      status: QuoteStatus.PENDING,
+      servicesAmount: 100,
+      totalAmount: 100,
+    });
     const updatedQuote = createMockQuote({ ...quote, servicesAmount: 0, totalAmount: 0 });
 
     mockRepos.quote.findById.mockResolvedValue(quote);
-    mockRepos.quoteService.findOne.mockResolvedValue({ id: 'svc-id' } as any);
+    mockRepos.quoteService.findOne.mockResolvedValue({ id: 'svc-id' } as unknown as QuoteService);
     mockRepos.quoteService.remove.mockResolvedValue(undefined);
     mockRepos.quoteService.findByQuoteId.mockResolvedValue([]);
     mockRepos.quotePartSupply.findByQuoteId.mockResolvedValue([]);
@@ -51,18 +60,14 @@ describe('RemoveQuoteServiceUseCase', () => {
   it('should throw ResourceNotFoundException when quote not found', async () => {
     mockRepos.quote.findById.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute('bad', 'svc'),
-    ).rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('bad', 'svc')).rejects.toThrow(ResourceNotFoundException);
   });
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
     mockRepos.quote.findById.mockResolvedValue(quote);
 
-    await expect(
-      useCase.execute(quote.id, 'svc'),
-    ).rejects.toThrow(BusinessRuleViolationException);
+    await expect(useCase.execute(quote.id, 'svc')).rejects.toThrow(BusinessRuleViolationException);
 
     expect(mockRepos.quoteService.remove).not.toHaveBeenCalled();
   });
@@ -72,9 +77,9 @@ describe('RemoveQuoteServiceUseCase', () => {
     mockRepos.quote.findById.mockResolvedValue(quote);
     mockRepos.quoteService.findOne.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute(quote.id, 'nonexistent-service'),
-    ).rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute(quote.id, 'nonexistent-service')).rejects.toThrow(
+      ResourceNotFoundException,
+    );
 
     expect(mockRepos.quoteService.remove).not.toHaveBeenCalled();
   });

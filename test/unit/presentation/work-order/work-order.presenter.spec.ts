@@ -48,15 +48,15 @@ describe('WorkOrderPresenter', () => {
         id: randomUUID(),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
-        customer: { id: randomUUID(), name: 'Customer' } as any,
-        vehicle: { id: randomUUID(), plate: 'ABC-1234' } as any,
-        assignedUser: { id: randomUUID(), name: 'User' } as any,
+        customer: { id: randomUUID(), name: 'Customer' } as unknown as WorkOrder['customer'],
+        vehicle: { id: randomUUID(), plate: 'ABC-1234' } as unknown as WorkOrder['vehicle'],
+        assignedUser: { id: randomUUID(), name: 'User' } as unknown as WorkOrder['assignedUser'],
       });
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
-      expect(response.customer!.name).toBe('Customer');
-      expect(response.vehicle!.plate).toBe('ABC-1234');
+      expect(response.customer.name).toBe('Customer');
+      expect(response.vehicle.plate).toBe('ABC-1234');
       expect(response.assignedUser!.name).toBe('User');
     });
   });
@@ -78,7 +78,7 @@ describe('WorkOrderPresenter', () => {
         pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
       };
 
-      const response = WorkOrderPresenter.toPaginatedResponse(paginatedResult as any);
+      const response = WorkOrderPresenter.toPaginatedResponse(paginatedResult);
 
       expect(response.data).toHaveLength(1);
       expect(response.pagination).toEqual(paginatedResult.pagination);

@@ -10,12 +10,15 @@ import {
 import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { PartSupplyMapper } from '@infrastructure/mappers/part-supply.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaPartSupplyRepository implements IPartSupplyRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(partSupply: PartSupply): Promise<PartSupply> {
     try {
@@ -83,7 +86,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       this.prisma.partSupply,
       {
         where,
-        orderBy: { name: 'asc' }
+        orderBy: { name: 'asc' },
       },
       pagination,
     );

@@ -4,7 +4,10 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/update-customer.dto';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
 
 describe('UpdateCustomerUseCase', () => {
   let useCase: UpdateCustomerUseCase;
@@ -33,14 +36,18 @@ describe('UpdateCustomerUseCase', () => {
     const result = await useCase.execute('cust-1', { ...validInput, name: 'João Atualizado' });
 
     expect(result).toEqual(updated);
-    expect(customerRepository.update).toHaveBeenCalledWith('cust-1', expect.objectContaining({ name: 'João Atualizado' }));
+    expect(customerRepository.update).toHaveBeenCalledWith(
+      'cust-1',
+      expect.objectContaining({ name: 'João Atualizado' }),
+    );
   });
 
   it('should throw ResourceNotFoundException when customer not found', async () => {
     customerRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('non-existent', validInput))
-      .rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('non-existent', validInput)).rejects.toThrow(
+      ResourceNotFoundException,
+    );
     expect(customerRepository.update).not.toHaveBeenCalled();
   });
 
@@ -50,8 +57,9 @@ describe('UpdateCustomerUseCase', () => {
     customerRepository.findById.mockResolvedValue(existing);
     customerRepository.findByDocument.mockResolvedValue(other);
 
-    await expect(useCase.execute('cust-1', { ...validInput, document: '222.222.222-22' }))
-      .rejects.toThrow(ResourceConflictException);
+    await expect(
+      useCase.execute('cust-1', { ...validInput, document: '222.222.222-22' }),
+    ).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.update).not.toHaveBeenCalled();
   });
 
@@ -61,14 +69,19 @@ describe('UpdateCustomerUseCase', () => {
     customerRepository.findById.mockResolvedValue(existing);
     customerRepository.findByEmail.mockResolvedValue(other);
 
-    await expect(useCase.execute('cust-1', { ...validInput, email: 'taken@email.com' }))
-      .rejects.toThrow(ResourceConflictException);
+    await expect(
+      useCase.execute('cust-1', { ...validInput, email: 'taken@email.com' }),
+    ).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.findByDocument).not.toHaveBeenCalled();
     expect(customerRepository.update).not.toHaveBeenCalled();
   });
 
   it('should not check uniqueness when document/email are unchanged', async () => {
-    const existing = createMockCustomer({ id: 'cust-1', document: '12345678909', email: validInput.email });
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: '12345678909',
+      email: validInput.email,
+    });
     customerRepository.findById.mockResolvedValue(existing);
     customerRepository.update.mockResolvedValue(existing);
 

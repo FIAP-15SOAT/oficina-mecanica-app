@@ -6,5 +6,4 @@ export interface FindAllPartsSuppliesInputDto extends PaginationInput {
   sku?: string;
   category?: PartSupplyCategory;
   lowStock?: boolean;
-
 }

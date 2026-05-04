@@ -22,45 +22,45 @@ describe('StockReservation Entity', () => {
     });
 
     it('should throw when partSupplyId is empty', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, partSupplyId: '' }),
-      ).toThrow('ID da peça/insumo é obrigatório.');
+      expect(() => StockReservation.create({ ...validProps, partSupplyId: '' })).toThrow(
+        'ID da peça/insumo é obrigatório.',
+      );
     });
 
     it('should throw when partSupplyId is not a valid UUID', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, partSupplyId: 'not-a-uuid' }),
-      ).toThrow('ID da peça/insumo deve ser um UUID válido.');
+      expect(() => StockReservation.create({ ...validProps, partSupplyId: 'not-a-uuid' })).toThrow(
+        'ID da peça/insumo deve ser um UUID válido.',
+      );
     });
 
     it('should throw when workOrderId is empty', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, workOrderId: '' }),
-      ).toThrow('ID da ordem de serviço é obrigatório.');
+      expect(() => StockReservation.create({ ...validProps, workOrderId: '' })).toThrow(
+        'ID da ordem de serviço é obrigatório.',
+      );
     });
 
     it('should throw when workOrderId is not a valid UUID', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, workOrderId: 'not-a-uuid' }),
-      ).toThrow('ID da ordem de serviço deve ser um UUID válido.');
+      expect(() => StockReservation.create({ ...validProps, workOrderId: 'not-a-uuid' })).toThrow(
+        'ID da ordem de serviço deve ser um UUID válido.',
+      );
     });
 
     it('should throw when quantity is zero', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, quantity: 0 }),
-      ).toThrow('Quantidade deve ser um inteiro positivo.');
+      expect(() => StockReservation.create({ ...validProps, quantity: 0 })).toThrow(
+        'Quantidade deve ser um inteiro positivo.',
+      );
     });
 
     it('should throw when quantity is negative', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, quantity: -1 }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockReservation.create({ ...validProps, quantity: -1 })).toThrow(
+        DomainValidationException,
+      );
     });
 
     it('should throw when quantity is not an integer', () => {
-      expect(() =>
-        StockReservation.create({ ...validProps, quantity: 2.5 }),
-      ).toThrow(DomainValidationException);
+      expect(() => StockReservation.create({ ...validProps, quantity: 2.5 })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 

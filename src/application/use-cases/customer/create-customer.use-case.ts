@@ -5,7 +5,7 @@ import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/cr
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 export class CreateCustomerUseCase implements ICreateCustomerUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) { }
+  constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(input: CreateCustomerDto): Promise<Customer> {
     const sanitizedDocument = input.document.replace(/[.\-/]/g, '').trim();

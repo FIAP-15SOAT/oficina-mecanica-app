@@ -9,7 +9,6 @@ import {
   Min,
   IsDateString,
   MaxLength,
-  IsBoolean,
 } from 'class-validator';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -18,12 +17,12 @@ export class UpdatePartSupplyRequestDto {
   @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Filtro de Óleo' })
   @IsString({ message: 'O nome da Peça ou Insumo deve ser um texto.' })
   @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ description: 'SKU único da Peça ou Insumo no Estoque', example: 'FO-001' })
   @IsString({ message: 'O SKU deve ser um texto.' })
   @MaxLength(60, { message: 'O SKU deve ter no máximo 60 caracteres.' })
-  sku: string;
+  sku!: string;
 
   @ApiProperty({
     enum: PartSupplyCategory,
@@ -33,21 +32,21 @@ export class UpdatePartSupplyRequestDto {
   @IsEnum(PartSupplyCategory, {
     message: 'Categoria inválida. Use PART (Peça) ou SUPPLY (Insumo).',
   })
-  category: PartSupplyCategory;
+  category!: PartSupplyCategory;
 
   @ApiProperty({ enum: Unit, description: 'Unidade de medida', example: Unit.UN })
   @IsEnum(Unit, { message: 'Unidade de medida inválida.' })
-  unit: Unit;
+  unit!: Unit;
 
   @ApiProperty({ description: 'Preço de custo da Peça ou Insumo', example: 25.0 })
   @IsNumber({}, { message: 'O preço de custo deve ser um número.' })
   @IsPositive({ message: 'O preço de custo deve ser positivo.' })
-  costPrice: number;
+  costPrice!: number;
 
   @ApiProperty({ description: 'Preço de venda da Peça ou Insumo', example: 45.0 })
   @IsNumber({}, { message: 'O preço de venda deve ser um número.' })
   @IsPositive({ message: 'O preço de venda deve ser positivo.' })
-  salePrice: number;
+  salePrice!: number;
 
   @ApiPropertyOptional({ description: 'Descrição detalhada', example: 'Filtro para motor 1.0' })
   @IsOptional()

@@ -1,10 +1,7 @@
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface PartSupplyFilters {
   name?: string;

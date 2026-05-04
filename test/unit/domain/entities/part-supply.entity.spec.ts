@@ -232,6 +232,4 @@ describe('PartSupply Entity', () => {
       });
     });
   });
-
-
 });

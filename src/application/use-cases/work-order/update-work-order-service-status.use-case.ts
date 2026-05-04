@@ -10,11 +10,14 @@ import { UpdateWorkOrderServiceStatusDto } from '@domain/interfaces/use-cases/wo
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateWorkOrderServiceStatusUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: UpdateWorkOrderServiceStatusDto): Promise<WorkOrderService> {
     return this.unitOfWork.executeTransaction(async (repos) => {
-      const { workOrder, workOrderService } = await this.validateAndGetWorkOrderAndService(repos, dto);
+      const { workOrder, workOrderService } = await this.validateAndGetWorkOrderAndService(
+        repos,
+        dto,
+      );
 
       if (dto.status === WorkOrderServiceStatus.IN_PROGRESS) {
         await this.processInProgressStatus(repos, workOrder, workOrderService, dto.userId);
@@ -26,7 +29,10 @@ export class UpdateWorkOrderServiceStatusUseCase {
     });
   }
 
-  private async validateAndGetWorkOrderAndService(repos: IRepositories, dto: UpdateWorkOrderServiceStatusDto) {
+  private async validateAndGetWorkOrderAndService(
+    repos: IRepositories,
+    dto: UpdateWorkOrderServiceStatusDto,
+  ) {
     const workOrder = await repos.workOrder.findById(dto.workOrderId);
     if (!workOrder) {
       throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
@@ -56,7 +62,13 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
       await this.updateStockFromReservations(repos, workOrder);
       await this.updateWorkOrderStatus(repos, workOrder, WorkOrderStatus.IN_PROGRESS);
-      await this.createStatusHistory(repos, workOrder.id, userId, previousWoStatus, WorkOrderStatus.IN_PROGRESS);
+      await this.createStatusHistory(
+        repos,
+        workOrder.id,
+        userId,
+        previousWoStatus,
+        WorkOrderStatus.IN_PROGRESS,
+      );
     }
 
     await repos.workOrderService.update(workOrderService);
@@ -75,7 +87,13 @@ export class UpdateWorkOrderServiceStatusUseCase {
     if (isAllCompleted) {
       const previousStatus = workOrder.status;
       await this.updateWorkOrderStatus(repos, workOrder, WorkOrderStatus.COMPLETED);
-      await this.createStatusHistory(repos, workOrder.id, userId, previousStatus, WorkOrderStatus.COMPLETED);
+      await this.createStatusHistory(
+        repos,
+        workOrder.id,
+        userId,
+        previousStatus,
+        WorkOrderStatus.COMPLETED,
+      );
     }
   }
 
@@ -99,7 +117,11 @@ export class UpdateWorkOrderServiceStatusUseCase {
     await repos.stockReservation.deleteByWorkOrderId(workOrder.id);
   }
 
-  private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder, status: WorkOrderStatus) {
+  private async updateWorkOrderStatus(
+    repos: IRepositories,
+    workOrder: WorkOrder,
+    status: WorkOrderStatus,
+  ) {
     workOrder.changeStatus(status);
     await repos.workOrder.update(workOrder);
   }

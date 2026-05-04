@@ -8,6 +8,7 @@ import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/de
 import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { Vehicle } from '@domain/entities/vehicle.entity';
 
 describe('CustomersController', () => {
   let controller: CustomersController;
@@ -43,12 +44,23 @@ describe('CustomersController', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'joao@email.com',
         phone: '11999999999',
-        address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
+        address: {
+          street: 'Rua das Flores, 123',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01310100',
+        },
       };
-      const created = createMockCustomer({ name: dto.name, document: dto.document, type: dto.type, email: dto.email, phone: dto.phone });
+      const created = createMockCustomer({
+        name: dto.name,
+        document: dto.document,
+        type: dto.type,
+        email: dto.email,
+        phone: dto.phone,
+      });
       createUseCase.execute.mockResolvedValue(created);
 
-      const result = await controller.create(dto as any);
+      const result = await controller.create(dto);
 
       expect(result).toEqual({ data: created });
       expect(createUseCase.execute).toHaveBeenCalledWith(dto);
@@ -65,9 +77,12 @@ describe('CustomersController', () => {
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
       const query = { page: 1, limit: 10 };
-      const result = await controller.findAll(query as any);
+      const result = await controller.findAll(query);
 
-      expect(result).toEqual({ data: customers, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
+      expect(result).toEqual({
+        data: customers,
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
+      });
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -86,7 +101,7 @@ describe('CustomersController', () => {
         type: CustomerType.INDIVIDUAL,
         document: '123.456.789-09',
       };
-      await controller.findAll(query as any);
+      await controller.findAll(query);
 
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -106,7 +121,7 @@ describe('CustomersController', () => {
       });
 
       const query = {};
-      await controller.findAll(query as any);
+      await controller.findAll(query);
 
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
@@ -131,7 +146,9 @@ describe('CustomersController', () => {
       const updated = createMockCustomer({ name: 'Novo Nome' });
       updateUseCase.execute.mockResolvedValue(updated);
 
-      const result = await controller.update(updated.id, { name: 'Novo Nome' } as any);
+      const result = await controller.update(updated.id, {
+        name: 'Novo Nome',
+      } as unknown as Parameters<typeof controller.update>[1]);
 
       expect(result).toEqual({ data: updated });
       expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { name: 'Novo Nome' });
@@ -152,7 +169,7 @@ describe('CustomersController', () => {
   describe('findVehiclesByCustomerId', () => {
     it('should return vehicles for customer', async () => {
       const id = randomUUID();
-      const vehicles: any[] = [];
+      const vehicles: Vehicle[] = [];
       findVehiclesUseCase.execute.mockResolvedValue(vehicles);
 
       const result = await controller.findVehiclesByCustomerId(id);

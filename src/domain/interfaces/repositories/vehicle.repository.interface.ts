@@ -1,8 +1,5 @@
 import { Vehicle } from '@domain/entities/vehicle.entity';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface VehicleFilters {
   customerId?: string;

@@ -1,6 +1,9 @@
 import { FindAllServicesMetricsUseCase } from '@application/use-cases/service/find-all-services-metrics.use-case';
 import { PaginationInput } from '@domain/interfaces/common/pagination.interface';
-import { IServiceRepository, ServiceMetrics } from '@domain/interfaces/repositories/service.repository.interface';
+import {
+  IServiceRepository,
+  ServiceMetrics,
+} from '@domain/interfaces/repositories/service.repository.interface';
 import { createMockServiceRepository } from '../../../../helpers/service-mock.factory';
 
 describe('FindAllServicesMetricsUseCase', () => {
@@ -14,7 +17,12 @@ describe('FindAllServicesMetricsUseCase', () => {
 
   it('should return paginated services metrics', async () => {
     const metrics: ServiceMetrics[] = [
-      { serviceId: 'svc-1', serviceName: 'Troca de Óleo', executionCount: 5, averageTimeMinutes: 30 },
+      {
+        serviceId: 'svc-1',
+        serviceName: 'Troca de Óleo',
+        executionCount: 5,
+        averageTimeMinutes: 30,
+      },
     ];
     const input: PaginationInput = { page: 1, limit: 10 };
 

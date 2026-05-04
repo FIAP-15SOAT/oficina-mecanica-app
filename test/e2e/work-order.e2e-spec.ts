@@ -20,11 +20,15 @@ describe('WorkOrder (E2E)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(ctx.prisma);
-    adminAuth = await registerAndLogin(httpServer, {
-      name: 'Admin E2E',
-      email: 'admin@e2e.test',
-      role: 'ADMIN',
-    });
+    adminAuth = await registerAndLogin(
+      httpServer,
+      {
+        name: 'Admin E2E',
+        email: 'admin@e2e.test',
+        role: 'ADMIN',
+      },
+      ctx.prisma,
+    );
   });
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -121,7 +125,10 @@ describe('WorkOrder (E2E)', () => {
       await request(httpServer)
         .post('/api/work-orders')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ customerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', vehicleId: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' })
+        .send({
+          customerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          vehicleId: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+        })
         .expect(404);
     });
 
@@ -139,11 +146,15 @@ describe('WorkOrder (E2E)', () => {
       const vehicle = await createVehicle(customer.id);
 
       // Create a mechanic
-      const mechanic = await registerAndLogin(httpServer, {
-        name: 'Mechanic Assignment',
-        email: `mechanic.assign${Date.now()}@test.com`,
-        role: 'MECHANIC',
-      });
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic Assignment',
+          email: `mechanic.assign${Date.now()}@test.com`,
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       const res = await request(httpServer)
         .post('/api/work-orders')
@@ -151,7 +162,7 @@ describe('WorkOrder (E2E)', () => {
         .send({
           customerId: customer.id,
           vehicleId: vehicle.id,
-          assignedUserId: mechanic.user.id
+          assignedUserId: mechanic.user.id,
         })
         .expect(201);
 
@@ -168,7 +179,7 @@ describe('WorkOrder (E2E)', () => {
         .send({
           customerId: customer.id,
           vehicleId: vehicle.id,
-          assignedUserId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+          assignedUserId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         })
         .expect(404);
     });
@@ -182,7 +193,9 @@ describe('WorkOrder (E2E)', () => {
         .get('/api/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
-      const adminUserId = usersRes.body.data.find((u: any) => u.role === 'ADMIN').id;
+      const adminUserId = usersRes.body.data.find(
+        (u: { role: string; id: string }) => u.role === 'ADMIN',
+      ).id;
 
       await request(httpServer)
         .post('/api/work-orders')
@@ -190,7 +203,7 @@ describe('WorkOrder (E2E)', () => {
         .send({
           customerId: customer.id,
           vehicleId: vehicle.id,
-          assignedUserId: adminUserId
+          assignedUserId: adminUserId,
         })
         .expect(409);
     });
@@ -200,17 +213,21 @@ describe('WorkOrder (E2E)', () => {
       const vehicle = await createVehicle(customer.id);
 
       // Create an inactive mechanic
-      const inactiveMechanic = await registerAndLogin(httpServer, {
-        name: 'Inactive Mechanic',
-        email: `inactive${Date.now()}@test.com`,
-        role: 'MECHANIC',
-      });
+      const inactiveMechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Inactive Mechanic',
+          email: `inactive${Date.now()}@test.com`,
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       // Deactivate the user manually in DB or via API if possible
       // Let's use Prisma directly since it's easier in E2E helpers
       await ctx.prisma.user.update({
         where: { email: inactiveMechanic.user.email },
-        data: { isActive: false }
+        data: { isActive: false },
       });
 
       await request(httpServer)
@@ -219,7 +236,7 @@ describe('WorkOrder (E2E)', () => {
         .send({
           customerId: customer.id,
           vehicleId: vehicle.id,
-          assignedUserId: inactiveMechanic.user.id
+          assignedUserId: inactiveMechanic.user.id,
         })
         .expect(409);
     });
@@ -517,7 +534,9 @@ describe('WorkOrder (E2E)', () => {
 
     it('should return 404 for status update of non-existent work order', async () => {
       await request(httpServer)
-        .patch('/api/work-orders/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22')
+        .patch(
+          '/api/work-orders/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+        )
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'COMPLETED' })
         .expect(404);
@@ -662,11 +681,15 @@ describe('WorkOrder (E2E)', () => {
 
       // Filter by assignedUserId
       // Create another WO with assigned user (must be a mechanic)
-      const mechanic = await registerAndLogin(httpServer, {
-        name: 'Mechanic Filter',
-        email: `mechanic.filter${Date.now()}@test.com`,
-        role: 'MECHANIC',
-      });
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic Filter',
+          email: `mechanic.filter${Date.now()}@test.com`,
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
 
       await request(httpServer)
         .post('/api/work-orders')
@@ -675,7 +698,7 @@ describe('WorkOrder (E2E)', () => {
           customerId: customer.id,
           vehicleId: vehicle.id,
           assignedUserId: mechanic.user.id,
-          problemDescription: 'Assigned WO'
+          problemDescription: 'Assigned WO',
         })
         .expect(201);
 
@@ -684,7 +707,11 @@ describe('WorkOrder (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.every((wo: any) => wo.assignedUser?.id === mechanic.user.id)).toBe(true);
+      expect(
+        res.body.data.every(
+          (wo: { assignedUser?: { id: string } }) => wo.assignedUser?.id === mechanic.user.id,
+        ),
+      ).toBe(true);
     });
   });
 });

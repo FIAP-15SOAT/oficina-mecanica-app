@@ -19,7 +19,10 @@ export class AddressResponseDto {
 }
 
 export class CustomerResponseDto {
-  @ApiProperty({ description: 'ID único do Cliente', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @ApiProperty({
+    description: 'ID único do Cliente',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   id: string;
 
   @ApiProperty({ description: 'Nome do Cliente', example: 'João da Silva' })
@@ -28,7 +31,11 @@ export class CustomerResponseDto {
   @ApiProperty({ description: 'CPF ou CNPJ', example: '123.456.789-09' })
   document: string;
 
-  @ApiProperty({ enum: CustomerType, description: 'Tipo de pessoa', example: CustomerType.INDIVIDUAL })
+  @ApiProperty({
+    enum: CustomerType,
+    description: 'Tipo de pessoa',
+    example: CustomerType.INDIVIDUAL,
+  })
   type: CustomerType;
 
   @ApiProperty({ description: 'E-mail', example: 'joao@email.com' })

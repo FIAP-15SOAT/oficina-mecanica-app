@@ -3,5 +3,4 @@ export interface UpdateServiceDto {
   description?: string | null;
   basePrice: number;
   estimatedTimeMin: number;
-
 }

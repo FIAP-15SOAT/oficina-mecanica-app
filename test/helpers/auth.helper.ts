@@ -1,5 +1,7 @@
 import type { Server } from 'http';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
+import type { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
 export interface AuthTokens {
   accessToken: string;
@@ -15,6 +17,7 @@ export async function registerAndLogin(
     password?: string;
     role?: string;
   } = {},
+  prisma?: PrismaService,
 ): Promise<AuthTokens> {
   const uid = Date.now();
   const name = overrides.name ?? `Test User ${uid}`;
@@ -22,10 +25,21 @@ export async function registerAndLogin(
   const password = overrides.password ?? 'Test@2026';
   const role = overrides.role ?? 'ADMIN';
 
-  await request(app).post('/api/auth/register').send({ name, email, password, role }).expect(201);
+  if (prisma) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash: hashedPassword,
+        role: role as 'ADMIN' | 'MECHANIC' | 'ATTENDANT',
+      },
+    });
+  } else {
+    await request(app).post('/api/users').send({ name, email, password, role }).expect(201);
+  }
 
   const loginRes = await request(app).post('/api/auth/login').send({ email, password }).expect(200);
-
   const { accessToken, refreshToken, user } = loginRes.body.data;
 
   return { accessToken, refreshToken, user };

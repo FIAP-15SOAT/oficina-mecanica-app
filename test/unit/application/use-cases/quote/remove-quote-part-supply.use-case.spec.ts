@@ -3,7 +3,11 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { createMockQuote, createMockQuotePartSupply, createMockQuoteService } from '../../../../helpers/quote-mock.factory';
+import {
+  createMockQuote,
+  createMockQuotePartSupply,
+  createMockQuoteService,
+} from '../../../../helpers/quote-mock.factory';
 
 function buildMockRepos() {
   return {
@@ -21,7 +25,11 @@ describe('RemoveQuotePartSupplyUseCase', () => {
   beforeEach(() => {
     mockRepos = buildMockRepos();
     mockUow = {
-      executeTransaction: jest.fn().mockImplementation((work: any) => work(mockRepos)),
+      executeTransaction: jest
+        .fn()
+        .mockImplementation((work: (repos: ReturnType<typeof buildMockRepos>) => unknown) =>
+          work(mockRepos),
+        ),
     };
     useCase = new RemoveQuotePartSupplyUseCase(mockUow);
   });
@@ -32,7 +40,9 @@ describe('RemoveQuotePartSupplyUseCase', () => {
     const service = createMockQuoteService({ quoteId: quote.id });
 
     mockRepos.quote.findById.mockResolvedValue(quote);
-    mockRepos.quotePartSupply.findOne.mockResolvedValue({ id: partSupply.partSupplyId } as any);
+    mockRepos.quotePartSupply.findOne.mockResolvedValue({
+      id: partSupply.partSupplyId,
+    });
     mockRepos.quotePartSupply.remove.mockResolvedValue(undefined);
     mockRepos.quoteService.findByQuoteId.mockResolvedValue([service]);
     mockRepos.quotePartSupply.findByQuoteId.mockResolvedValue([]);
@@ -40,7 +50,10 @@ describe('RemoveQuotePartSupplyUseCase', () => {
 
     await useCase.execute(quote.id, partSupply.partSupplyId);
 
-    expect(mockRepos.quotePartSupply.remove).toHaveBeenCalledWith(quote.id, partSupply.partSupplyId);
+    expect(mockRepos.quotePartSupply.remove).toHaveBeenCalledWith(
+      quote.id,
+      partSupply.partSupplyId,
+    );
     expect(mockRepos.quote.update).toHaveBeenCalled();
   });
 
@@ -68,9 +81,9 @@ describe('RemoveQuotePartSupplyUseCase', () => {
     mockRepos.quote.findById.mockResolvedValue(quote);
     mockRepos.quotePartSupply.findOne.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute(quote.id, 'nonexistent-part'),
-    ).rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute(quote.id, 'nonexistent-part')).rejects.toThrow(
+      ResourceNotFoundException,
+    );
 
     expect(mockRepos.quotePartSupply.remove).not.toHaveBeenCalled();
   });

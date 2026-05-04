@@ -11,7 +11,7 @@ describe('PrismaQuoteRepository', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
-    repository = new PrismaQuoteRepository(prisma as any);
+    repository = new PrismaQuoteRepository(prisma);
   });
 
   describe('create', () => {
@@ -115,7 +115,6 @@ describe('PrismaQuoteRepository', () => {
       expect(result.length).toBe(1);
     });
   });
-
 
   describe('rejectPendingByWorkOrderId', () => {
     it('should update pending quotes to rejected', async () => {

@@ -1,6 +1,9 @@
 import { FindAllWorkOrdersPaginatedUseCase } from '@application/use-cases/work-order/find-all-work-orders-paginated.use-case';
-import { IWorkOrderRepository, WorkOrderFilters } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { createMockWorkOrder, createMockWorkOrderRepository } from '../../../../helpers/work-order-mock.factory';
+import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import {
+  createMockWorkOrder,
+  createMockWorkOrderRepository,
+} from '../../../../helpers/work-order-mock.factory';
 
 describe('FindAllWorkOrdersPaginatedUseCase', () => {
   let useCase: FindAllWorkOrdersPaginatedUseCase;
@@ -41,6 +44,9 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     await useCase.execute(input);
 
-    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5 }, { customerId: 'cust-1' });
+    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 2, limit: 5 },
+      { customerId: 'cust-1' },
+    );
   });
 });

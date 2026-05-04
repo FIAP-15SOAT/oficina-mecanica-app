@@ -63,7 +63,8 @@ import { WorkOrderController } from './work-order.controller';
     },
     {
       provide: 'IUpdateWorkOrderServiceStatusUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new UpdateWorkOrderServiceStatusUseCase(unitOfWork),
+      useFactory: (unitOfWork: PrismaUnitOfWork) =>
+        new UpdateWorkOrderServiceStatusUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
@@ -76,4 +77,4 @@ import { WorkOrderController } from './work-order.controller';
     },
   ],
 })
-export class WorkOrderModule { }
+export class WorkOrderModule {}

@@ -91,11 +91,15 @@ export class Vehicle {
     }
 
     if (this.brand.length < MIN_BRAND_LENGTH) {
-      throw new DomainValidationException(`Marca deve ter no mínimo ${MIN_BRAND_LENGTH} caracteres`);
+      throw new DomainValidationException(
+        `Marca deve ter no mínimo ${MIN_BRAND_LENGTH} caracteres`,
+      );
     }
 
     if (this.brand.length > MAX_BRAND_LENGTH) {
-      throw new DomainValidationException(`Marca deve ter no máximo ${MAX_BRAND_LENGTH} caracteres`);
+      throw new DomainValidationException(
+        `Marca deve ter no máximo ${MAX_BRAND_LENGTH} caracteres`,
+      );
     }
   }
 
@@ -105,11 +109,15 @@ export class Vehicle {
     }
 
     if (this.model.length < MIN_MODEL_LENGTH) {
-      throw new DomainValidationException(`Modelo deve ter no mínimo ${MIN_MODEL_LENGTH} caracteres`);
+      throw new DomainValidationException(
+        `Modelo deve ter no mínimo ${MIN_MODEL_LENGTH} caracteres`,
+      );
     }
 
     if (this.model.length > MAX_MODEL_LENGTH) {
-      throw new DomainValidationException(`Modelo deve ter no máximo ${MAX_MODEL_LENGTH} caracteres`);
+      throw new DomainValidationException(
+        `Modelo deve ter no máximo ${MAX_MODEL_LENGTH} caracteres`,
+      );
     }
   }
 

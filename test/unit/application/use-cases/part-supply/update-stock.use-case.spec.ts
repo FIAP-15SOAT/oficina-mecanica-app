@@ -61,7 +61,9 @@ describe('UpdateStockUseCase', () => {
   });
 
   it('should throw ResourceConflictException when exit exceeds available Stock', async () => {
-    partSupplyRepository.findById.mockResolvedValue(createMockPartSupply({ id: 'uuid-1', stock: 10 }));
+    partSupplyRepository.findById.mockResolvedValue(
+      createMockPartSupply({ id: 'uuid-1', stock: 10 }),
+    );
 
     await expect(
       useCase.execute('uuid-1', {

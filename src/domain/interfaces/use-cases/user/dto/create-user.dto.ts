@@ -6,7 +6,6 @@ export interface CreateUserDto {
   email: string;
   password: string;
   role?: UserRole;
-  isActive?: boolean;
 }
 
 export type CreateUserOutputDto = UserPublicView;

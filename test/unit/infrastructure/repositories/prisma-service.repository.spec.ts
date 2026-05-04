@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Service as PrismaServiceModel, Prisma } from '@generated/client';
+import { Prisma } from '@generated/client';
 import { Service } from '@domain/entities/service.entity';
 import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
@@ -65,9 +65,7 @@ describe('PrismaServiceRepository', () => {
       });
       prisma.service.create.mockRejectedValue(error);
 
-      await expect(repository.create(service as any)).rejects.toThrow(
-        'Serviço já cadastrado',
-      );
+      await expect(repository.create(service)).rejects.toThrow('Serviço já cadastrado');
     });
 
     it('should rethrow unknown errors', async () => {
@@ -75,9 +73,7 @@ describe('PrismaServiceRepository', () => {
       const error = new Error('Database connection failed');
       prisma.service.create.mockRejectedValue(error);
 
-      await expect(repository.create(service as any)).rejects.toThrow(
-        'Database connection failed',
-      );
+      await expect(repository.create(service)).rejects.toThrow('Database connection failed');
     });
   });
 
@@ -278,7 +274,7 @@ describe('PrismaServiceRepository', () => {
   describe('hasWorkOrderServices', () => {
     it('should return true if record exists', async () => {
       const id = randomUUID();
-      prisma.workOrderService.findFirst.mockResolvedValue({ serviceId: id } as any);
+      prisma.workOrderService.findFirst.mockResolvedValue({ serviceId: id });
 
       const result = await repository.hasWorkOrderServices(id);
 
@@ -302,7 +298,7 @@ describe('PrismaServiceRepository', () => {
   describe('hasQuoteServices', () => {
     it('should return true if record exists', async () => {
       const id = randomUUID();
-      prisma.quoteService.findFirst.mockResolvedValue({ serviceId: id } as any);
+      prisma.quoteService.findFirst.mockResolvedValue({ serviceId: id });
 
       const result = await repository.hasQuoteServices(id);
 

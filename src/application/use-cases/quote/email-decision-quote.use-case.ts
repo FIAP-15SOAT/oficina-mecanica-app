@@ -3,7 +3,7 @@ import { ITokenService } from '@domain/interfaces/services/token.service.interfa
 import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
 import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
-import { QuoteEmailDecisionAction } from '@domain/enums/quote-email-decision-action.enum';
+import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
 interface QuoteEmailDecisionTokenPayload {
@@ -18,14 +18,14 @@ export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
     private readonly approveQuoteUseCase: IApproveQuoteUseCase,
     private readonly rejectQuoteUseCase: IRejectQuoteUseCase,
     private readonly decisionSecret: string,
-  ) { }
+  ) {}
 
-  async execute(quoteId: string, action: QuoteEmailDecisionAction, token: string): Promise<Quote> {
+  async execute(quoteId: string, action: QuoteDecisionAction, token: string): Promise<Quote> {
     const payload = this.verifyToken(token);
 
     this.validatePayload(payload, quoteId, action);
 
-    if (action === QuoteEmailDecisionAction.APPROVE) {
+    if (action === QuoteDecisionAction.APPROVE) {
       return this.approveQuoteUseCase.execute(quoteId);
     }
 

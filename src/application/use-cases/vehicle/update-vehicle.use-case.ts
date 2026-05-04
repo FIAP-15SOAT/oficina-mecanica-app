@@ -10,7 +10,7 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
   constructor(
     private readonly vehicleRepository: IVehicleRepository,
     private readonly customerRepository: ICustomerRepository,
-  ) { }
+  ) {}
 
   async execute(id: string, input: UpdateVehicleDto): Promise<Vehicle> {
     const existing = await this.vehicleRepository.findById(id);
@@ -39,7 +39,7 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
 
     return this.vehicleRepository.update(id, {
       ...input,
-      plate: sanitizedPlate
+      plate: sanitizedPlate,
     });
   }
 }

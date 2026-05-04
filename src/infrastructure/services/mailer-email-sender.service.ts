@@ -10,7 +10,7 @@ import { ServiceIntegrationException } from '@infrastructure/exceptions/service-
 export class MailerEmailSenderService implements IEmailSenderService {
   private readonly logger = new Logger(MailerEmailSenderService.name);
 
-  constructor(private readonly mailerService: MailerService) { }
+  constructor(private readonly mailerService: MailerService) {}
 
   async send(input: SendEmailInput): Promise<void> {
     const { toEmail, toName, subject, message } = input;

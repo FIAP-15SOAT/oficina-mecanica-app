@@ -8,12 +8,15 @@ import {
 } from '@domain/interfaces/repositories/quote.repository.interface';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaQuoteRepository implements IQuoteRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(quote: Quote): Promise<Quote> {
     const record = await this.prisma.quote.create({

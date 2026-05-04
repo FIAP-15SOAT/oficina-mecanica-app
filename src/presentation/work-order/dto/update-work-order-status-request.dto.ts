@@ -11,11 +11,18 @@ const PATCH_STATUS_ALLOWED = [
 type PatchStatusAllowed = (typeof PATCH_STATUS_ALLOWED)[number];
 
 export class UpdateWorkOrderStatusRequestDto {
-  @ApiProperty({ description: 'Novo status da ordem de serviço', enum: PATCH_STATUS_ALLOWED, example: WorkOrderStatus.IN_DIAGNOSIS })
+  @ApiProperty({
+    description: 'Novo status da ordem de serviço',
+    enum: PATCH_STATUS_ALLOWED,
+    example: WorkOrderStatus.IN_DIAGNOSIS,
+  })
   @IsEnum(PATCH_STATUS_ALLOWED)
   status!: PatchStatusAllowed;
 
-  @ApiPropertyOptional({ description: 'Observações sobre a alteração de status', example: 'Cancelado a pedido do cliente' })
+  @ApiPropertyOptional({
+    description: 'Observações sobre a alteração de status',
+    example: 'Cancelado a pedido do cliente',
+  })
   @IsOptional()
   @IsString()
   notes?: string | null;

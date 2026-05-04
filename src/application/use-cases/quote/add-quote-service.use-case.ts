@@ -6,7 +6,7 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 export class AddQuoteServiceUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) { }
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: AddQuoteServiceDto): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {

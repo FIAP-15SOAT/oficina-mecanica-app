@@ -8,7 +8,7 @@ import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 @Injectable()
 export class FindAllQuotesPaginatedUseCase implements IFindAllQuotesPaginatedUseCase {
-  constructor(private readonly quoteRepository: IQuoteRepository) { }
+  constructor(private readonly quoteRepository: IQuoteRepository) {}
 
   async execute(input: FindAllQuotesPaginatedInput): Promise<PaginatedResult<Quote>> {
     const { page, limit, ...filters } = input;

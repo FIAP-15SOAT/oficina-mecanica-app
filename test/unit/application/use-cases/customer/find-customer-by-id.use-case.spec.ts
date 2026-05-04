@@ -1,7 +1,10 @@
 import { FindCustomerByIdUseCase } from '@application/use-cases/customer/find-customer-by-id.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
 
 describe('FindCustomerByIdUseCase', () => {
   let useCase: FindCustomerByIdUseCase;
@@ -25,8 +28,7 @@ describe('FindCustomerByIdUseCase', () => {
   it('should throw ResourceNotFoundException when not found', async () => {
     customerRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('non-existent-id'))
-      .rejects.toThrow(ResourceNotFoundException);
+    await expect(useCase.execute('non-existent-id')).rejects.toThrow(ResourceNotFoundException);
     expect(customerRepository.findById).toHaveBeenCalledWith('non-existent-id');
   });
 });

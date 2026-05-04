@@ -1,8 +1,5 @@
 import { StockReservation } from '../../entities/stock-reservation.entity';
-import {
-  PaginatedRepositoryResult,
-  PaginationInput,
-} from '../common/pagination.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface StockReservationFilters {
   partSupplyId?: string;

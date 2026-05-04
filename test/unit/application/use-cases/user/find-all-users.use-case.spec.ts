@@ -32,9 +32,7 @@ describe('FindAllUsersUseCase', () => {
   });
 
   it('should return paginated list with role filter', async () => {
-    const users = [
-      createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN }),
-    ];
+    const users = [createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN })];
     userRepository.findAllPaginated.mockResolvedValue({
       items: users,
       total: 1,
@@ -51,9 +49,7 @@ describe('FindAllUsersUseCase', () => {
   });
 
   it('should return paginated list with name filter', async () => {
-    const users = [
-      createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN }),
-    ];
+    const users = [createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN })];
     userRepository.findAllPaginated.mockResolvedValue({
       items: users,
       total: 1,

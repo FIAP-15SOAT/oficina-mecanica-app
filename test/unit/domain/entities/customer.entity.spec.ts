@@ -57,97 +57,135 @@ describe('Customer Entity', () => {
 
     describe('name validation', () => {
       it('should throw if name is too short (< 3 chars)', () => {
-        expect(() => Customer.create({ ...validProps, name: 'Jo' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, name: 'Jo' }))
-          .toThrow('Nome deve ter no mínimo 3 caracteres');
+        expect(() => Customer.create({ ...validProps, name: 'Jo' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, name: 'Jo' })).toThrow(
+          'Nome deve ter no mínimo 3 caracteres',
+        );
       });
       it('should throw if name is too long (> 150 chars)', () => {
-        expect(() => Customer.create({ ...validProps, name: 'A'.repeat(151) }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, name: 'A'.repeat(151) }))
-          .toThrow('Nome deve ter no máximo 150 caracteres');
+        expect(() => Customer.create({ ...validProps, name: 'A'.repeat(151) })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, name: 'A'.repeat(151) })).toThrow(
+          'Nome deve ter no máximo 150 caracteres',
+        );
       });
       it('should throw if name is empty', () => {
-        expect(() => Customer.create({ ...validProps, name: '' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, name: '' }))
-          .toThrow('Nome é obrigatório');
+        expect(() => Customer.create({ ...validProps, name: '' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, name: '' })).toThrow('Nome é obrigatório');
       });
     });
 
     describe('document validation', () => {
       it('should throw if document is empty', () => {
-        expect(() => Customer.create({ ...validProps, document: '' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, document: '' }))
-          .toThrow('Documento é obrigatório');
+        expect(() => Customer.create({ ...validProps, document: '' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, document: '' })).toThrow(
+          'Documento é obrigatório',
+        );
       });
       it('should throw if CPF fails digit verification (invalid check digits)', () => {
-        expect(() => Customer.create({ ...validProps, document: '12345678900' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, document: '12345678900' }))
-          .toThrow('Pessoa física deve informar um CPF válido');
+        expect(() => Customer.create({ ...validProps, document: '12345678900' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, document: '12345678900' })).toThrow(
+          'Pessoa física deve informar um CPF válido',
+        );
       });
       it('should throw if document does not match CPF or CNPJ pattern', () => {
-        expect(() => Customer.create({ ...validProps, document: '123.456.789' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, document: '123.456.789' }))
-          .toThrow('Pessoa física deve informar um CPF válido');
+        expect(() => Customer.create({ ...validProps, document: '123.456.789' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, document: '123.456.789' })).toThrow(
+          'Pessoa física deve informar um CPF válido',
+        );
       });
       it('should throw if INDIVIDUAL uses CNPJ document', () => {
-        expect(() => Customer.create({ ...validProps, type: CustomerType.INDIVIDUAL, document: '12.345.678/0001-95' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, type: CustomerType.INDIVIDUAL, document: '12.345.678/0001-95' }))
-          .toThrow('Pessoa física deve informar um CPF válido');
+        expect(() =>
+          Customer.create({
+            ...validProps,
+            type: CustomerType.INDIVIDUAL,
+            document: '12.345.678/0001-95',
+          }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Customer.create({
+            ...validProps,
+            type: CustomerType.INDIVIDUAL,
+            document: '12.345.678/0001-95',
+          }),
+        ).toThrow('Pessoa física deve informar um CPF válido');
       });
       it('should throw if COMPANY uses CPF document', () => {
-        expect(() => Customer.create({ ...validProps, type: CustomerType.COMPANY, document: '123.456.789-09' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, type: CustomerType.COMPANY, document: '123.456.789-09' }))
-          .toThrow('Pessoa jurídica deve informar um CNPJ válido');
+        expect(() =>
+          Customer.create({
+            ...validProps,
+            type: CustomerType.COMPANY,
+            document: '123.456.789-09',
+          }),
+        ).toThrow(DomainValidationException);
+        expect(() =>
+          Customer.create({
+            ...validProps,
+            type: CustomerType.COMPANY,
+            document: '123.456.789-09',
+          }),
+        ).toThrow('Pessoa jurídica deve informar um CNPJ válido');
       });
     });
 
     describe('email validation', () => {
       it('should throw if email is empty', () => {
-        expect(() => Customer.create({ ...validProps, email: '' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, email: '' }))
-          .toThrow('E-mail é obrigatório');
+        expect(() => Customer.create({ ...validProps, email: '' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, email: '' })).toThrow('E-mail é obrigatório');
       });
       it('should throw if email has no @ symbol', () => {
-        expect(() => Customer.create({ ...validProps, email: 'notanemail' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, email: 'notanemail' }))
-          .toThrow('E-mail inválido');
+        expect(() => Customer.create({ ...validProps, email: 'notanemail' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, email: 'notanemail' })).toThrow(
+          'E-mail inválido',
+        );
       });
       it('should throw if email has no domain', () => {
-        expect(() => Customer.create({ ...validProps, email: 'user@' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, email: 'user@' }))
-          .toThrow('E-mail inválido');
+        expect(() => Customer.create({ ...validProps, email: 'user@' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, email: 'user@' })).toThrow('E-mail inválido');
       });
     });
 
     describe('phone validation', () => {
       it('should throw if phone is empty', () => {
-        expect(() => Customer.create({ ...validProps, phone: '' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, phone: '' }))
-          .toThrow('Telefone é obrigatório');
+        expect(() => Customer.create({ ...validProps, phone: '' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, phone: '' })).toThrow(
+          'Telefone é obrigatório',
+        );
       });
       it('should throw if phone has invalid format', () => {
-        expect(() => Customer.create({ ...validProps, phone: '1234567' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, phone: '1234567' }))
-          .toThrow('Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999');
+        expect(() => Customer.create({ ...validProps, phone: '1234567' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, phone: '1234567' })).toThrow(
+          'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999',
+        );
       });
       it('should throw if phone does not match phone pattern', () => {
-        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' }))
-          .toThrow(DomainValidationException);
-        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' }))
-          .toThrow('Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999');
+        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' })).toThrow(
+          DomainValidationException,
+        );
+        expect(() => Customer.create({ ...validProps, phone: 'abc-defg-hijk' })).toThrow(
+          'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999',
+        );
       });
     });
   });

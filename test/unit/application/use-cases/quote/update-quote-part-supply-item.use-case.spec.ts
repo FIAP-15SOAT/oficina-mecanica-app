@@ -20,8 +20,18 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
 
   it('should update a part supply item and recalculate totals', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    const existing = createMockQuotePartSupply({ quoteId: quote.id, quantity: 1, unitPrice: 80, totalPrice: 80 });
-    const updatedPart = createMockQuotePartSupply({ ...existing, quantity: 3, unitPrice: 80, totalPrice: 240 });
+    const existing = createMockQuotePartSupply({
+      quoteId: quote.id,
+      quantity: 1,
+      unitPrice: 80,
+      totalPrice: 80,
+    });
+    const updatedPart = createMockQuotePartSupply({
+      ...existing,
+      quantity: 3,
+      unitPrice: 80,
+      totalPrice: 240,
+    });
     const updatedQuote = createMockQuote({ ...quote, partsAmount: 240, totalAmount: 240 });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
@@ -49,7 +59,6 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
       useCase.execute({ quoteId: 'bad', partSupplyId: 'any', quantity: 1 }),
     ).rejects.toThrow(ResourceNotFoundException);
   });
-
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
     const quote = createMockQuote({ status: QuoteStatus.APPROVED });

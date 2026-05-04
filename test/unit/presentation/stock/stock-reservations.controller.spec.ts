@@ -1,9 +1,12 @@
 import { StockReservationsController } from '@presentation/stock/stock-reservations.controller';
 import { randomUUID } from 'node:crypto';
+import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-reservations.use-case.interface';
+import { StockReservation } from '@domain/entities/stock-reservation.entity';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 
 describe('StockReservationsController', () => {
   let controller: StockReservationsController;
-  let findStockReservationsUseCase: any;
+  let findStockReservationsUseCase: jest.Mocked<IFindStockReservationsUseCase>;
 
   beforeEach(() => {
     findStockReservationsUseCase = { execute: jest.fn() };
@@ -17,19 +20,29 @@ describe('StockReservationsController', () => {
       const partSupplyId = randomUUID();
       const workOrderId = randomUUID();
       const resultUseCase = {
-        items: [{ id: randomUUID(), partSupplyId, workOrderId, quantity: 5, createdAt: new Date() }],
+        items: [
+          { id: randomUUID(), partSupplyId, workOrderId, quantity: 5, createdAt: new Date() },
+        ],
         pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
       };
-      findStockReservationsUseCase.execute.mockResolvedValue(resultUseCase);
-
-      const result = await controller.getStockReservations(
-        { page, limit, partSupplyId, workOrderId },
+      findStockReservationsUseCase.execute.mockResolvedValue(
+        resultUseCase as unknown as PaginatedResult<StockReservation>,
       );
+
+      const result = await controller.getStockReservations({
+        page,
+        limit,
+        partSupplyId,
+        workOrderId,
+      });
 
       expect(result.data).toHaveLength(1);
-      expect(findStockReservationsUseCase.execute).toHaveBeenCalledWith(
-        { page, limit, partSupplyId, workOrderId },
-      );
+      expect(findStockReservationsUseCase.execute).toHaveBeenCalledWith({
+        page,
+        limit,
+        partSupplyId,
+        workOrderId,
+      });
     });
 
     it('should use default pagination values when not provided', async () => {

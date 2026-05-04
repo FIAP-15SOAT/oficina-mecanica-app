@@ -12,7 +12,7 @@ type MockDelegate = {
   deleteMany: jest.Mock;
   upsert: jest.Mock;
   createMany: jest.Mock;
-  fields?: Record<string, any>;
+  fields?: Record<string, unknown>;
 };
 
 const createMockDelegate = (): MockDelegate => ({
@@ -71,12 +71,14 @@ export function createMockPrismaClient(): MockPrismaService {
     statusHistory: createMockDelegate(),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
-    $transaction: jest.fn().mockImplementation((arg: any) => {
-      if (typeof arg === 'function') {
-        return arg(createMockPrismaClient());
-      }
-      return Promise.all(arg);
-    }),
+    $transaction: jest
+      .fn()
+      .mockImplementation((arg: ((client: MockPrismaService) => unknown) | unknown[]) => {
+        if (typeof arg === 'function') {
+          return arg(createMockPrismaClient());
+        }
+        return Promise.all(arg);
+      }),
     $queryRaw: jest.fn(),
   } as unknown as MockPrismaService;
 }

@@ -6,7 +6,7 @@ import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagi
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPaginatedUseCase {
-  constructor(private readonly workOrderRepository: IWorkOrderRepository) { }
+  constructor(private readonly workOrderRepository: IWorkOrderRepository) {}
 
   async execute(input: FindAllWorkOrdersFilters): Promise<PaginatedResult<WorkOrder>> {
     const { page, limit, ...filters } = input;

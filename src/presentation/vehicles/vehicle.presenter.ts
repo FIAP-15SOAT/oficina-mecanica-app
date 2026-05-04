@@ -1,6 +1,10 @@
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
-import { CustomerSummaryDto, VehicleDataResponseDto, VehicleResponseDto } from './dto/vehicle-response.dto';
+import {
+  CustomerSummaryDto,
+  VehicleDataResponseDto,
+  VehicleResponseDto,
+} from './dto/vehicle-response.dto';
 import { VehiclePaginatedResponseDto } from './dto/vehicle-paginated-response.dto';
 
 export class VehiclePresenter {
@@ -32,14 +36,14 @@ export class VehiclePresenter {
 
   static toPaginatedDataResponse(result: PaginatedResult<Vehicle>): VehiclePaginatedResponseDto {
     return {
-      data: result.items.map(VehiclePresenter.toResponse),
+      data: result.items.map((v) => VehiclePresenter.toResponse(v)),
       pagination: result.pagination,
     };
   }
 
   static toListDataResponse(vehicles: Vehicle[]): { data: VehicleResponseDto[] } {
     return {
-      data: vehicles.map(VehiclePresenter.toResponse),
+      data: vehicles.map((v) => VehiclePresenter.toResponse(v)),
     };
   }
 }

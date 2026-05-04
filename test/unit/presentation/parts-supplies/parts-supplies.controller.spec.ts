@@ -11,7 +11,6 @@ import { IDeletePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supp
 import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/update-stock.use-case.interface';
 import { CreatePartSupplyRequestDto } from '@presentation/parts-supplies/dto/create-part-supply-request.dto';
 import { UpdatePartSupplyRequestDto } from '@presentation/parts-supplies/dto/update-part-supply-request.dto';
-import { FilterPartsSuppliesDto } from '@presentation/parts-supplies/dto/filter-parts-supplies.dto';
 import { UpdateStockDto } from '@presentation/parts-supplies/dto/update-stock.dto';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 
@@ -95,7 +94,7 @@ describe('PartsSuppliesController', () => {
 
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const query: any = {};
+      const query: Parameters<typeof controller.findAll>[0] = {};
       const result = await controller.findAll(query);
 
       expect(result).toEqual({
@@ -117,7 +116,7 @@ describe('PartsSuppliesController', () => {
 
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const query: any = {
+      const query: Parameters<typeof controller.findAll>[0] = {
         page: 1,
         limit: 10,
         name: 'Filtro',

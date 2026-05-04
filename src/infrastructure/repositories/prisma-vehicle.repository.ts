@@ -7,12 +7,15 @@ import {
 } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { VehicleMapper } from '@infrastructure/mappers/vehicle.mapper';
-import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaVehicleRepository implements IVehicleRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(vehicle: Vehicle): Promise<Vehicle> {
     const record = await this.prisma.vehicle.create({
@@ -73,7 +76,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       {
         where,
         orderBy: { createdAt: 'desc' },
-        include: { customer: true }
+        include: { customer: true },
       },
       pagination,
     );

@@ -19,7 +19,7 @@ import { PrismaUserRepository } from './prisma-user.repository';
 
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async executeTransaction<T>(work: (repositories: IRepositories) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -28,7 +28,9 @@ export class PrismaUnitOfWork implements IUnitOfWork {
         vehicle: new PrismaVehicleRepository(tx as unknown as PrismaService),
         workOrder: new PrismaWorkOrderRepository(tx as unknown as PrismaService),
         workOrderService: new PrismaWorkOrderServiceRepository(tx as unknown as PrismaService),
-        workOrderPartSupply: new PrismaWorkOrderPartSupplyRepository(tx as unknown as PrismaService),
+        workOrderPartSupply: new PrismaWorkOrderPartSupplyRepository(
+          tx as unknown as PrismaService,
+        ),
         quote: new PrismaQuoteRepository(tx as unknown as PrismaService),
         quoteService: new PrismaQuoteServiceRepository(tx as unknown as PrismaService),
         quotePartSupply: new PrismaQuotePartSupplyRepository(tx as unknown as PrismaService),

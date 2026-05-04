@@ -1,6 +1,9 @@
 import { FindAllCustomersUseCase } from '@application/use-cases/customer/find-all-customers.use-case';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { createMockCustomer, createMockCustomerRepository } from '../../../../helpers/customer-mock.factory';
+import {
+  createMockCustomer,
+  createMockCustomerRepository,
+} from '../../../../helpers/customer-mock.factory';
 
 describe('FindAllCustomersUseCase', () => {
   let useCase: FindAllCustomersUseCase;
@@ -38,6 +41,9 @@ describe('FindAllCustomersUseCase', () => {
 
     await useCase.execute({ page: 2, limit: 5, name: 'João' });
 
-    expect(customerRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5 }, { name: 'João' });
+    expect(customerRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 2, limit: 5 },
+      { name: 'João' },
+    );
   });
 });
