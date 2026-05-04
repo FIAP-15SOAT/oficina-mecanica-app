@@ -342,6 +342,55 @@ describe('PrismaServiceRepository', () => {
       expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
+    it('should round averageTimeMinutes to 2 decimal places', async () => {
+      const id = randomUUID();
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          service_id: id,
+          service_name: 'Test Service',
+          execution_count: 3n,
+          avg_minutes: 30.567,
+        },
+      ]);
+
+      const result = await repository.findServiceMetrics(id);
+
+      expect(result.averageTimeMinutes).toBe(30.57);
+    });
+
+    it('should convert Decimal-like object to number for averageTimeMinutes', async () => {
+      const id = randomUUID();
+      const decimalLike = { valueOf: () => 45.999, toString: () => '45.999' };
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          service_id: id,
+          service_name: 'Test Service',
+          execution_count: 2n,
+          avg_minutes: decimalLike,
+        },
+      ]);
+
+      const result = await repository.findServiceMetrics(id);
+
+      expect(result.averageTimeMinutes).toBe(46.0);
+    });
+
+    it('should return null averageTimeMinutes when avg_minutes is null', async () => {
+      const id = randomUUID();
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          service_id: id,
+          service_name: 'Test Service',
+          execution_count: 0n,
+          avg_minutes: null,
+        },
+      ]);
+
+      const result = await repository.findServiceMetrics(id);
+
+      expect(result.averageTimeMinutes).toBeNull();
+    });
+
     it('should throw DatabaseOperationException if service not found', async () => {
       const id = randomUUID();
       prisma.$queryRaw.mockResolvedValue([]);
@@ -374,6 +423,38 @@ describe('PrismaServiceRepository', () => {
       });
       expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(prisma.service.count).toHaveBeenCalled();
+    });
+
+    it('should round averageTimeMinutes to 2 decimal places', async () => {
+      const mockRow = {
+        service_id: randomUUID(),
+        service_name: 'Test Service',
+        execution_count: 4n,
+        avg_minutes: 12.3456,
+      };
+
+      prisma.$queryRaw.mockResolvedValue([mockRow]);
+      prisma.service.count.mockResolvedValue(1);
+
+      const result = await repository.findAllServicesMetrics({ page: 1, limit: 10 });
+
+      expect(result.items[0].averageTimeMinutes).toBe(12.35);
+    });
+
+    it('should return null averageTimeMinutes when avg_minutes is null', async () => {
+      const mockRow = {
+        service_id: randomUUID(),
+        service_name: 'Test Service',
+        execution_count: 0n,
+        avg_minutes: null,
+      };
+
+      prisma.$queryRaw.mockResolvedValue([mockRow]);
+      prisma.service.count.mockResolvedValue(1);
+
+      const result = await repository.findAllServicesMetrics({ page: 1, limit: 10 });
+
+      expect(result.items[0].averageTimeMinutes).toBeNull();
     });
   });
 });

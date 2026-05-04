@@ -30,6 +30,7 @@ export class PrismaWorkOrderServiceRepository implements IWorkOrderServiceReposi
   ): Promise<WorkOrderService | null> {
     const record = await this.prisma.workOrderService.findUnique({
       where: { workOrderId_serviceId: { workOrderId, serviceId } },
+      include: { service: true },
     });
 
     return record ? WorkOrderServiceMapper.toDomain(record) : null;

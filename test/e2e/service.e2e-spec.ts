@@ -334,6 +334,17 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+
+      for (const item of res.body.data) {
+        expect(
+          item.averageTimeMinutes === null || typeof item.averageTimeMinutes === 'number',
+        ).toBe(true);
+
+        if (item.averageTimeMinutes !== null) {
+          const decimalPart = item.averageTimeMinutes.toString().split('.')[1] ?? '';
+          expect(decimalPart.length).toBeLessThanOrEqual(2);
+        }
+      }
     });
 
     it('should use default pagination (page=1, limit=10) for metrics when not provided', async () => {
@@ -413,11 +424,11 @@ describe('Service (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.executionCount).toBeGreaterThanOrEqual(1);
-      // averageTimeMinutes might be a Decimal object in JSON: {"d": [60], "e": 1, "s": 1}
-      const avgTime = res.body.data.averageTimeMinutes?.d
-        ? res.body.data.averageTimeMinutes.d[0]
-        : res.body.data.averageTimeMinutes;
-      expect(Number(avgTime)).toBeGreaterThan(0);
+      expect(typeof res.body.data.averageTimeMinutes).toBe('number');
+      expect(res.body.data.averageTimeMinutes).toBeCloseTo(60, 0);
+      const decimalStr = res.body.data.averageTimeMinutes.toString();
+      const decimalPart = decimalStr.includes('.') ? decimalStr.split('.')[1] : '';
+      expect(decimalPart.length).toBeLessThanOrEqual(2);
     });
 
     it('should return 403 for metrics when user is not ADMIN', async () => {

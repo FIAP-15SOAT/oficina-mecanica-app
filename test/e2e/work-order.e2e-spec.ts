@@ -641,6 +641,63 @@ describe('WorkOrder (E2E)', () => {
         .expect(200);
       expect(stockRes.body.data.length).toBeGreaterThan(0);
     });
+
+    it('should return 409 when updating service to the same status', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Revisão Geral', basePrice: 200, estimatedTimeMin: 60 })
+        .expect(201);
+      const serviceId = serviceRes.body.data.id;
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      // Transition to IN_PROGRESS
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
+      // Attempt same transition again — should conflict
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/work-orders (Filters) ────────────────────────────────────────

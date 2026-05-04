@@ -2,6 +2,7 @@ import { validate as isUuid } from 'uuid';
 import { randomUUID } from 'node:crypto';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { Service } from './service.entity';
 
 export interface CreateWorkOrderServiceProps {
@@ -55,6 +56,10 @@ export class WorkOrderService {
   }
 
   startService(): void {
+    if (this.status === WorkOrderServiceStatus.IN_PROGRESS) {
+      throw new BusinessRuleViolationException('O serviço já está em andamento.');
+    }
+
     const now = new Date();
     this.status = WorkOrderServiceStatus.IN_PROGRESS;
     this.startedAt = now;
@@ -62,6 +67,10 @@ export class WorkOrderService {
   }
 
   completeService(): void {
+    if (this.status === WorkOrderServiceStatus.COMPLETED) {
+      throw new BusinessRuleViolationException('O serviço já está concluído.');
+    }
+
     const now = new Date();
     this.status = WorkOrderServiceStatus.COMPLETED;
     this.finishedAt = now;

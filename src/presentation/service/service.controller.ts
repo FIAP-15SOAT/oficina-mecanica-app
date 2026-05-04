@@ -72,6 +72,7 @@ export class ServiceController {
 
   @Get(':id/metrics')
   @Roles(UserRole.ADMIN)
+  @ApiTags('Gestão de Serviços - Métricas')
   @ApiOperation({ summary: 'Obter métricas de um serviço específico' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({

@@ -1,6 +1,7 @@
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderService Entity', () => {
@@ -84,6 +85,13 @@ describe('WorkOrderService Entity', () => {
       expect(wos.startedAt).toBeInstanceOf(Date);
       expect(wos.updatedAt).toBeInstanceOf(Date);
     });
+
+    it('should throw BusinessRuleViolationException when already IN_PROGRESS', () => {
+      const wos = WorkOrderService.create(validProps);
+      wos.startService();
+
+      expect(() => wos.startService()).toThrow(BusinessRuleViolationException);
+    });
   });
 
   describe('completeService()', () => {
@@ -95,6 +103,14 @@ describe('WorkOrderService Entity', () => {
       expect(wos.status).toBe(WorkOrderServiceStatus.COMPLETED);
       expect(wos.finishedAt).toBeInstanceOf(Date);
       expect(wos.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('should throw BusinessRuleViolationException when already COMPLETED', () => {
+      const wos = WorkOrderService.create(validProps);
+      wos.startService();
+      wos.completeService();
+
+      expect(() => wos.completeService()).toThrow(BusinessRuleViolationException);
     });
   });
 });
