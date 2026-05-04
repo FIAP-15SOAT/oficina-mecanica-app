@@ -1,0 +1,3979 @@
+<!DOCTYPE html>
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>ZAP by GL3R Scanning Report</title>
+<link href="ZAP-Report/common.css"
+	rel="stylesheet" type="text/css">
+<link href="ZAP-Report/console.css" rel="stylesheet" type="text/css">
+<script src="ZAP-Report/chart.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    function showHide(id) {
+        showHideElement(id + "reqh");
+        showHideElement(id + "reqb");
+        showHideElement(id + "resph");
+        showHideElement(id + "respb");
+    }
+    function showHideElement(id) {
+        var x = document.getElementById(id);
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+</script>
+<link rel="stylesheet" href="ZAP-Report/chart.min.css">
+</head>
+<body>
+
+	
+		<div class="hero"></div>
+	
+
+	<header id="header">
+		<div class="wrap">
+			<div class="inner">
+				<h1>
+					<!-- The ZAP Logo -->
+					<img src="ZAP-Report/zap32x32.png" alt="ZAP" />
+					ZAP by GL3R Scanning Report
+				</h1>
+			</div>
+		</div>
+	</header>
+
+	<section id="segment-01" class="container">
+		<div class="wrap">
+			<div class="inner pt3">
+
+				
+
+				<h3>
+					Generated on Wed, 29 Apr 2026 08:22:00
+				</h3>
+
+				<h3>
+					ZAP Version: 2.17.0
+				</h3>
+
+				<h4>
+					ZAP by <a href="https://checkmarx.com/">Checkmarx</a>
+				</h4>
+
+				
+					<!--  Hidden divs just to allow us to get hold of the right CSS colors -->
+					<div class="risk-3-chart" style="display: none;"></div>
+					<div class="risk-2-chart" style="display: none;"></div>
+					<div class="risk-1-chart" style="display: none;"></div>
+					<div class="risk-0-chart" style="display: none;"></div>
+					<div class="chart-text-color" style="display: none;"></div>
+
+					<div class="summaryChartWrapper">
+						<canvas id="summaryChart" width="550" height="300"></canvas>
+						<script type="text/javascript">
+                            /*<![CDATA[*/
+                            var title = "Alert Chart";
+                            var labels = [
+                            "High",
+                            "Medium",
+                            "Low",
+                            "Informational"];
+                            var data = [
+                            null,
+                            1,
+                            2,
+                            3];
+                            /*]]>*/
+
+                            const fontColor = getComputedStyle(document
+                                    .querySelector('.chart-text-color')).color;
+
+                            var options = {
+                                responsive : true,
+                                legend : {
+                                    position : 'bottom',
+                                    labels : {
+                                        fontColor : fontColor,
+                                        padding : 30
+                                    }
+                                }
+                            }
+
+                            const chartHigh = getComputedStyle(document
+                                    .querySelector('.risk-3-chart')).backgroundColor;
+                            const chartMed = getComputedStyle(document
+                                    .querySelector('.risk-2-chart')).backgroundColor;
+                            const chartLow = getComputedStyle(document
+                                    .querySelector('.risk-1-chart')).backgroundColor;
+                            const chartInfo = getComputedStyle(document
+                                    .querySelector('.risk-0-chart')).backgroundColor;
+
+                            new Chart(document.getElementById("summaryChart"),
+                                    {
+                                        type : "doughnut",
+                                        data : {
+                                            labels : labels,
+                                            datasets : [ {
+                                                label : title,
+                                                data : data,
+                                                fill : false,
+                                                backgroundColor : [ chartHigh,
+                                                        chartMed, chartLow,
+                                                        chartInfo ],
+                                                borderWidth : 0
+                                            } ]
+                                        },
+                                        options : options
+                                    });
+                        </script>
+					</div>
+				
+
+				
+					<h3 class="left-header">Summary of Alerts</h3>
+					<div class="tableWrapper">
+						<table class="summary" cellspacing="0" cellpadding="0">
+							<tr>
+								<th width="45%"
+									height="24">Risk Level</th>
+								<th width="55%"
+									align="center">Number of Alerts</th>
+							</tr>
+							<tr>
+								<td class="risk-3">
+									<div>High</div>
+								</td>
+								<td align="center">
+									<div>0</div>
+								</td>
+							</tr>
+							<tr>
+								<td class="risk-2">
+									<div>Medium</div>
+								</td>
+								<td align="center">
+									<div>1</div>
+								</td>
+							</tr>
+							<tr>
+								<td class="risk-1">
+									<div>Low</div>
+								</td>
+								<td align="center">
+									<div>2</div>
+								</td>
+							</tr>
+							<tr>
+								<td class="risk-0">
+									<div>Informational</div>
+								</td>
+								<td align="center">
+									<div>3</div>
+								</td>
+							</tr>
+							
+						</table>
+					</div>
+					<div class="spacer-lg"></div>
+				
+
+			</div>
+		</div>
+	</section>
+
+	
+	
+	
+		<div></div>
+	
+
+	<section id="segment-02" class="container">
+		<div class="wrap">
+			<div class="inner">
+
+				
+					<h3>Insights</h3>
+					<div class="tableWrapper">
+						<table class="insights" cellspacing="0" cellpadding="0">
+							<tr>
+								<th height="24">Level</th>
+								<th>Reason</th>
+								<th>Site</th>
+								<th>Description</th>
+								<th>Statistic</th>
+							</tr>
+							
+								<tr>
+									<td class="risk-1">
+										<div>Low</div>
+									</td>
+									<td>
+										<div>Warning</div>
+									</td>
+									<td>
+										<div></div>
+									</td>
+									<td>
+										<div>ZAP warnings logged - see the zap.log file for details</div>
+									</td>
+									<td align="center">
+										<div>3   </div>
+									</td>
+								</tr>
+							
+						</table>
+					</div>
+					<div class="spacer-lg"></div>
+				
+
+				
+					<h3>Alerts</h3>
+					<div class="tableWrapper">
+						<table class="alerts" cellspacing="0" cellpadding="0">
+							<tr>
+								<th width="60%" height="24">Name</th>
+								<th width="20%"
+									align="center">Risk Level</th>
+								<th width="20%"
+									align="center">Number of Instances</th>
+							</tr>
+							<tr>
+								<td><a href="#plugin-10098">Cross-Domain Misconfiguration</a></td>
+								<td align="center" class="risk-2">Medium</td>
+								
+									<td align="center">Systemic</td>
+								
+								
+							</tr>
+							<tr>
+								<td><a href="#plugin-10037">Server Leaks Information via &quot;X-Powered-By&quot; HTTP Response Header Field(s)</a></td>
+								<td align="center" class="risk-1">Low</td>
+								
+									<td align="center">Systemic</td>
+								
+								
+							</tr>
+							<tr>
+								<td><a href="#plugin-10021">X-Content-Type-Options Header Missing</a></td>
+								<td align="center" class="risk-1">Low</td>
+								
+								
+									<td align="center">2</td>
+								
+							</tr>
+							<tr>
+								<td><a href="#plugin-10111">Authentication Request Identified</a></td>
+								<td align="center" class="risk-0">Informational</td>
+								
+								
+									<td align="center">1</td>
+								
+							</tr>
+							<tr>
+								<td><a href="#plugin-10112">Session Management Response Identified</a></td>
+								<td align="center" class="risk-0">Informational</td>
+								
+								
+									<td align="center">2</td>
+								
+							</tr>
+							<tr>
+								<td><a href="#plugin-10104">User Agent Fuzzer</a></td>
+								<td align="center" class="risk-0">Informational</td>
+								
+									<td align="center">Systemic</td>
+								
+								
+							</tr>
+						</table>
+					</div>
+				
+
+			</div>
+		</div>
+	</section>
+
+	<section id="segment-03" class="container">
+		<div class="wrap">
+			<div class="inner">
+
+				
+					<h3>Passing Rules</h3>
+					<div class="tableWrapper">
+						<table class="alerts" cellspacing="0" cellpadding="0">
+							<tr>
+								<th width="55%" height="24">Name</th>
+								<th width="15%"
+									align="center">Rule Type</th>
+								<th width="15%"
+									align="center">Threshold</th>
+								<th width="15%"
+									align="center">Strength</th>
+							</tr>
+							
+							
+								
+									
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10113/">Verification Request Identified</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/2/">Private IP Disclosure</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/3/">Session ID in URL Rewrite</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10115/">Script Served From Malicious Domain (polyfill)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10116/">ZAP is Out of Date</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90001/">Insecure JSF ViewState</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90003/">Sub Resource Integrity Attribute Missing</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10003/">Vulnerable JS Library (Powered by Retire.js)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90002/">Java Serialization Object</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10009/">In Page Banner Information Leak</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90011/">Charset Mismatch</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10010/">Cookie No HttpOnly Flag</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10011/">Cookie Without Secure Flag</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10015/">Re-examine Cache-control Directives</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10017/">Cross-Domain JavaScript Source File Inclusion</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10019/">Content-Type Header Missing</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10020/">Anti-clickjacking Header</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90022/">Application Error Disclosure</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10023/">Information Disclosure - Debug Error Messages</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10024/">Information Disclosure - Sensitive Information in URL</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10025/">Information Disclosure - Sensitive Information in HTTP Referrer Header</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10027/">Information Disclosure - Suspicious Comments</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10028/">Off-site Redirect</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10029/">Cookie Poisoning</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10030/">User Controllable Charset</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10031/">User Controllable HTML Element Attribute (Potential XSS)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90030/">WSDL File Detection</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/90033/">Loosely Scoped Cookie</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10032/">Viewstate</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10033/">Directory Browsing</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10034/">Heartbleed OpenSSL Vulnerability (Indicative)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10035/">Strict-Transport-Security Header</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10036/">HTTP Server Response Header</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10038/">Content Security Policy (CSP) Header Not Set</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10039/">X-Backend-Server Header Information Leak</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10040/">Secure Pages Include Mixed Content</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10041/">HTTP to HTTPS Insecure Transition in Form Post</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10042/">HTTPS to HTTP Insecure Transition in Form Post</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10043/">User Controllable JavaScript Event (XSS)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10044/">Big Redirect Detected (Potential Sensitive Information Leak)</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10050/">Retrieved from Cache</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10052/">X-ChromeLogger-Data (XCOLD) Header Information Leak</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10054/">Cookie without SameSite Attribute</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10055/">CSP</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10056/">X-Debug-Token Information Leak</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10057/">Username Hash Found</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10061/">X-AspNet-Version Response Header</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10062/">PII Disclosure</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/50001/">Script Passive Scan Rules</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/50003/">Stats Passive Scan Rule</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10202/">Absence of Anti-CSRF Tokens</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10096/">Timestamp Disclosure</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10097/">Hash Disclosure</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10105/">Weak Authentication Method</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10108/">Reverse Tabnabbing</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									<tr>
+										<td><a
+											href="https://www.zaproxy.org/docs/alerts/10109/">Modern Web Application</a></td>
+										<td align="center">Passive</td>
+										<td align="center">MEDIUM</td>
+										<td align="center">-</td>
+									</tr>
+								
+									
+								
+							
+						</table>
+					</div>
+				
+
+			</div>
+		</div>
+	</section>
+
+	<section id="segment-04" class="container">
+		<div class="wrap">
+			<div class="inner">
+
+				<h2>Sites</h2>
+				
+					<h3>http://localhost:3000</h3>
+					
+						<div class="tableWrapper">
+							<table class="summary" cellspacing="0" cellpadding="0">
+								<tr>
+									<th width="45%" height="24">HTTP Response Code</th>
+									<th width="55%" align="center">Number of Responses</th>
+								</tr>
+
+								
+							</table>
+						</div>
+
+						<h4>No Authentication Statistics Found</h4>
+						<div class="tableWrapper">
+							
+						</div>
+					
+					
+					
+						<div class="tableWrapper">
+							<table class="summary" cellspacing="0" cellpadding="0">
+								<tr>
+									<th>Parameter Name</th>
+									<th>Type</th>
+									<th>Flags</th>
+									<th>Times Used</th>
+									<th># Values</th>
+								</tr>
+								
+									<tr>
+										<td>
+											<div>Access-Control-Allow-Origin</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>1</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>Connection</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>1</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>Content-Length</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>3</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>Content-Type</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>1</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>Date</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>578</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>ETag</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>578</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>Keep-Alive</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>1</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td>
+											<div>X-Powered-By</div>
+										</td>
+										<td>
+											<div>Header</div>
+										</td>
+										<td>
+												<div></div>
+											</td>
+										<td>
+											<div>692</div>
+										</td>
+										<td>
+											<div>1</div>
+										</td>
+									</tr>
+								
+
+							</table>
+						</div>
+					
+				
+
+				
+					<h3>Alert Detail</h3>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-2"><a
+										id="plugin-10098"></a>
+										<div>Medium</div></th>
+									<th class="risk-2">Cross-Domain Misconfiguration</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>Web browser data loading may be possible, due to a Cross Origin Resource Sharing (CORS) misconfiguration on the web server.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api">http://localhost:3000/api</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">Access-Control-Allow-Origin: *</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-12">
+												<a
+													onclick="showHide(&#39;alert-12&#39;);"
+													href="#12">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 232 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-12reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-12reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-12resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 66
+													<br />
+												
+													ETag: W/&quot;42-q+rir+YeedXkd2RO4ir76BPcU3Q&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 66 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-12respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /api&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/users">http://localhost:3000/api/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/users</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">Access-Control-Allow-Origin: *</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-6">
+												<a
+													onclick="showHide(&#39;alert-6&#39;);"
+													href="#6">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 238 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-6reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-6reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 277 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-6resph"
+												style="display: none;">
+												
+													HTTP/1.1 401 Unauthorized
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 99
+													<br />
+												
+													ETag: W/&quot;63-P2yXtuhzby6zx9/7qJgJglbRc2g&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:00:20 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 99 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-6respb"
+												style="display: none;">
+												
+													{&quot;statusCode&quot;:401,&quot;error&quot;:&quot;Unauthorized&quot;,&quot;message&quot;:&quot;Token de autenticação inválido ou ausente.&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/robots.txt">http://localhost:3000/robots.txt</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/robots.txt</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">Access-Control-Allow-Origin: *</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-10">
+												<a
+													onclick="showHide(&#39;alert-10&#39;);"
+													href="#10">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 239 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-10reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/robots.txt HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-10reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-10resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 73
+													<br />
+												
+													ETag: W/&quot;49-oyM+RayXlm4YLYr5TGzZZ+UFgdM&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 73 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-10respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /robots.txt&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/users">http://localhost:3000/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/users</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">Access-Control-Allow-Origin: *</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-11">
+												<a
+													onclick="showHide(&#39;alert-11&#39;);"
+													href="#11">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 234 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-11reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-11reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-11resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 68
+													<br />
+												
+													ETag: W/&quot;44-CzwRovJL2W1UfinZVuVq8Ud/d5w&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 68 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-11respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /users&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+										<td width="80%">Systemic</td>
+									
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%">
+											<div>Ensure that sensitive data is not available in an unauthenticated manner (using IP address white-listing, for instance).</div>
+											<br />
+										
+											<div>Configure the &quot;Access-Control-Allow-Origin&quot; HTTP header to a more restrictive set of domains, or remove all CORS headers entirely, to allow the web browser to enforce the Same Origin Policy (SOP) in a more restrictive manner.</div>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://vulncat.fortify.com/en/detail?category=HTML5&amp;subcategory=Overly%20Permissive%20CORS%20Policy">https://vulncat.fortify.com/en/detail?category=HTML5&amp;subcategory=Overly%20Permissive%20CORS%20Policy</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%">
+
+											
+												<a href="https://owasp.org/Top10/A01_2021-Broken_Access_Control/">OWASP_2021_A01</a>
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_QA_STD
+											=
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_PENTEST
+											=
+											
+											
+											<br />
+										
+
+											
+												<a href="https://www.zaproxy.org/docs/desktop/addons/common-library/alerttags/#systemic">SYSTEMIC</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/">OWASP_2025_A01</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control.html">OWASP_2017_A05</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://cwe.mitre.org/data/definitions/264.html">CWE-264</a>
+											
+											
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"><a
+										href="https://cwe.mitre.org/data/definitions/264.html">264</a></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%">14</td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10098/">10098</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-1"><a
+										id="plugin-10037"></a>
+										<div>Low</div></th>
+									<th class="risk-1">Server Leaks Information via &quot;X-Powered-By&quot; HTTP Response Header Field(s)</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>The web/application server is leaking information via one or more &quot;X-Powered-By&quot; HTTP response headers. Access to such information may facilitate attackers identifying other frameworks/components your web application is reliant upon and the vulnerabilities such components may be subject to.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api">http://localhost:3000/api</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">X-Powered-By: Express</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-19">
+												<a
+													onclick="showHide(&#39;alert-19&#39;);"
+													href="#19">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 232 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-19reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-19reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-19resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 66
+													<br />
+												
+													ETag: W/&quot;42-q+rir+YeedXkd2RO4ir76BPcU3Q&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 66 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-19respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /api&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/users">http://localhost:3000/api/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/users</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">X-Powered-By: Express</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-7">
+												<a
+													onclick="showHide(&#39;alert-7&#39;);"
+													href="#7">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 238 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 277 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7resph"
+												style="display: none;">
+												
+													HTTP/1.1 401 Unauthorized
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 99
+													<br />
+												
+													ETag: W/&quot;63-P2yXtuhzby6zx9/7qJgJglbRc2g&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:00:20 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 99 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7respb"
+												style="display: none;">
+												
+													{&quot;statusCode&quot;:401,&quot;error&quot;:&quot;Unauthorized&quot;,&quot;message&quot;:&quot;Token de autenticação inválido ou ausente.&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/robots.txt">http://localhost:3000/robots.txt</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/robots.txt</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">X-Powered-By: Express</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-18">
+												<a
+													onclick="showHide(&#39;alert-18&#39;);"
+													href="#18">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 239 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-18reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/robots.txt HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-18reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-18resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 73
+													<br />
+												
+													ETag: W/&quot;49-oyM+RayXlm4YLYr5TGzZZ+UFgdM&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 73 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-18respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /robots.txt&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/users">http://localhost:3000/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/users</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">X-Powered-By: Express</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-17">
+												<a
+													onclick="showHide(&#39;alert-17&#39;);"
+													href="#17">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 234 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-17reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-17reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 274 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-17resph"
+												style="display: none;">
+												
+													HTTP/1.1 404 Not Found
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 68
+													<br />
+												
+													ETag: W/&quot;44-CzwRovJL2W1UfinZVuVq8Ud/d5w&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 21:29:59 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 68 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-17respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Cannot GET /users&quot;,&quot;error&quot;:&quot;Not Found&quot;,&quot;statusCode&quot;:404}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+										<td width="80%">Systemic</td>
+									
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%">
+											<div>Ensure that your web server, application server, load balancer, etc. is configured to suppress &quot;X-Powered-By&quot; headers.</div>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/08-Fingerprint_Web_Application_Framework">https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/08-Fingerprint_Web_Application_Framework</a>
+											<br />
+										
+											<a href="https://www.troyhunt.com/shhh-dont-let-your-response-headers/">https://www.troyhunt.com/shhh-dont-let-your-response-headers/</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%">
+
+											
+												<a href="https://owasp.org/Top10/A01_2021-Broken_Access_Control/">OWASP_2021_A01</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/08-Fingerprint_Web_Application_Framework">WSTG-v42-INFO-08</a>
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_QA_STD
+											=
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_PENTEST
+											=
+											
+											
+											<br />
+										
+
+											
+												<a href="https://www.zaproxy.org/docs/desktop/addons/common-library/alerttags/#systemic">SYSTEMIC</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure.html">OWASP_2017_A03</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/">OWASP_2025_A01</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://cwe.mitre.org/data/definitions/497.html">CWE-497</a>
+											
+											
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"><a
+										href="https://cwe.mitre.org/data/definitions/497.html">497</a></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%">13</td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10037/">10037</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-1"><a
+										id="plugin-10021"></a>
+										<div>Low</div></th>
+									<th class="risk-1">X-Content-Type-Options Header Missing</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to &#39;nosniff&#39;. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/users">http://localhost:3000/api/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/users</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">x-content-type-options</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.</div>
+												<br />
+											
+												<div>At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-132">
+												<a
+													onclick="showHide(&#39;alert-132&#39;);"
+													href="#132">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 518 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-132reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTQzMTAsImV4cCI6MTc3NzQxNTIxMH0.V9Sw3JlWbxTHYXrXFwbHbeLIwyF7XOiRKgCEotQp_ec
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-132reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 270 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-132resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 1200
+													<br />
+												
+													ETag: W/&quot;4b0-pQ0A5XsLhHL5tNc9/ft0AYSOFZg&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 22:12:23 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 1,200 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-132respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:[{&quot;id&quot;:&quot;c7cb00a1-dbba-45df-93ea-8d0f430d0b45&quot;,&quot;name&quot;:&quot;Renan Santana Camacho&quot;,&quot;email&quot;:&quot;camacho.renan@gmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;,&quot;isActive&quot;:true,&quot;createdAt&quot;:&quot;2026-04-28T16:17:25.511-03:00&quot;,&quot;updatedAt&quot;:&quot;2026-04-28T16:17:25.511-03:00&quot;},{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;,&quot;isActive&quot;:true,&quot;createdAt&quot;:&quot;2026-04-28T16:17:25.502-03:00&quot;,&quot;updatedAt&quot;:&quot;2026-04-28T16:17:25.502-03:00&quot;},{&quot;id&quot;:&quot;60c93f37-4f84-47e1-a2b8-f93ffffb5ae0&quot;,&quot;name&quot;:&quot;Lucas Almeida da Silva&quot;,&quot;email&quot;:&quot;lucas.almeida-silva@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;,&quot;isActive&quot;:true,&quot;createdAt&quot;:&quot;2026-04-28T16:17:25.497-03:00&quot;,&quot;updatedAt&quot;:&quot;2026-04-28T16:17:25.497-03:00&quot;},{&quot;id&quot;:&quot;2bef125d-4abc-4df0-ae32-bb1c8e12c2ab&quot;,&quot;name&quot;:&quot;Guilherme da Rocha Salvador&quot;,&quot;email&quot;:&quot;guilhermedarochasalvador@gmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;,&quot;isActive&quot;:true,&quot;createdAt&quot;:&quot;2026-04-28T16:17:25.486-03:00&quot;,&quot;updatedAt&quot;:&quot;2026-04-28T16:17:25.486-03:00&quot;},{&quot;id&quot;:&quot;15c70196-76d7-4bdd-9d22-2bbbc59e26c7&quot;,&quot;name&quot;:&quot;Rafael Neves de Oliveira&quot;,&quot;email&quot;:&quot;rafaelneves652@gmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;,&quot;isActive&quot;:true,&quot;createdAt&quot;:&quot;2026-04-28T16:17:25.352-03:00&quot;,&quot;updatedAt&quot;:&quot;2026-04-28T16:17:25.352-03:00&quot;}]}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/auth/login">http://localhost:3000/api/auth/login</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/auth/login ()({email,password})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">x-content-type-options</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.</div>
+												<br />
+											
+												<div>At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-2418">
+												<a
+													onclick="showHide(&#39;alert-2418&#39;);"
+													href="#2418">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 408 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2418reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/auth/login HTTP/1.1
+													<br />
+												
+													Content-Type: application/json
+													<br />
+												
+													content-length: 60
+													<br />
+												
+													Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MTksImV4cCI6MTc3NzQyMDcxOX0.Y8QAO5I0leybLLE-9SJCh5TKGMDGyZFRm4kwFCIFCPs
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 60 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2418reqb"
+												style="display: none;">
+												
+													{&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;password&quot;:&quot;Tech@2026&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 269 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2418resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 700
+													<br />
+												
+													ETag: W/&quot;2bc-ZE00qunsOQ/bUZIXeB3aNh07q6I&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:43:40 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 700 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2418respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:{&quot;accessToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MjAsImV4cCI6MTc3NzQyMDcyMH0.H0xJGGzuld_3rfkYW9yTQe45IuUb4uc5fzh6XoLJcfI&quot;,&quot;refreshToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MjAsImV4cCI6MTc3ODAyNDYyMH0.2DYR5zveOvnrHFs5nkANngu2po-e9gzTL1PknHJq_S8&quot;,&quot;user&quot;:{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;}}}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+									
+										<td width="80%">2</td>
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%">
+											<div>Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to &#39;nosniff&#39; for all web pages.</div>
+											<br />
+										
+											<div>If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.</div>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)">https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)</a>
+											<br />
+										
+											<a href="https://owasp.org/www-community/Security_Headers">https://owasp.org/www-community/Security_Headers</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%">
+
+											
+												<a href="https://owasp.org/Top10/A05_2021-Security_Misconfiguration/">OWASP_2021_A05</a>
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_QA_STD
+											=
+											
+											
+											<br />
+										
+
+											
+											
+												POLICY_PENTEST
+											=
+											
+											
+											<br />
+										
+
+											
+												<a href="https://www.zaproxy.org/docs/desktop/addons/common-library/alerttags/#systemic">SYSTEMIC</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://cwe.mitre.org/data/definitions/693.html">CWE-693</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration.html">OWASP_2017_A06</a>
+											
+											
+											<br />
+										
+
+											
+												<a href="https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/">OWASP_2025_A02</a>
+											
+											
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"><a
+										href="https://cwe.mitre.org/data/definitions/693.html">693</a></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%">15</td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10021/">10021</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-0"><a
+										id="plugin-10111"></a>
+										<div>Informational</div></th>
+									<th class="risk-0">Authentication Request Identified</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>The given request has been identified as an authentication request. The &#39;Other Info&#39; field contains a set of key=value lines which identify any relevant fields. If the request is in a context which has an Authentication Method set to &quot;Auto-Detect&quot; then this rule will change the authentication to match the request identified.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/auth/login">http://localhost:3000/api/auth/login</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/auth/login ()({email,password})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">email</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">password</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>userParam=email</div>
+												<br />
+											
+												<div>userValue=ramooncamacho@hotmail.com</div>
+												<br />
+											
+												<div>passwordParam=password</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-2401">
+												<a
+													onclick="showHide(&#39;alert-2401&#39;);"
+													href="#2401">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 128 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2401reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/auth/login HTTP/1.1
+													<br />
+												
+													Content-Type: application/json
+													<br />
+												
+													content-length: 60
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 60 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2401reqb"
+												style="display: none;">
+												
+													{&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;password&quot;:&quot;Tech@2026&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 269 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2401resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 700
+													<br />
+												
+													ETag: W/&quot;2bc-/Q8UOL/wi0r8SLBclJhS8muLxlE&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:43:38 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 700 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2401respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:{&quot;accessToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MTgsImV4cCI6MTc3NzQyMDcxOH0.lfzMqdAMqV_lKgVyCUKas8BZyajpbhaSWD50wkUAFHo&quot;,&quot;refreshToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MTgsImV4cCI6MTc3ODAyNDYxOH0.B2rf04YLy0XT_IntcNN2-Eq8flDWZoi1gixioVALm_w&quot;,&quot;user&quot;:{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;}}}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+									
+										<td width="80%">1</td>
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%">
+											<div>This is an informational alert rather than a vulnerability and so there is nothing to fix.</div>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://www.zaproxy.org/docs/desktop/addons/authentication-helper/auth-req-id/">https://www.zaproxy.org/docs/desktop/addons/authentication-helper/auth-req-id/</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10111/">10111</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-0"><a
+										id="plugin-10112"></a>
+										<div>Informational</div></th>
+									<th class="risk-0">Session Management Response Identified</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>The given response has been identified as containing a session management token. The &#39;Other Info&#39; field contains a set of header tokens that can be used in the Header Based Session Management Method. If the request is in a context which has a Session Management Method set to &quot;Auto-Detect&quot; then this rule will change the session management to use the tokens identified.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/auth/login">http://localhost:3000/api/auth/login</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/auth/login ()({email,password})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">data.accessToken</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">data.accessToken</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>json:data.accessToken</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-2402">
+												<a
+													onclick="showHide(&#39;alert-2402&#39;);"
+													href="#2402">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 128 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2402reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/auth/login HTTP/1.1
+													<br />
+												
+													Content-Type: application/json
+													<br />
+												
+													content-length: 60
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 60 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2402reqb"
+												style="display: none;">
+												
+													{&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;password&quot;:&quot;Tech@2026&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 269 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2402resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 700
+													<br />
+												
+													ETag: W/&quot;2bc-/Q8UOL/wi0r8SLBclJhS8muLxlE&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:43:38 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 700 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2402respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:{&quot;accessToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MTgsImV4cCI6MTc3NzQyMDcxOH0.lfzMqdAMqV_lKgVyCUKas8BZyajpbhaSWD50wkUAFHo&quot;,&quot;refreshToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4MTgsImV4cCI6MTc3ODAyNDYxOH0.B2rf04YLy0XT_IntcNN2-Eq8flDWZoi1gixioVALm_w&quot;,&quot;user&quot;:{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;}}}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/auth/login">http://localhost:3000/api/auth/login</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/auth/login ()({email,password})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">data.accessToken</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%">data.accessToken</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%">
+												<div>json:data.accessToken</div>
+												
+											</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-2713">
+												<a
+													onclick="showHide(&#39;alert-2713&#39;);"
+													href="#2713">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 408 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2713reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/auth/login HTTP/1.1
+													<br />
+												
+													Content-Type: application/json
+													<br />
+												
+													content-length: 60
+													<br />
+												
+													Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4NTQsImV4cCI6MTc3NzQyMDc1NH0.lyWZoI3sAv32fOX99Ubu_vqpFO62iumxWobUsJrCoHM
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 60 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2713reqb"
+												style="display: none;">
+												
+													{&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;password&quot;:&quot;Tech@2026&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 269 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2713resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 700
+													<br />
+												
+													ETag: W/&quot;2bc-gf1VdGRCk/NKGvF1VBz9NvdRWNU&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:44:15 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 700 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-2713respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:{&quot;accessToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4NTUsImV4cCI6MTc3NzQyMDc1NX0.3EXAnUF-HGhBWezYd_AKNkmVP8mClDve31gGbE0K-Rg&quot;,&quot;refreshToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4NTUsImV4cCI6MTc3ODAyNDY1NX0.i6CPMIo0uXHhCb2nBOg94AS6uQVJQpCe5F4HcHAMcOs&quot;,&quot;user&quot;:{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;}}}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+									
+										<td width="80%">2</td>
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%">
+											<div>This is an informational alert rather than a vulnerability and so there is nothing to fix.</div>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://www.zaproxy.org/docs/desktop/addons/authentication-helper/session-mgmt-id/">https://www.zaproxy.org/docs/desktop/addons/authentication-helper/session-mgmt-id/</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10112/">10112</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+						<div class="tableWrapper">
+							<table class="results" cellspacing="0" cellpadding="0">
+								<tr height="24">
+									<th width="20%" class="risk-0"><a
+										id="plugin-10104"></a>
+										<div>Informational</div></th>
+									<th class="risk-0">User Agent Fuzzer</th>
+								</tr>
+								<tr>
+									<td width="20%">Description</td>
+									<td width="80%">
+											<div>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the original response.</div>
+											
+										</td>
+								</tr>
+								<TR vAlign="top">
+									<TD colspan="2"></TD>
+								</TR>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/users/query">http://localhost:3000/api/users/query</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/users/query</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">GET</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">Header User-Agent</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%">Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-7168">
+												<a
+													onclick="showHide(&#39;alert-7168&#39;);"
+													href="#7168">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 489 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7168reqh"
+												style="display: none;">
+												
+													GET http://localhost:3000/api/users/query HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													Accept: application/json
+													<br />
+												
+													Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MjA2MDgsImV4cCI6MTc3NzQyMTUwOH0.mL74v-vYGOwY5WYH4KlW7scFOS4K23nxB3JHz_edp_Y
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 0 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7168reqb"
+												style="display: none;">
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 276 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7168resph"
+												style="display: none;">
+												
+													HTTP/1.1 400 Bad Request
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 89
+													<br />
+												
+													ETag: W/&quot;59-kArN5xCcYXjUJs5yv8pQBq+GJsU&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:56:49 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 89 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7168respb"
+												style="display: none;">
+												
+													{&quot;message&quot;:&quot;Validation failed (uuid is expected)&quot;,&quot;error&quot;:&quot;Bad Request&quot;,&quot;statusCode&quot;:400}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/auth/login">http://localhost:3000/api/auth/login</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/auth/login ()({email,password})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">Header User-Agent</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%">Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-7155">
+												<a
+													onclick="showHide(&#39;alert-7155&#39;);"
+													href="#7155">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 472 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7155reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/auth/login HTTP/1.1
+													<br />
+												
+													Content-Type: application/json
+													<br />
+												
+													content-length: 60
+													<br />
+												
+													Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MTk4NTQsImV4cCI6MTc3NzQyMDc1NH0.lyWZoI3sAv32fOX99Ubu_vqpFO62iumxWobUsJrCoHM
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 60 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7155reqb"
+												style="display: none;">
+												
+													{&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;password&quot;:&quot;Tech@2026&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 269 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7155resph"
+												style="display: none;">
+												
+													HTTP/1.1 200 OK
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 700
+													<br />
+												
+													ETag: W/&quot;2bc-eOlIuj6RPyjQuWDQzlkhYDdbi8s&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:56:48 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 700 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7155respb"
+												style="display: none;">
+												
+													{&quot;data&quot;:{&quot;accessToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MjA2MDgsImV4cCI6MTc3NzQyMTUwOH0.mL74v-vYGOwY5WYH4KlW7scFOS4K23nxB3JHz_edp_Y&quot;,&quot;refreshToken&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NWQxNGJmOC1iY2FiLTQ3Y2EtOTFiMS1jMTgzZDVlYjFlZmEiLCJlbWFpbCI6InJhbW9vbmNhbWFjaG9AaG90bWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3Nzc0MjA2MDgsImV4cCI6MTc3ODAyNTQwOH0.vNUsgIutUFcT3ReYWPrHe0irIEtGohgsPjU4EPz6Vpg&quot;,&quot;user&quot;:{&quot;id&quot;:&quot;75d14bf8-bcab-47ca-91b1-c183d5eb1efa&quot;,&quot;name&quot;:&quot;Ramoon Lincoln Barros Camacho&quot;,&quot;email&quot;:&quot;ramooncamacho@hotmail.com&quot;,&quot;role&quot;:&quot;ADMIN&quot;}}}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+									<tr>
+										<td width="20%"
+											class="indent1">URL</td>
+										<td width="80%"><a href="http://localhost:3000/api/users">http://localhost:3000/api/users</a></td>
+									</tr>
+									
+										<tr>
+											<td width="20%"
+												class="indent2">Node Name</td>
+											<td width="80%">http://localhost:3000/api/users ()({query})</td>
+										</tr>
+									
+									<tr>
+										<td width="20%"
+											class="indent2">Method</td>
+										<td width="80%">POST</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Parameter</td>
+										<td width="80%">Header User-Agent</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Attack</td>
+										<td width="80%">Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)</td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Evidence</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%"
+											class="indent2">Other Info</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">
+											<div id="alert-7167">
+												<a
+													onclick="showHide(&#39;alert-7167&#39;);"
+													href="#7167">Show / hide Request and Response</a>
+											</div>
+										</td>
+										<td width="80%"></td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Header
+											- size: 258 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7167reqh"
+												style="display: none;">
+												
+													POST http://localhost:3000/api/users HTTP/1.1
+													<br />
+												
+													host: localhost:3000
+													<br />
+												
+													user-agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)
+													<br />
+												
+													pragma: no-cache
+													<br />
+												
+													cache-control: no-cache
+													<br />
+												
+													content-type: application/json
+													<br />
+												
+													Accept: application/json
+													<br />
+												
+													content-length: 1333
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Request Body
+											- size: 1,333 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7167reqb"
+												style="display: none;">
+												
+													{&quot;query&quot;:&quot;query IntrospectionQuery {\n  __schema {\n    queryType {\n      name\n    }\n    mutationType {\n      name\n    }\n    subscriptionType {\n      name\n    }\n    types {\n      ...FullType\n    }\n    directives {\n      name\n      locations\n      args {\n        ...InputValue\n      }\n    }\n  }\n}\n\nfragment FullType on __Type {\n  kind\n  name\n  fields(includeDeprecated: true) {\n    name\n    args {\n      ...InputValue\n    }\n    type {\n      ...TypeRef\n    }\n    isDeprecated\n    deprecationReason\n  }\n  inputFields {\n    ...InputValue\n  }\n  interfaces {\n    ...TypeRef\n  }\n  enumValues(includeDeprecated: true) {\n    name\n    isDeprecated\n    deprecationReason\n  }\n  possibleTypes {\n    ...TypeRef\n  }\n}\n\nfragment InputValue on __InputValue {\n  name\n  type {\n    ...TypeRef\n  }\n  defaultValue\n}\n\nfragment TypeRef on __Type {\n  kind\n  name\n  ofType {\n    kind\n    name\n    ofType {\n      kind\n      name\n      ofType {\n        kind\n        name\n        ofType {\n          kind\n          name\n          ofType {\n            kind\n            name\n            ofType {\n              kind\n              name\n              ofType {\n                kind\n                name\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Header
+											- size: 277 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7167resph"
+												style="display: none;">
+												
+													HTTP/1.1 401 Unauthorized
+													<br />
+												
+													X-Powered-By: Express
+													<br />
+												
+													Access-Control-Allow-Origin: *
+													<br />
+												
+													Content-Type: application/json; charset=utf-8
+													<br />
+												
+													Content-Length: 99
+													<br />
+												
+													ETag: W/&quot;63-P2yXtuhzby6zx9/7qJgJglbRc2g&quot;
+													<br />
+												
+													Date: Tue, 28 Apr 2026 23:56:48 GMT
+													<br />
+												
+													Connection: keep-alive
+													<br />
+												
+													Keep-Alive: timeout=5
+													<br />
+												
+													
+													
+												
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td width="20%" class="indent2">Response Body
+											- size: 99 bytes.
+										</td>
+										<td width="80%">
+											<div
+												id="alert-7167respb"
+												style="display: none;">
+												
+													{&quot;statusCode&quot;:401,&quot;error&quot;:&quot;Unauthorized&quot;,&quot;message&quot;:&quot;Token de autenticação inválido ou ausente.&quot;}
+													
+												
+											</div>
+										</td>
+									</tr>
+								
+								<tr>
+									<td width="20%">Instances</td>
+									
+										<td width="80%">Systemic</td>
+									
+									
+								</tr>
+								<tr>
+									<td width="20%">Solution</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">Reference</td>
+									<td width="80%">
+											<a href="https://owasp.org/wstg">https://owasp.org/wstg</a>
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">Tags</td>
+									<td width="80%">
+
+											
+											
+												POLICY_PENTEST
+											=
+											
+											
+											<br />
+										
+
+											
+												<a href="https://www.zaproxy.org/docs/desktop/addons/common-library/alerttags/#systemic">SYSTEMIC</a>
+											
+											
+											<br />
+										
+
+											
+											
+												CUSTOM_PAYLOADS
+											=
+											
+											
+											
+										</td>
+								</tr>
+								<tr>
+									<td width="20%">CWE Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">WASC Id</td>
+									<td width="80%"></td>
+								</tr>
+								<tr>
+									<td width="20%">Plugin Id</td>
+									<td width="80%"><a
+										href="https://www.zaproxy.org/docs/alerts/10104/">10104</a></td>
+								</tr>
+							</table>
+						</div>
+						<div class="spacer"></div>
+					
+				
+
+				<footer>
+					Report by 
+					<a href="https://www.zaproxy.org/" target="_blank">ZAP</a>
+					
+				</footer>
+
+			</div>
+		</div>
+	</section>
+
+</body>
+</html>

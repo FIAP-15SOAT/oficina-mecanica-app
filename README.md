@@ -16,7 +16,7 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 - **Documentação**: Swagger/OpenAPI (`@nestjs/swagger`)
 - **Testes**: Jest + ts-jest (unitários e E2E com **Testcontainers** + PostgreSQL real)
 - **Qualidade**: SonarQube Cloud (Sonar Scan via GitHub Actions)
-- **Análise de segurança**: OWASP ZAP (DAST) e Semgrep (SAST) — relatórios em `zap-reports/`
+- **Análise de segurança**: OWASP ZAP (DAST), Semgrep (SAST) e SonarQube — relatórios em `reports/`
 - **Containerização**: Docker (multi-stage `node:22-alpine`) + Docker Compose
 - **Linting**: ESLint 9 + Prettier 3
 
@@ -148,7 +148,7 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./docs/adr)
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./docs/adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 
-## Rodando com Docker (recomendado)
+## Setup com Docker (recomendado)
 
 Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em containers. As migrations são executadas automaticamente e o banco é populado com o seed.
 
@@ -467,13 +467,15 @@ O workflow `.github/workflows/build.yml` é executado em push para `master` e em
 
 A configuração do Sonar (chave do projeto, organização, exclusões e caminho do `lcov.info`) está em `sonar-project.properties`.
 
-## Análise de Segurança
+## Relatórios de Segurança, Qualidade e Cobertura
 
-Relatórios de segurança da aplicação ficam versionados em [`zap-reports/`](./zap-reports):
+Relatórios de segurança da aplicação ficam versionados em [`reports/`](./reports):
+Na raiz de cada ferramenta fica o relatório mais recente, enquanto o histórico é organizado por data no formato `YYYY-MM-DD`.
 
-- **DAST** — varreduras dinâmicas com **OWASP ZAP** (modos baseline e autenticado): `zap-report.html`, `zap-report-authenticated.html`, `zap-report-final.html`, `zap-report-recheck.html`
-- **SAST** — análise estática com **Semgrep**: `semgrep-report.json`, `semgrep-report-recheck.json`
-- **Resumo executivo**: `SECURITY-REPORT_2026-04-27_01-30.md`
+- **DAST (OWASP ZAP)** — relatórios em [`reports/zap/`](./reports/zap) (HTML e PDF).
+- **SAST (Semgrep)** — relatórios em [`reports/semgrep/`](./reports/semgrep).
+- **Qualidade e cobertura (SonarQube)** — relatórios em [`reports/sonarqube/`](./reports/sonarqube) (PDF).
+- **Resumo executivo consolidado** — disponível em [`reports/others/`](./reports/others).
 
 Mitigações já aplicadas no código:
 
@@ -525,9 +527,9 @@ O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
 
 | Nome | E-mail | Senha |
 |------|--------|-------|
-| Rafael Neves de Oliveira | `rafaelneves652@gmail.com` | `Tech@2026` |
 | Guilherme da Rocha Salvador | `guilhermedarochasalvador@gmail.com` | `Tech@2026` |
 | Lucas Almeida da Silva | `lucas.almeida-silva@hotmail.com` | `Tech@2026` |
+| Rafael Neves de Oliveira | `rafaelneves652@gmail.com` | `Tech@2026` |
 | Ramoon Lincoln Barros Camacho | `ramooncamacho@hotmail.com` | `Tech@2026` |
 | Renan Santana Camacho | `camacho.renan@gmail.com` | `Tech@2026` |
 
