@@ -62,4 +62,21 @@ describe('UpdatePartSupplyUseCase', () => {
     );
     expect(partSupplyRepository.update).not.toHaveBeenCalled();
   });
+
+  it('should update when new SKU is not already in use', async () => {
+    const existing = createMockPartSupply({ id: 'uuid-1', sku: 'FO-001' });
+    const updated = createMockPartSupply({ id: 'uuid-1', sku: 'FO-NEW' });
+    partSupplyRepository.findById.mockResolvedValue(existing);
+    partSupplyRepository.findBySku.mockResolvedValue(null);
+    partSupplyRepository.update.mockResolvedValue(updated);
+
+    const result = await useCase.execute('uuid-1', { ...validInput, sku: 'FO-NEW' });
+
+    expect(result).toEqual(updated);
+    expect(partSupplyRepository.findBySku).toHaveBeenCalledWith('FO-NEW');
+    expect(partSupplyRepository.update).toHaveBeenCalledWith(
+      'uuid-1',
+      expect.objectContaining({ sku: 'FO-NEW' }),
+    );
+  });
 });

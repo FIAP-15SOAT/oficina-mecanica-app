@@ -154,6 +154,17 @@ describe('WorkOrder Entity', () => {
       );
     });
 
+    it('should clear assignedUser when null is passed', () => {
+      const mechanic = { id: 'u4', name: 'Joe', role: UserRole.MECHANIC, isActive: true };
+      const wo = WorkOrder.create({ ...baseProps, assignedUser: mechanic as unknown as User });
+      expect(wo.assignedUserId).toBe('u4');
+
+      wo.update({ assignedUser: null });
+
+      expect(wo.assignedUserId).toBeNull();
+      expect(wo.assignedUser).toBeNull();
+    });
+
     it('should throw DomainValidationException for invalid fields on update', () => {
       const wo = WorkOrder.create(baseProps);
       expect(() => wo.update({ mileageAtService: -100 })).toThrow(DomainValidationException);
@@ -281,6 +292,15 @@ describe('WorkOrder Entity', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.AWAITING_APPROVAL;
       wo.changeStatus(WorkOrderStatus.REJECTED);
+
+      expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
+        BusinessRuleViolationException,
+      );
+    });
+
+    it('should fall back to empty transitions when current status is not in the map', () => {
+      const wo = WorkOrder.create(baseProps);
+      wo.status = 'UNKNOWN_STATUS' as unknown as WorkOrderStatus;
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
         BusinessRuleViolationException,

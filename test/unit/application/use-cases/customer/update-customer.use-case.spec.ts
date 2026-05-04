@@ -90,4 +90,31 @@ describe('UpdateCustomerUseCase', () => {
     expect(customerRepository.findByDocument).not.toHaveBeenCalled();
     expect(customerRepository.findByEmail).not.toHaveBeenCalled();
   });
+
+  it('should update when document and email change without conflicts', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: '11111111111',
+      email: 'old@email.com',
+    });
+    const updated = createMockCustomer({
+      id: 'cust-1',
+      document: '12345678909',
+      email: validInput.email,
+    });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.update.mockResolvedValue(updated);
+
+    const result = await useCase.execute('cust-1', validInput);
+
+    expect(result).toEqual(updated);
+    expect(customerRepository.findByDocument).toHaveBeenCalledWith('12345678909');
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(validInput.email);
+    expect(customerRepository.update).toHaveBeenCalledWith(
+      'cust-1',
+      expect.objectContaining({ document: '12345678909', email: validInput.email }),
+    );
+  });
 });

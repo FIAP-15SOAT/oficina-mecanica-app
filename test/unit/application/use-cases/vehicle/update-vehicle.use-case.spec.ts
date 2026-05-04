@@ -92,6 +92,24 @@ describe('UpdateVehicleUseCase', () => {
     expect(vehicleRepository.findByPlate).not.toHaveBeenCalled();
   });
 
+  it('should update when customerId changes and new customer exists', async () => {
+    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
+    const newCustomer = createMockCustomer({ id: 'cust-2' });
+    const updated = createMockVehicle({ id: 'veh-1', customerId: 'cust-2', plate: 'ABC1234' });
+    vehicleRepository.findById.mockResolvedValue(existing);
+    customerRepository.findById.mockResolvedValue(newCustomer);
+    vehicleRepository.update.mockResolvedValue(updated);
+
+    const result = await useCase.execute('veh-1', { ...validInput, customerId: 'cust-2' });
+
+    expect(result).toEqual(updated);
+    expect(customerRepository.findById).toHaveBeenCalledWith('cust-2');
+    expect(vehicleRepository.update).toHaveBeenCalledWith(
+      'veh-1',
+      expect.objectContaining({ customerId: 'cust-2' }),
+    );
+  });
+
   it('should normalize plate to uppercase and pass it to the repository', async () => {
     const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
     const updated = createMockVehicle({ id: 'veh-1', plate: 'XYZ9999' });

@@ -232,4 +232,16 @@ describe('PartSupply Entity', () => {
       });
     });
   });
+
+  describe('ensureHasSufficientStock()', () => {
+    it('should treat reservedStock as 0 when undefined', () => {
+      const partSupply = new PartSupply({
+        stock: 5,
+        reservedStock: undefined,
+        name: 'Filtro',
+      });
+
+      expect(() => partSupply.ensureHasSufficientStock(5)).not.toThrow();
+    });
+  });
 });

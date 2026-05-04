@@ -163,6 +163,28 @@ describe('CreateWorkOrderUseCase', () => {
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
   });
 
+  it('should set changedById to null when userId is not provided', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+
+    await useCase.execute({
+      customerId: customer.id,
+      vehicleId: vehicle.id,
+      userId: undefined as unknown as string,
+    });
+
+    expect(mockRepos.statusHistory.create).toHaveBeenCalledWith(
+      expect.objectContaining({ changedById: null }),
+    );
+  });
+
   it('should throw BusinessRuleViolationException when vehicle does not belong to customer', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: 'different-customer-id' });

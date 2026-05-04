@@ -47,6 +47,17 @@ describe('Quote Entity', () => {
 
       expect(quote.totalAmount).toBe(0);
     });
+
+    it('should treat undefined services and partsSupplies as empty arrays', () => {
+      const quote = Quote.create({ workOrderId: 'wo-uuid' });
+      quote.services = undefined;
+      quote.partsSupplies = undefined;
+      quote.recalculateTotals();
+
+      expect(quote.servicesAmount).toBe(0);
+      expect(quote.partsAmount).toBe(0);
+      expect(quote.totalAmount).toBe(0);
+    });
   });
 
   describe('canSubmit() / ensureCanSubmit()', () => {
