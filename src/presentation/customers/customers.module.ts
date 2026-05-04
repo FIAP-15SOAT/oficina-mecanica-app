@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaCustomerRepository } from '@infrastructure/repositories/prisma-customer.repository';
-import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
 import { CreateCustomerUseCase } from '@application/use-cases/customer/create-customer.use-case';
 import { FindAllCustomersUseCase } from '@application/use-cases/customer/find-all-customers.use-case';
 import { FindCustomerByIdUseCase } from '@application/use-cases/customer/find-customer-by-id.use-case';
@@ -14,14 +12,6 @@ import { CustomersController } from './customers.controller';
 @Module({
   controllers: [CustomersController],
   providers: [
-    {
-      provide: 'ICustomerRepository',
-      useClass: PrismaCustomerRepository,
-    },
-    {
-      provide: 'IVehicleRepository',
-      useClass: PrismaVehicleRepository,
-    },
     {
       provide: 'ICreateCustomerUseCase',
       useFactory: (repo: ICustomerRepository) => new CreateCustomerUseCase(repo),
@@ -54,6 +44,5 @@ import { CustomersController } from './customers.controller';
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
-  exports: ['ICustomerRepository', 'IVehicleRepository'],
 })
 export class CustomersModule {}

@@ -9,6 +9,7 @@ import { DomainExceptionFilter } from './infrastructure/filters/domain-exception
 import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastructure-exception.filter';
 
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
 import { AuthModule } from './presentation/auth/auth.module';
 import { UserModule } from './presentation/user/user.module';
 import { ServiceModule } from './presentation/service/service.module';
@@ -39,6 +40,7 @@ import { StockModule } from './presentation/stock/stock.module';
       }),
     }),
     PrismaModule,
+    RepositoriesModule,
     AuthModule,
     UserModule,
     ServiceModule,

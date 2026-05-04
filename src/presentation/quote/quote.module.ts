@@ -18,14 +18,16 @@ import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-de
 import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
 import { FindWorkOrderQuotesUseCase } from '@application/use-cases/quote/find-work-order-quotes.use-case';
 import { JwtTokenService } from '@infrastructure/services/jwt-token.service';
-
-import { PrismaQuoteRepository } from '@infrastructure/repositories/prisma-quote.repository';
-import { PrismaQuoteServiceRepository } from '@infrastructure/repositories/prisma-quote-service.repository';
-import { PrismaQuotePartSupplyRepository } from '@infrastructure/repositories/prisma-quote-part-supply.repository';
-import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-work-order.repository';
-import { PrismaUnitOfWork } from '@infrastructure/repositories/prisma-unit-of-work';
 import { MailerEmailSenderService } from '@infrastructure/services/mailer-email-sender.service';
 import { JwtService } from '@nestjs/jwt';
+
+import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IQuoteServiceRepository } from '@domain/interfaces/repositories/quote-service.repository.interface';
+import { IQuotePartSupplyRepository } from '@domain/interfaces/repositories/quote-part-supply.repository.interface';
+import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { ITokenService } from '@domain/interfaces/services/token.service.interface';
+import { IEmailSenderService } from '@domain/interfaces/services/email-sender.service.interface';
 
 import { QuoteController } from './quote.controller';
 
@@ -33,55 +35,50 @@ import { QuoteController } from './quote.controller';
   imports: [JwtModule.register({}), ConfigModule],
   controllers: [QuoteController],
   providers: [
-    { provide: 'IQuoteRepository', useClass: PrismaQuoteRepository },
-    { provide: 'IQuoteServiceRepository', useClass: PrismaQuoteServiceRepository },
-    { provide: 'IQuotePartSupplyRepository', useClass: PrismaQuotePartSupplyRepository },
-    { provide: 'IWorkOrderRepository', useClass: PrismaWorkOrderRepository },
-    { provide: 'IUnitOfWork', useClass: PrismaUnitOfWork },
     { provide: 'IEmailSenderService', useClass: MailerEmailSenderService },
     { provide: 'ITokenService', useClass: JwtTokenService },
     JwtService,
     {
       provide: 'ICreateQuoteUseCase',
-      useFactory: (quoteRepo: PrismaQuoteRepository, workOrderRepo: PrismaWorkOrderRepository) =>
+      useFactory: (quoteRepo: IQuoteRepository, workOrderRepo: IWorkOrderRepository) =>
         new CreateQuoteUseCase(quoteRepo, workOrderRepo),
       inject: ['IQuoteRepository', 'IWorkOrderRepository'],
     },
     {
       provide: 'IFindQuoteByIdUseCase',
       useFactory: (
-        quoteRepo: PrismaQuoteRepository,
-        quoteServiceRepo: PrismaQuoteServiceRepository,
-        quotePartSupplyRepo: PrismaQuotePartSupplyRepository,
+        quoteRepo: IQuoteRepository,
+        quoteServiceRepo: IQuoteServiceRepository,
+        quotePartSupplyRepo: IQuotePartSupplyRepository,
       ) => new FindQuoteByIdUseCase(quoteRepo, quoteServiceRepo, quotePartSupplyRepo),
       inject: ['IQuoteRepository', 'IQuoteServiceRepository', 'IQuotePartSupplyRepository'],
     },
     {
       provide: 'IAddQuoteServiceUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new AddQuoteServiceUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new AddQuoteServiceUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IRemoveQuoteServiceUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new RemoveQuoteServiceUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new RemoveQuoteServiceUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IAddQuotePartSupplyUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new AddQuotePartSupplyUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new AddQuotePartSupplyUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IRemoveQuotePartSupplyUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new RemoveQuotePartSupplyUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new RemoveQuotePartSupplyUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'ISubmitQuoteUseCase',
       useFactory: (
-        unitOfWork: PrismaUnitOfWork,
-        emailSender: MailerEmailSenderService,
-        tokenService: JwtTokenService,
+        unitOfWork: IUnitOfWork,
+        emailSender: IEmailSenderService,
+        tokenService: ITokenService,
         configService: ConfigService,
       ) =>
         new SubmitQuoteUseCase(
@@ -96,24 +93,22 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IApproveQuoteUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new ApproveQuoteUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new ApproveQuoteUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IRejectQuoteUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new RejectQuoteUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new RejectQuoteUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IUpdateQuoteServiceQuantityUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) =>
-        new UpdateQuoteServiceQuantityUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new UpdateQuoteServiceQuantityUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IUpdateQuotePartSupplyQuantityUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) =>
-        new UpdateQuotePartSupplyQuantityUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new UpdateQuotePartSupplyQuantityUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
@@ -125,7 +120,7 @@ import { QuoteController } from './quote.controller';
     {
       provide: 'IEmailDecisionQuoteUseCase',
       useFactory: (
-        tokenService: JwtTokenService,
+        tokenService: ITokenService,
         approveUseCase: ApproveQuoteUseCase,
         rejectUseCase: RejectQuoteUseCase,
         configService: ConfigService,
@@ -140,13 +135,12 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IFindAllQuotesPaginatedUseCase',
-      useFactory: (quoteRepo: PrismaQuoteRepository) =>
-        new FindAllQuotesPaginatedUseCase(quoteRepo),
+      useFactory: (quoteRepo: IQuoteRepository) => new FindAllQuotesPaginatedUseCase(quoteRepo),
       inject: ['IQuoteRepository'],
     },
     {
       provide: 'IFindWorkOrderQuotesUseCase',
-      useFactory: (quoteRepo: PrismaQuoteRepository, workOrderRepo: PrismaWorkOrderRepository) =>
+      useFactory: (quoteRepo: IQuoteRepository, workOrderRepo: IWorkOrderRepository) =>
         new FindWorkOrderQuotesUseCase(quoteRepo, workOrderRepo),
       inject: ['IQuoteRepository', 'IWorkOrderRepository'],
     },

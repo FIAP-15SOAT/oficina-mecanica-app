@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CustomersModule } from '../customers/customers.module';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
 import { CreateVehicleUseCase } from '@application/use-cases/vehicle/create-vehicle.use-case';
 import { FindAllVehiclesUseCase } from '@application/use-cases/vehicle/find-all-vehicles.use-case';
 import { FindVehicleByIdUseCase } from '@application/use-cases/vehicle/find-vehicle-by-id.use-case';
@@ -12,13 +10,8 @@ import { FindVehiclesByCustomerIdUseCase } from '@application/use-cases/vehicle/
 import { VehiclesController } from './vehicles.controller';
 
 @Module({
-  imports: [CustomersModule],
   controllers: [VehiclesController],
   providers: [
-    {
-      provide: 'IVehicleRepository',
-      useClass: PrismaVehicleRepository,
-    },
     {
       provide: 'ICreateVehicleUseCase',
       useFactory: (vehicleRepo: IVehicleRepository, customerRepo: ICustomerRepository) =>
@@ -53,6 +46,5 @@ import { VehiclesController } from './vehicles.controller';
       inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
-  exports: ['IVehicleRepository'],
 })
 export class VehiclesModule {}

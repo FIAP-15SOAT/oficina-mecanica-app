@@ -6,7 +6,7 @@ import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/
 import { DeleteServiceUseCase } from '@application/use-cases/service/delete-service.use-case';
 import { FindServiceMetricsUseCase } from '@application/use-cases/service/find-service-metrics.use-case';
 import { FindAllServicesMetricsUseCase } from '@application/use-cases/service/find-all-services-metrics.use-case';
-import { PrismaServiceRepository } from '@infrastructure/repositories/prisma-service.repository';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { ServiceController } from './service.controller';
 import { ServicesMetricsController } from './services-metrics.controller';
 
@@ -14,48 +14,44 @@ import { ServicesMetricsController } from './services-metrics.controller';
   controllers: [ServiceController, ServicesMetricsController],
   providers: [
     {
-      provide: 'IServiceRepository',
-      useClass: PrismaServiceRepository,
-    },
-    {
       provide: 'ICreateServiceUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new CreateServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IFindServiceByIdUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new FindServiceByIdUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IFindAllServicesPaginatedUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new FindAllServicesPaginatedUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IUpdateServiceUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new UpdateServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IDeleteServiceUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new DeleteServiceUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IFindServiceMetricsUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new FindServiceMetricsUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },
     {
       provide: 'IFindAllServicesMetricsUseCase',
-      useFactory: (serviceRepository: PrismaServiceRepository) =>
+      useFactory: (serviceRepository: IServiceRepository) =>
         new FindAllServicesMetricsUseCase(serviceRepository),
       inject: ['IServiceRepository'],
     },

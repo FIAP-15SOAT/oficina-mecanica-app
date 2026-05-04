@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '@presentation/auth/auth.module';
 
 import { CreateWorkOrderUseCase } from '@application/use-cases/work-order/create-work-order.use-case';
 import { FindWorkOrderByIdUseCase } from '@application/use-cases/work-order/find-work-order-by-id.use-case';
@@ -10,43 +9,37 @@ import { UpdateWorkOrderServiceStatusUseCase } from '@application/use-cases/work
 import { FindWorkOrderStatusHistoryUseCase } from '@application/use-cases/work-order/find-work-order-status-history.use-case';
 import { FindWorkOrderQuotesUseCase } from '@application/use-cases/quote/find-work-order-quotes.use-case';
 
-import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-work-order.repository';
-import { PrismaStatusHistoryRepository } from '@infrastructure/repositories/prisma-status-history.repository';
-import { PrismaUnitOfWork } from '@infrastructure/repositories/prisma-unit-of-work';
-import { PrismaQuoteRepository } from '@infrastructure/repositories/prisma-quote.repository';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
+import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 
 import { WorkOrderController } from './work-order.controller';
 
 @Module({
-  imports: [AuthModule],
   controllers: [WorkOrderController],
   providers: [
-    { provide: 'IWorkOrderRepository', useClass: PrismaWorkOrderRepository },
-    { provide: 'IStatusHistoryRepository', useClass: PrismaStatusHistoryRepository },
-    { provide: 'IUnitOfWork', useClass: PrismaUnitOfWork },
-    { provide: 'IQuoteRepository', useClass: PrismaQuoteRepository },
     {
       provide: 'IFindWorkOrderQuotesUseCase',
-      useFactory: (quoteRepo: PrismaQuoteRepository, workOrderRepo: PrismaWorkOrderRepository) =>
+      useFactory: (quoteRepo: IQuoteRepository, workOrderRepo: IWorkOrderRepository) =>
         new FindWorkOrderQuotesUseCase(quoteRepo, workOrderRepo),
       inject: ['IQuoteRepository', 'IWorkOrderRepository'],
     },
     {
       provide: 'ICreateWorkOrderUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new CreateWorkOrderUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new CreateWorkOrderUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IFindWorkOrderByIdUseCase',
-      useFactory: (workOrderRepo: PrismaWorkOrderRepository) =>
+      useFactory: (workOrderRepo: IWorkOrderRepository) =>
         new FindWorkOrderByIdUseCase(workOrderRepo),
       inject: ['IWorkOrderRepository'],
     },
     {
       provide: 'IFindAllWorkOrdersPaginatedUseCase',
-      useFactory: (workOrderRepo: PrismaWorkOrderRepository) =>
+      useFactory: (workOrderRepo: IWorkOrderRepository) =>
         new FindAllWorkOrdersPaginatedUseCase(workOrderRepo),
       inject: ['IWorkOrderRepository'],
     },
@@ -58,20 +51,19 @@ import { WorkOrderController } from './work-order.controller';
     },
     {
       provide: 'IUpdateWorkOrderStatusUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) => new UpdateWorkOrderStatusUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new UpdateWorkOrderStatusUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IUpdateWorkOrderServiceStatusUseCase',
-      useFactory: (unitOfWork: PrismaUnitOfWork) =>
-        new UpdateWorkOrderServiceStatusUseCase(unitOfWork),
+      useFactory: (unitOfWork: IUnitOfWork) => new UpdateWorkOrderServiceStatusUseCase(unitOfWork),
       inject: ['IUnitOfWork'],
     },
     {
       provide: 'IFindWorkOrderStatusHistoryUseCase',
       useFactory: (
-        statusHistoryRepo: PrismaStatusHistoryRepository,
-        workOrderRepo: PrismaWorkOrderRepository,
+        statusHistoryRepo: IStatusHistoryRepository,
+        workOrderRepo: IWorkOrderRepository,
       ) => new FindWorkOrderStatusHistoryUseCase(statusHistoryRepo, workOrderRepo),
       inject: ['IStatusHistoryRepository', 'IWorkOrderRepository'],
     },

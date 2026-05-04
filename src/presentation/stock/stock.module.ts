@@ -3,8 +3,8 @@ import { Module } from '@nestjs/common';
 import { FindStockMovementsUseCase } from '@application/use-cases/stock/find-stock-movements.use-case';
 import { FindStockReservationsUseCase } from '@application/use-cases/stock/find-stock-reservations.use-case';
 
-import { PrismaStockMovementRepository } from '@infrastructure/repositories/prisma-stock-movement.repository';
-import { PrismaStockReservationRepository } from '@infrastructure/repositories/prisma-stock-reservation.repository';
+import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
+import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 
 import { StockMovementsController } from './stock-movements.controller';
 import { StockReservationsController } from './stock-reservations.controller';
@@ -12,17 +12,15 @@ import { StockReservationsController } from './stock-reservations.controller';
 @Module({
   controllers: [StockMovementsController, StockReservationsController],
   providers: [
-    { provide: 'IStockMovementRepository', useClass: PrismaStockMovementRepository },
-    { provide: 'IStockReservationRepository', useClass: PrismaStockReservationRepository },
     {
       provide: 'IFindStockMovementsUseCase',
-      useFactory: (movementRepo: PrismaStockMovementRepository) =>
+      useFactory: (movementRepo: IStockMovementRepository) =>
         new FindStockMovementsUseCase(movementRepo),
       inject: ['IStockMovementRepository'],
     },
     {
       provide: 'IFindStockReservationsUseCase',
-      useFactory: (reservationRepo: PrismaStockReservationRepository) =>
+      useFactory: (reservationRepo: IStockReservationRepository) =>
         new FindStockReservationsUseCase(reservationRepo),
       inject: ['IStockReservationRepository'],
     },

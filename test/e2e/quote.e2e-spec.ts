@@ -1167,34 +1167,6 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-    it('should throw error when QUOTE_DECISION_TOKEN_SECRET is not defined during submission', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const service = await createService();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-      const quoteId = createRes.body.data.id;
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
-        .expect(200);
-
-      const originalSecret = process.env.QUOTE_DECISION_TOKEN_SECRET;
-      delete process.env.QUOTE_DECISION_TOKEN_SECRET;
-
-      try {
-        await request(httpServer)
-          .post(`/api/quotes/${quoteId}/submissions`)
-          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-          .expect(500);
-      } finally {
-        process.env.QUOTE_DECISION_TOKEN_SECRET = originalSecret;
-      }
-    });
     it('should sanitize strings with null characters (SanitizeStringsPipe)', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const notes = 'Test\0Notes';

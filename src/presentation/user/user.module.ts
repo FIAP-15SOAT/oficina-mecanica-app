@@ -5,7 +5,8 @@ import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.
 import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
 import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
-import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
+import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IHashService } from '@domain/interfaces/services/hash.service.interface';
 import { BcryptHashService } from '@infrastructure/services/bcrypt-hash.service';
 import { UserController } from './user.controller';
 
@@ -13,43 +14,39 @@ import { UserController } from './user.controller';
   controllers: [UserController],
   providers: [
     {
-      provide: 'IUserRepository',
-      useClass: PrismaUserRepository,
-    },
-    {
       provide: 'IHashService',
       useClass: BcryptHashService,
     },
     {
       provide: 'ICreateUserUseCase',
-      useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
+      useFactory: (userRepo: IUserRepository, hashService: IHashService) =>
         new CreateUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
       provide: 'IFindUserByIdUseCase',
-      useFactory: (userRepo: PrismaUserRepository) => new FindUserByIdUseCase(userRepo),
+      useFactory: (userRepo: IUserRepository) => new FindUserByIdUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
       provide: 'IFindAllUsersUseCase',
-      useFactory: (userRepo: PrismaUserRepository) => new FindAllUsersUseCase(userRepo),
+      useFactory: (userRepo: IUserRepository) => new FindAllUsersUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
       provide: 'IUpdateUserUseCase',
-      useFactory: (userRepo: PrismaUserRepository, hashService: BcryptHashService) =>
+      useFactory: (userRepo: IUserRepository, hashService: IHashService) =>
         new UpdateUserUseCase(userRepo, hashService),
       inject: ['IUserRepository', 'IHashService'],
     },
     {
       provide: 'IUpdateUserStatusUseCase',
-      useFactory: (userRepo: PrismaUserRepository) => new UpdateUserStatusUseCase(userRepo),
+      useFactory: (userRepo: IUserRepository) => new UpdateUserStatusUseCase(userRepo),
       inject: ['IUserRepository'],
     },
     {
       provide: 'IDeleteUserUseCase',
-      useFactory: (userRepo: PrismaUserRepository) => new DeleteUserUseCase(userRepo),
+      useFactory: (userRepo: IUserRepository) => new DeleteUserUseCase(userRepo),
       inject: ['IUserRepository'],
     },
   ],
