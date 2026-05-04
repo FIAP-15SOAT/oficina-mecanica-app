@@ -26,6 +26,8 @@ export class SubmitQuoteUseCase {
     private readonly unitOfWork: IUnitOfWork,
     private readonly emailSender: IEmailSenderService,
     private readonly tokenService: ITokenService,
+    private readonly decisionSecret: string,
+    private readonly apiBaseUrl: string,
   ) {}
 
   async execute(quoteId: string): Promise<Quote> {
@@ -111,22 +113,13 @@ export class SubmitQuoteUseCase {
     customer: Customer,
     workOrderNumber: string,
   ): SendEmailInput {
-    const decisionSecret = process.env.QUOTE_DECISION_TOKEN_SECRET;
-
-    if (!decisionSecret) {
-      throw new Error('QUOTE_DECISION_TOKEN_SECRET must be defined');
-    }
-
-    const apiBaseUrl =
-      process.env.QUOTE_DECISION_BASE_URL ?? `http://localhost:${process.env.PORT ?? '3000'}/api`;
-
     const approveToken = this.tokenService.signWithSecret(
       {
         quoteId: quote.id,
         action: QuoteDecisionAction.APPROVE,
         type: TokenType.QUOTE_EMAIL_DECISION,
       } satisfies QuoteEmailDecisionTokenPayload,
-      decisionSecret,
+      this.decisionSecret,
       '7d',
     );
 
@@ -136,12 +129,12 @@ export class SubmitQuoteUseCase {
         action: QuoteDecisionAction.REJECT,
         type: TokenType.QUOTE_EMAIL_DECISION,
       } satisfies QuoteEmailDecisionTokenPayload,
-      decisionSecret,
+      this.decisionSecret,
       '7d',
     );
 
-    const approveLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.APPROVE}&token=${encodeURIComponent(approveToken)}`;
-    const rejectLink = `${apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
+    const approveLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.APPROVE}&token=${encodeURIComponent(approveToken)}`;
+    const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
 
     return {
       toEmail: customer.email,

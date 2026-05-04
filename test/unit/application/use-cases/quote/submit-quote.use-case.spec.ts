@@ -30,12 +30,17 @@ describe('SubmitQuoteUseCase', () => {
   let mockUow: jest.Mocked<IUnitOfWork>;
 
   beforeEach(() => {
-    process.env.QUOTE_DECISION_TOKEN_SECRET = 'test-secret';
     jest.clearAllMocks();
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
-    useCase = new SubmitQuoteUseCase(mockUow, mockEmailSender, mockTokenService);
+    useCase = new SubmitQuoteUseCase(
+      mockUow,
+      mockEmailSender,
+      mockTokenService,
+      'test-secret',
+      'http://localhost:3000/api',
+    );
   });
 
   it('should submit quote and change WO to AWAITING_APPROVAL when IN_DIAGNOSIS', async () => {
@@ -152,29 +157,5 @@ describe('SubmitQuoteUseCase', () => {
     mockEmailSender.send.mockRejectedValue(new Error('SMTP error'));
 
     await expect(useCase.execute(quote.id)).rejects.toThrow('SMTP error');
-  });
-  it('should throw error when QUOTE_DECISION_TOKEN_SECRET is not defined', async () => {
-    delete process.env.QUOTE_DECISION_TOKEN_SECRET;
-
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    const workOrder = createMockWorkOrder({
-      id: quote.workOrderId,
-      status: WorkOrderStatus.AWAITING_APPROVAL,
-    });
-    const customer = createMockCustomer({ email: 'test@example.com' });
-    const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
-
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([
-      createMockQuoteService(),
-    ]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
-    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
-
-    await expect(useCase.execute(quote.id)).rejects.toThrow(
-      'QUOTE_DECISION_TOKEN_SECRET must be defined',
-    );
   });
 });

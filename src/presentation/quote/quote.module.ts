@@ -82,8 +82,17 @@ import { QuoteController } from './quote.controller';
         unitOfWork: PrismaUnitOfWork,
         emailSender: MailerEmailSenderService,
         tokenService: JwtTokenService,
-      ) => new SubmitQuoteUseCase(unitOfWork, emailSender, tokenService),
-      inject: ['IUnitOfWork', 'IEmailSenderService', 'ITokenService'],
+        configService: ConfigService,
+      ) =>
+        new SubmitQuoteUseCase(
+          unitOfWork,
+          emailSender,
+          tokenService,
+          configService.getOrThrow<string>('QUOTE_DECISION_TOKEN_SECRET'),
+          configService.get<string>('QUOTE_DECISION_BASE_URL') ??
+            `http://localhost:${configService.get<string>('PORT') ?? '3000'}/api`,
+        ),
+      inject: ['IUnitOfWork', 'IEmailSenderService', 'ITokenService', ConfigService],
     },
     {
       provide: 'IApproveQuoteUseCase',
