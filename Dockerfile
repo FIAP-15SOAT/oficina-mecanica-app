@@ -4,7 +4,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN apk add --no-cache python3 make g++ && \
+    npm ci
 
 COPY tsconfig*.json nest-cli.json prisma.config.ts ./
 COPY prisma ./prisma
@@ -24,7 +25,9 @@ WORKDIR /app
 
 # Copy package manifests and install only production dependencies
 COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev
+RUN apk add --no-cache python3 make g++ && \
+    npm ci --omit=dev && \
+    apk del python3 make g++
 
 # Copy compiled output
 COPY --from=builder /app/dist ./dist

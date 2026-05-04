@@ -59,15 +59,6 @@ describe('JwtTokenService', () => {
     });
   });
 
-  describe('verifyAccessToken', () => {
-    it('should verify access token', () => {
-      const result = service.verifyAccessToken('some-token');
-
-      expect(result).toEqual(mockPayload);
-      expect(jwtService.verify).toHaveBeenCalledWith('some-token');
-    });
-  });
-
   describe('verifyRefreshToken', () => {
     it('should verify refresh token with specific secret', () => {
       const result = service.verifyRefreshToken('some-refresh-token');
@@ -76,6 +67,34 @@ describe('JwtTokenService', () => {
       expect(jwtService.verify).toHaveBeenCalledWith('some-refresh-token', {
         secret: 'refresh-secret',
       });
+    });
+  });
+
+  describe('signWithSecret', () => {
+    it('should sign token with custom secret and expiration', () => {
+      const payload = { data: 'test' };
+      const secret = 'custom-secret';
+      const expiresIn = '1h';
+
+      const token = service.signWithSecret(payload, secret, expiresIn);
+
+      expect(token).toBe('signed-token');
+      expect(jwtService.sign).toHaveBeenCalledWith(payload, {
+        secret,
+        expiresIn,
+      });
+    });
+  });
+
+  describe('verifyWithSecret', () => {
+    it('should verify token with custom secret', () => {
+      const token = 'custom-token';
+      const secret = 'custom-secret';
+
+      const result = service.verifyWithSecret(token, secret);
+
+      expect(result).toEqual(mockPayload);
+      expect(jwtService.verify).toHaveBeenCalledWith(token, { secret });
     });
   });
 });

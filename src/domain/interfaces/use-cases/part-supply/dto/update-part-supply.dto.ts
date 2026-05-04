@@ -12,5 +12,5 @@ export interface UpdatePartSupplyDto {
   partNumber?: string;
   minStock?: number;
   expiresAt?: Date;
-  isActive?: boolean;
+
 }

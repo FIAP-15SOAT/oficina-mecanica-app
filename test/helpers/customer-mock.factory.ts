@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
@@ -8,7 +8,7 @@ export function createMockCustomer(overrides: Partial<Customer> = {}): Customer 
   return new Customer({
     id: randomUUID(),
     name: 'João da Silva',
-    document: '123.456.789-09',
+    document: '12345678909',
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',

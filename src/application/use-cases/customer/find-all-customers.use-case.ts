@@ -1,24 +1,19 @@
-import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
+import { Customer } from '@domain/entities/customer.entity';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import {
-  FindAllCustomersInputDto,
-  FindAllCustomersOutputDto,
-} from '@domain/interfaces/use-cases/customer/dto/find-all-customers.dto';
+import { FindAllCustomersInputDto } from '@domain/interfaces/use-cases/customer/dto/find-all-customers.dto';
 import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
+import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllCustomersUseCase implements IFindAllCustomersUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) {}
+  constructor(private readonly customerRepository: ICustomerRepository) { }
 
-  async execute(input: FindAllCustomersInputDto): Promise<FindAllCustomersOutputDto> {
-    const { items, total } = await this.customerRepository.findAllPaginated(input);
-    return {
-      items,
-      pagination: {
-        totalRecords: total,
-        totalPages: calculateTotalPages(total, input.limit),
-        page: input.page,
-        limit: input.limit,
-      },
-    };
+  async execute(input: FindAllCustomersInputDto): Promise<PaginatedResult<Customer>> {
+    const { page, limit, ...filters } = input;
+    const pagination: PaginationInput = { page, limit };
+
+    const result = await this.customerRepository.findAllPaginated(pagination, filters);
+
+    return buildPaginatedResult(result, pagination);
   }
 }

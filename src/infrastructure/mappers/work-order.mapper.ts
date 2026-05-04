@@ -1,0 +1,71 @@
+import type {
+  WorkOrder as PrismaWorkOrder,
+  Customer as PrismaCustomer,
+  Vehicle as PrismaVehicle,
+  User as PrismaUser,
+  WorkOrderService as PrismaWorkOrderService,
+  WorkOrderPartSupply as PrismaWorkOrderPartSupply,
+  Service as PrismaService,
+  PartSupply as PrismaPartSupply,
+} from '@generated/client';
+import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { CustomerMapper } from './customer.mapper';
+import { VehicleMapper } from './vehicle.mapper';
+import { UserMapper } from './user.mapper';
+import { WorkOrderServiceMapper } from './work-order-service.mapper';
+import { WorkOrderPartSupplyMapper } from './work-order-part-supply.mapper';
+
+type PrismaWorkOrderRecord = PrismaWorkOrder & {
+  customer?: PrismaCustomer | null;
+  vehicle?: PrismaVehicle | null;
+  assignedUser?: PrismaUser | null;
+  services?: (PrismaWorkOrderService & { service: PrismaService })[];
+  partSupplies?: (PrismaWorkOrderPartSupply & { partSupply: PrismaPartSupply })[];
+};
+
+export class WorkOrderMapper {
+  static toDomain(record: PrismaWorkOrderRecord): WorkOrder {
+    const entity = new WorkOrder({
+      id: record.id,
+      number: record.number,
+      customerId: record.customerId,
+      vehicleId: record.vehicleId,
+      assignedUserId: record.assignedUserId ?? null,
+      status: record.status as WorkOrderStatus,
+      problemDescription: record.problemDescription ?? null,
+      internalNotes: record.internalNotes ?? null,
+      mileageAtService: record.mileageAtService ?? null,
+      totalAmount: Number(record.totalAmount),
+      approvedAt: record.approvedAt ?? null,
+      rejectedAt: record.rejectedAt ?? null,
+      startedAt: record.startedAt ?? null,
+      finishedAt: record.finishedAt ?? null,
+      deliveredAt: record.deliveredAt ?? null,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    });
+
+    if (record.customer) {
+      entity.customer = CustomerMapper.toDomain(record.customer);
+    }
+
+    if (record.vehicle) {
+      entity.vehicle = VehicleMapper.toDomain(record.vehicle);
+    }
+
+    if (record.assignedUser) {
+      entity.assignedUser = UserMapper.toDomain(record.assignedUser);
+    }
+
+    if (record.services) {
+      entity.services = record.services.map((s) => WorkOrderServiceMapper.toDomain(s));
+    }
+
+    if (record.partSupplies) {
+      entity.partSupplies = record.partSupplies.map((p) => WorkOrderPartSupplyMapper.toDomain(p));
+    }
+
+    return entity;
+  }
+}

@@ -10,26 +10,36 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
   constructor(
     private readonly vehicleRepository: IVehicleRepository,
     private readonly customerRepository: ICustomerRepository,
-  ) {}
+  ) { }
 
   async execute(id: string, input: UpdateVehicleDto): Promise<Vehicle> {
     const existing = await this.vehicleRepository.findById(id);
+
     if (!existing) {
       throw new ResourceNotFoundException('Veículo', id);
     }
+
     if (input.customerId !== existing.customerId) {
       const customer = await this.customerRepository.findById(input.customerId);
+
       if (!customer) {
         throw new ResourceNotFoundException('Cliente', input.customerId);
       }
     }
-    const plate = input.plate.trim().toUpperCase();
-    if (plate !== existing.plate) {
-      const byPlate = await this.vehicleRepository.findByPlate(plate);
-      if (byPlate) {
-        throw new ResourceConflictException(`Placa '${plate}' já está cadastrada.`);
+
+    const sanitizedPlate = input.plate.trim().toUpperCase().replace(/-/g, '');
+
+    if (sanitizedPlate !== existing.plate) {
+      const existingByPlate = await this.vehicleRepository.findByPlate(sanitizedPlate);
+
+      if (existingByPlate) {
+        throw new ResourceConflictException(`Placa '${sanitizedPlate}' já está cadastrada.`);
       }
     }
-    return this.vehicleRepository.update(id, { ...input, plate });
+
+    return this.vehicleRepository.update(id, {
+      ...input,
+      plate: sanitizedPlate
+    });
   }
 }

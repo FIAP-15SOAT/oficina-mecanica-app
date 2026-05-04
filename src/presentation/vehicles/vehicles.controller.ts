@@ -37,9 +37,10 @@ import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/fi
 import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
 import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { CreateVehicleRequestDto } from './dto/create-vehicle-request.dto';
 import { UpdateVehicleRequestDto } from './dto/update-vehicle-request.dto';
-import { FilterVehiclesDto } from './dto/filter-vehicles.dto';
+import { FindAllVehiclesQueryDto } from './dto/filter-vehicles.dto';
 import { VehicleDataResponseDto } from './dto/vehicle-response.dto';
 import { VehiclePaginatedResponseDto } from './dto/vehicle-paginated-response.dto';
 import { VehiclePresenter } from './vehicle.presenter';
@@ -60,7 +61,9 @@ export class VehiclesController {
     private readonly updateVehicleUseCase: IUpdateVehicleUseCase,
     @Inject('IDeleteVehicleUseCase')
     private readonly deleteVehicleUseCase: IDeleteVehicleUseCase,
-  ) {}
+    @Inject('IFindVehiclesByCustomerIdUseCase')
+    private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
+  ) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
@@ -83,14 +86,17 @@ export class VehiclesController {
   @ApiOkResponse({ type: VehiclePaginatedResponseDto, description: 'Lista paginada de Veículos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FilterVehiclesDto): Promise<VehiclePaginatedResponseDto> {
+  async findAll(
+    @Query() query: FindAllVehiclesQueryDto,
+  ): Promise<VehiclePaginatedResponseDto> {
+    const { page, limit, ...filters } = query;
+
     const result = await this.findAllVehiclesUseCase.execute({
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-      customerId: query.customerId,
-      brand: query.brand,
-      plate: query.plate,
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
     });
+
     return VehiclePresenter.toPaginatedDataResponse(result);
   }
 

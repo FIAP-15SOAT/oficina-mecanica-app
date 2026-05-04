@@ -3,6 +3,7 @@ import { ApplicationException } from '@application/exceptions/application.except
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { ApplicationExceptionFilter } from '@infrastructure/filters/application-exception.filter';
 
 class GenericApplicationException extends ApplicationException {
@@ -78,6 +79,20 @@ describe('ApplicationExceptionFilter', () => {
       statusCode: HttpStatus.UNAUTHORIZED,
       error: 'Unauthorized',
       message: 'Credenciais inválidas',
+    });
+  });
+
+  it('should return 400 for BadRequestException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new BadRequestException('Requisição inválida');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      error: 'Bad Request',
+      message: 'Requisição inválida',
     });
   });
 

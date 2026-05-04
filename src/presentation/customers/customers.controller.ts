@@ -40,13 +40,12 @@ import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/de
 import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { CreateCustomerRequestDto } from './dto/create-customer-request.dto';
 import { UpdateCustomerRequestDto } from './dto/update-customer-request.dto';
-import { FilterCustomersDto } from './dto/filter-customers.dto';
+import { VehicleDataResponseDto, VehicleResponseDto } from '../vehicles/dto/vehicle-response.dto';
+import { VehiclePresenter } from '../vehicles/vehicle.presenter';
 import { CustomerDataResponseDto } from './dto/customer-response.dto';
 import { CustomerPaginatedResponseDto } from './dto/customer-paginated-response.dto';
 import { CustomerPresenter } from './customer.presenter';
-import { VehiclePaginatedResponseDto } from '../vehicles/dto/vehicle-paginated-response.dto';
-import { VehiclePresenter } from '../vehicles/vehicle.presenter';
-import { FilterVehiclesDto } from '../vehicles/dto/filter-vehicles.dto';
+import { FindAllCustomersQueryDto } from './dto/filter-customers.dto';
 
 @ApiTags('Gestão de Clientes')
 @ApiBearerAuth('access-token')
@@ -66,7 +65,7 @@ export class CustomersController {
     private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
     @Inject('IFindVehiclesByCustomerIdUseCase')
     private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
@@ -88,14 +87,16 @@ export class CustomersController {
   @ApiOkResponse({ type: CustomerPaginatedResponseDto, description: 'Lista paginada de Clientes' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FilterCustomersDto): Promise<CustomerPaginatedResponseDto> {
+  async findAll(
+    @Query() query: FindAllCustomersQueryDto,
+  ): Promise<CustomerPaginatedResponseDto> {
+    const { page, limit, ...filters } = query;
     const result = await this.findAllCustomersUseCase.execute({
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-      name: query.name,
-      type: query.type,
-      document: query.document,
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
     });
+
     return CustomerPresenter.toPaginatedDataResponse(result);
   }
 
@@ -111,26 +112,6 @@ export class CustomersController {
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<CustomerDataResponseDto> {
     const result = await this.findCustomerByIdUseCase.execute(id);
     return CustomerPresenter.toDataResponse(result);
-  }
-
-  @Get(':id/vehicles')
-  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
-  @ApiOperation({ summary: 'Listar Veículos do Cliente' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
-  @ApiOkResponse({ type: VehiclePaginatedResponseDto, description: 'Lista paginada de veículos do cliente' })
-  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  @ApiForbiddenResponse({ description: 'Acesso negado' })
-  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
-  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  async findVehiclesByCustomerId(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query() query: FilterVehiclesDto,
-  ): Promise<VehiclePaginatedResponseDto> {
-    const result = await this.findVehiclesByCustomerIdUseCase.execute(id, {
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-    });
-    return VehiclePresenter.toPaginatedDataResponse(result);
   }
 
   @Put(':id')
@@ -150,6 +131,22 @@ export class CustomersController {
   ): Promise<CustomerDataResponseDto> {
     const result = await this.updateCustomerUseCase.execute(id, dto);
     return CustomerPresenter.toDataResponse(result);
+  }
+
+  @Get(':id/vehicles')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @ApiOperation({ summary: 'Listar Veículos do Cliente' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
+  @ApiOkResponse({ type: [VehicleDataResponseDto], description: 'Lista de veículos do cliente' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
+  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
+  async findVehiclesByCustomerId(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ data: VehicleResponseDto[] }> {
+    const result = await this.findVehiclesByCustomerIdUseCase.execute(id);
+    return VehiclePresenter.toListDataResponse(result);
   }
 
   @Delete(':id')

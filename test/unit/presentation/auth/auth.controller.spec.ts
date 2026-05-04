@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { AuthController } from '@presentation/auth/auth.controller';
 import { IRegisterUserUseCase } from '@domain/interfaces/use-cases/auth/register-user.use-case.interface';
 import { IAuthenticateUserUseCase } from '@domain/interfaces/use-cases/auth/authenticate-user.use-case.interface';

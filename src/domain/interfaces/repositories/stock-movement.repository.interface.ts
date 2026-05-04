@@ -1,7 +1,22 @@
 import { StockMovement } from '../../entities/stock-movement.entity';
+import { StockMovementType } from '../../enums/stock-movement-type.enum';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '../common/pagination.interface';
+
+export interface StockMovementFilters {
+  partSupplyId?: string;
+  workOrderId?: string;
+  type?: StockMovementType;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 export interface IStockMovementRepository {
   create(movement: StockMovement): Promise<StockMovement>;
-  findByPartId(partId: string): Promise<StockMovement[]>;
-  findByWorkOrderId(workOrderId: string): Promise<StockMovement[]>;
+  findAllPaginated(
+    pagination: PaginationInput,
+    filters: StockMovementFilters,
+  ): Promise<PaginatedRepositoryResult<StockMovement>>;
 }

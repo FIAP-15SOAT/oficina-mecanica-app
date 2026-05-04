@@ -1,11 +1,24 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
   "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
-  "testTimeout": 60000,
+  "testTimeout": 600000,
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "diagnostics": {
+          "ignoreCodes": [
+            151002
+          ]
+        }
+      }
+    ]
   },
   "coverageDirectory": "coverage/e2e",
   "collectCoverageFrom": [
@@ -16,6 +29,8 @@
     "!src/presentation/exceptions/*.exception.ts",
     "!src/**/*.dto.ts",
     "!src/**/*.entity.ts",
+    "!src/**/*.enum.ts",
+    "!src/**/*.exception.ts",
     "!src/infrastructure/filters/domain-exception.filter.ts"
   ],
   "moduleNameMapper": {

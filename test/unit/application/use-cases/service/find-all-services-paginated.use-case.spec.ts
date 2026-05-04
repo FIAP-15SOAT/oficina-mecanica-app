@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { FindAllServicesPaginatedUseCase } from '@application/use-cases/service/find-all-services-paginated.use-case';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import {
@@ -61,37 +61,9 @@ describe('FindAllServicesPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10 });
 
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: undefined,
-      name: undefined,
-    });
-  });
-
-  it('should pass active=true to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, active: true });
-
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: true,
-      name: undefined,
-    });
-  });
-
-  it('should pass active=false to the repository when explicitly set', async () => {
-    serviceRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, active: false });
-
-    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      active: false,
-      name: undefined,
-    });
+    expect(serviceRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      {},
+    );
   });
 });

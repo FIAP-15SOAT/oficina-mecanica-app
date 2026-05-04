@@ -7,32 +7,46 @@ import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/upd
 import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
 
 export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
-  constructor(private readonly customerRepository: ICustomerRepository) {}
+  constructor(private readonly customerRepository: ICustomerRepository) { }
 
   async execute(id: string, input: UpdateCustomerDto): Promise<Customer> {
+    const sanitizedDocument = input.document.replace(/[.\-/]/g, '').trim();
+    const sanitizedPhone = input.phone.replace(/\D/g, '').trim();
+    const sanitizedZipCode = input.address.zipCode.replace(/\D/g, '').trim();
+
     const existing = await this.customerRepository.findById(id);
+
     if (!existing) {
       throw new ResourceNotFoundException('Cliente', id);
     }
-    if (input.document !== existing.document) {
-      const byDocument = await this.customerRepository.findByDocument(input.document);
-      if (byDocument) {
-        throw new ResourceConflictException(`Documento '${input.document}' já está cadastrado.`);
+
+    if (sanitizedDocument !== existing.document) {
+      const existingByDocument = await this.customerRepository.findByDocument(sanitizedDocument);
+
+      if (existingByDocument) {
+        throw new ResourceConflictException(`Documento '${sanitizedDocument}' já está cadastrado.`);
       }
     }
+
     if (input.email !== existing.email) {
-      const byEmail = await this.customerRepository.findByEmail(input.email);
-      if (byEmail) {
+      const existingByEmail = await this.customerRepository.findByEmail(input.email);
+
+      if (existingByEmail) {
         throw new ResourceConflictException(`E-mail '${input.email}' já está cadastrado.`);
       }
     }
+
     const updateData: Partial<Customer> = {
       name: input.name,
-      document: input.document,
+      document: sanitizedDocument,
       type: input.type,
       email: input.email,
-      phone: input.phone,
-      address: Address.create({ customerId: id, ...input.address }),
+      phone: sanitizedPhone,
+      address: Address.create({
+        customerId: id,
+        ...input.address,
+        zipCode: sanitizedZipCode,
+      }),
     };
     return this.customerRepository.update(id, updateData);
   }

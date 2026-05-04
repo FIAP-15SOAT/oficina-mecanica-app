@@ -24,7 +24,7 @@ export function createMockUserRepository(): jest.Mocked<IUserRepository> {
     create: jest.fn(),
     findById: jest.fn(),
     findByEmail: jest.fn(),
-    findAll: jest.fn(),
+    findAllPaginated: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   };
@@ -47,11 +47,10 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     signAccessToken: jest.fn().mockReturnValue('access-token-mock'),
     signRefreshToken: jest.fn().mockReturnValue('refresh-token-mock'),
     signTokenPair: jest.fn().mockReturnValue(pair),
-    verifyAccessToken: jest
-      .fn()
-      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
     verifyRefreshToken: jest
       .fn()
       .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
+    signWithSecret: jest.fn().mockReturnValue('signed-token'),
+    verifyWithSecret: jest.fn().mockReturnValue({ any: 'payload' }),
   };
 }

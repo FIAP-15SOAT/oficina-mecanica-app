@@ -38,6 +38,6 @@ describe('FindAllVehiclesUseCase', () => {
 
     await useCase.execute({ page: 2, limit: 5, brand: 'Toyota' });
 
-    expect(vehicleRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5, brand: 'Toyota' });
+    expect(vehicleRepository.findAllPaginated).toHaveBeenCalledWith({ page: 2, limit: 5 }, { brand: 'Toyota' });
   });
 });

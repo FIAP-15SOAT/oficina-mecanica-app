@@ -17,28 +17,11 @@ export class PartSupplyMapper {
       salePrice: Number(prismaRecord.salePrice),
       stock: prismaRecord.stock,
       minStock: prismaRecord.minStock,
+      reservedStock: prismaRecord.reservedStock,
       expiresAt: prismaRecord.expiresAt ?? undefined,
-      isActive: prismaRecord.isActive,
+
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });
-  }
-
-  static toPrismaCreate(partSupply: PartSupply) {
-    return {
-      id: partSupply.id,
-      name: partSupply.name,
-      description: partSupply.description,
-      sku: partSupply.sku,
-      partNumber: partSupply.partNumber,
-      category: partSupply.category,
-      unit: partSupply.unit,
-      costPrice: partSupply.costPrice,
-      salePrice: partSupply.salePrice,
-      stock: partSupply.stock,
-      minStock: partSupply.minStock,
-      expiresAt: partSupply.expiresAt,
-      isActive: partSupply.isActive,
-    };
   }
 }

@@ -7,7 +7,7 @@ describe('Customer Entity', () => {
     street: 'Rua das Flores, 123',
     city: 'São Paulo',
     state: 'SP',
-    zipCode: '01310-100',
+    zipCode: '01310100',
   };
 
   const validProps = {

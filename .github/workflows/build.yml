@@ -21,7 +21,7 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
         env:
-          DATABASE_URL: postgresql://localhost:5432/techchallange?schema=public
+          DATABASE_URL: postgresql://localhost:5432/techchallenge?schema=public
       - name: Run tests with coverage
         run: npm run test:cov
       - name: SonarQube Scan

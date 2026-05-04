@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Vehicle } from '@domain/entities/vehicle.entity';
@@ -44,6 +44,7 @@ export function createMockVehicleRepository(): jest.Mocked<IVehicleRepository> {
     findById: jest.fn(),
     findByPlate: jest.fn(),
     findAllPaginated: jest.fn(),
+    findAllByCustomerId: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
     hasWorkOrders: jest.fn(),

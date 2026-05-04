@@ -10,15 +10,19 @@ export class UpdatePartSupplyUseCase implements IUpdatePartSupplyUseCase {
 
   async execute(id: string, input: UpdatePartSupplyDto): Promise<PartSupply> {
     const existing = await this.partSupplyRepository.findById(id);
+
     if (!existing) {
       throw new ResourceNotFoundException('Peça ou Insumo', id);
     }
+
     if (input.sku && input.sku !== existing.sku) {
       const withSameSku = await this.partSupplyRepository.findBySku(input.sku);
+
       if (withSameSku) {
         throw new ResourceConflictException(`SKU '${input.sku}' já está em uso.`);
       }
     }
+
     return this.partSupplyRepository.update(id, input);
   }
 }

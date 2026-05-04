@@ -49,7 +49,6 @@ describe('Service (E2E)', () => {
           id: expect.any(String),
           name: 'Troca de Óleo',
           description: 'Troca completa com filtro',
-          isActive: true,
         }),
       );
     });
@@ -135,6 +134,8 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBe(10);
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
       expect(res.body.pagination.totalRecords).toBe(15);
       expect(res.body.pagination.totalPages).toBe(2);
     });
@@ -156,81 +157,6 @@ describe('Service (E2E)', () => {
 
       expect(res.body.data.length).toBe(5);
       expect(res.body.pagination.totalPages).toBe(3);
-    });
-
-    it('should return all services when active is not specified', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(16);
-    });
-
-    it('should return only active services when active=true', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100&active=true')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(15);
-    });
-
-    it('should return only inactive services when active=false', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Inativo Service',
-          basePrice: 50,
-          estimatedTimeMin: 20,
-        })
-        .expect(201);
-
-      await request(httpServer)
-        .patch(`/api/services/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .get('/api/services?page=1&limit=100&active=false')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBe(1);
     });
 
     it('should return 401 without token', async () => {
@@ -309,7 +235,6 @@ describe('Service (E2E)', () => {
           description: 'Com óleo sintético',
           basePrice: 189.9,
           estimatedTimeMin: 90,
-          isActive: true,
         })
         .expect(200);
 
@@ -325,7 +250,6 @@ describe('Service (E2E)', () => {
           name: 'Ghost',
           basePrice: 100,
           estimatedTimeMin: 30,
-          isActive: true,
         })
         .expect(404);
     });
@@ -348,58 +272,8 @@ describe('Service (E2E)', () => {
           name: 'Outro Serviço',
           basePrice: 100,
           estimatedTimeMin: 30,
-          isActive: true,
         })
         .expect(409);
-    });
-  });
-
-  // ─── PATCH /api/services/:id ──────────────────────────────────────────────
-
-  describe('PATCH /api/services/:id', () => {
-    let serviceId: string;
-
-    beforeEach(async () => {
-      const createRes = await request(httpServer)
-        .post('/api/services')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validService)
-        .expect(201);
-      serviceId = createRes.body.data.id;
-    });
-
-    it('should deactivate service', async () => {
-      const res = await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      expect(res.body.data.isActive).toBe(false);
-    });
-
-    it('should reactivate service', async () => {
-      await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(200);
-
-      const res = await request(httpServer)
-        .patch(`/api/services/${serviceId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: true })
-        .expect(200);
-
-      expect(res.body.data.isActive).toBe(true);
-    });
-
-    it('should return 404 for non-existent service', async () => {
-      await request(httpServer)
-        .patch('/api/services/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ active: false })
-        .expect(404);
     });
   });
 
@@ -431,6 +305,253 @@ describe('Service (E2E)', () => {
         .delete('/api/services/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
+    });
+  });
+
+  // ─── GET /api/services/metrics ───────────────────────────────────────────
+
+  describe('Service Metrics', () => {
+    it('should return metrics for all services', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validService)
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get('/api/services-metrics')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`);
+
+      if (res.status !== 200) {
+        console.log('All Metrics Error:', res.body);
+      }
+      expect(res.status).toBe(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should use default pagination (page=1, limit=10) for metrics when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/services-metrics')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
+    it('should return metrics for a specific service', async () => {
+      const createRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Troca de Pneu', basePrice: 50, estimatedTimeMin: 30 })
+        .expect(201);
+      const serviceId = createRes.body.data.id;
+
+      // Create a customer and vehicle for the work order
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'Métricas',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: 'metrics@test.com',
+          phone: '11999999999',
+          address: {
+            create: {
+              street: 'Rua Teste',
+              city: 'São Paulo',
+              state: 'SP',
+              zipCode: '01234-567'
+            }
+          }
+        }
+      });
+
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: {
+          customerId: customer.id,
+          plate: 'MET-0001',
+          brand: 'Test',
+          model: 'Test',
+          year: 2020
+        }
+      });
+
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          number: 'WO-MET-001',
+          status: 'COMPLETED'
+        }
+      });
+
+      // Manually create a completed service in DB to have metrics
+      await ctx.prisma.workOrderService.create({
+        data: {
+          workOrderId: workOrder.id,
+          serviceId,
+          quantity: 1,
+          unitPrice: 50,
+          totalPrice: 50,
+          status: 'COMPLETED',
+          startedAt: new Date(Date.now() - 3600000), // 1 hour ago
+          finishedAt: new Date()
+        }
+      });
+
+      const res = await request(httpServer)
+        .get(`/api/services/${serviceId}/metrics`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.executionCount).toBeGreaterThanOrEqual(1);
+      // averageTimeMinutes might be a Decimal object in JSON: {"d": [60], "e": 1, "s": 1}
+      const avgTime = res.body.data.averageTimeMinutes?.d
+        ? res.body.data.averageTimeMinutes.d[0]
+        : res.body.data.averageTimeMinutes;
+      expect(Number(avgTime)).toBeGreaterThan(0);
+    });
+
+    it('should return 403 for metrics when user is not ADMIN', async () => {
+      const mechanicAuth = await registerAndLogin(httpServer, {
+        name: 'Mecânico Teste',
+        email: 'mechanic-metrics@test.com',
+        role: 'MECHANIC',
+      });
+
+      await request(httpServer)
+        .get('/api/services/metrics')
+        .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
+        .expect(403);
+    });
+
+    it('should return 404 for metrics of non-existent service', async () => {
+      await request(httpServer)
+        .get('/api/services/00000000-0000-0000-0000-000000000001/metrics')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+  });
+
+  describe('Service Deletion (Conflicts)', () => {
+    it('should return 409 when service is in a quote', async () => {
+      // 1. Create dependencies
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'Conflict Customer',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: `conflict${Date.now()}@test.com`,
+          phone: '11999999999',
+        },
+      });
+
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: {
+          customerId: customer.id,
+          plate: `CNF-${Date.now().toString().slice(-4)}`,
+          brand: 'Toyota',
+          model: 'Corolla',
+          year: 2020,
+        },
+      });
+
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          number: `WO-CNF-${Date.now().toString().slice(-4)}`,
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          status: 'IN_DIAGNOSIS',
+        },
+      });
+
+      const quote = await ctx.prisma.quote.create({
+        data: {
+          workOrderId: workOrder.id,
+          status: 'PENDING',
+          totalAmount: 0,
+        },
+      });
+
+      const createRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validService)
+        .expect(201);
+      const serviceId = createRes.body.data.id;
+
+      // Manual mock of quote service linkage to trigger conflict
+      await ctx.prisma.quoteService.create({
+        data: {
+          quoteId: quote.id,
+          serviceId,
+          quantity: 1,
+          unitPrice: 100,
+          totalPrice: 100
+        }
+      });
+
+      await request(httpServer)
+        .delete(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(409);
+    });
+
+    it('should return 409 when service is in a work order', async () => {
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'WO Conflict',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: `wo-conflict${Date.now()}@test.com`,
+          phone: '11999999999',
+        },
+      });
+
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: {
+          customerId: customer.id,
+          plate: `WOC-${Date.now().toString().slice(-4)}`,
+          brand: 'Toyota',
+          model: 'Corolla',
+          year: 2020,
+        },
+      });
+
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          number: `WO-WOC-${Date.now().toString().slice(-4)}`,
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          status: 'RECEIVED',
+        },
+      });
+
+      const createRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validService)
+        .expect(201);
+      const serviceId = createRes.body.data.id;
+
+      await ctx.prisma.workOrderService.create({
+        data: {
+          workOrderId: workOrder.id,
+          serviceId,
+          quantity: 1,
+          unitPrice: 100,
+          totalPrice: 100,
+          status: 'PENDING'
+        }
+      });
+
+      await request(httpServer)
+        .delete(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(409);
     });
   });
 });

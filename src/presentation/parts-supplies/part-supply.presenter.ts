@@ -1,5 +1,5 @@
 import { PartSupply } from '@domain/entities/part-supply.entity';
-import { FindAllPartsSuppliesOutputDto } from '@domain/interfaces/use-cases/part-supply/dto/find-all-parts-supplies.dto';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import { PartSupplyPaginatedResponseDto } from './dto/part-supply-paginated-response.dto';
 import { PartSupplyDataResponseDto } from './dto/part-supply-response.dto';
 
@@ -9,7 +9,7 @@ export class PartSupplyPresenter {
   }
 
   static toPaginatedDataResponse(
-    result: FindAllPartsSuppliesOutputDto,
+    result: PaginatedResult<PartSupply>,
   ): PartSupplyPaginatedResponseDto {
     return {
       data: result.items,

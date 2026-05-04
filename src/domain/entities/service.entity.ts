@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 const MIN_NAME_LENGTH = 3;
@@ -10,7 +11,6 @@ export class Service {
   description?: string | null;
   basePrice!: number;
   estimatedTimeMin!: number;
-  isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -23,14 +23,17 @@ export class Service {
     description?: string | null;
     basePrice: number;
     estimatedTimeMin: number;
-    isActive?: boolean;
   }): Service {
+    const now = new Date();
+
     const service = new Service({
+      id: randomUUID(),
       name: props.name.trim(),
       description: props.description?.trim() ?? null,
       basePrice: props.basePrice,
       estimatedTimeMin: props.estimatedTimeMin,
-      isActive: props.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
     });
 
     service.validateName();
@@ -41,30 +44,6 @@ export class Service {
     return service;
   }
 
-  activate(): void {
-    if (this.isActive) {
-      throw new DomainValidationException('Serviço já está ativo');
-    }
-
-    this.isActive = true;
-  }
-
-  deactivate(): void {
-    if (!this.isActive) {
-      throw new DomainValidationException('Serviço já está desativado');
-    }
-
-    this.isActive = false;
-  }
-
-  setActive(active: boolean): void {
-    if (active) {
-      this.activate();
-      return;
-    }
-
-    this.deactivate();
-  }
 
   private validateName(): void {
     if (!this.name) {

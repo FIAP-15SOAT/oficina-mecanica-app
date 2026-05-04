@@ -46,8 +46,4 @@ export class UpdateServiceRequestDto {
   )
   @IsPositive({ message: 'O tempo estimado deve ser maior que zero' })
   estimatedTimeMin!: number;
-
-  @ApiProperty({ example: true, description: 'Indica se o serviço está ativo' })
-  @IsBoolean({ message: 'isActive deve ser um booleano' })
-  isActive!: boolean;
 }

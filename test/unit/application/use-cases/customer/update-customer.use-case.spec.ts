@@ -16,7 +16,7 @@ describe('UpdateCustomerUseCase', () => {
     type: CustomerType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
-    address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
+    address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
   };
 
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe('UpdateCustomerUseCase', () => {
   });
 
   it('should not check uniqueness when document/email are unchanged', async () => {
-    const existing = createMockCustomer({ id: 'cust-1', document: validInput.document, email: validInput.email });
+    const existing = createMockCustomer({ id: 'cust-1', document: '12345678909', email: validInput.email });
     customerRepository.findById.mockResolvedValue(existing);
     customerRepository.update.mockResolvedValue(existing);
 

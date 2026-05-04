@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -18,7 +18,7 @@ export function createMockPartSupply(overrides: Partial<PartSupply> = {}): PartS
     salePrice: 45,
     stock: 10,
     minStock: 2,
-    isActive: true,
+    reservedStock: 0,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -29,10 +29,17 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
   return {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIds: jest.fn(),
     findBySku: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     updateStock: jest.fn(),
-    softDelete: jest.fn(),
+    incrementReservedStock: jest.fn(),
+    decrementReservedStock: jest.fn(),
+    decrementStock: jest.fn(),
+    delete: jest.fn(),
+    hasQuotePartSupplies: jest.fn(),
+    hasWorkOrderPartSupplies: jest.fn(),
   };
 }
+

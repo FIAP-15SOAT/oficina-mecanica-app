@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { CustomersController } from '@presentation/customers/customers.controller';
 import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
 import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
@@ -7,8 +7,6 @@ import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/up
 import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
 import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
-import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
-import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 
 describe('CustomersController', () => {
@@ -18,7 +16,7 @@ describe('CustomersController', () => {
   let findByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateCustomerUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteCustomerUseCase>;
-  let findVehiclesByCustomerIdUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
+  let findVehiclesUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -26,14 +24,14 @@ describe('CustomersController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
-    findVehiclesByCustomerIdUseCase = { execute: jest.fn() };
+    findVehiclesUseCase = { execute: jest.fn() };
     controller = new CustomersController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
-      findVehiclesByCustomerIdUseCase,
+      findVehiclesUseCase,
     );
   });
 
@@ -45,7 +43,7 @@ describe('CustomersController', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'joao@email.com',
         phone: '11999999999',
-        address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
+        address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
       };
       const created = createMockCustomer({ name: dto.name, document: dto.document, type: dto.type, email: dto.email, phone: dto.phone });
       createUseCase.execute.mockResolvedValue(created);
@@ -66,7 +64,8 @@ describe('CustomersController', () => {
       };
       findAllUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const result = await controller.findAll({ page: 1, limit: 10 } as any);
+      const query = { page: 1, limit: 10 };
+      const result = await controller.findAll(query as any);
 
       expect(result).toEqual({ data: customers, pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 } });
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
@@ -80,21 +79,38 @@ describe('CustomersController', () => {
         pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       });
 
-      await controller.findAll({
+      const query = {
         page: 1,
         limit: 10,
         name: 'João',
         type: CustomerType.INDIVIDUAL,
         document: '123.456.789-09',
-      } as any);
+      };
+      await controller.findAll(query as any);
 
-      expect(findAllUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        name: 'João',
-        type: CustomerType.INDIVIDUAL,
-        document: '123.456.789-09',
+      expect(findAllUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 1,
+          limit: 10,
+          name: 'João',
+          type: CustomerType.INDIVIDUAL,
+          document: '123.456.789-09',
+        }),
+      );
+    });
+
+    it('should use default values when page and limit are missing', async () => {
+      findAllUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       });
+
+      const query = {};
+      await controller.findAll(query as any);
+
+      expect(findAllUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
     });
   });
 
@@ -122,23 +138,6 @@ describe('CustomersController', () => {
     });
   });
 
-  describe('findVehiclesByCustomerId', () => {
-    it('should return paginated vehicles for a customer', async () => {
-      const customerId = randomUUID();
-      const vehicles = [createMockVehicle({ customerId }), createMockVehicle({ customerId })];
-      const useCaseOutput = {
-        items: vehicles,
-        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
-      };
-      findVehiclesByCustomerIdUseCase.execute.mockResolvedValue(useCaseOutput);
-
-      const result = await controller.findVehiclesByCustomerId(customerId, { page: 1, limit: 10 } as any);
-
-      expect(result).toEqual(VehiclePresenter.toPaginatedDataResponse(useCaseOutput));
-      expect(findVehiclesByCustomerIdUseCase.execute).toHaveBeenCalledWith(customerId, { page: 1, limit: 10 });
-    });
-  });
-
   describe('remove', () => {
     it('should call delete use case with correct id', async () => {
       const id = randomUUID();
@@ -147,6 +146,19 @@ describe('CustomersController', () => {
       await controller.remove(id);
 
       expect(deleteUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('findVehiclesByCustomerId', () => {
+    it('should return vehicles for customer', async () => {
+      const id = randomUUID();
+      const vehicles: any[] = [];
+      findVehiclesUseCase.execute.mockResolvedValue(vehicles);
+
+      const result = await controller.findVehiclesByCustomerId(id);
+
+      expect(result).toEqual({ data: [] });
+      expect(findVehiclesUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
 });

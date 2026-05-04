@@ -18,14 +18,10 @@ describe('Service Entity', () => {
         expect(service.description).toBe('Troca de óleo do motor com filtro');
         expect(service.basePrice).toBe(150.0);
         expect(service.estimatedTimeMin).toBe(30);
-        expect(service.isActive).toBe(true);
+
       });
 
-      it('should create with specified isActive', () => {
-        const service = Service.create({ ...validProps, isActive: false });
 
-        expect(service.isActive).toBe(false);
-      });
 
       it('should trim the name', () => {
         const service = Service.create({ ...validProps, name: '  Troca de óleo  ' });
@@ -162,72 +158,6 @@ describe('Service Entity', () => {
           'Tempo estimado deve ser maior que zero',
         );
       });
-    });
-  });
-
-  describe('activate', () => {
-    it('should activate an inactive service', () => {
-      const service = Service.create({ ...validProps, isActive: false });
-
-      service.activate();
-
-      expect(service.isActive).toBe(true);
-    });
-
-    it('should throw error when trying to activate already active service', () => {
-      const service = Service.create({ ...validProps, isActive: true });
-
-      expect(() => service.activate()).toThrow(DomainValidationException);
-      expect(() => service.activate()).toThrow('Serviço já está ativo');
-    });
-  });
-
-  describe('deactivate', () => {
-    it('should deactivate an active service', () => {
-      const service = Service.create({ ...validProps, isActive: true });
-
-      service.deactivate();
-
-      expect(service.isActive).toBe(false);
-    });
-
-    it('should throw error when trying to deactivate already inactive service', () => {
-      const service = Service.create({ ...validProps, isActive: false });
-
-      expect(() => service.deactivate()).toThrow(DomainValidationException);
-      expect(() => service.deactivate()).toThrow('Serviço já está desativado');
-    });
-  });
-
-  describe('setActive', () => {
-    it('should activate service when passing true', () => {
-      const service = Service.create({ ...validProps, isActive: false });
-
-      service.setActive(true);
-
-      expect(service.isActive).toBe(true);
-    });
-
-    it('should deactivate service when passing false', () => {
-      const service = Service.create({ ...validProps, isActive: true });
-
-      service.setActive(false);
-
-      expect(service.isActive).toBe(false);
-    });
-
-    it('should throw error when passing true to already active service', () => {
-      const service = Service.create({ ...validProps, isActive: true });
-
-      expect(() => service.setActive(true)).toThrow(DomainValidationException);
-      expect(() => service.setActive(true)).toThrow('Serviço já está ativo');
-    });
-
-    it('should throw error when passing false to already inactive service', () => {
-      const service = Service.create({ ...validProps, isActive: false });
-
-      expect(() => service.setActive(false)).toThrow(DomainValidationException);
-      expect(() => service.setActive(false)).toThrow('Serviço já está desativado');
     });
   });
 });

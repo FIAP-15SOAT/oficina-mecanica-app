@@ -1,5 +1,5 @@
 import { Customer } from '@domain/entities/customer.entity';
-import { FindAllCustomersOutputDto } from '@domain/interfaces/use-cases/customer/dto/find-all-customers.dto';
+import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import { CustomerDataResponseDto } from './dto/customer-response.dto';
 import { CustomerPaginatedResponseDto } from './dto/customer-paginated-response.dto';
 
@@ -8,7 +8,7 @@ export class CustomerPresenter {
     return { data: customer };
   }
 
-  static toPaginatedDataResponse(result: FindAllCustomersOutputDto): CustomerPaginatedResponseDto {
+  static toPaginatedDataResponse(result: PaginatedResult<Customer>): CustomerPaginatedResponseDto {
     return {
       data: result.items,
       pagination: result.pagination,

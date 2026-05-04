@@ -9,7 +9,7 @@ export class ServiceMapper {
       description: record.description,
       basePrice: Number(record.basePrice),
       estimatedTimeMin: record.estimatedTimeMin,
-      isActive: record.isActive,
+
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });

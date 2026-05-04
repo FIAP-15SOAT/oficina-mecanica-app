@@ -37,13 +37,19 @@ describe('Vehicle (E2E)', () => {
         type: 'INDIVIDUAL',
         email: 'joao@e2e.test',
         phone: '(11) 99999-9999',
+        address: {
+          street: 'Rua Teste, 123',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01310-100',
+        },
       })
       .expect(201);
     return res.body.data as { id: string; name: string };
   }
 
   const validVehicle = {
-    plate: 'ABC-1234',
+    plate: 'ABC1234',
     brand: 'Toyota',
     model: 'Corolla',
     year: 2020,
@@ -64,7 +70,7 @@ describe('Vehicle (E2E)', () => {
       expect(res.body.data).toEqual(
         expect.objectContaining({
           id: expect.any(String),
-          plate: 'ABC-1234',
+          plate: 'ABC1234',
           brand: 'Toyota',
           model: 'Corolla',
           year: 2020,
@@ -108,7 +114,7 @@ describe('Vehicle (E2E)', () => {
         .post('/api/vehicles')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ ...validVehicle, customerId: customer.id, plate: '1234ABC' })
-        .expect(422);
+        .expect(400);
     });
 
     it('should return 422 when year is in the future', async () => {
@@ -167,7 +173,18 @@ describe('Vehicle (E2E)', () => {
         .expect(200);
 
       expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
       expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
       expect(res.body.pagination.page).toBe(1);
       expect(res.body.pagination.limit).toBe(10);
     });
@@ -195,7 +212,7 @@ describe('Vehicle (E2E)', () => {
 
     it('should filter by exact plate', async () => {
       const res = await request(httpServer)
-        .get('/api/vehicles?plate=ABC-1234')
+        .get('/api/vehicles?plate=ABC1234')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
@@ -264,17 +281,31 @@ describe('Vehicle (E2E)', () => {
       const res = await request(httpServer)
         .put(`/api/vehicles/${created.body.data.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ brand: 'Honda' })
+        .send({
+          customerId: customer.id,
+          plate: 'ABC1234',
+          brand: 'Honda',
+          model: 'Corolla',
+          year: 2020,
+        })
         .expect(200);
 
       expect(res.body.data.brand).toBe('Honda');
     });
 
     it('should return 404 when vehicle does not exist', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+
       await request(httpServer)
         .put('/api/vehicles/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ brand: 'Honda' })
+        .send({
+          customerId: customer.id,
+          plate: 'ABC1234',
+          brand: 'Honda',
+          model: 'Corolla',
+          year: 2020,
+        })
         .expect(404);
     });
 
@@ -296,8 +327,32 @@ describe('Vehicle (E2E)', () => {
       await request(httpServer)
         .put(`/api/vehicles/${second.body.data.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ plate: 'ABC-1234' })
+        .send({
+          customerId: customer.id,
+          plate: 'ABC1234',
+          brand: 'Honda',
+          model: 'Civic',
+          year: 2021,
+        })
         .expect(409);
+    });
+
+    it('should return 404 when updating to non-existent customer', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validVehicle,
+          customerId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        })
+        .expect(404);
     });
   });
 

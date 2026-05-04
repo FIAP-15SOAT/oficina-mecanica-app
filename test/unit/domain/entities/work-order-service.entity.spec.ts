@@ -1,80 +1,102 @@
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderService Entity', () => {
   const validProps = {
-    id: 'wos-uuid-123',
-    workOrderId: 'wo-uuid-456',
-    serviceId: 'service-uuid-789',
+    workOrderId: randomUUID(),
+    serviceId: randomUUID(),
     quantity: 2,
     unitPrice: 150.0,
-    totalPrice: 300.0,
-    status: WorkOrderServiceStatus.PENDING,
-    startedAt: null,
-    finishedAt: null,
-    createdAt: new Date('2024-01-01T10:00:00Z'),
-    updatedAt: new Date('2024-01-01T10:00:00Z'),
   };
 
-  describe('constructor', () => {
-    it('should create a WorkOrderService with all fields', () => {
-      const wos = new WorkOrderService(validProps);
+  describe('create()', () => {
+    it('should create a WorkOrderService with valid props', () => {
+      const wos = WorkOrderService.create(validProps);
 
-      expect(wos.id).toBe(validProps.id);
+      expect(wos.id).toBeDefined();
       expect(wos.workOrderId).toBe(validProps.workOrderId);
       expect(wos.serviceId).toBe(validProps.serviceId);
       expect(wos.quantity).toBe(validProps.quantity);
       expect(wos.unitPrice).toBe(validProps.unitPrice);
-      expect(wos.totalPrice).toBe(validProps.totalPrice);
+      expect(wos.totalPrice).toBe(300.0);
       expect(wos.status).toBe(WorkOrderServiceStatus.PENDING);
       expect(wos.startedAt).toBeNull();
       expect(wos.finishedAt).toBeNull();
-      expect(wos.createdAt).toBe(validProps.createdAt);
-      expect(wos.updatedAt).toBe(validProps.updatedAt);
-      expect(wos).not.toHaveProperty('timeSpentMin');
+      expect(wos.createdAt).toBeInstanceOf(Date);
+      expect(wos.updatedAt).toBeInstanceOf(Date);
     });
 
-    it('should create a WorkOrderService with startedAt and finishedAt filled', () => {
-      const startedAt = new Date('2024-01-01T11:00:00Z');
-      const finishedAt = new Date('2024-01-01T12:00:00Z');
-
-      const wos = new WorkOrderService({
-        ...validProps,
-        status: WorkOrderServiceStatus.COMPLETED,
-        startedAt,
-        finishedAt,
-      });
-
-      expect(wos.status).toBe(WorkOrderServiceStatus.COMPLETED);
-      expect(wos.startedAt).toBe(startedAt);
-      expect(wos.finishedAt).toBe(finishedAt);
+    it('should throw if workOrderId is missing', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, workOrderId: undefined as any }),
+      ).toThrow(DomainValidationException);
     });
 
-    it('should create a WorkOrderService with status IN_PROGRESS', () => {
-      const startedAt = new Date('2024-01-01T11:00:00Z');
+    it('should throw if workOrderId is not a valid UUID', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, workOrderId: 'invalid-uuid' }),
+      ).toThrow(DomainValidationException);
+    });
 
-      const wos = new WorkOrderService({
-        ...validProps,
-        status: WorkOrderServiceStatus.IN_PROGRESS,
-        startedAt,
-      });
+    it('should throw if serviceId is missing', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, serviceId: undefined as any }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should throw if serviceId is not a valid UUID', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, serviceId: 'invalid-uuid' }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should throw if quantity is not an integer', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, quantity: 1.5 }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should throw if quantity is less than 1', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, quantity: 0 }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should throw if unitPrice is negative', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, unitPrice: -10 }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should not throw if unitPrice is zero', () => {
+      expect(() =>
+        WorkOrderService.create({ ...validProps, unitPrice: 0 }),
+      ).not.toThrow();
+    });
+  });
+
+  describe('startService()', () => {
+    it('should set status to IN_PROGRESS and set startedAt', () => {
+      const wos = WorkOrderService.create(validProps);
+      wos.startService();
 
       expect(wos.status).toBe(WorkOrderServiceStatus.IN_PROGRESS);
-      expect(wos.startedAt).toBe(startedAt);
-      expect(wos.finishedAt).toBeNull();
+      expect(wos.startedAt).toBeInstanceOf(Date);
+      expect(wos.updatedAt).toBeInstanceOf(Date);
     });
+  });
 
-    it('should create a WorkOrderService with partial fields', () => {
-      const wos = new WorkOrderService({ quantity: 1, unitPrice: 50.0 });
+  describe('completeService()', () => {
+    it('should set status to COMPLETED and set finishedAt', () => {
+      const wos = WorkOrderService.create(validProps);
+      wos.startService(); // In progress first
+      wos.completeService();
 
-      expect(wos.quantity).toBe(1);
-      expect(wos.unitPrice).toBe(50.0);
-      expect(wos.id).toBeUndefined();
-      expect(wos.status).toBeUndefined();
-    });
-
-    it('should create an empty WorkOrderService without errors', () => {
-      expect(() => new WorkOrderService({})).not.toThrow();
+      expect(wos.status).toBe(WorkOrderServiceStatus.COMPLETED);
+      expect(wos.finishedAt).toBeInstanceOf(Date);
+      expect(wos.updatedAt).toBeInstanceOf(Date);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { FindAllPartsSuppliesUseCase } from '@application/use-cases/part-supply/find-all-parts-supplies.use-case';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
@@ -65,28 +65,17 @@ describe('FindAllPartsSuppliesUseCase', () => {
       name: 'Filtro',
       sku: 'FO',
       category: PartSupplyCategory.PART,
-      isActive: true,
       lowStock: true,
     });
-
-    expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith({
-      page: 2,
-      limit: 5,
-      name: 'Filtro',
-      sku: 'FO',
-      category: PartSupplyCategory.PART,
-      isActive: true,
-      lowStock: true,
-    });
-  });
-
-  it('should pass isActive=false to the repository when explicitly set', async () => {
-    partSupplyRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-
-    await useCase.execute({ page: 1, limit: 10, isActive: false });
 
     expect(partSupplyRepository.findAllPaginated).toHaveBeenCalledWith(
-      expect.objectContaining({ isActive: false }),
+      { page: 2, limit: 5 },
+      {
+        name: 'Filtro',
+        sku: 'FO',
+        category: PartSupplyCategory.PART,
+        lowStock: true,
+      },
     );
   });
 

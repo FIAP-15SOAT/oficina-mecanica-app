@@ -57,7 +57,6 @@ describe('PartSupply (E2E)', () => {
           category: 'PART',
           unit: 'UN',
           stock: 10,
-          isActive: true,
         }),
       );
     });
@@ -156,6 +155,16 @@ describe('PartSupply (E2E)', () => {
       expect(res.body.pagination.totalPages).toBe(2);
     });
 
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
     it('should return second page', async () => {
       const res = await request(httpServer)
         .get('/api/parts-supplies?page=2&limit=10')
@@ -215,35 +224,7 @@ describe('PartSupply (E2E)', () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });
 
-    it('should filter by isActive=false returning only inactive items', async () => {
-      const createRes = await request(httpServer)
-        .post('/api/parts-supplies')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Peça Inativa',
-          sku: 'SKU-INACTIVE-FILTER',
-          category: 'PART',
-          unit: 'UN',
-          costPrice: 10,
-          salePrice: 20,
-        })
-        .expect(201);
 
-      await request(httpServer)
-        .delete(`/api/parts-supplies/${createRes.body.data.id}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(204);
-
-      const res = await request(httpServer)
-        .get('/api/parts-supplies?isActive=false&limit=100')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.pagination.totalRecords).toBeGreaterThanOrEqual(1);
-      res.body.data.forEach((item: { isActive: boolean }) => {
-        expect(item.isActive).toBe(false);
-      });
-    });
   });
 
   // ─── GET /api/parts-supplies/:id ─────────────────────────────────────────
@@ -298,10 +279,12 @@ describe('PartSupply (E2E)', () => {
     });
 
     it('should update part/supply data', async () => {
+      const { stock, ...updatePayload } = validPartSupply;
       const res = await request(httpServer)
         .put(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({
+          ...updatePayload,
           name: 'Filtro de Óleo Premium',
           salePrice: 59.9,
         })
@@ -311,15 +294,7 @@ describe('PartSupply (E2E)', () => {
       expect(res.body.data.salePrice).toBe(59.9);
     });
 
-    it('should deactivate a part/supply', async () => {
-      const res = await request(httpServer)
-        .put(`/api/parts-supplies/${partId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ isActive: false })
-        .expect(200);
 
-      expect(res.body.data.isActive).toBe(false);
-    });
 
     it('should return 409 when updating to a duplicate SKU', async () => {
       await request(httpServer)
@@ -328,18 +303,20 @@ describe('PartSupply (E2E)', () => {
         .send({ ...validPartSupply, name: 'Outro Item', sku: 'FO-002' })
         .expect(201);
 
+      const { stock, ...updatePayload } = validPartSupply;
       await request(httpServer)
         .put(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ sku: 'FO-002' })
+        .send({ ...updatePayload, sku: 'FO-002' })
         .expect(409);
     });
 
     it('should return 404 for non-existent part/supply', async () => {
+      const { stock, ...updatePayload } = validPartSupply;
       await request(httpServer)
         .put('/api/parts-supplies/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ name: 'Ghost' })
+        .send(updatePayload)
         .expect(404);
     });
   });
@@ -416,7 +393,7 @@ describe('PartSupply (E2E)', () => {
   // ─── DELETE /api/parts-supplies/:id ──────────────────────────────────────
 
   describe('DELETE /api/parts-supplies/:id', () => {
-    it('should soft-delete a part/supply and return 204', async () => {
+    it('should delete a part/supply and return 204', async () => {
       const createRes = await request(httpServer)
         .post('/api/parts-supplies')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -430,12 +407,10 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
 
-      const res = await request(httpServer)
+      await request(httpServer)
         .get(`/api/parts-supplies/${partId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.data.isActive).toBe(false);
+        .expect(404);
     });
 
     it('should return 404 for non-existent part/supply', async () => {
@@ -450,6 +425,56 @@ describe('PartSupply (E2E)', () => {
         .delete('/api/parts-supplies/not-a-uuid')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(400);
+    });
+
+    it('should return 409 when part has linked work orders or quotes', async () => {
+      const created = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: 'LINKED-001' })
+        .expect(201);
+
+      // Manually create a link in DB to trigger hasWorkOrderPartSupplies or hasQuotePartSupplies
+      // We'll use a quote link for this example
+      const customer = await ctx.prisma.customer.create({
+        data: { name: 'Test', document: '12345678909', type: 'INDIVIDUAL', email: 'test@test.com', phone: '123' }
+      });
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: { customerId: customer.id, plate: 'LNK-0001', brand: 'Test', model: 'Test', year: 2020 }
+      });
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: { customerId: customer.id, vehicleId: vehicle.id, number: 'LINKED', status: 'RECEIVED' }
+      });
+      const quote = await ctx.prisma.quote.create({
+        data: { workOrderId: workOrder.id, status: 'PENDING', totalAmount: 0 }
+      });
+      await ctx.prisma.quotePartSupply.create({
+        data: { quoteId: quote.id, partSupplyId: created.body.data.id, quantity: 1, unitPrice: 10, totalPrice: 10 }
+      });
+
+      await request(httpServer)
+        .delete(`/api/parts-supplies/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(409);
+    });
+
+    it('should return 400 (BusinessRuleViolation) when part has reserved stock', async () => {
+      const created = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: 'RESERVED-001' })
+        .expect(201);
+
+      // Manually set reserved stock
+      await ctx.prisma.partSupply.update({
+        where: { id: created.body.data.id },
+        data: { reservedStock: 5 }
+      });
+
+      await request(httpServer)
+        .delete(`/api/parts-supplies/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(409); // ResourceConflictException maps to 409 in DomainExceptionFilter
     });
   });
 });

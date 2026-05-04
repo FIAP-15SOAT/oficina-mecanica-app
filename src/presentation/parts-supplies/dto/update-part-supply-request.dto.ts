@@ -76,12 +76,4 @@ export class UpdatePartSupplyRequestDto {
   @IsOptional()
   @IsDateString({}, { message: 'A data de validade deve estar no formato yyyy-MM-dd.' })
   expiresAt?: string;
-
-  @ApiPropertyOptional({
-    description: 'Status ativo/inativo da Peça ou Insumo no Estoque',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'O status deve ser true ou false.' })
-  isActive?: boolean;
 }

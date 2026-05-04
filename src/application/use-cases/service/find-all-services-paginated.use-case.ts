@@ -1,24 +1,18 @@
+import { Service } from '@domain/entities/service.entity';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
-import {
-  FindAllServicesPaginatedDto,
-  FindAllServicesPaginatedInputDto,
-} from '@domain/interfaces/use-cases/service/dto/find-all-services-paginated.dto';
-import { calculateTotalPages } from '@application/utils/calculate-total-pages.util';
+import { FindAllServicesPaginatedInputDto } from '@domain/interfaces/use-cases/service/dto/find-all-services-paginated.dto';
+import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllServicesPaginatedUseCase {
-  constructor(private readonly serviceRepository: IServiceRepository) {}
+  constructor(private readonly serviceRepository: IServiceRepository) { }
 
-  async execute(input: FindAllServicesPaginatedInputDto): Promise<FindAllServicesPaginatedDto> {
-    const { items, total } = await this.serviceRepository.findAllPaginated(input);
+  async execute(input: FindAllServicesPaginatedInputDto): Promise<PaginatedResult<Service>> {
+    const { page, limit, ...filters } = input;
+    const pagination: PaginationInput = { page, limit };
 
-    return {
-      items,
-      pagination: {
-        totalRecords: total,
-        totalPages: calculateTotalPages(total, input.limit),
-        page: input.page,
-        limit: input.limit,
-      },
-    };
+    const result = await this.serviceRepository.findAllPaginated(pagination, filters);
+
+    return buildPaginatedResult(result, pagination);
   }
 }

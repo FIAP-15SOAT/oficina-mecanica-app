@@ -27,7 +27,7 @@ describe('UpdateVehicleUseCase', () => {
   });
 
   it('should update vehicle successfully', async () => {
-    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC-1234' });
+    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
     const updated = createMockVehicle({ id: 'veh-1', brand: 'Honda' });
     vehicleRepository.findById.mockResolvedValue(existing);
     customerRepository.findById.mockResolvedValue(createMockCustomer({ id: 'cust-1' }));
@@ -48,8 +48,8 @@ describe('UpdateVehicleUseCase', () => {
   });
 
   it('should throw ResourceConflictException when new plate belongs to another vehicle', async () => {
-    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC-1234' });
-    const other = createMockVehicle({ id: 'veh-2', plate: 'XYZ-9999' });
+    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
+    const other = createMockVehicle({ id: 'veh-2', plate: 'XYZ9999' });
     vehicleRepository.findById.mockResolvedValue(existing);
     customerRepository.findById.mockResolvedValue(createMockCustomer({ id: 'cust-1' }));
     vehicleRepository.findByPlate.mockResolvedValue(other);
@@ -70,7 +70,7 @@ describe('UpdateVehicleUseCase', () => {
   });
 
   it('should not check plate uniqueness when plate is unchanged', async () => {
-    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC-1234' });
+    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
     vehicleRepository.findById.mockResolvedValue(existing);
     customerRepository.findById.mockResolvedValue(createMockCustomer({ id: 'cust-1' }));
     vehicleRepository.update.mockResolvedValue(existing);
@@ -81,8 +81,8 @@ describe('UpdateVehicleUseCase', () => {
   });
 
   it('should normalize plate to uppercase and pass it to the repository', async () => {
-    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC-1234' });
-    const updated = createMockVehicle({ id: 'veh-1', plate: 'XYZ-9999' });
+    const existing = createMockVehicle({ id: 'veh-1', customerId: 'cust-1', plate: 'ABC1234' });
+    const updated = createMockVehicle({ id: 'veh-1', plate: 'XYZ9999' });
     vehicleRepository.findById.mockResolvedValue(existing);
     customerRepository.findById.mockResolvedValue(createMockCustomer({ id: 'cust-1' }));
     vehicleRepository.findByPlate.mockResolvedValue(null);
@@ -90,7 +90,7 @@ describe('UpdateVehicleUseCase', () => {
 
     await useCase.execute('veh-1', { ...validInput, plate: 'xyz-9999' });
 
-    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('XYZ-9999');
-    expect(vehicleRepository.update).toHaveBeenCalledWith('veh-1', expect.objectContaining({ plate: 'XYZ-9999' }));
+    expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('XYZ9999');
+    expect(vehicleRepository.update).toHaveBeenCalledWith('veh-1', expect.objectContaining({ plate: 'XYZ9999' }));
   });
 });

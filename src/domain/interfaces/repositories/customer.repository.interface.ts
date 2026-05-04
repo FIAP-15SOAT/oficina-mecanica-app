@@ -1,17 +1,14 @@
 import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import {
+  PaginatedRepositoryResult,
+  PaginationInput,
+} from '../common/pagination.interface';
 
 export interface CustomerFilters {
-  page: number;
-  limit: number;
   name?: string;
   type?: CustomerType;
   document?: string;
-}
-
-export interface PaginatedCustomersDto {
-  items: Customer[];
-  total: number;
 }
 
 export interface ICustomerRepository {
@@ -19,7 +16,10 @@ export interface ICustomerRepository {
   findById(id: string): Promise<Customer | null>;
   findByDocument(document: string): Promise<Customer | null>;
   findByEmail(email: string): Promise<Customer | null>;
-  findAllPaginated(filters: CustomerFilters): Promise<PaginatedCustomersDto>;
+  findAllPaginated(
+    pagination: PaginationInput,
+    filters: CustomerFilters,
+  ): Promise<PaginatedRepositoryResult<Customer>>;
   update(id: string, data: Partial<Customer>): Promise<Customer>;
   delete(id: string): Promise<void>;
   hasVehicles(id: string): Promise<boolean>;

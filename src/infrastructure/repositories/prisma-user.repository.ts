@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { User as PrismaUser } from '@generated/client';
+import { Prisma, User as PrismaUser } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
-import { UserRole } from '@domain/enums/user-role.enum';
-import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IUserRepository, UserFilters } from '@domain/interfaces/repositories/user.repository.interface';
+import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { PrismaService } from '../database/prisma/prisma.service';
+import { UserMapper } from '../mappers/user.mapper';
+import { paginate } from '../database/prisma/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(user: User): Promise<User> {
     const created = await this.prisma.user.create({
@@ -20,7 +22,7 @@ export class PrismaUserRepository implements IUserRepository {
       },
     });
 
-    return this.toDomain(created);
+    return UserMapper.toDomain(created);
   }
 
   async findById(id: string): Promise<User | null> {
@@ -28,7 +30,7 @@ export class PrismaUserRepository implements IUserRepository {
 
     if (!record) return null;
 
-    return this.toDomain(record);
+    return UserMapper.toDomain(record);
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -36,15 +38,36 @@ export class PrismaUserRepository implements IUserRepository {
 
     if (!record) return null;
 
-    return this.toDomain(record);
+    return UserMapper.toDomain(record);
   }
 
-  async findAll(): Promise<User[]> {
-    const records = await this.prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters?: UserFilters,
+  ): Promise<PaginatedRepositoryResult<User>> {
+    const where: Prisma.UserWhereInput = {};
 
-    return records.map((r: PrismaUser) => this.toDomain(r));
+    if (filters?.role) {
+      where.role = filters.role;
+    }
+
+    if (filters?.name) {
+      where.name = { contains: filters.name.trim(), mode: 'insensitive' };
+    }
+
+    const result = await paginate(
+      this.prisma.user,
+      {
+        where,
+        orderBy: { createdAt: 'desc' },
+      },
+      pagination,
+    );
+
+    return {
+      items: result.items.map((record: PrismaUser) => UserMapper.toDomain(record)),
+      total: result.total,
+    };
   }
 
   async update(id: string, data: Partial<User>): Promise<User> {
@@ -59,23 +82,10 @@ export class PrismaUserRepository implements IUserRepository {
       },
     });
 
-    return this.toDomain(updated);
+    return UserMapper.toDomain(updated);
   }
 
   async delete(id: string): Promise<void> {
     await this.prisma.user.delete({ where: { id } });
-  }
-
-  private toDomain(record: PrismaUser): User {
-    return new User({
-      id: record.id,
-      name: record.name,
-      email: record.email,
-      passwordHash: record.passwordHash,
-      role: record.role as UserRole,
-      isActive: record.isActive,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    });
   }
 }

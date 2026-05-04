@@ -22,7 +22,6 @@ describe('UpdateServiceUseCase', () => {
       name: 'Full Oil Change',
       basePrice: 149.99,
       estimatedTimeMin: 45,
-      isActive: true,
     };
 
     const existing = createMockService();
@@ -32,7 +31,6 @@ describe('UpdateServiceUseCase', () => {
       name: input.name,
       basePrice: input.basePrice,
       estimatedTimeMin: input.estimatedTimeMin,
-      isActive: input.isActive,
     });
 
     serviceRepository.findById.mockResolvedValue(existing);
@@ -50,7 +48,6 @@ describe('UpdateServiceUseCase', () => {
       name: 'Oil Change',
       basePrice: 99.99,
       estimatedTimeMin: 30,
-      isActive: true,
     };
 
     const existing = createMockService({ name: input.name });
@@ -70,7 +67,6 @@ describe('UpdateServiceUseCase', () => {
       name: 'Oil Change',
       basePrice: 99.99,
       estimatedTimeMin: 30,
-      isActive: true,
     };
 
     serviceRepository.findById.mockResolvedValue(null);
@@ -87,7 +83,6 @@ describe('UpdateServiceUseCase', () => {
       name: 'Tire Rotation',
       basePrice: 49.99,
       estimatedTimeMin: 20,
-      isActive: true,
     };
 
     const existing = createMockService();

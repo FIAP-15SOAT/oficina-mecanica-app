@@ -1,26 +1,11 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { User as PrismaUserModel } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 
-function createMockPrismaUser(overrides: Partial<PrismaUserModel> = {}): PrismaUserModel {
-  const now = new Date();
-  const id = randomUUID();
-
-  return {
-    id,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    passwordHash: '$2b$10$hashedpassword',
-    role: 'ATTENDANT',
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    ...overrides,
-  };
-}
+import { createMockUser } from '../../../helpers/user-mock.factory';
 
 describe('PrismaUserRepository', () => {
   let repository: PrismaUserRepository;
@@ -40,7 +25,7 @@ describe('PrismaUserRepository', () => {
         role: UserRole.MECHANIC,
       });
 
-      const prismaModel = createMockPrismaUser({
+      const prismaModel = createMockUser({
         name: user.name,
         email: user.email,
         passwordHash: user.passwordHash,
@@ -80,7 +65,7 @@ describe('PrismaUserRepository', () => {
   describe('findById', () => {
     it('should find a user by id and return domain entity', async () => {
       const id = randomUUID();
-      const prismaModel = createMockPrismaUser({ id });
+      const prismaModel = createMockUser({ id });
 
       prisma.user.findUnique.mockResolvedValue(prismaModel);
 
@@ -117,7 +102,7 @@ describe('PrismaUserRepository', () => {
   describe('findByEmail', () => {
     it('should find a user by email and return domain entity', async () => {
       const email = 'john.doe@example.com';
-      const prismaModel = createMockPrismaUser({ email });
+      const prismaModel = createMockUser({ email });
 
       prisma.user.findUnique.mockResolvedValue(prismaModel);
 
@@ -151,74 +136,103 @@ describe('PrismaUserRepository', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return all users', async () => {
+  describe('findAllPaginated', () => {
+    it('should return paginated users without filters', async () => {
       const prismaModels = [
-        createMockPrismaUser({ id: randomUUID(), name: 'User 1' }),
-        createMockPrismaUser({ id: randomUUID(), name: 'User 2' }),
+        createMockUser({ id: randomUUID(), name: 'User 1' }),
       ];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
 
-      const result = await repository.findAll();
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 });
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual(
-        new User({
-          id: prismaModels[0].id,
-          name: prismaModels[0].name,
-          email: prismaModels[0].email,
-          passwordHash: prismaModels[0].passwordHash,
-          role: prismaModels[0].role as UserRole,
-          isActive: prismaModels[0].isActive,
-          createdAt: prismaModels[0].createdAt,
-          updatedAt: prismaModels[0].updatedAt,
-        }),
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: {},
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should return paginated users with role filter', async () => {
+      const prismaModels = [
+        createMockUser({ id: randomUUID(), role: UserRole.ADMIN }),
+      ];
+
+      prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { role: UserRole.ADMIN },
       );
 
+      expect(result.items).toHaveLength(1);
       expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { role: UserRole.ADMIN },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should return paginated users with name filter', async () => {
+      const prismaModels = [
+        createMockUser({ id: randomUUID(), name: 'Target User' }),
+      ];
+
+      prisma.user.findMany.mockResolvedValue(prismaModels);
+      prisma.user.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { name: 'Target' },
+      );
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: {
+          name: { contains: 'Target', mode: 'insensitive' },
+        },
+        skip: 0,
+        take: 10,
         orderBy: { createdAt: 'desc' },
       });
     });
   });
 
   describe('update', () => {
-    it('should update a user and return domain entity', async () => {
+    it('should update a user with all fields', async () => {
       const id = randomUUID();
       const updateData = {
         name: 'Updated Name',
         email: 'updated@example.com',
+        passwordHash: '$2b$10$newhash',
+        role: UserRole.ADMIN,
+        isActive: false,
       };
 
-      const updatedPrismaModel = createMockPrismaUser({
+      const updatedPrismaModel = createMockUser({
         id,
         name: updateData.name,
         email: updateData.email,
+        passwordHash: updateData.passwordHash,
+        role: updateData.role,
+        isActive: updateData.isActive,
       });
 
       prisma.user.update.mockResolvedValue(updatedPrismaModel);
 
       const result = await repository.update(id, updateData);
 
-      expect(result).toEqual(
-        new User({
-          id: updatedPrismaModel.id,
-          name: updatedPrismaModel.name,
-          email: updatedPrismaModel.email,
-          passwordHash: updatedPrismaModel.passwordHash,
-          role: updatedPrismaModel.role as UserRole,
-          isActive: updatedPrismaModel.isActive,
-          createdAt: updatedPrismaModel.createdAt,
-          updatedAt: updatedPrismaModel.updatedAt,
-        }),
-      );
-
+      expect(result.name).toBe(updateData.name);
+      expect(result.role).toBe(updateData.role);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id },
-        data: {
-          name: updateData.name,
-          email: updateData.email,
-        },
+        data: updateData,
       });
     });
 
@@ -228,7 +242,7 @@ describe('PrismaUserRepository', () => {
         isActive: false,
       };
 
-      const updatedPrismaModel = createMockPrismaUser({
+      const updatedPrismaModel = createMockUser({
         id,
         isActive: false,
       });
@@ -251,7 +265,7 @@ describe('PrismaUserRepository', () => {
     it('should delete a user', async () => {
       const id = randomUUID();
 
-      prisma.user.delete.mockResolvedValue(createMockPrismaUser({ id }));
+      prisma.user.delete.mockResolvedValue(createMockUser({ id }));
 
       await repository.delete(id);
 

@@ -24,9 +24,6 @@ export class ServiceResponseDto {
   @ApiProperty({ example: 60, description: 'Tempo estimado em minutos' })
   estimatedTimeMin!: number;
 
-  @ApiProperty({ example: true, description: 'Indica se o serviço está ativo' })
-  isActive!: boolean;
-
   @ApiProperty({
     example: '2026-04-20T12:00:00.000Z',
     format: 'date-time',

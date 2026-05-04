@@ -4,6 +4,7 @@ import { ApplicationException } from '@application/exceptions/application.except
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 @Catch(ApplicationException)
 export class ApplicationExceptionFilter implements ExceptionFilter {
@@ -31,6 +32,10 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof UnauthorizedAccessException) {
       return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
+    }
+
+    if (exception instanceof BadRequestException) {
+      return { status: HttpStatus.BAD_REQUEST, error: 'Bad Request' };
     }
 
     return { status: HttpStatus.INTERNAL_SERVER_ERROR, error: 'Internal Server Error' };

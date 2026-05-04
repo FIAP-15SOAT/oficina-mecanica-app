@@ -4,20 +4,39 @@ import { Customer } from '@domain/entities/customer.entity';
 import {
   CustomerFilters,
   ICustomerRepository,
-  PaginatedCustomersDto,
 } from '@domain/interfaces/repositories/customer.repository.interface';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { CustomerMapper } from '@infrastructure/mappers/customer.mapper';
+import { PaginatedRepositoryResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 const ADDRESS_INCLUDE = { address: true } as const;
 
 @Injectable()
 export class PrismaCustomerRepository implements ICustomerRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(customer: Customer): Promise<Customer> {
     const record = await this.prisma.customer.create({
-      data: CustomerMapper.toPrismaCreate(customer),
+      data: {
+        id: customer.id,
+        name: customer.name,
+        type: customer.type,
+        document: customer.document,
+        email: customer.email,
+        phone: customer.phone,
+        ...(customer.address && {
+          address: {
+            create: {
+              id: customer.address.id,
+              street: customer.address.street,
+              city: customer.address.city,
+              state: customer.address.state,
+              zipCode: customer.address.zipCode,
+            },
+          },
+        }),
+      },
       include: ADDRESS_INCLUDE,
     });
     return CustomerMapper.toDomain(record);
@@ -28,6 +47,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
       where: { id },
       include: ADDRESS_INCLUDE,
     });
+
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
@@ -36,6 +56,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
       where: { document },
       include: ADDRESS_INCLUDE,
     });
+
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
@@ -44,30 +65,36 @@ export class PrismaCustomerRepository implements ICustomerRepository {
       where: { email },
       include: ADDRESS_INCLUDE,
     });
+
     return record ? CustomerMapper.toDomain(record) : null;
   }
 
-  async findAllPaginated(filters: CustomerFilters): Promise<PaginatedCustomersDto> {
-    const { page, limit, name, type, document } = filters;
-    const skip = (page - 1) * limit;
+  async findAllPaginated(
+    pagination: PaginationInput,
+    filters: CustomerFilters,
+  ): Promise<PaginatedRepositoryResult<Customer>> {
+    const { name, type, document } = filters;
 
     const where: Prisma.CustomerWhereInput = {};
-    if (name) where.name = { contains: name, mode: 'insensitive' };
+
+    if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
     if (type) where.type = type;
-    if (document) where.document = document;
+    if (document) where.document = document.replace(/[.\-/]/g, '').trim();
 
-    const [records, total] = await this.prisma.$transaction([
-      this.prisma.customer.findMany({
+    const result = await paginate(
+      this.prisma.customer,
+      {
         where,
-        skip,
-        take: limit,
         orderBy: { createdAt: 'desc' },
-        include: ADDRESS_INCLUDE,
-      }),
-      this.prisma.customer.count({ where }),
-    ]);
+        include: ADDRESS_INCLUDE
+      },
+      pagination,
+    );
 
-    return { items: records.map((r: PrismaCustomer) => CustomerMapper.toDomain(r)), total };
+    return {
+      items: result.items.map((r: PrismaCustomer) => CustomerMapper.toDomain(r)),
+      total: result.total,
+    };
   }
 
   async update(id: string, data: Partial<Customer>): Promise<Customer> {
@@ -82,22 +109,22 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         ...(data.address !== undefined && {
           address: data.address
             ? {
-                upsert: {
-                  create: {
-                    id: data.address.id,
-                    street: data.address.street,
-                    city: data.address.city,
-                    state: data.address.state,
-                    zipCode: data.address.zipCode,
-                  },
-                  update: {
-                    street: data.address.street,
-                    city: data.address.city,
-                    state: data.address.state,
-                    zipCode: data.address.zipCode,
-                  },
+              upsert: {
+                create: {
+                  id: data.address.id,
+                  street: data.address.street,
+                  city: data.address.city,
+                  state: data.address.state,
+                  zipCode: data.address.zipCode,
                 },
-              }
+                update: {
+                  street: data.address.street,
+                  city: data.address.city,
+                  state: data.address.state,
+                  zipCode: data.address.zipCode,
+                },
+              },
+            }
             : { delete: true },
         }),
       },

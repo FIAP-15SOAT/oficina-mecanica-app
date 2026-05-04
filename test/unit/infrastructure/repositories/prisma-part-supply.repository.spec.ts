@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
@@ -7,71 +7,12 @@ import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PrismaPartSupplyRepository } from '@infrastructure/repositories/prisma-part-supply.repository';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
-type MockPartSupplyDelegate = {
-  create: jest.Mock;
-  findUnique: jest.Mock;
-  findFirst: jest.Mock;
-  findMany: jest.Mock;
-  count: jest.Mock;
-  update: jest.Mock;
-};
-
-type MockStockMovementDelegate = {
-  create: jest.Mock;
-};
-
-type MockPrismaClient = {
-  partSupply: MockPartSupplyDelegate;
-  stockMovement: MockStockMovementDelegate;
-  $transaction: jest.Mock;
-  $queryRaw: jest.Mock;
-} & PrismaService;
-
-function createMockPrismaClient(): MockPrismaClient {
-  return {
-    partSupply: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
-    },
-    stockMovement: {
-      create: jest.fn(),
-    },
-    $transaction: jest
-      .fn()
-      .mockImplementation((queries: Promise<unknown>[]) => Promise.all(queries)),
-    $queryRaw: jest.fn(),
-  } as unknown as MockPrismaClient;
-}
-
-function createMockPrismaPartSupply(overrides: Record<string, unknown> = {}) {
-  const now = new Date();
-  return {
-    id: randomUUID(),
-    name: 'Filtro de Óleo',
-    description: null,
-    sku: 'FO-001',
-    partNumber: 'MANN-W712',
-    category: 'PART',
-    unit: 'UN',
-    costPrice: new Prisma.Decimal(25.0),
-    salePrice: new Prisma.Decimal(45.0),
-    stock: 10,
-    minStock: 2,
-    expiresAt: null,
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    ...overrides,
-  };
-}
+import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
+import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 
 describe('PrismaPartSupplyRepository', () => {
   let repository: PrismaPartSupplyRepository;
-  let prisma: MockPrismaClient;
+  let prisma: MockPrismaService;
 
   beforeEach(() => {
     prisma = createMockPrismaClient();
@@ -89,7 +30,7 @@ describe('PrismaPartSupplyRepository', () => {
         salePrice: 45.0,
       });
 
-      const prismaModel = createMockPrismaPartSupply({
+      const prismaModel = createMockPartSupply({
         id: partSupply.id,
         name: partSupply.name,
         sku: partSupply.sku,
@@ -104,12 +45,35 @@ describe('PrismaPartSupplyRepository', () => {
       expect(result.sku).toBe(partSupply.sku);
       expect(prisma.partSupply.create).toHaveBeenCalledTimes(1);
     });
+
+    it('should throw ResourceConflictException when SKU already exists', async () => {
+      const partSupply = createMockPartSupply();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate SKU', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.partSupply.create.mockRejectedValue(error);
+
+      await expect(repository.create(partSupply as any)).rejects.toThrow(
+        'Peça ou insumo já cadastrado',
+      );
+    });
+
+    it('should rethrow unknown errors', async () => {
+      const partSupply = createMockPartSupply();
+      const error = new Error('Database connection failed');
+      prisma.partSupply.create.mockRejectedValue(error);
+
+      await expect(repository.create(partSupply as any)).rejects.toThrow(
+        'Database connection failed',
+      );
+    });
   });
 
   describe('findById', () => {
     it('should find a part/supply by id and return domain entity', async () => {
       const id = randomUUID();
-      const prismaModel = createMockPrismaPartSupply({ id });
+      const prismaModel = createMockPartSupply({ id });
 
       prisma.partSupply.findUnique.mockResolvedValue(prismaModel);
 
@@ -129,10 +93,32 @@ describe('PrismaPartSupplyRepository', () => {
     });
   });
 
+  describe('findByIds', () => {
+    it('should find multiple parts/supplies by ids and return domain entities', async () => {
+      const ids = [randomUUID(), randomUUID()];
+      const prismaModels = [
+        createMockPartSupply({ id: ids[0] }),
+        createMockPartSupply({ id: ids[1] }),
+      ];
+
+      prisma.partSupply.findMany.mockResolvedValue(prismaModels);
+
+      const result = await repository.findByIds(ids);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(PartSupply);
+      expect(result[0].id).toBe(ids[0]);
+      expect(result[1].id).toBe(ids[1]);
+      expect(prisma.partSupply.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ids } },
+      });
+    });
+  });
+
   describe('findBySku', () => {
     it('should find a part/supply by sku and return domain entity', async () => {
       const sku = 'FO-001';
-      const prismaModel = createMockPrismaPartSupply({ sku });
+      const prismaModel = createMockPartSupply({ sku });
 
       prisma.partSupply.findUnique.mockResolvedValue(prismaModel);
 
@@ -155,14 +141,14 @@ describe('PrismaPartSupplyRepository', () => {
   describe('findAllPaginated', () => {
     it('should return all items without filters', async () => {
       const prismaModels = [
-        createMockPrismaPartSupply({ id: randomUUID(), name: 'Filtro de Óleo' }),
-        createMockPrismaPartSupply({ id: randomUUID(), name: 'Pastilha de Freio', sku: 'PF-001' }),
+        createMockPartSupply({ id: randomUUID(), name: 'Filtro de Óleo' }),
+        createMockPartSupply({ id: randomUUID(), name: 'Pastilha de Freio', sku: 'PF-001' }),
       ];
 
       prisma.partSupply.findMany.mockResolvedValue(prismaModels);
       prisma.partSupply.count.mockResolvedValue(2);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 });
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
 
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
@@ -175,7 +161,7 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10, name: 'Filtro' });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { name: 'Filtro' });
 
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -188,7 +174,7 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10, sku: 'FO' });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { sku: 'FO' });
 
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -201,37 +187,22 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10, category: PartSupplyCategory.PART });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { category: PartSupplyCategory.PART });
 
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { category: PartSupplyCategory.PART } }),
       );
     });
 
-    it('should apply isActive filter', async () => {
+    it('should apply lowStock filter using column reference', async () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10, isActive: false });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { lowStock: true });
 
-      expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { isActive: false } }),
-      );
-    });
-
-    it('should apply lowStock filter using $queryRaw', async () => {
-      const id1 = randomUUID();
-      const id2 = randomUUID();
-      prisma.$queryRaw.mockResolvedValue([{ id: id1 }, { id: id2 }]);
-      prisma.partSupply.findMany.mockResolvedValue([]);
-      prisma.partSupply.count.mockResolvedValue(0);
-
-      await repository.findAllPaginated({ page: 1, limit: 10, lowStock: true });
-
-      expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: { in: [id1, id2] } },
+          where: { stock: { lte: 'minStockReference' } },
         }),
       );
     });
@@ -240,7 +211,7 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([]);
       prisma.partSupply.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 2, limit: 5 });
+      await repository.findAllPaginated({ page: 2, limit: 5 }, {});
 
       expect(prisma.partSupply.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
@@ -249,7 +220,7 @@ describe('PrismaPartSupplyRepository', () => {
 
     it('should map prisma records to domain entities', async () => {
       const now = new Date();
-      const prismaModel = createMockPrismaPartSupply({
+      const prismaModel = createMockPartSupply({
         id: randomUUID(),
         expiresAt: new Date('2027-01-01'),
         createdAt: now,
@@ -259,7 +230,7 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.partSupply.findMany.mockResolvedValue([prismaModel]);
       prisma.partSupply.count.mockResolvedValue(1);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 });
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
 
       expect(result.items[0]).toBeInstanceOf(PartSupply);
       expect(result.items[0].expiresAt).toBeInstanceOf(Date);
@@ -267,16 +238,29 @@ describe('PrismaPartSupplyRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a part/supply and return domain entity', async () => {
+    it('should update a part/supply with all fields', async () => {
       const id = randomUUID();
-      const prismaModel = createMockPrismaPartSupply({ id, name: 'Filtro Premium' });
+      const data: Partial<PartSupply> = {
+        name: 'Filtro Premium',
+        description: 'Nova descrição',
+        sku: 'FO-002',
+        partNumber: 'MANN-W713',
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 30.0,
+        salePrice: 59.9,
+        minStock: 5,
+        expiresAt: new Date('2028-01-01'),
+      };
 
+      const prismaModel = createMockPartSupply({ id, ...data });
       prisma.partSupply.update.mockResolvedValue(prismaModel);
 
-      const result = await repository.update(id, { name: 'Filtro Premium', salePrice: 59.9 });
+      const result = await repository.update(id, data);
 
       expect(result).toBeInstanceOf(PartSupply);
-      expect(result.name).toBe('Filtro Premium');
+      expect(result.name).toBe(data.name);
+      expect(result.sku).toBe(data.sku);
       expect(prisma.partSupply.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id } }),
       );
@@ -284,7 +268,7 @@ describe('PrismaPartSupplyRepository', () => {
 
     it('should only include defined fields in update data', async () => {
       const id = randomUUID();
-      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id }));
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
 
       await repository.update(id, { name: 'Novo Nome' });
 
@@ -296,7 +280,7 @@ describe('PrismaPartSupplyRepository', () => {
   describe('updateStock', () => {
     it('should register ENTRY stock movement and return updated entity', async () => {
       const id = randomUUID();
-      const updatedModel = createMockPrismaPartSupply({ id, stock: 15 });
+      const updatedModel = createMockPartSupply({ id, stock: 15 });
 
       prisma.$transaction.mockResolvedValue([updatedModel, {}]);
 
@@ -317,9 +301,9 @@ describe('PrismaPartSupplyRepository', () => {
       const id = randomUUID();
       prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
         await Promise.all(ops);
-        return [createMockPrismaPartSupply({ id }), {}];
+        return [createMockPartSupply({ id }), {}];
       });
-      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id }));
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
       prisma.stockMovement.create.mockResolvedValue({});
 
       await repository.updateStock(id, { type: StockMovementType.ENTRY, quantity: 5 });
@@ -335,9 +319,9 @@ describe('PrismaPartSupplyRepository', () => {
       const id = randomUUID();
       prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
         await Promise.all(ops);
-        return [createMockPrismaPartSupply({ id }), {}];
+        return [createMockPartSupply({ id }), {}];
       });
-      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id }));
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
       prisma.stockMovement.create.mockResolvedValue({});
 
       await repository.updateStock(id, {
@@ -357,9 +341,9 @@ describe('PrismaPartSupplyRepository', () => {
       const id = randomUUID();
       prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
         await Promise.all(ops);
-        return [createMockPrismaPartSupply({ id, stock: 2 }), {}];
+        return [createMockPartSupply({ id, stock: 2 }), {}];
       });
-      prisma.partSupply.update.mockResolvedValue(createMockPrismaPartSupply({ id, stock: 2 }));
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id, stock: 2 }));
       prisma.stockMovement.create.mockResolvedValue({});
 
       const result = await repository.updateStock(id, {
@@ -377,18 +361,80 @@ describe('PrismaPartSupplyRepository', () => {
     });
   });
 
-  describe('softDelete', () => {
-    it('should set isActive to false', async () => {
+  describe('delete', () => {
+    it('should delete the part supply', async () => {
       const id = randomUUID();
-      prisma.partSupply.update.mockResolvedValue(
-        createMockPrismaPartSupply({ id, isActive: false }),
+      prisma.partSupply.delete.mockResolvedValue(
+        createMockPartSupply({ id }),
       );
 
-      await repository.softDelete(id);
+      await repository.delete(id);
 
+      expect(prisma.partSupply.delete).toHaveBeenCalledWith({
+        where: { id },
+      });
+    });
+  });
+
+  describe('hasQuotePartSupplies', () => {
+    it('should return true if associated with quotes', async () => {
+      const id = randomUUID();
+      prisma.quotePartSupply.findFirst.mockResolvedValue({ partSupplyId: id });
+      const result = await repository.hasQuotePartSupplies(id);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if not associated with quotes', async () => {
+      prisma.quotePartSupply.findFirst.mockResolvedValue(null);
+      const result = await repository.hasQuotePartSupplies(randomUUID());
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasWorkOrderPartSupplies', () => {
+    it('should return true if associated with work orders', async () => {
+      const id = randomUUID();
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue({ partSupplyId: id });
+      const result = await repository.hasWorkOrderPartSupplies(id);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if not associated with work orders', async () => {
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue(null);
+      const result = await repository.hasWorkOrderPartSupplies(randomUUID());
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('incrementReservedStock', () => {
+    it('should increment reserved stock', async () => {
+      const id = randomUUID();
+      await repository.incrementReservedStock(id, 5);
       expect(prisma.partSupply.update).toHaveBeenCalledWith({
         where: { id },
-        data: { isActive: false },
+        data: { reservedStock: { increment: 5 } },
+      });
+    });
+  });
+
+  describe('decrementReservedStock', () => {
+    it('should decrement reserved stock', async () => {
+      const id = randomUUID();
+      await repository.decrementReservedStock(id, 5);
+      expect(prisma.partSupply.update).toHaveBeenCalledWith({
+        where: { id },
+        data: { reservedStock: { decrement: 5 } },
+      });
+    });
+  });
+
+  describe('decrementStock', () => {
+    it('should decrement stock', async () => {
+      const id = randomUUID();
+      await repository.decrementStock(id, 5);
+      expect(prisma.partSupply.update).toHaveBeenCalledWith({
+        where: { id },
+        data: { stock: { decrement: 5 } },
       });
     });
   });

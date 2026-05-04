@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { PartsSuppliesController } from '@presentation/parts-supplies/parts-supplies.controller';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
@@ -95,7 +95,7 @@ describe('PartsSuppliesController', () => {
 
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const query: FilterPartsSuppliesDto = {};
+      const query: any = {};
       const result = await controller.findAll(query);
 
       expect(result).toEqual({
@@ -107,7 +107,7 @@ describe('PartsSuppliesController', () => {
       );
     });
 
-    it('should forward name, sku, category, isActive and lowStock filters', async () => {
+    it('should forward name, sku, category and lowStock filters', async () => {
       const items = [createMockPartSupply()];
 
       const useCaseOutput = {
@@ -117,26 +117,26 @@ describe('PartsSuppliesController', () => {
 
       findAllPartsSuppliesUseCase.execute.mockResolvedValue(useCaseOutput);
 
-      const query: FilterPartsSuppliesDto = {
+      const query: any = {
         page: 1,
         limit: 10,
         name: 'Filtro',
         sku: 'FO',
         category: PartSupplyCategory.PART,
-        isActive: true,
         lowStock: true,
       };
       await controller.findAll(query);
 
-      expect(findAllPartsSuppliesUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        name: 'Filtro',
-        sku: 'FO',
-        category: PartSupplyCategory.PART,
-        isActive: true,
-        lowStock: true,
-      });
+      expect(findAllPartsSuppliesUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 1,
+          limit: 10,
+          name: 'Filtro',
+          sku: 'FO',
+          category: PartSupplyCategory.PART,
+          lowStock: true,
+        }),
+      );
     });
   });
 
@@ -174,6 +174,26 @@ describe('PartsSuppliesController', () => {
         id,
         expect.objectContaining(dto),
       );
+    });
+
+    it('should convert expiresAt string to Date before calling use case', async () => {
+      const id = randomUUID();
+      const dto: UpdatePartSupplyRequestDto = {
+        name: 'Filtro de Óleo Premium',
+        sku: 'FO-001',
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 25.0,
+        salePrice: 59.9,
+        expiresAt: '2026-12-31',
+      };
+      const updated = createMockPartSupply({ id });
+      updatePartSupplyUseCase.execute.mockResolvedValue(updated);
+
+      await controller.update(id, dto);
+
+      const callArg = updatePartSupplyUseCase.execute.mock.calls[0][1];
+      expect(callArg.expiresAt).toBeInstanceOf(Date);
     });
   });
 

@@ -8,7 +8,6 @@ import {
   Inject,
   Param,
   ParseUUIDPipe,
-  Patch,
   Post,
   Put,
   Query,
@@ -39,17 +38,19 @@ import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/crea
 import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
 import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
 import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
-import { IUpdateServiceStatusUseCase } from '@domain/interfaces/use-cases/service/update-service-status.use-case.interface';
+
 import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
+import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
-import { FilterServicesDto } from './dto/filter-services.dto';
-import { UpdateServiceStatusRequestDto } from './dto/update-service-status-request.dto';
+import { FindAllServicesQueryDto } from './dto/filter-services.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
+import { ServiceMetricsDataResponseDto } from './dto/service-metrics-response.dto';
 import { ServicePresenter } from './service.presenter';
+import { ServiceMetricsPresenter } from './service-metrics.presenter';
 
-@ApiTags('Services')
+@ApiTags('Gestão de Serviços')
 @Controller('services')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -63,11 +64,22 @@ export class ServiceController {
     private readonly findAllServicesPaginatedUseCase: IFindAllServicesPaginatedUseCase,
     @Inject('IUpdateServiceUseCase')
     private readonly updateServiceUseCase: IUpdateServiceUseCase,
-    @Inject('IUpdateServiceStatusUseCase')
-    private readonly updateServiceStatusUseCase: IUpdateServiceStatusUseCase,
     @Inject('IDeleteServiceUseCase')
     private readonly deleteServiceUseCase: IDeleteServiceUseCase,
-  ) {}
+    @Inject('IFindServiceMetricsUseCase')
+    private readonly findServiceMetricsUseCase: IFindServiceMetricsUseCase,
+  ) { }
+
+
+  @Get(':id/metrics')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Obter métricas de um serviço específico' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ type: ServiceMetricsDataResponseDto, description: 'Métricas do serviço solicitado' })
+  async getMetrics(@Param('id', ParseUUIDPipe) id: string) {
+    const result = await this.findServiceMetricsUseCase.execute(id);
+    return ServiceMetricsPresenter.toDataResponse(result);
+  }
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -89,13 +101,17 @@ export class ServiceController {
   @ApiOkResponse({ type: ServicePaginatedResponseDto, description: 'Lista paginada de serviços' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FilterServicesDto): Promise<ServicePaginatedResponseDto> {
+  async findAll(
+    @Query() query: FindAllServicesQueryDto,
+  ): Promise<ServicePaginatedResponseDto> {
+    const { page, limit, ...filters } = query;
+
     const result = await this.findAllServicesPaginatedUseCase.execute({
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-      active: query.active,
-      name: query.name,
+      page: page ?? 1,
+      limit: limit ?? 10,
+      ...filters,
     });
+
     return ServicePresenter.toPaginatedDataResponse(result);
   }
 
@@ -129,24 +145,6 @@ export class ServiceController {
     @Body() request: UpdateServiceRequestDto,
   ): Promise<ServiceDataResponseDto> {
     const result = await this.updateServiceUseCase.execute(id, request);
-    return ServicePresenter.toDataResponse(result);
-  }
-
-  @Patch(':id')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Alterar status do serviço (somente Admin)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
-  @ApiOkResponse({ type: ServiceDataResponseDto, description: 'Status do serviço atualizado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
-  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  @ApiForbiddenResponse({ description: 'Acesso negado' })
-  @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
-  @ApiUnprocessableEntityResponse({ description: 'Serviço já está no status informado' })
-  async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() request: UpdateServiceStatusRequestDto,
-  ): Promise<ServiceDataResponseDto> {
-    const result = await this.updateServiceStatusUseCase.execute(id, request.active);
     return ServicePresenter.toDataResponse(result);
   }
 

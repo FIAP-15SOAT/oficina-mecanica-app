@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { UserController } from '@presentation/user/user.controller';
 import { createMockUser } from '../../../helpers/user-mock.factory';
 import { CreateUserRequestDto } from '@presentation/user/dto/create-user-request.dto';
@@ -64,20 +64,57 @@ describe('UserController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all users', async () => {
+    it('should return paginated list of users', async () => {
       const users = [
         createMockUser({ id: randomUUID(), name: 'User 1' }),
         createMockUser({ id: randomUUID(), name: 'User 2' }),
       ];
 
       const usersPublicView = users.map((u) => u.toPublicView());
+      const paginatedResult = {
+        items: usersPublicView,
+        pagination: {
+          totalRecords: 2,
+          totalPages: 1,
+          page: 1,
+          limit: 10,
+        },
+      };
 
-      findAllUsersUseCase.execute.mockResolvedValue(usersPublicView);
+      findAllUsersUseCase.execute.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({ page: 1, limit: 10 });
 
-      expect(result).toEqual({ data: usersPublicView });
-      expect(findAllUsersUseCase.execute).toHaveBeenCalledWith();
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllUsersUseCase.execute).toHaveBeenCalledWith({ page: 1, limit: 10 });
+    });
+
+    it('should use default pagination when not provided', async () => {
+      const paginatedResult = {
+        items: [],
+        pagination: {
+          totalRecords: 0,
+          totalPages: 0,
+          page: 1,
+          limit: 10,
+        },
+      };
+
+      findAllUsersUseCase.execute.mockResolvedValue(paginatedResult);
+
+      const result = await controller.findAll({});
+
+      expect(result).toEqual({
+        data: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      });
+      expect(findAllUsersUseCase.execute).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
   });
 

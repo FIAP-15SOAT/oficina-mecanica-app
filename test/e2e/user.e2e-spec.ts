@@ -141,6 +141,62 @@ describe('User (E2E)', () => {
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
 
+    it('should use default pagination (page=1, limit=10) when not provided', async () => {
+      const res = await request(httpServer)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+    });
+
+    it('should filter users by role', async () => {
+      // Create a mechanic
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Mechanic Test',
+          email: 'mech@test.com',
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get('/api/users?role=MECHANIC')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      res.body.data.forEach((user: any) => {
+        expect(user.role).toBe('MECHANIC');
+      });
+    });
+
+    it('should filter users by name', async () => {
+      // Create a user with a specific name
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'UniqueName Search',
+          email: 'unique@test.com',
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .get('/api/users?name=UniqueName')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe('UniqueName Search');
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/users').expect(401);
     });

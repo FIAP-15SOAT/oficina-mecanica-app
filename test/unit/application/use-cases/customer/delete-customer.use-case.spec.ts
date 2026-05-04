@@ -34,6 +34,7 @@ describe('DeleteCustomerUseCase', () => {
   it('should throw ResourceConflictException when customer has vehicles', async () => {
     customerRepository.findById.mockResolvedValue(createMockCustomer());
     customerRepository.hasVehicles.mockResolvedValue(true);
+    customerRepository.hasWorkOrders.mockResolvedValue(false);
 
     await expect(useCase.execute('some-id'))
       .rejects.toThrow(ResourceConflictException);
