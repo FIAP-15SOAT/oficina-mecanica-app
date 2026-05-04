@@ -2,6 +2,7 @@ import { UpdateWorkOrderServiceStatusUseCase } from '@application/use-cases/work
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
 import { createMockWorkOrderService } from '../../../../helpers/work-order-service-mock.factory';
 import { createMockStockReservation } from '../../../../helpers/stock-reservation-mock.factory';
@@ -107,6 +108,28 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         }),
       ).rejects.toThrow(ResourceNotFoundException);
     });
+
+    it('should throw BusinessRuleViolationException when service is already IN_PROGRESS', async () => {
+      const workOrder = createMockWorkOrder({ status: WorkOrderStatus.IN_PROGRESS });
+
+      const woService = createMockWorkOrderService({
+        workOrderId: workOrder.id,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
+
+      await expect(
+        useCase.execute({
+          workOrderId: workOrder.id,
+          serviceId: woService.serviceId,
+          status: WorkOrderServiceStatus.IN_PROGRESS,
+        }),
+      ).rejects.toThrow(BusinessRuleViolationException);
+    });
   });
 
   describe('transition to COMPLETED', () => {
@@ -161,6 +184,28 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
 
       expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
       expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw BusinessRuleViolationException when service is already COMPLETED', async () => {
+      const workOrder = createMockWorkOrder({ status: WorkOrderStatus.IN_PROGRESS });
+
+      const woService = createMockWorkOrderService({
+        workOrderId: workOrder.id,
+        status: WorkOrderServiceStatus.COMPLETED,
+      });
+
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrderService.findByWorkOrderAndService as jest.Mock).mockResolvedValue(
+        woService,
+      );
+
+      await expect(
+        useCase.execute({
+          workOrderId: workOrder.id,
+          serviceId: woService.serviceId,
+          status: WorkOrderServiceStatus.COMPLETED,
+        }),
+      ).rejects.toThrow(BusinessRuleViolationException);
     });
   });
 });

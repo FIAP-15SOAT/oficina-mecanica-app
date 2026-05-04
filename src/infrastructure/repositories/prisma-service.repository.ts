@@ -129,7 +129,7 @@ export class PrismaServiceRepository implements IServiceRepository {
         s.name AS service_name,
         COUNT(wos.service_id) AS execution_count,
         AVG(
-          EXTRACT(EPOCH FROM (finished_at - started_at)) / 60.0
+          EXTRACT(EPOCH FROM (wos.finished_at - wos.started_at)) / 60.0
         ) AS avg_minutes
       FROM services s
       LEFT JOIN work_order_services wos
@@ -151,7 +151,8 @@ export class PrismaServiceRepository implements IServiceRepository {
       serviceId,
       serviceName: row.service_name,
       executionCount: Number(row.execution_count),
-      averageTimeMinutes: row?.avg_minutes,
+      averageTimeMinutes:
+        row?.avg_minutes != null ? parseFloat(Number(row.avg_minutes).toFixed(2)) : null,
     };
   }
 
@@ -197,7 +198,8 @@ export class PrismaServiceRepository implements IServiceRepository {
         serviceId: row.service_id,
         serviceName: row.service_name,
         executionCount: Number(row.execution_count),
-        averageTimeMinutes: row.avg_minutes,
+        averageTimeMinutes:
+          row.avg_minutes != null ? parseFloat(Number(row.avg_minutes).toFixed(2)) : null,
       })),
       total,
     };

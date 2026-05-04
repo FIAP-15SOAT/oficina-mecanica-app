@@ -34,6 +34,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
     dto: UpdateWorkOrderServiceStatusDto,
   ) {
     const workOrder = await repos.workOrder.findById(dto.workOrderId);
+
     if (!workOrder) {
       throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
     }
@@ -42,6 +43,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
       dto.workOrderId,
       dto.serviceId,
     );
+
     if (!workOrderService) {
       throw new ResourceNotFoundException('Serviço da Ordem de Serviço', `${dto.workOrderId}`);
     }
