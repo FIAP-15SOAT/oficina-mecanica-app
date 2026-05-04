@@ -29,7 +29,7 @@
     "!src/presentation/exceptions/*.exception.ts",
     "!src/**/*.dto.ts",
     "!src/**/*.entity.ts",
-    "!src/**/*.enums.ts",
+    "!src/**/*.enum.ts",
     "!src/**/*.exception.ts",
     "!src/infrastructure/filters/domain-exception.filter.ts"
   ],

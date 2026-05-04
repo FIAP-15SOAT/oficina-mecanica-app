@@ -678,7 +678,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/services?page=1&pageSize=10",
+            "url": "{{baseUrl}}/services?page=1&limit=10",
             "header": [
               {
                 "key": "Content-Type",
@@ -688,16 +688,17 @@
           }
         },
         {
-          "name": "TC-SVC-05 — Listar serviços filtrado por ativos",
+          "name": "TC-SVC-05 — Listar serviços filtrado por nome",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Todos os itens estão ativos', () => {",
+                  "pm.test('Retorna serviços filtrados por nome', () => {",
                   "    const res = pm.response.json();",
-                  "    res.data.forEach(s => pm.expect(s.isActive).to.be.true);",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res.totalRecords).to.be.a('number');",
                   "});"
                 ]
               }
@@ -705,7 +706,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/services?active=true",
+            "url": "{{baseUrl}}/services?name=%C3%93leo&limit=10",
             "header": [
               {
                 "key": "Content-Type",
@@ -791,7 +792,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Troca de Óleo Premium\", \"basePrice\": 159.9, \"estimatedTimeMin\": 75, \"isActive\": true}"
+              "raw": "{\"name\": \"Troca de Óleo Premium\", \"basePrice\": 159.9, \"estimatedTimeMin\": 75}"
             }
           }
         },
@@ -818,66 +819,61 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Qualquer\", \"basePrice\": 50, \"estimatedTimeMin\": 30, \"isActive\": true}"
+              "raw": "{\"name\": \"Qualquer\", \"basePrice\": 50, \"estimatedTimeMin\": 30}"
             }
           }
         },
         {
-          "name": "TC-SVC-10 — Alterar status do serviço para inativo",
+          "name": "TC-SVC-10 — Obter métricas de serviço específico (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Serviço está inativo', () => {",
+                  "pm.test('Retorna métricas do serviço', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.data.isActive).to.be.false;",
+                  "    pm.expect(res.data).to.have.property('serviceId');",
+                  "    pm.expect(res.data).to.have.property('serviceName');",
+                  "    pm.expect(res.data).to.have.property('executionCount');",
+                  "    pm.expect(res.data.executionCount).to.be.a('number');",
                   "});"
                 ]
               }
             }
           ],
           "request": {
-            "method": "PATCH",
-            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "method": "GET",
+            "url": "{{baseUrl}}/services/{{serviceId}}/metrics",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"active\": false}"
-            }
+            ]
           }
         },
         {
-          "name": "TC-SVC-11 — Alterar status já no mesmo estado (422)",
+          "name": "TC-SVC-11 — Obter métricas de serviço inexistente (404)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
                 ]
               }
             }
           ],
           "request": {
-            "method": "PATCH",
-            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "method": "GET",
+            "url": "{{baseUrl}}/services/00000000-0000-0000-0000-000000000000/metrics",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"active\": false}"
-            }
+            ]
           }
         },
         {
@@ -2878,7 +2874,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/customers/{{customerId}}/vehicles?page=1&limit=10"
+            "url": "{{baseUrl}}/customers/{{customerId}}/vehicles"
           },
           "event": [
             {
@@ -2886,12 +2882,9 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna lista paginada de veículos do cliente', () => {",
+                  "pm.test('Retorna lista de veículos do cliente', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
-                  "    pm.expect(res.pagination.page).to.equal(1);",
-                  "    pm.expect(res.pagination.limit).to.equal(10);",
                   "});"
                 ]
               }
@@ -3588,6 +3581,134 @@
             "url": "{{baseUrl}}/work-orders/{{workOrderId}}/status-history",
             "header": []
           }
+        },
+        {
+          "name": "TC-WO-08 — Listar Orçamentos de uma OS (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna lista de orçamentos da OS', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/work-orders/{{workOrderId}}/quotes",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-WO-09 — Buscar OS inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/work-orders/00000000-0000-0000-0000-000000000000",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-WO-10 — Criar OS sem campos obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Retorna erros de validação', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.be.an('array').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/work-orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "TC-WO-11 — Criar OS com cliente inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/work-orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"customerId\": \"00000000-0000-0000-0000-000000000000\", \"vehicleId\": \"{{vehicleId}}\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-WO-12 — Criar OS sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/work-orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"customerId\": \"{{customerId}}\", \"vehicleId\": \"{{vehicleId}}\"}"
+            }
+          }
         }
       ]
     },
@@ -3633,14 +3754,19 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna orçamento com serviço adicionado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('status');",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/quotes/{{quoteId}}/services",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3649,7 +3775,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"serviceId\": \"{{serviceId}}\", \"quantity\": 1, \"unitPrice\": 150.00}"
+              "raw": "{\"quantity\": 1}"
             }
           }
         },
@@ -3687,14 +3813,19 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna orçamento com peça adicionada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('status');",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3703,7 +3834,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"partSupplyId\": \"{{partSupplyId}}\", \"quantity\": 1, \"unitPrice\": 85.50}"
+              "raw": "{\"quantity\": 1}"
             }
           }
         },
@@ -3767,13 +3898,18 @@
           }
         },
         {
-          "name": "TC-QT-08 — Atualizar Status do Orçamento (Aprovação Manual)",
+          "name": "TC-QT-08 — Aprovar Orçamento manualmente (sucesso)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Orçamento aprovado com sucesso', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.status).to.equal('APPROVED');",
+                  "    pm.expect(res.data.approvedAt).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -3792,6 +3928,162 @@
               "raw": "{\"status\": \"APPROVED\"}"
             }
           }
+        },
+        {
+          "name": "TC-QT-09 — Tentar remover serviço de orçamento aprovado (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-QT-10 — Tentar remover peça de orçamento aprovado (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-QT-11 — Tentar atualizar qty de peça em orçamento aprovado (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quantity\": 3}"
+            }
+          }
+        },
+        {
+          "name": "TC-QT-12 — Buscar Orçamento inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/quotes/00000000-0000-0000-0000-000000000000",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-QT-13 — Filtrar orçamentos por OS (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna orçamentos da OS correta', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res.data.length).to.be.at.least(1);",
+                  "    res.data.forEach(q => pm.expect(q.workOrderId).to.equal(pm.environment.get('workOrderId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/quotes?workOrderId={{workOrderId}}",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-QT-14 — Criar Orçamento sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/quotes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"workOrderId\": \"{{workOrderId}}\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-QT-15 — Decisão por e-mail com token inválido (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "url": "{{baseUrl}}/quotes/{{quoteId}}/decisions?action=approve&token=token.invalido.aqui",
+            "header": []
+          }
         }
       ]
     },
@@ -3805,7 +4097,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada de movimentações', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "});"
                 ]
               }
             }
@@ -3823,7 +4121,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada de reservas', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "});"
                 ]
               }
             }
@@ -3833,6 +4137,96 @@
             "url": "{{baseUrl}}/stock-reservations?page=1&limit=10",
             "header": []
           }
+        },
+        {
+          "name": "TC-ST-03 — Listar Movimentações filtradas por tipo ENTRY",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Todas as movimentações são do tipo ENTRY', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    res.data.forEach(m => pm.expect(m.type).to.equal('ENTRY'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/stock-movements?type=ENTRY&page=1&limit=10",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-ST-04 — Listar Movimentações filtradas por partSupplyId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna movimentações da peça', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/stock-movements?partSupplyId={{partSupplyId}}&page=1&limit=10",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-ST-05 — Listar Reservas filtradas por workOrderId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna reservas da OS', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/stock-reservations?workOrderId={{workOrderId}}&page=1&limit=10",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-ST-06 — Listar Movimentações sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/stock-movements",
+            "header": []
+          }
         }
       ]
     },
@@ -3840,20 +4234,56 @@
       "name": "Relatórios e Métricas",
       "item": [
         {
-          "name": "TC-MET-01 — Métricas de Serviços",
+          "name": "TC-MET-01 — Métricas de Todos os Serviços (paginado)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada de métricas', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "    pm.expect(res).to.have.property('totalPages');",
+                  "});",
+                  "pm.test('Cada item tem campos de métricas', () => {",
+                  "    const res = pm.response.json();",
+                  "    if (res.data.length > 0) {",
+                  "        pm.expect(res.data[0]).to.have.property('serviceId');",
+                  "        pm.expect(res.data[0]).to.have.property('serviceName');",
+                  "        pm.expect(res.data[0]).to.have.property('executionCount');",
+                  "    }",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/services/metrics",
+            "url": "{{baseUrl}}/services-metrics?page=1&limit=10",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-MET-02 — Métricas sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/services-metrics",
             "header": []
           }
         }
