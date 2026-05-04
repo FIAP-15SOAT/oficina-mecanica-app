@@ -18,14 +18,6 @@ export function setupSwagger(app: INestApplication): void {
       },
       'access-token',
     )
-    .addTag('Auth', 'Autenticação e registro de usuários')
-    .addTag('Users', 'Gestão de usuários do sistema')
-    .addTag('Customers', 'Cadastro e gestão de clientes')
-    .addTag('Vehicles', 'Cadastro e gestão de veículos')
-    .addTag('Services', 'Catálogo de serviços da oficina')
-    .addTag('Gestão de Peças e Insumos', 'Cadastro, consulta e movimentação de estoque de peças e insumos')
-    .addTag('Work Orders', 'Ordens de serviço e acompanhamento')
-    .addTag('Quotes', 'Orçamentos das ordens de serviço')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
