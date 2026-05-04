@@ -37,7 +37,7 @@ export class UpdateWorkOrderStatusUseCase {
       await repos.statusHistory.create(
         StatusHistory.create({
           workOrderId: saved.id,
-          changedById: dto.userId ?? null,
+          changedById: dto.userId,
           previousStatus,
           newStatus: dto.status,
           notes: dto.notes,

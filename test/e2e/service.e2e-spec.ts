@@ -347,6 +347,76 @@ describe('Service (E2E)', () => {
       }
     });
 
+    it('should return metrics list with averageTimeMinutes filled when there are completed executions', async () => {
+      const createRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Balanceamento', basePrice: 70, estimatedTimeMin: 45 })
+        .expect(201);
+      const serviceId = createRes.body.data.id;
+
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'Métricas Lista',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: `metrics-list${Date.now()}@test.com`,
+          phone: '11999999999',
+          address: {
+            create: {
+              street: 'Rua Teste',
+              city: 'São Paulo',
+              state: 'SP',
+              zipCode: '01234-567',
+            },
+          },
+        },
+      });
+
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: {
+          customerId: customer.id,
+          plate: 'MET-LST1',
+          brand: 'Test',
+          model: 'Test',
+          year: 2020,
+        },
+      });
+
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          number: 'WO-MET-LST-001',
+          status: 'COMPLETED',
+        },
+      });
+
+      await ctx.prisma.workOrderService.create({
+        data: {
+          workOrderId: workOrder.id,
+          serviceId,
+          quantity: 1,
+          unitPrice: 70,
+          totalPrice: 70,
+          status: 'COMPLETED',
+          startedAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+          finishedAt: new Date(),
+        },
+      });
+
+      const res = await request(httpServer)
+        .get('/api/services-metrics')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const metric = res.body.data.find((m: { serviceId: string }) => m.serviceId === serviceId);
+      expect(metric).toBeDefined();
+      expect(typeof metric.averageTimeMinutes).toBe('number');
+      expect(metric.averageTimeMinutes).toBeCloseTo(30, 0);
+      expect(metric.executionCount).toBeGreaterThanOrEqual(1);
+    });
+
     it('should use default pagination (page=1, limit=10) for metrics when not provided', async () => {
       const res = await request(httpServer)
         .get('/api/services-metrics')

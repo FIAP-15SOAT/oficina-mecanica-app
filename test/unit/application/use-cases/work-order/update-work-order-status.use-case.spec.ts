@@ -26,7 +26,10 @@ describe('UpdateWorkOrderStatusUseCase', () => {
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(updated);
     (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
 
-    const result = await useCase.execute(wo.id, { status: WorkOrderStatus.IN_DIAGNOSIS });
+    const result = await useCase.execute(wo.id, {
+      status: WorkOrderStatus.IN_DIAGNOSIS,
+      userId: '550e8400-e29b-41d4-a716-446655440099',
+    });
     expect(result.status).toBe(WorkOrderStatus.IN_DIAGNOSIS);
   });
 
@@ -41,6 +44,7 @@ describe('UpdateWorkOrderStatusUseCase', () => {
     const result = await useCase.execute(wo.id, {
       status: WorkOrderStatus.CANCELLED,
       notes: 'Cancelado a pedido do cliente',
+      userId: '550e8400-e29b-41d4-a716-446655440099',
     });
     expect(result.status).toBe(WorkOrderStatus.CANCELLED);
   });
@@ -55,6 +59,7 @@ describe('UpdateWorkOrderStatusUseCase', () => {
 
     const result = await useCase.execute(wo.id, {
       status: WorkOrderStatus.DELIVERED,
+      userId: '550e8400-e29b-41d4-a716-446655440099',
     });
     expect(result.status).toBe(WorkOrderStatus.DELIVERED);
   });
@@ -63,7 +68,10 @@ describe('UpdateWorkOrderStatusUseCase', () => {
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      useCase.execute('bad-id', { status: WorkOrderStatus.IN_DIAGNOSIS }),
+      useCase.execute('bad-id', {
+        status: WorkOrderStatus.IN_DIAGNOSIS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      }),
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
@@ -72,17 +80,23 @@ describe('UpdateWorkOrderStatusUseCase', () => {
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(wo);
 
     // APPROVED is not in PATCH_STATUS_ALLOWED
-    await expect(useCase.execute(wo.id, { status: WorkOrderStatus.APPROVED })).rejects.toThrow(
-      BusinessRuleViolationException,
-    );
+    await expect(
+      useCase.execute(wo.id, {
+        status: WorkOrderStatus.APPROVED,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
   });
 
   it('should throw BusinessRuleViolationException when CANCELLED without notes', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(wo);
 
-    await expect(useCase.execute(wo.id, { status: WorkOrderStatus.CANCELLED })).rejects.toThrow(
-      BusinessRuleViolationException,
-    );
+    await expect(
+      useCase.execute(wo.id, {
+        status: WorkOrderStatus.CANCELLED,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
   });
 });

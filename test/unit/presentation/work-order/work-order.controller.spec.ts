@@ -133,18 +133,6 @@ describe('WorkOrderController', () => {
     expect(updateStatusUseCase.execute).toHaveBeenCalledWith(id, { ...dto, userId });
   });
 
-  it('should update status without user in request', async () => {
-    const id = randomUUID();
-    const dto = { status: WorkOrderStatus.IN_PROGRESS };
-    updateStatusUseCase.execute.mockResolvedValue({ id, ...dto } as unknown as WorkOrder);
-    await controller.updateStatus(
-      id,
-      dto as unknown as Parameters<typeof controller.updateStatus>[1],
-      { sub: null } as unknown as Parameters<typeof controller.create>[1],
-    );
-    expect(updateStatusUseCase.execute).toHaveBeenCalledWith(id, { ...dto, userId: null });
-  });
-
   it('should update service status', async () => {
     const workOrderId = randomUUID();
     const serviceId = randomUUID();
@@ -181,44 +169,6 @@ describe('WorkOrderController', () => {
       serviceId,
       status: dto.status,
       userId,
-    });
-  });
-
-  it('should update service status without user in request', async () => {
-    const workOrderId = randomUUID();
-    const serviceId = randomUUID();
-    const dto = { status: 'COMPLETED' };
-    const mockService = {
-      serviceId,
-      quantity: 1,
-      unitPrice: 100,
-      totalPrice: 100,
-      status: 'COMPLETED',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    updateServiceStatusUseCase.execute.mockResolvedValue(
-      mockService as unknown as WorkOrderService,
-    );
-
-    const result = await controller.updateServiceStatus(
-      workOrderId,
-      serviceId,
-      dto as unknown as Parameters<typeof controller.updateServiceStatus>[2],
-      { sub: null } as unknown as Parameters<typeof controller.create>[1],
-    );
-
-    expect(result).toEqual({
-      data: expect.objectContaining({
-        id: serviceId,
-        status: 'COMPLETED',
-      }),
-    });
-    expect(updateServiceStatusUseCase.execute).toHaveBeenCalledWith({
-      workOrderId,
-      serviceId,
-      status: dto.status,
-      userId: null,
     });
   });
 

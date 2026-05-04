@@ -65,6 +65,24 @@ describe('PartSupply (E2E)', () => {
       );
     });
 
+    it('should create with expiresAt and partNumber', async () => {
+      const expiresAt = '2026-12-31';
+      const res = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validPartSupply,
+          sku: 'FO-EXPIRES-001',
+          partNumber: 'MANN-W712',
+          expiresAt,
+        })
+        .expect(201);
+
+      expect(res.body.data.partNumber).toBe('MANN-W712');
+      expect(res.body.data.expiresAt).toBeDefined();
+      expect(new Date(res.body.data.expiresAt).toISOString().slice(0, 10)).toBe(expiresAt);
+    });
+
     it('should create without optional fields', async () => {
       const res = await request(httpServer)
         .post('/api/parts-supplies')
@@ -299,6 +317,25 @@ describe('PartSupply (E2E)', () => {
 
       expect(res.body.data.name).toBe('Filtro de Óleo Premium');
       expect(res.body.data.salePrice).toBe(59.9);
+    });
+
+    it('should update part/supply with partNumber and expiresAt', async () => {
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+      const expiresAt = '2027-06-30';
+
+      const res = await request(httpServer)
+        .put(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...updatePayload,
+          partNumber: 'MANN-W7050',
+          expiresAt,
+        })
+        .expect(200);
+
+      expect(res.body.data.partNumber).toBe('MANN-W7050');
+      expect(res.body.data.expiresAt).toBeDefined();
+      expect(new Date(res.body.data.expiresAt).toISOString().slice(0, 10)).toBe(expiresAt);
     });
 
     it('should return 409 when updating to a duplicate SKU', async () => {

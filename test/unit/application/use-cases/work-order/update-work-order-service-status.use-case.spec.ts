@@ -74,6 +74,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         workOrderId: workOrder.id,
         serviceId: woService.serviceId,
         status: WorkOrderServiceStatus.IN_PROGRESS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
       });
 
       expect(mockRepos.stockReservation.findByWorkOrderId).not.toHaveBeenCalled();
@@ -89,6 +90,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
           workOrderId: '550e8400-e29b-41d4-a716-446655440001',
           serviceId: '550e8400-e29b-41d4-a716-446655440002',
           status: WorkOrderServiceStatus.IN_PROGRESS,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
         }),
       ).rejects.toThrow(ResourceNotFoundException);
     });
@@ -105,6 +107,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
           workOrderId: woService.workOrderId,
           serviceId: woService.serviceId,
           status: WorkOrderServiceStatus.IN_PROGRESS,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
         }),
       ).rejects.toThrow(ResourceNotFoundException);
     });
@@ -127,6 +130,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
           workOrderId: workOrder.id,
           serviceId: woService.serviceId,
           status: WorkOrderServiceStatus.IN_PROGRESS,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
         }),
       ).rejects.toThrow(BusinessRuleViolationException);
     });
@@ -153,6 +157,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         workOrderId: workOrder.id,
         serviceId: woService.serviceId,
         status: WorkOrderServiceStatus.COMPLETED,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
       });
 
       expect(mockRepos.workOrderService.update).toHaveBeenCalled();
@@ -180,6 +185,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         workOrderId: workOrder.id,
         serviceId: woService.serviceId,
         status: WorkOrderServiceStatus.COMPLETED,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
       });
 
       expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
@@ -204,6 +210,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
           workOrderId: workOrder.id,
           serviceId: woService.serviceId,
           status: WorkOrderServiceStatus.COMPLETED,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
         }),
       ).rejects.toThrow(BusinessRuleViolationException);
     });

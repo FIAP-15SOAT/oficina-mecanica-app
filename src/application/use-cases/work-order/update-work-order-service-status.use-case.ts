@@ -55,7 +55,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
     repos: IRepositories,
     workOrder: WorkOrder,
     workOrderService: WorkOrderService,
-    userId?: string | null,
+    userId: string,
   ) {
     workOrderService.startService();
 
@@ -80,7 +80,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
     repos: IRepositories,
     workOrder: WorkOrder,
     workOrderService: WorkOrderService,
-    userId?: string | null,
+    userId: string,
   ) {
     workOrderService.completeService();
     await repos.workOrderService.update(workOrderService);
@@ -131,13 +131,13 @@ export class UpdateWorkOrderServiceStatusUseCase {
   private async createStatusHistory(
     repos: IRepositories,
     workOrderId: string,
-    userId: string | null | undefined,
+    userId: string,
     previousStatus: WorkOrderStatus,
     newStatus: WorkOrderStatus,
   ) {
     const history = StatusHistory.create({
       workOrderId: workOrderId,
-      changedById: userId ?? null,
+      changedById: userId,
       previousStatus: previousStatus,
       newStatus: newStatus,
       notes: null,

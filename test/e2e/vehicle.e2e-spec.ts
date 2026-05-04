@@ -294,6 +294,32 @@ describe('Vehicle (E2E)', () => {
       expect(res.body.data.brand).toBe('Honda');
     });
 
+    it('should update vehicle color and mileage', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .put(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          plate: 'ABC1234',
+          brand: 'Toyota',
+          model: 'Corolla',
+          year: 2020,
+          color: 'Prata',
+          mileage: 75000,
+        })
+        .expect(200);
+
+      expect(res.body.data.color).toBe('Prata');
+      expect(res.body.data.mileage).toBe(75000);
+    });
+
     it('should return 404 when vehicle does not exist', async () => {
       const customer = await createCustomer(adminAuth.accessToken);
 

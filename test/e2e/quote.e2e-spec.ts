@@ -439,6 +439,68 @@ describe('Quote (E2E)', () => {
         .send({})
         .expect(409);
     });
+
+    it('should transition work order from REJECTED back to AWAITING_APPROVAL when a new quote is submitted', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const firstService = await createService();
+      const firstQuoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const firstQuoteId = firstQuoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${firstQuoteId}/services/${firstService.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${firstQuoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${firstQuoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Cliente pediu nova proposta' })
+        .expect(200);
+
+      const woAfterReject = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(woAfterReject.body.data.status).toBe('REJECTED');
+
+      const secondService = await createService();
+      const secondQuoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const secondQuoteId = secondQuoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${secondQuoteId}/services/${secondService.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      const submissionRes = await request(httpServer)
+        .post(`/api/quotes/${secondQuoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+      expect(submissionRes.body.data.status).toBe('SENT');
+
+      const woAfterResubmit = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(woAfterResubmit.body.data.status).toBe('AWAITING_APPROVAL');
+    });
   });
 
   // ─── PATCH /api/quotes/:id (Approve/Reject) ───────────────────────────────────
