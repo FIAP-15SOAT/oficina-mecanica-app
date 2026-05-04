@@ -6,17 +6,25 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 
 ## Stack
 
-- **Runtime**: Node.js + TypeScript
-- **Framework**: NestJS
-- **ORM**: Prisma 7
+- **Runtime**: Node.js 22 + TypeScript 5
+- **Framework**: NestJS 11
+- **ORM**: Prisma 7 (driver `@prisma/adapter-pg`)
 - **Banco de dados**: PostgreSQL 16
-- **Autenticação**: JWT (access + refresh token) com bcrypt
+- **Autenticação**: JWT (access + refresh token) com bcrypt — `passport-jwt`
 - **E-mail**: Nodemailer + `@nestjs-modules/mailer` (SMTP via MailHog em desenvolvimento)
-- **Segurança HTTP**: Helmet, CORS configurável via `ALLOWED_ORIGINS`
-- **Documentação**: Swagger/OpenAPI
-- **Testes**: Jest + ts-jest (unitários e E2E com Testcontainers)
-- **Containerização**: Docker + Docker Compose
-- **Linting**: ESLint + Prettier
+- **Segurança HTTP**: Helmet, CORS configurável via `ALLOWED_ORIGINS`, `SanitizeStringsPipe` global, `ValidationPipe` global (whitelist + transform)
+- **Documentação**: Swagger/OpenAPI (`@nestjs/swagger`)
+- **Testes**: Jest + ts-jest (unitários e E2E com **Testcontainers** + PostgreSQL real)
+- **Qualidade**: SonarQube Cloud (Sonar Scan via GitHub Actions)
+- **Análise de segurança**: OWASP ZAP (DAST) e Semgrep (SAST) — relatórios em `zap-reports/`
+- **Containerização**: Docker (multi-stage `node:22-alpine`) + Docker Compose
+- **Linting**: ESLint 9 + Prettier 3
+
+## Pré-requisitos
+
+- **Node.js 22+** e **npm** (apenas para o setup local)
+- **Docker** + **Docker Compose** (recomendado para subir todos os serviços)
+- **Git**
 
 ## Arquitetura
 
@@ -98,7 +106,19 @@ prisma/
 
 ### Modelos do banco de dados
 
-`User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`.
+15 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`.
+
+Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`.
+
+### Perfis de usuário (RBAC)
+
+A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Endpoints podem ainda ser marcados com `@Public()` quando dispensam autenticação (ex.: `/auth/login`, decisão de orçamento via link assinado).
+
+| Perfil | Permissões |
+|---|---|
+| `ADMIN` | Acesso completo (usuários, serviços, peças/insumos, clientes, veículos, OS, orçamentos, estoque) |
+| `MECHANIC` | Operação de OS e orçamentos, atualização de status de serviço |
+| `ATTENDANT` | Cadastro de clientes/veículos, criação e gestão de OS e orçamentos |
 
 ### Unit of Work
 
@@ -120,6 +140,12 @@ Cada camada tem suas próprias exceções, sem dependência de framework HTTP. O
 | Infrastructure | `AuthenticationFailedException` | 401 |
 | Infrastructure | `DatabaseOperationException` | 503 |
 | Infrastructure | `ServiceIntegrationException` | 503 |
+
+### Decisões de Arquitetura (ADRs)
+
+Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./docs/adr) no formato Markdown:
+
+- [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./docs/adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 
 ## Rodando com Docker (recomendado)
 
@@ -417,7 +443,7 @@ npm run test:e2e:cov  # com cobertura
 
 ### Postman / Newman
 
-Importe os arquivos `oficina-collection.json` e `oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
 
 Antes de executar, preencha as variáveis `adminEmail` e `adminPassword` no environment com as credenciais de um dos usuários criados pelo seed.
 
@@ -426,25 +452,71 @@ Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e I
 Ou via linha de comando com a aplicação rodando:
 
 ```bash
-npx newman run oficina-collection.json -e oficina-environment.json
+npx newman run collections/oficina-collection.json -e collections/oficina-environment.json
 ```
+
+## CI/CD
+
+O workflow `.github/workflows/build.yml` é executado em push para `master` e em pull requests. As etapas:
+
+1. `npm ci` — instala dependências
+2. `npm run prisma:generate` — gera o Prisma Client
+3. `npm run test:cov` — executa os testes unitários e gera cobertura (`coverage/lcov.info`)
+4. **SonarQube Scan** — análise estática e publicação de cobertura (`SonarSource/sonarqube-scan-action`)
+
+A configuração do Sonar (chave do projeto, organização, exclusões e caminho do `lcov.info`) está em `sonar-project.properties`.
+
+## Análise de Segurança
+
+Relatórios de segurança da aplicação ficam versionados em [`zap-reports/`](./zap-reports):
+
+- **DAST** — varreduras dinâmicas com **OWASP ZAP** (modos baseline e autenticado): `zap-report.html`, `zap-report-authenticated.html`, `zap-report-final.html`, `zap-report-recheck.html`
+- **SAST** — análise estática com **Semgrep**: `semgrep-report.json`, `semgrep-report-recheck.json`
+- **Resumo executivo**: `SECURITY-REPORT_2026-04-27_01-30.md`
+
+Mitigações já aplicadas no código:
+
+- Helmet (cabeçalhos de segurança HTTP)
+- CORS com lista branca via `ALLOWED_ORIGINS`
+- `SanitizeStringsPipe` global (sanitização de inputs em DTOs)
+- `ValidationPipe` global com `whitelist: true` e `forbidNonWhitelisted: true`
+- Senhas com bcrypt (`BCRYPT_SALT_ROUNDS`)
+- JWT com access + refresh token e segredos separados
+- Token assinado dedicado para o link público de decisão de orçamento (`QUOTE_DECISION_TOKEN_SECRET`)
 
 ## Variáveis de Ambiente
 
 Veja `.env.example` para todas as variáveis disponíveis.
 
 ```env
+# Aplicação
+PORT=3000
+NODE_ENV=development
+TZ=America/Sao_Paulo
+
+# Banco de dados
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
+
+# Autenticação
 JWT_SECRET=your-secret-key
 JWT_EXPIRATION=15m
 JWT_REFRESH_SECRET=your-refresh-secret-key
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
-ALLOWED_ORIGINS=http://localhost:3000   # separar múltiplas origens por vírgula
+
+# Token assinado para o link público de decisão de orçamento (e-mail)
+QUOTE_DECISION_TOKEN_SECRET=your-quote-decision-secret-key
+
+# CORS — separar múltiplas origens por vírgula
+ALLOWED_ORIGINS=http://localhost:3000
+
+# E-mail (MailHog em desenvolvimento)
 MAIL_HOST=localhost
 MAIL_PORT=1025
-MAIL_FROM=noreply@oficina.local
+MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
 ```
+
+> **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
 
 ## Seed
 
