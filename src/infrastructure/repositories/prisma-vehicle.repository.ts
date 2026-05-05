@@ -23,7 +23,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       data: {
         id: vehicle.id,
         customerId: vehicle.customerId,
-        plate: vehicle.plate,
+        plate: vehicle.plate.value,
         brand: vehicle.brand,
         model: vehicle.model,
         year: vehicle.year,
@@ -90,7 +90,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
       where: { id },
       data: {
         ...(data.customerId !== undefined && { customerId: data.customerId }),
-        ...(data.plate !== undefined && { plate: data.plate }),
+        ...(data.plate !== undefined && { plate: data.plate.value }),
         ...(data.brand !== undefined && { brand: data.brand }),
         ...(data.model !== undefined && { model: data.model }),
         ...(data.year !== undefined && { year: data.year }),

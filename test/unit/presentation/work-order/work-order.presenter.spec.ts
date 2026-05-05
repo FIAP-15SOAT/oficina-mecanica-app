@@ -6,6 +6,10 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { createMockService } from '../../../helpers/service-mock.factory';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { createMockUser } from '../../../helpers/user-mock.factory';
+import { Plate } from '@domain/value-objects/plate.vo';
 import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderPresenter', () => {
@@ -44,19 +48,22 @@ describe('WorkOrderPresenter', () => {
     });
 
     it('should format a work order with nested relations correctly', () => {
+      const customer = createMockCustomer({ name: 'Customer' });
+      const vehicle = createMockVehicle({ plate: Plate.create('ABC-1234') });
+      const user = createMockUser({ name: 'User' });
       const workOrder = new WorkOrder({
         id: randomUUID(),
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
-        customer: { id: randomUUID(), name: 'Customer' } as unknown as WorkOrder['customer'],
-        vehicle: { id: randomUUID(), plate: 'ABC-1234' } as unknown as WorkOrder['vehicle'],
-        assignedUser: { id: randomUUID(), name: 'User' } as unknown as WorkOrder['assignedUser'],
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        customer,
+        vehicle,
+        assignedUser: user,
       });
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
       expect(response.customer.name).toBe('Customer');
-      expect(response.vehicle.plate).toBe('ABC-1234');
+      expect(response.vehicle.plate).toBe('ABC1234');
       expect(response.assignedUser!.name).toBe('User');
     });
   });

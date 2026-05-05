@@ -26,6 +26,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuário inválido ou desativado');
     }
 
-    return { sub: user.id, email: user.email, role: user.role };
+    return { sub: user.id, email: user.email.value, role: user.role };
   }
 }

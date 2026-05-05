@@ -9,6 +9,7 @@ import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { Email } from '@domain/value-objects/email.vo';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),
@@ -120,7 +121,7 @@ describe('SubmitQuoteUseCase', () => {
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
-    const customer = createMockCustomer({ email: 'test@example.com' });
+    const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
@@ -143,7 +144,7 @@ describe('SubmitQuoteUseCase', () => {
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
-    const customer = createMockCustomer({ email: 'test@example.com' });
+    const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);

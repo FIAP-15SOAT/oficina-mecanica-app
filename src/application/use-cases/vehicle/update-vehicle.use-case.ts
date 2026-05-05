@@ -5,6 +5,7 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { UpdateVehicleDto } from '@domain/interfaces/use-cases/vehicle/dto/update-vehicle.dto';
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
   constructor(
@@ -27,19 +28,18 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
       }
     }
 
-    const sanitizedPlate = input.plate.trim().toUpperCase().replace(/-/g, '');
+    const newPlate = Plate.create(input.plate);
 
-    if (sanitizedPlate !== existing.plate) {
-      const existingByPlate = await this.vehicleRepository.findByPlate(sanitizedPlate);
+    if (!newPlate.equals(existing.plate)) {
+      const existingByPlate = await this.vehicleRepository.findByPlate(newPlate.value);
 
       if (existingByPlate) {
-        throw new ResourceConflictException(`Placa '${sanitizedPlate}' já está cadastrada.`);
+        throw new ResourceConflictException(`Placa '${newPlate.value}' já está cadastrada.`);
       }
     }
 
-    return this.vehicleRepository.update(id, {
-      ...input,
-      plate: sanitizedPlate,
-    });
+    existing.update(input);
+
+    return this.vehicleRepository.update(id, existing);
   }
 }

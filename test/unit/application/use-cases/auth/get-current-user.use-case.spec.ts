@@ -19,7 +19,7 @@ describe('GetCurrentUserUseCase', () => {
 
     expect(result.id).toBe(user.id);
     expect(result.name).toBe(user.name);
-    expect(result.email).toBe(user.email);
+    expect(result.email).toBe(user.email.value);
     expect(result.role).toBe(user.role);
     expect(result.isActive).toBe(true);
     expect(userRepository.findById).toHaveBeenCalledWith('user-uuid-123');

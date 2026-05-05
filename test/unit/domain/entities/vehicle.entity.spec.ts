@@ -18,7 +18,7 @@ describe('Vehicle Entity', () => {
         const v = Vehicle.create(validProps);
         expect(v.id).toBeDefined();
         expect(v.customerId).toBe(customerId);
-        expect(v.plate).toBe('ABC-1234');
+        expect(v.plate.value).toBe('ABC1234');
         expect(v.brand).toBe('Toyota');
         expect(v.model).toBe('Corolla');
         expect(v.year).toBe(2020);
@@ -30,12 +30,12 @@ describe('Vehicle Entity', () => {
 
       it('should accept Mercosul plate format', () => {
         const v = Vehicle.create({ ...validProps, plate: 'ABC1D23' });
-        expect(v.plate).toBe('ABC1D23');
+        expect(v.plate.value).toBe('ABC1D23');
       });
 
-      it('should normalize plate to uppercase', () => {
+      it('should normalize plate to uppercase and strip dashes', () => {
         const v = Vehicle.create({ ...validProps, plate: 'abc-1234' });
-        expect(v.plate).toBe('ABC-1234');
+        expect(v.plate.value).toBe('ABC1234');
       });
 
       it('should accept optional color and mileage', () => {
@@ -197,6 +197,82 @@ describe('Vehicle Entity', () => {
           'Cor deve ter no máximo 40 caracteres',
         );
       });
+    });
+  });
+
+  describe('update (domain command)', () => {
+    const updateProps = {
+      customerId,
+      plate: 'XYZ-9999',
+      brand: 'Honda',
+      model: 'Civic',
+      year: 2022,
+      color: 'Azul',
+      mileage: 15000,
+    };
+
+    it('should update vehicle fields successfully', () => {
+      const vehicle = Vehicle.create(validProps);
+
+      vehicle.update(updateProps);
+
+      expect(vehicle.customerId).toBe(customerId);
+      expect(vehicle.plate.value).toBe('XYZ9999');
+      expect(vehicle.brand).toBe('Honda');
+      expect(vehicle.model).toBe('Civic');
+      expect(vehicle.year).toBe(2022);
+      expect(vehicle.color).toBe('Azul');
+      expect(vehicle.mileage).toBe(15000);
+    });
+
+    it('should update updatedAt on successful update', () => {
+      const vehicle = Vehicle.create(validProps);
+      const before = vehicle.updatedAt;
+
+      vehicle.update(updateProps);
+
+      expect(vehicle.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    });
+
+    it('should preserve original state when validation fails (fail-fast)', () => {
+      const vehicle = Vehicle.create(validProps);
+      const originalBrand = vehicle.brand;
+      const originalPlate = vehicle.plate.value;
+
+      expect(() => vehicle.update({ ...updateProps, customerId: 'invalid-uuid' })).toThrow(
+        DomainValidationException,
+      );
+
+      // state must be unchanged
+      expect(vehicle.brand).toBe(originalBrand);
+      expect(vehicle.plate.value).toBe(originalPlate);
+    });
+
+    it('should throw if brand is invalid during update', () => {
+      const vehicle = Vehicle.create(validProps);
+
+      expect(() => vehicle.update({ ...updateProps, brand: 'A' })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => vehicle.update({ ...updateProps, brand: 'A' })).toThrow(
+        'Marca deve ter no mínimo 2 caracteres',
+      );
+    });
+
+    it('should throw if year is invalid during update', () => {
+      const vehicle = Vehicle.create(validProps);
+
+      expect(() => vehicle.update({ ...updateProps, year: 1900 })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw if plate is invalid during update', () => {
+      const vehicle = Vehicle.create(validProps);
+
+      expect(() => vehicle.update({ ...updateProps, plate: 'invalid' })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 });

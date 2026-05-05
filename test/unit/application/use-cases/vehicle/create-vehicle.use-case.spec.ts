@@ -12,6 +12,7 @@ import {
   createMockVehicleRepository,
 } from '../../../../helpers/vehicle-mock.factory';
 import { randomUUID } from 'node:crypto';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 describe('CreateVehicleUseCase', () => {
   let useCase: CreateVehicleUseCase;
@@ -35,7 +36,7 @@ describe('CreateVehicleUseCase', () => {
 
   it('should create vehicle when customer exists and plate is unique', async () => {
     const customer = createMockCustomer({ id: customerId });
-    const saved = createMockVehicle({ ...validInput, plate: 'ABC1234' });
+    const saved = createMockVehicle({ ...validInput, plate: Plate.create('ABC1234') });
     customerRepository.findById.mockResolvedValue(customer);
     vehicleRepository.findByPlate.mockResolvedValue(null);
     vehicleRepository.create.mockResolvedValue(saved);

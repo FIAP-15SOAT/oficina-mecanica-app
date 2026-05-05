@@ -33,7 +33,7 @@ export class RefreshTokenUseCase {
 
     const newTokenPair: TokenPair = this.tokenService.signTokenPair({
       sub: user.id,
-      email: user.email,
+      email: user.email.value,
       role: user.role,
     });
 
@@ -43,7 +43,7 @@ export class RefreshTokenUseCase {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email.value,
         role: user.role,
       },
     };

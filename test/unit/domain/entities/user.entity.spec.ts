@@ -1,20 +1,22 @@
 import { UserRole } from '@domain/enums/user-role.enum';
 import { User } from '@domain/entities/user.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { Email } from '@domain/value-objects/email.vo';
 
 describe('User Entity', () => {
   const validProps = {
     name: 'Rafael Neves',
     email: 'rafael@email.com',
     passwordHash: '$2b$12$hashedpassword',
+    role: UserRole.ATTENDANT,
   };
 
   describe('create (factory method)', () => {
-    it('should create a valid user with defaults', () => {
+    it('should create a valid user', () => {
       const user = User.create(validProps);
 
       expect(user.name).toBe('Rafael Neves');
-      expect(user.email).toBe('rafael@email.com');
+      expect(user.email.value).toBe('rafael@email.com');
       expect(user.passwordHash).toBe(validProps.passwordHash);
       expect(user.role).toBe(UserRole.ATTENDANT);
       expect(user.isActive).toBe(true);
@@ -29,7 +31,7 @@ describe('User Entity', () => {
     it('should normalize email to lowercase and trim', () => {
       const user = User.create({ ...validProps, email: '  RAFAEL@Email.COM  ' });
 
-      expect(user.email).toBe('rafael@email.com');
+      expect(user.email.value).toBe('rafael@email.com');
     });
 
     it('should trim name', () => {
@@ -74,6 +76,24 @@ describe('User Entity', () => {
         'E-mail deve ter no máximo 150 caracteres',
       );
     });
+
+    it('should throw error if passwordHash is empty', () => {
+      expect(() => User.create({ ...validProps, passwordHash: '' })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => User.create({ ...validProps, passwordHash: '' })).toThrow(
+        'Hash de senha não pode ser vazio',
+      );
+    });
+
+    it('should throw error if role is invalid', () => {
+      expect(() => User.create({ ...validProps, role: 'InvalidRole' as UserRole })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => User.create({ ...validProps, role: 'InvalidRole' as UserRole })).toThrow(
+        'Role inválida',
+      );
+    });
   });
 
   describe('changeName', () => {
@@ -103,7 +123,7 @@ describe('User Entity', () => {
       const user = User.create(validProps);
       user.changeEmail('NOVO@Email.COM');
 
-      expect(user.email).toBe('novo@email.com');
+      expect(user.email.value).toBe('novo@email.com');
     });
 
     it('should throw error if email is invalid', () => {
@@ -206,13 +226,55 @@ describe('User Entity', () => {
     });
   });
 
+  describe('update', () => {
+    it('updates only provided fields', () => {
+      const user = User.create(validProps);
+      user.update({ name: 'Novo Nome' });
+      expect(user.name).toBe('Novo Nome');
+      expect(user.email.value).toBe('rafael@email.com');
+    });
+
+    it('updates email successfully', () => {
+      const user = User.create(validProps);
+      user.update({ email: 'novo@email.com' });
+      expect(user.email.value).toBe('novo@email.com');
+    });
+
+    it('updates passwordHash successfully', () => {
+      const user = User.create(validProps);
+      user.update({ passwordHash: '$2b$12$newhash' });
+      expect(user.passwordHash).toBe('$2b$12$newhash');
+    });
+
+    it('updates role successfully', () => {
+      const user = User.create(validProps);
+      user.update({ role: UserRole.MECHANIC });
+      expect(user.role).toBe(UserRole.MECHANIC);
+    });
+
+    it('validates name on update', () => {
+      const user = User.create(validProps);
+      expect(() => user.update({ name: 'Ab' })).toThrow(DomainValidationException);
+    });
+
+    it('validates passwordHash on update', () => {
+      const user = User.create(validProps);
+      expect(() => user.update({ passwordHash: '' })).toThrow(DomainValidationException);
+    });
+
+    it('validates role on update', () => {
+      const user = User.create(validProps);
+      expect(() => user.update({ role: 'X' as UserRole })).toThrow(DomainValidationException);
+    });
+  });
+
   describe('toPublicView', () => {
     it('should return public view without passwordHash', () => {
       const now = new Date();
       const user = new User({
         id: 'uuid-123',
         name: 'Rafael',
-        email: 'rafael@email.com',
+        email: Email.create('rafael@email.com'),
         passwordHash: 'secret-hash',
         role: UserRole.ADMIN,
         isActive: true,

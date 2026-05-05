@@ -24,10 +24,10 @@ describe('Customer Entity', () => {
       it('should create a valid customer with all required fields', () => {
         const customer = Customer.create(validProps);
         expect(customer.name).toBe('João da Silva');
-        expect(customer.document).toBe('123.456.789-09');
+        expect(customer.document.value).toBe('12345678909');
         expect(customer.type).toBe(CustomerType.INDIVIDUAL);
-        expect(customer.email).toBe('joao@email.com');
-        expect(customer.phone).toBe('11999999999');
+        expect(customer.email.value).toBe('joao@email.com');
+        expect(customer.phone.value).toBe('11999999999');
         expect(customer.address).toBeDefined();
         expect(customer.address!.street).toBe(validAddress.street);
         expect(customer.id).toBeDefined();
@@ -35,13 +35,13 @@ describe('Customer Entity', () => {
         expect(customer.updatedAt).toBeInstanceOf(Date);
       });
 
-      it('should accept valid CNPJ format', () => {
+      it('should accept valid CNPJ format and sanitize it', () => {
         const customer = Customer.create({
           ...validProps,
           document: '12.345.678/0001-95',
           type: CustomerType.COMPANY,
         });
-        expect(customer.document).toBe('12.345.678/0001-95');
+        expect(customer.document.value).toBe('12345678000195');
       });
 
       it('should trim name, email and phone', () => {
@@ -51,7 +51,7 @@ describe('Customer Entity', () => {
           phone: '  11999999999  ',
         });
         expect(customer.name).toBe('João da Silva');
-        expect(customer.phone).toBe('11999999999');
+        expect(customer.phone.value).toBe('11999999999');
       });
     });
 

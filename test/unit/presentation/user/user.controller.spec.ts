@@ -11,6 +11,7 @@ import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-use
 import { IUpdateUserStatusUseCase } from '@domain/interfaces/use-cases/user/update-user-status.use-case.interface';
 import { IDeleteUserUseCase } from '@domain/interfaces/use-cases/user/delete-user.use-case.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { Email } from '@domain/value-objects/email.vo';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -50,7 +51,7 @@ describe('UserController', () => {
 
       const createdUser = createMockUser({
         name: request.name,
-        email: request.email,
+        email: Email.create(request.email),
         role: request.role,
       });
 
@@ -143,7 +144,7 @@ describe('UserController', () => {
       const updatedUser = createMockUser({
         id,
         name: request.name,
-        email: request.email,
+        email: request.email ? Email.create(request.email) : undefined,
       });
 
       updateUserUseCase.execute.mockResolvedValue(updatedUser.toPublicView());

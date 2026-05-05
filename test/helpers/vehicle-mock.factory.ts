@@ -3,16 +3,21 @@ import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
+import { Email } from '@domain/value-objects/email.vo';
+import { Phone } from '@domain/value-objects/phone.vo';
+import { Document } from '@domain/value-objects/document.vo';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 export function createMockVehicleCustomer(overrides: Partial<Customer> = {}): Customer {
   const now = new Date();
+  const type = overrides.type ?? CustomerType.INDIVIDUAL;
   return new Customer({
     id: randomUUID(),
     name: 'João da Silva',
-    document: '12345678909',
-    type: CustomerType.INDIVIDUAL,
-    email: 'joao@email.com',
-    phone: '11999999999',
+    document: Document.create('12345678909', type),
+    type,
+    email: Email.create('joao@email.com'),
+    phone: Phone.create('11999999999'),
     address: null,
     createdAt: now,
     updatedAt: now,
@@ -25,7 +30,7 @@ export function createMockVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return new Vehicle({
     id: randomUUID(),
     customerId: randomUUID(),
-    plate: 'ABC-1234',
+    plate: Plate.create('ABC-1234'),
     brand: 'Toyota',
     model: 'Corolla',
     year: 2020,
@@ -36,6 +41,23 @@ export function createMockVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     updatedAt: now,
     ...overrides,
   });
+}
+
+export function createMockPrismaVehicle(overrides: Record<string, unknown> = {}) {
+  const now = new Date();
+  return {
+    id: randomUUID(),
+    customerId: randomUUID(),
+    plate: 'ABC1234',
+    brand: 'Toyota',
+    model: 'Corolla',
+    year: 2020,
+    color: null,
+    mileage: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
 }
 
 export function createMockVehicleRepository(): jest.Mocked<IVehicleRepository> {

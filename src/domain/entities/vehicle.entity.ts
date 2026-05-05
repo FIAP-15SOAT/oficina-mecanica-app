@@ -2,7 +2,7 @@ import { validate as isUuid } from 'uuid';
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { Customer } from './customer.entity';
-import { PLATE_REGEX } from '@domain/constants/plate.regex';
+import { Plate } from '../value-objects/plate.vo';
 
 const MIN_BRAND_LENGTH = 2;
 const MAX_BRAND_LENGTH = 60;
@@ -21,10 +21,20 @@ export interface CreateVehicleProps {
   mileage?: number | null;
 }
 
+export interface UpdateVehicleProps {
+  customerId: string;
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  color?: string | null;
+  mileage?: number | null;
+}
+
 export class Vehicle {
   id!: string;
   customerId!: string;
-  plate!: string;
+  plate!: Plate;
   brand!: string;
   model!: string;
   year!: number;
@@ -39,10 +49,13 @@ export class Vehicle {
   }
 
   static create(props: CreateVehicleProps): Vehicle {
-    const vehicle = new Vehicle({
+    const plate = Plate.create(props.plate);
+    Vehicle.validateProps(props);
+
+    return new Vehicle({
       id: randomUUID(),
       customerId: props.customerId,
-      plate: props.plate?.trim().toUpperCase(),
+      plate,
       brand: props.brand?.trim(),
       model: props.model?.trim(),
       year: props.year,
@@ -51,94 +64,99 @@ export class Vehicle {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    vehicle.validateCustomerId();
-    vehicle.validatePlate();
-    vehicle.validateBrand();
-    vehicle.validateModel();
-    vehicle.validateYear();
-    vehicle.validateColor();
-    vehicle.validateMileage();
-
-    return vehicle;
   }
 
-  private validateCustomerId(): void {
-    if (!this.customerId) {
+  update(props: UpdateVehicleProps): void {
+    const plate = Plate.create(props.plate);
+    Vehicle.validateProps(props);
+
+    this.customerId = props.customerId;
+    this.plate = plate;
+    this.brand = props.brand?.trim();
+    this.model = props.model?.trim();
+    this.year = props.year;
+    this.color = props.color?.trim() ?? null;
+    this.mileage = props.mileage ?? null;
+    this.updatedAt = new Date();
+  }
+
+  private static validateProps(props: CreateVehicleProps | UpdateVehicleProps): void {
+    Vehicle.validateCustomerId(props.customerId);
+    Vehicle.validateBrand(props.brand);
+    Vehicle.validateModel(props.model);
+    Vehicle.validateYear(props.year);
+    Vehicle.validateColor(props.color ?? null);
+    Vehicle.validateMileage(props.mileage ?? null);
+  }
+
+  private static validateCustomerId(value: string): void {
+    if (!value || value.trim().length === 0) {
       throw new DomainValidationException('ID do cliente é obrigatório');
     }
 
-    if (!isUuid(this.customerId)) {
+    if (!isUuid(value.trim())) {
       throw new DomainValidationException('ID do cliente deve ser um UUID válido');
     }
   }
 
-  private validatePlate(): void {
-    if (!this.plate) {
-      throw new DomainValidationException('Placa é obrigatória');
-    }
-
-    if (!PLATE_REGEX.test(this.plate)) {
-      throw new DomainValidationException(
-        'Placa inválida. Use o formato antigo (ABC-1234) ou Mercosul (ABC1D23)',
-      );
-    }
-  }
-
-  private validateBrand(): void {
-    if (!this.brand) {
+  private static validateBrand(value: string): void {
+    if (!value || value.trim().length === 0) {
       throw new DomainValidationException('Marca é obrigatória');
     }
 
-    if (this.brand.length < MIN_BRAND_LENGTH) {
+    const trimmed = value.trim();
+
+    if (trimmed.length < MIN_BRAND_LENGTH) {
       throw new DomainValidationException(
         `Marca deve ter no mínimo ${MIN_BRAND_LENGTH} caracteres`,
       );
     }
 
-    if (this.brand.length > MAX_BRAND_LENGTH) {
+    if (trimmed.length > MAX_BRAND_LENGTH) {
       throw new DomainValidationException(
         `Marca deve ter no máximo ${MAX_BRAND_LENGTH} caracteres`,
       );
     }
   }
 
-  private validateModel(): void {
-    if (!this.model) {
+  private static validateModel(value: string): void {
+    if (!value || value.trim().length === 0) {
       throw new DomainValidationException('Modelo é obrigatório');
     }
 
-    if (this.model.length < MIN_MODEL_LENGTH) {
+    const trimmed = value.trim();
+
+    if (trimmed.length < MIN_MODEL_LENGTH) {
       throw new DomainValidationException(
         `Modelo deve ter no mínimo ${MIN_MODEL_LENGTH} caracteres`,
       );
     }
 
-    if (this.model.length > MAX_MODEL_LENGTH) {
+    if (trimmed.length > MAX_MODEL_LENGTH) {
       throw new DomainValidationException(
         `Modelo deve ter no máximo ${MAX_MODEL_LENGTH} caracteres`,
       );
     }
   }
 
-  private validateYear(): void {
+  private static validateYear(value: number): void {
     const currentYear = new Date().getFullYear();
 
-    if (this.year < MIN_YEAR || this.year > currentYear) {
+    if (value < MIN_YEAR || value > currentYear) {
       throw new DomainValidationException(
         `Ano do veículo deve ser entre ${MIN_YEAR} e ${currentYear}`,
       );
     }
   }
 
-  private validateColor(): void {
-    if (this.color !== null && this.color.length > MAX_COLOR_LENGTH) {
+  private static validateColor(value: string | null): void {
+    if (value !== null && value.trim().length > MAX_COLOR_LENGTH) {
       throw new DomainValidationException(`Cor deve ter no máximo ${MAX_COLOR_LENGTH} caracteres`);
     }
   }
 
-  private validateMileage(): void {
-    if (this.mileage !== null && this.mileage < 0) {
+  private static validateMileage(value: number | null): void {
+    if (value !== null && value < 0) {
       throw new DomainValidationException('Quilometragem não pode ser negativa');
     }
   }

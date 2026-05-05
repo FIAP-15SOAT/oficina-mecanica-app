@@ -191,7 +191,12 @@ describe('WorkOrderController', () => {
         id: randomUUID(),
         newStatus: 'IN_DIAGNOSIS',
         createdAt: new Date(),
-        changedBy: { id: userId, name: 'Mechanic', role: 'MECHANIC', email: 'mech@test.com' },
+        changedBy: {
+          id: userId,
+          name: 'Mechanic',
+          role: 'MECHANIC',
+          email: { value: 'mech@test.com' },
+        },
       },
     ];
     findStatusHistoryUseCase.execute.mockResolvedValue(history as unknown as StatusHistory[]);

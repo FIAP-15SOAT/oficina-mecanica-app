@@ -5,6 +5,7 @@ import { IUserRepository } from '@domain/interfaces/repositories/user.repository
 import { TokenPayload } from '@domain/interfaces/services/token.service.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { createMockUser, createMockUserRepository } from '../../../helpers/user-mock.factory';
+import { Email } from '@domain/value-objects/email.vo';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -24,7 +25,7 @@ describe('JwtStrategy', () => {
   it('should validate and return token payload for active user', async () => {
     const mockUser = createMockUser({
       id: 'user-uuid-123',
-      email: 'john@example.com',
+      email: Email.create('john@example.com'),
       role: UserRole.ADMIN,
       isActive: true,
     });
@@ -33,7 +34,7 @@ describe('JwtStrategy', () => {
 
     const payload: TokenPayload = {
       sub: mockUser.id,
-      email: mockUser.email,
+      email: mockUser.email.value,
       role: mockUser.role,
     };
 
@@ -41,7 +42,7 @@ describe('JwtStrategy', () => {
 
     expect(result).toEqual({
       sub: mockUser.id,
-      email: mockUser.email,
+      email: mockUser.email.value,
       role: mockUser.role,
     });
     expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
@@ -63,7 +64,7 @@ describe('JwtStrategy', () => {
   it('should throw UnauthorizedException when user is inactive', async () => {
     const mockUser = createMockUser({
       id: 'user-uuid-456',
-      email: 'jane@example.com',
+      email: Email.create('jane@example.com'),
       role: UserRole.ATTENDANT,
       isActive: false,
     });
@@ -72,7 +73,7 @@ describe('JwtStrategy', () => {
 
     const payload: TokenPayload = {
       sub: mockUser.id,
-      email: mockUser.email,
+      email: mockUser.email.value,
       role: mockUser.role,
     };
 
@@ -83,7 +84,7 @@ describe('JwtStrategy', () => {
   it('should return payload with user data from database', async () => {
     const mockUser = createMockUser({
       id: 'user-uuid-789',
-      email: 'bob@example.com',
+      email: Email.create('bob@example.com'),
       role: UserRole.MECHANIC,
       isActive: true,
     });
@@ -99,7 +100,7 @@ describe('JwtStrategy', () => {
     const result = await strategy.validate(payload);
 
     // Should return data from database, not from token
-    expect(result.email).toBe(mockUser.email);
+    expect(result.email).toBe(mockUser.email.value);
     expect(result.role).toBe(mockUser.role);
     expect(result.sub).toBe(mockUser.id);
   });

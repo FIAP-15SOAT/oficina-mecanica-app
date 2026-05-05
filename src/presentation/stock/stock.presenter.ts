@@ -87,15 +87,15 @@ export class StockPresenter {
             id: wo.customer.id,
             name: wo.customer.name,
             type: wo.customer.type,
-            document: wo.customer.document,
-            phone: wo.customer.phone,
-            email: wo.customer.email,
+            document: wo.customer.document.value,
+            phone: wo.customer.phone.value,
+            email: wo.customer.email.value,
           }
         : null,
       vehicle: wo.vehicle
         ? {
             id: wo.vehicle.id,
-            plate: wo.vehicle.plate,
+            plate: wo.vehicle.plate.value,
             brand: wo.vehicle.brand,
             model: wo.vehicle.model,
             year: wo.vehicle.year,
@@ -106,7 +106,7 @@ export class StockPresenter {
         ? {
             id: wo.assignedUser.id,
             name: wo.assignedUser.name,
-            email: wo.assignedUser.email,
+            email: wo.assignedUser.email.value,
             role: wo.assignedUser.role,
           }
         : null,

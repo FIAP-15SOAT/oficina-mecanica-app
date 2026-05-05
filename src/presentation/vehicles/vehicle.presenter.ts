@@ -12,13 +12,13 @@ export class VehiclePresenter {
     const customer: CustomerSummaryDto = {
       id: vehicle.customer!.id,
       name: vehicle.customer!.name,
-      document: vehicle.customer!.document,
+      document: vehicle.customer!.document.value,
     };
 
     return {
       id: vehicle.id,
       customerId: vehicle.customerId,
-      plate: vehicle.plate,
+      plate: vehicle.plate.value,
       brand: vehicle.brand,
       model: vehicle.model,
       year: vehicle.year,

@@ -4,12 +4,15 @@ import {
   createMockVehicleCustomer,
 } from '../../../helpers/vehicle-mock.factory';
 import { randomUUID } from 'node:crypto';
+import { Plate } from '@domain/value-objects/plate.vo';
+import { Document } from '@domain/value-objects/document.vo';
+import { CustomerType } from '@domain/enums/customer-type.enum';
 
 describe('VehiclePresenter', () => {
   describe('toResponse', () => {
     it('should map all vehicle fields correctly', () => {
       const vehicle = createMockVehicle({
-        plate: 'XYZ-9876',
+        plate: Plate.create('XYZ-9876'),
         brand: 'Honda',
         model: 'Civic',
         year: 2022,
@@ -21,7 +24,7 @@ describe('VehiclePresenter', () => {
 
       expect(response.id).toBe(vehicle.id);
       expect(response.customerId).toBe(vehicle.customerId);
-      expect(response.plate).toBe('XYZ-9876');
+      expect(response.plate).toBe('XYZ9876');
       expect(response.brand).toBe('Honda');
       expect(response.model).toBe('Civic');
       expect(response.year).toBe(2022);
@@ -35,7 +38,7 @@ describe('VehiclePresenter', () => {
       const customer = createMockVehicleCustomer({
         id: randomUUID(),
         name: 'Maria Souza',
-        document: '98765432100',
+        document: Document.create('98765432100', CustomerType.INDIVIDUAL),
       });
       const vehicle = createMockVehicle({ customer });
 
@@ -64,7 +67,7 @@ describe('VehiclePresenter', () => {
 
       expect(result.data).toBeDefined();
       expect(result.data.id).toBe(vehicle.id);
-      expect(result.data.plate).toBe(vehicle.plate);
+      expect(result.data.plate).toBe(vehicle.plate.value);
     });
   });
 
@@ -100,7 +103,7 @@ describe('VehiclePresenter', () => {
       expect(result.data).toHaveLength(3);
       result.data.forEach((item, index) => {
         expect(item.id).toBe(vehicles[index].id);
-        expect(item.plate).toBe(vehicles[index].plate);
+        expect(item.plate).toBe(vehicles[index].plate.value);
         expect(item.customerId).toBe(vehicles[index].customerId);
       });
     });
@@ -113,13 +116,16 @@ describe('VehiclePresenter', () => {
     });
 
     it('should include customer summary for each vehicle', () => {
-      const customer = createMockVehicleCustomer({ name: 'Carlos Lima', document: '11122233300' });
+      const customer = createMockVehicleCustomer({
+        name: 'Carlos Lima',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      });
       const vehicle = createMockVehicle({ customer });
 
       const result = VehiclePresenter.toListDataResponse([vehicle]);
 
       expect(result.data[0].customer.name).toBe('Carlos Lima');
-      expect(result.data[0].customer.document).toBe('11122233300');
+      expect(result.data[0].customer.document).toBe('12345678909');
     });
   });
 });

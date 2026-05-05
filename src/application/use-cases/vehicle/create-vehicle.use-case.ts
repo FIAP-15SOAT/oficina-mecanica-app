@@ -5,6 +5,7 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { CreateVehicleDto } from '@domain/interfaces/use-cases/vehicle/dto/create-vehicle.dto';
 import { ICreateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/create-vehicle.use-case.interface';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 export class CreateVehicleUseCase implements ICreateVehicleUseCase {
   constructor(
@@ -19,17 +20,14 @@ export class CreateVehicleUseCase implements ICreateVehicleUseCase {
       throw new ResourceNotFoundException('Cliente', input.customerId);
     }
 
-    const sanitizedPlate = input.plate.trim().toUpperCase().replace(/-/g, '');
-    const existingByPlate = await this.vehicleRepository.findByPlate(sanitizedPlate);
+    const plate = Plate.create(input.plate);
+    const existingByPlate = await this.vehicleRepository.findByPlate(plate.value);
 
     if (existingByPlate) {
-      throw new ResourceConflictException(`Placa '${sanitizedPlate}' já está cadastrada.`);
+      throw new ResourceConflictException(`Placa '${plate.value}' já está cadastrada.`);
     }
 
-    const vehicle = Vehicle.create({
-      ...input,
-      plate: sanitizedPlate,
-    });
+    const vehicle = Vehicle.create(input);
 
     return this.vehicleRepository.create(vehicle);
   }

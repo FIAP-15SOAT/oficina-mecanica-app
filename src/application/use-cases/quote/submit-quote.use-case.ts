@@ -137,7 +137,7 @@ export class SubmitQuoteUseCase {
     const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
 
     return {
-      toEmail: customer.email,
+      toEmail: customer.email.value,
       toName: customer.name,
       subject: `Orçamento para Ordem de Serviço ${workOrderNumber} - Aguardando sua aprovação`,
       message: {

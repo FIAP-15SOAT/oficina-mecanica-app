@@ -21,7 +21,7 @@ export class PrismaUserRepository implements IUserRepository {
     const created = await this.prisma.user.create({
       data: {
         name: user.name,
-        email: user.email,
+        email: user.email.value,
         passwordHash: user.passwordHash,
         role: user.role,
         isActive: user.isActive,
@@ -81,7 +81,7 @@ export class PrismaUserRepository implements IUserRepository {
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
-        ...(data.email !== undefined && { email: data.email }),
+        ...(data.email !== undefined && { email: data.email.value }),
         ...(data.passwordHash !== undefined && { passwordHash: data.passwordHash }),
         ...(data.role !== undefined && { role: data.role }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),

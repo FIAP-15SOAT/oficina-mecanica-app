@@ -1,9 +1,9 @@
 import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
 import { Vehicle } from '@domain/entities/vehicle.entity';
-import { Customer } from '@domain/entities/customer.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { createMockPrismaVehicle } from '../../../helpers/vehicle-mock.factory';
 import { randomUUID } from 'node:crypto';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 describe('PrismaVehicleRepository', () => {
   let repository: PrismaVehicleRepository;
@@ -25,9 +25,10 @@ describe('PrismaVehicleRepository', () => {
       });
 
       prisma.vehicle.create.mockResolvedValue(
-        createMockVehicle({
-          ...vehicle,
-          customer: { id: vehicle.customerId, name: 'John' } as unknown as Customer,
+        createMockPrismaVehicle({
+          id: vehicle.id,
+          customerId: vehicle.customerId,
+          plate: vehicle.plate.value,
         }),
       );
 
@@ -42,10 +43,9 @@ describe('PrismaVehicleRepository', () => {
     it('should return a vehicle when found', async () => {
       const id = randomUUID();
       prisma.vehicle.findUnique.mockResolvedValue(
-        createMockVehicle({
+        createMockPrismaVehicle({
           id,
-          plate: 'ABC-1234',
-          customer: { id: randomUUID(), name: 'John' } as unknown as Customer,
+          plate: 'ABC1234',
         }),
       );
 
@@ -65,12 +65,14 @@ describe('PrismaVehicleRepository', () => {
   describe('findByPlate', () => {
     it('should return a vehicle when found', async () => {
       const plate = 'ABC-1234';
-      prisma.vehicle.findUnique.mockResolvedValue(createMockVehicle({ id: randomUUID(), plate }));
+      prisma.vehicle.findUnique.mockResolvedValue(
+        createMockPrismaVehicle({ id: randomUUID(), plate: 'ABC1234' }),
+      );
 
       const result = await repository.findByPlate(plate);
 
       expect(result).toBeDefined();
-      expect(result?.plate).toBe(plate);
+      expect(result?.plate.value).toBe('ABC1234');
     });
 
     it('should return null when not found', async () => {
@@ -84,10 +86,9 @@ describe('PrismaVehicleRepository', () => {
     it('should filter by customerId', async () => {
       const customerId = randomUUID();
       prisma.vehicle.findMany.mockResolvedValue([
-        createMockVehicle({
+        createMockPrismaVehicle({
           id: randomUUID(),
           customerId,
-          customer: { id: customerId, name: 'John' } as unknown as Customer,
         }),
       ]);
       prisma.vehicle.count.mockResolvedValue(1);
@@ -125,7 +126,7 @@ describe('PrismaVehicleRepository', () => {
       const id = randomUUID();
       const data: Partial<Vehicle> = {
         customerId: randomUUID(),
-        plate: 'XYZ-9999',
+        plate: Plate.create('XYZ-9999'),
         brand: 'Honda',
         model: 'Civic',
         year: 2022,
@@ -134,10 +135,15 @@ describe('PrismaVehicleRepository', () => {
       };
 
       prisma.vehicle.update.mockResolvedValue(
-        createMockVehicle({
+        createMockPrismaVehicle({
           id,
-          ...data,
-          customer: { id: data.customerId, name: 'John' } as unknown as Customer,
+          customerId: data.customerId,
+          plate: 'XYZ9999',
+          brand: data.brand,
+          model: data.model,
+          year: data.year,
+          color: data.color,
+          mileage: data.mileage,
         }),
       );
 
@@ -181,14 +187,8 @@ describe('PrismaVehicleRepository', () => {
     it('should return all vehicles for a customer', async () => {
       const customerId = randomUUID();
       const mockVehicles = [
-        createMockVehicle({
-          customerId,
-          customer: { id: customerId, name: 'John' } as unknown as Customer,
-        }),
-        createMockVehicle({
-          customerId,
-          customer: { id: customerId, name: 'John' } as unknown as Customer,
-        }),
+        createMockPrismaVehicle({ customerId }),
+        createMockPrismaVehicle({ customerId }),
       ];
       prisma.vehicle.findMany.mockResolvedValue(mockVehicles);
 

@@ -33,10 +33,10 @@ describe('AuthenticateUserUseCase', () => {
     expect(result.accessToken).toBe('access-token-mock');
     expect(result.refreshToken).toBe('refresh-token-mock');
     expect(result.user.id).toBe(user.id);
-    expect(result.user.email).toBe(user.email);
+    expect(result.user.email).toBe(user.email.value);
     expect(tokenService.signTokenPair).toHaveBeenCalledWith({
       sub: user.id,
-      email: user.email,
+      email: user.email.value,
       role: user.role,
     });
   });

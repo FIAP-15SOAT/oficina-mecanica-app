@@ -26,9 +26,9 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         id: customer.id,
         name: customer.name,
         type: customer.type,
-        document: customer.document,
-        email: customer.email,
-        phone: customer.phone,
+        document: customer.document.value,
+        email: customer.email.value,
+        phone: customer.phone.value,
         ...(customer.address && {
           address: {
             create: {
@@ -106,10 +106,10 @@ export class PrismaCustomerRepository implements ICustomerRepository {
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
-        ...(data.document !== undefined && { document: data.document }),
+        ...(data.document !== undefined && { document: data.document.value }),
         ...(data.type !== undefined && { type: data.type }),
-        ...(data.email !== undefined && { email: data.email }),
-        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.email !== undefined && { email: data.email.value }),
+        ...(data.phone !== undefined && { phone: data.phone.value }),
         ...(data.address !== undefined && {
           address: data.address
             ? {

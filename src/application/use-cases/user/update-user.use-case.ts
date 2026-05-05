@@ -6,6 +6,7 @@ import {
   UpdateUserDto,
   UpdateUserOutputDto,
 } from '@domain/interfaces/use-cases/user/dto/update-user.dto';
+import { Email } from '@domain/value-objects/email.vo';
 
 export class UpdateUserUseCase {
   constructor(
@@ -21,10 +22,10 @@ export class UpdateUserUseCase {
     }
 
     if (updateUserDto.email !== undefined) {
-      const normalizedEmail = updateUserDto.email.trim().toLowerCase();
+      const newEmail = Email.create(updateUserDto.email);
 
-      if (normalizedEmail !== user.email) {
-        const existing = await this.userRepository.findByEmail(normalizedEmail);
+      if (!newEmail.equals(user.email)) {
+        const existing = await this.userRepository.findByEmail(newEmail.value);
 
         if (existing) {
           throw new ResourceConflictException('E-mail já cadastrado no sistema');

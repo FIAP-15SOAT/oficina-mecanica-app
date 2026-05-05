@@ -95,16 +95,16 @@ export class WorkOrderPresenter {
       id: customer.id,
       name: customer.name,
       type: customer.type,
-      document: customer.document,
-      email: customer.email,
-      phone: customer.phone,
+      document: customer.document.value,
+      email: customer.email.value,
+      phone: customer.phone.value,
     };
   }
 
   private static toVehicle(vehicle: Vehicle): WorkOrderVehicleResponseDto {
     return {
       id: vehicle.id,
-      plate: vehicle.plate,
+      plate: vehicle.plate.value,
       brand: vehicle.brand,
       model: vehicle.model,
       year: vehicle.year,
@@ -117,7 +117,7 @@ export class WorkOrderPresenter {
     return {
       id: user.id,
       name: user.name,
-      email: user.email,
+      email: user.email.value,
       role: user.role,
     };
   }

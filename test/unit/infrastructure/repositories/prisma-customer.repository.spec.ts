@@ -2,9 +2,12 @@ import { PrismaCustomerRepository } from '@infrastructure/repositories/prisma-cu
 import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
-import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockPrismaCustomer } from '../../../helpers/customer-mock.factory';
 import { Address } from '@domain/entities/address.entity';
 import { randomUUID } from 'node:crypto';
+import { Email } from '@domain/value-objects/email.vo';
+import { Phone } from '@domain/value-objects/phone.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 describe('PrismaCustomerRepository', () => {
   let repository: PrismaCustomerRepository;
@@ -32,7 +35,7 @@ describe('PrismaCustomerRepository', () => {
         },
       });
 
-      const prismaModel = createMockCustomer(customer);
+      const prismaModel = createMockPrismaCustomer({ id: customer.id, name: customer.name });
 
       prisma.customer.create.mockResolvedValue(prismaModel);
 
@@ -46,7 +49,7 @@ describe('PrismaCustomerRepository', () => {
   describe('findById', () => {
     it('should return a customer when found', async () => {
       const id = randomUUID();
-      prisma.customer.findUnique.mockResolvedValue(createMockCustomer({ id }));
+      prisma.customer.findUnique.mockResolvedValue(createMockPrismaCustomer({ id }));
 
       const result = await repository.findById(id);
 
@@ -66,7 +69,7 @@ describe('PrismaCustomerRepository', () => {
   describe('findByDocument', () => {
     it('should return a customer when found', async () => {
       const document = '12345678909';
-      prisma.customer.findUnique.mockResolvedValue(createMockCustomer({ document }));
+      prisma.customer.findUnique.mockResolvedValue(createMockPrismaCustomer({ document }));
 
       const result = await repository.findByDocument(document);
 
@@ -83,7 +86,7 @@ describe('PrismaCustomerRepository', () => {
   describe('findByEmail', () => {
     it('should return a customer when found', async () => {
       const email = 'john@example.com';
-      prisma.customer.findUnique.mockResolvedValue(createMockCustomer({ email }));
+      prisma.customer.findUnique.mockResolvedValue(createMockPrismaCustomer({ email }));
 
       const result = await repository.findByEmail(email);
 
@@ -102,10 +105,10 @@ describe('PrismaCustomerRepository', () => {
       const id = randomUUID();
       const data: Partial<Customer> = {
         name: 'Updated Name',
-        document: '98765432100',
+        document: Document.create('12345678000195', CustomerType.COMPANY),
         type: CustomerType.COMPANY,
-        email: 'updated@example.com',
-        phone: '11999998888',
+        email: Email.create('updated@example.com'),
+        phone: Phone.create('11999998888'),
         address: {
           id: randomUUID(),
           street: 'Main St',
@@ -117,9 +120,9 @@ describe('PrismaCustomerRepository', () => {
       };
 
       prisma.customer.update.mockResolvedValue(
-        createMockCustomer({
+        createMockPrismaCustomer({
           id,
-          ...data,
+          name: data.name,
         }),
       );
 
@@ -133,12 +136,7 @@ describe('PrismaCustomerRepository', () => {
       const id = randomUUID();
       const data: Partial<Customer> = { address: null };
 
-      prisma.customer.update.mockResolvedValue({
-        id,
-        name: 'John',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      prisma.customer.update.mockResolvedValue(createMockPrismaCustomer({ id }));
 
       await repository.update(id, data);
 
@@ -165,7 +163,7 @@ describe('PrismaCustomerRepository', () => {
 
   describe('findAllPaginated', () => {
     it('should return paginated customers', async () => {
-      prisma.customer.findMany.mockResolvedValue([createMockCustomer({ id: randomUUID() })]);
+      prisma.customer.findMany.mockResolvedValue([createMockPrismaCustomer({ id: randomUUID() })]);
       prisma.customer.count.mockResolvedValue(1);
 
       const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});

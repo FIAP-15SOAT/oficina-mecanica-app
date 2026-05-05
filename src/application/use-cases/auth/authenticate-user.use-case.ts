@@ -31,7 +31,7 @@ export class AuthenticateUserUseCase {
       throw new UnauthorizedAccessException('Credenciais inválidas');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email.value, role: user.role };
     const { accessToken, refreshToken } = this.tokenService.signTokenPair(payload);
 
     return {
@@ -40,7 +40,7 @@ export class AuthenticateUserUseCase {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email.value,
         role: user.role,
       },
     };

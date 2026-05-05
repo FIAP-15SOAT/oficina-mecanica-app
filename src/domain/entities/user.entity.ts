@@ -1,17 +1,30 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { UserRole } from '../enums/user-role.enum';
-import { EMAIL_REGEX } from '../constants/email.regex';
+import { Email } from '../value-objects/email.vo';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
-const MAX_EMAIL_LENGTH = 150;
 const VALID_ROLES = Object.values(UserRole);
+
+export interface CreateUserProps {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+}
+
+export interface UpdateUserProps {
+  name?: string;
+  email?: string;
+  passwordHash?: string;
+  role?: UserRole;
+}
 
 export class User {
   id!: string;
   name!: string;
-  email!: string;
+  email!: Email;
   passwordHash!: string;
   role!: UserRole;
   isActive!: boolean;
@@ -22,52 +35,69 @@ export class User {
     Object.assign(this, partial);
   }
 
-  static create(props: {
-    name: string;
-    email: string;
-    passwordHash: string;
-    role?: UserRole;
-  }): User {
+  static create(props: CreateUserProps): User {
+    User.validateName(props.name);
+    User.validatePasswordHash(props.passwordHash);
+    User.validateRole(props.role);
+
     const now = new Date();
 
-    const user = new User({
+    return new User({
       id: randomUUID(),
       name: props.name.trim(),
-      email: props.email.trim().toLowerCase(),
+      email: Email.create(props.email),
       passwordHash: props.passwordHash,
-      role: props.role ?? UserRole.ATTENDANT,
+      role: props.role,
       isActive: true,
       createdAt: now,
       updatedAt: now,
     });
+  }
 
-    user.validateName();
-    user.validateEmail();
-    user.validateRole();
+  update(props: UpdateUserProps): void {
+    if (props.name !== undefined) {
+      User.validateName(props.name);
+      this.name = props.name.trim();
+    }
 
-    return user;
+    if (props.email !== undefined) {
+      this.email = Email.create(props.email);
+    }
+
+    if (props.passwordHash !== undefined) {
+      User.validatePasswordHash(props.passwordHash);
+      this.passwordHash = props.passwordHash;
+    }
+
+    if (props.role !== undefined) {
+      User.validateRole(props.role);
+      this.role = props.role;
+    }
+
+    this.updatedAt = new Date();
   }
 
   changeName(name: string): void {
+    User.validateName(name);
     this.name = name.trim();
-    this.validateName();
+    this.updatedAt = new Date();
   }
 
   changeEmail(email: string): void {
-    this.email = email.trim().toLowerCase();
-    this.validateEmail();
+    this.email = Email.create(email);
+    this.updatedAt = new Date();
   }
 
   changeRole(role: UserRole): void {
+    User.validateRole(role);
     this.role = role;
-    this.validateRole();
+    this.updatedAt = new Date();
   }
 
   changePassword(passwordHash: string): void {
-    if (!passwordHash || passwordHash.length === 0) {
-      throw new DomainValidationException('Hash de senha não pode ser vazio');
-    }
+    User.validatePasswordHash(passwordHash);
     this.passwordHash = passwordHash;
+    this.updatedAt = new Date();
   }
 
   activate(): void {
@@ -75,6 +105,7 @@ export class User {
       throw new DomainValidationException('Usuário já está ativo');
     }
     this.isActive = true;
+    this.updatedAt = new Date();
   }
 
   deactivate(): void {
@@ -82,6 +113,7 @@ export class User {
       throw new DomainValidationException('Usuário já está desativado');
     }
     this.isActive = false;
+    this.updatedAt = new Date();
   }
 
   isAdmin(): boolean {
@@ -100,7 +132,7 @@ export class User {
     return {
       id: this.id,
       name: this.name,
-      email: this.email,
+      email: this.email.value,
       role: this.role,
       isActive: this.isActive,
       createdAt: this.createdAt,
@@ -108,30 +140,24 @@ export class User {
     };
   }
 
-  private validateName(): void {
-    if (!this.name || this.name.length < MIN_NAME_LENGTH) {
+  private static validateName(name: string): void {
+    if (!name || name.trim().length < MIN_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no mínimo ${MIN_NAME_LENGTH} caracteres`);
     }
 
-    if (this.name.length > MAX_NAME_LENGTH) {
+    if (name.trim().length > MAX_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres`);
     }
   }
 
-  private validateEmail(): void {
-    if (!this.email || !EMAIL_REGEX.test(this.email)) {
-      throw new DomainValidationException('E-mail inválido');
-    }
-
-    if (this.email.length > MAX_EMAIL_LENGTH) {
-      throw new DomainValidationException(
-        `E-mail deve ter no máximo ${MAX_EMAIL_LENGTH} caracteres`,
-      );
+  private static validatePasswordHash(passwordHash: string): void {
+    if (!passwordHash || passwordHash.length === 0) {
+      throw new DomainValidationException('Hash de senha não pode ser vazio');
     }
   }
 
-  private validateRole(): void {
-    if (!VALID_ROLES.includes(this.role)) {
+  private static validateRole(role: UserRole): void {
+    if (!VALID_ROLES.includes(role)) {
       throw new DomainValidationException(
         `Role inválida. Valores aceitos: ${VALID_ROLES.join(', ')}`,
       );
