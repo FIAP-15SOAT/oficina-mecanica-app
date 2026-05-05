@@ -1,20 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { CustomerType } from '../enums/customer-type.enum';
-import { Address } from './address.entity';
+import { Address, AddressProps } from '../value-objects/address.vo';
 import { Email } from '../value-objects/email.vo';
 import { Phone } from '../value-objects/phone.vo';
 import { Document } from '../value-objects/document.vo';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
-
-export interface AddressProps {
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
 
 export interface CreateCustomerProps {
   name: string;
@@ -61,12 +54,10 @@ export class Customer {
       type: props.type,
       email: Email.create(props.email),
       phone: Phone.create(props.phone),
-      address: null,
+      address: Address.create(props.address),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    customer.address = Address.create({ customerId: id, ...props.address });
 
     return customer;
   }
@@ -79,7 +70,7 @@ export class Customer {
     this.type = props.type;
     this.email = Email.create(props.email);
     this.phone = Phone.create(props.phone);
-    this.address = Address.create({ customerId: this.id, ...props.address });
+    this.address = Address.create(props.address);
     this.updatedAt = new Date();
   }
 

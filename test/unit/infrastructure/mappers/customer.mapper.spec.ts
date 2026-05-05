@@ -16,14 +16,11 @@ describe('CustomerMapper', () => {
         createdAt: now,
         updatedAt: now,
         address: {
-          id: randomUUID(),
           customerId: randomUUID(),
           street: 'Main St',
           city: 'Sao Paulo',
           state: 'SP',
           zipCode: '01000-000',
-          createdAt: now,
-          updatedAt: now,
         },
       };
 
@@ -36,7 +33,6 @@ describe('CustomerMapper', () => {
       expect(domainCustomer.email.value).toBe(prismaRecord.email);
       expect(domainCustomer.phone.value).toBe(prismaRecord.phone);
       expect(domainCustomer.address).toBeDefined();
-      expect(domainCustomer.address!.id).toBe(prismaRecord.address.id);
       expect(domainCustomer.address!.street).toBe(prismaRecord.address.street);
     });
 

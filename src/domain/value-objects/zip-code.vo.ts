@@ -38,8 +38,4 @@ export class ZipCode {
   toString(): string {
     return this.value;
   }
-
-  toJSON(): string {
-    return this.value;
-  }
 }

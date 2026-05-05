@@ -44,11 +44,4 @@ describe('Phone VO', () => {
       expect(Phone.create('11999999999').toString()).toBe('11999999999');
     });
   });
-
-  describe('toJSON', () => {
-    it('serializes as the raw string value', () => {
-      const obj = { phone: Phone.create('11999999999') };
-      expect(JSON.stringify(obj)).toBe('{"phone":"11999999999"}');
-    });
-  });
 });

@@ -32,11 +32,10 @@ export class PrismaCustomerRepository implements ICustomerRepository {
         ...(customer.address && {
           address: {
             create: {
-              id: customer.address.id,
               street: customer.address.street,
               city: customer.address.city,
               state: customer.address.state,
-              zipCode: customer.address.zipCode,
+              zipCode: customer.address.zipCode.value,
             },
           },
         }),
@@ -115,17 +114,16 @@ export class PrismaCustomerRepository implements ICustomerRepository {
             ? {
                 upsert: {
                   create: {
-                    id: data.address.id,
                     street: data.address.street,
                     city: data.address.city,
                     state: data.address.state,
-                    zipCode: data.address.zipCode,
+                    zipCode: data.address.zipCode.value,
                   },
                   update: {
                     street: data.address.street,
                     city: data.address.city,
                     state: data.address.state,
-                    zipCode: data.address.zipCode,
+                    zipCode: data.address.zipCode.value,
                   },
                 },
               }

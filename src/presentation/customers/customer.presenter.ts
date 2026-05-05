@@ -24,11 +24,10 @@ export class CustomerPresenter {
 
   private static toAddress(address: NonNullable<Customer['address']>): AddressResponseDto {
     return {
-      id: address.id,
       street: address.street,
       city: address.city,
       state: address.state,
-      zipCode: address.zipCode,
+      zipCode: address.zipCode.value,
     };
   }
 

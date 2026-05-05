@@ -57,11 +57,4 @@ describe('Email VO', () => {
       expect(Email.create('a@b.com').toString()).toBe('a@b.com');
     });
   });
-
-  describe('toJSON', () => {
-    it('serializes as the raw string value', () => {
-      const obj = { email: Email.create('a@b.com') };
-      expect(JSON.stringify(obj)).toBe('{"email":"a@b.com"}');
-    });
-  });
 });

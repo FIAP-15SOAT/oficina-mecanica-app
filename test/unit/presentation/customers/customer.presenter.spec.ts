@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Customer } from '@domain/entities/customer.entity';
-import { Address } from '@domain/entities/address.entity';
+import { Address } from '@domain/value-objects/address.vo';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { CustomerPresenter } from '@presentation/customers/customer.presenter';
 import { Email } from '@domain/value-objects/email.vo';
@@ -13,15 +13,11 @@ describe('CustomerPresenter', () => {
 
   function makeCustomer(withAddress: boolean): Customer {
     const address = withAddress
-      ? new Address({
-          id: randomUUID(),
-          customerId,
+      ? Address.create({
           street: 'Rua das Flores, 123',
           city: 'São Paulo',
           state: 'SP',
           zipCode: '01310-100',
-          createdAt: now,
-          updatedAt: now,
         })
       : null;
 
@@ -60,7 +56,7 @@ describe('CustomerPresenter', () => {
       expect(result.address!.street).toBe('Rua das Flores, 123');
       expect(result.address!.city).toBe('São Paulo');
       expect(result.address!.state).toBe('SP');
-      expect(result.address!.zipCode).toBe('01310-100');
+      expect(result.address!.zipCode).toBe('01310100');
     });
   });
 

@@ -43,11 +43,4 @@ describe('ZipCode VO', () => {
       expect(ZipCode.create('01310-100').toString()).toBe('01310100');
     });
   });
-
-  describe('toJSON', () => {
-    it('serializes as the sanitized string value', () => {
-      const obj = { zipCode: ZipCode.create('01310-100') };
-      expect(JSON.stringify(obj)).toBe('{"zipCode":"01310100"}');
-    });
-  });
 });

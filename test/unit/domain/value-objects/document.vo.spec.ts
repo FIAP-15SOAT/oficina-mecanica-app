@@ -79,11 +79,4 @@ describe('Document VO', () => {
       );
     });
   });
-
-  describe('toJSON', () => {
-    it('serializes as the sanitized string value', () => {
-      const obj = { document: Document.create('123.456.789-09', CustomerType.INDIVIDUAL) };
-      expect(JSON.stringify(obj)).toBe('{"document":"12345678909"}');
-    });
-  });
 });

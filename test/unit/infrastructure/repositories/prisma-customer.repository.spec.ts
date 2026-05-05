@@ -3,7 +3,7 @@ import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockPrismaCustomer } from '../../../helpers/customer-mock.factory';
-import { Address } from '@domain/entities/address.entity';
+import { Address } from '@domain/value-objects/address.vo';
 import { randomUUID } from 'node:crypto';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -109,14 +109,12 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.COMPANY,
         email: Email.create('updated@example.com'),
         phone: Phone.create('11999998888'),
-        address: {
-          id: randomUUID(),
+        address: Address.create({
           street: 'Main St',
-          number: '123',
           city: 'City',
           state: 'ST',
           zipCode: '12345678',
-        } as unknown as Address,
+        }),
       };
 
       prisma.customer.update.mockResolvedValue(

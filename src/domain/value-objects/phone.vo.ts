@@ -39,8 +39,4 @@ export class Phone {
   toString(): string {
     return this.value;
   }
-
-  toJSON(): string {
-    return this.value;
-  }
 }

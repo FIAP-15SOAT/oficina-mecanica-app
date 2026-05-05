@@ -1,6 +1,6 @@
 import { Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
 import { Customer } from '@domain/entities/customer.entity';
-import { Address } from '@domain/entities/address.entity';
+import { Address } from '@domain/value-objects/address.vo';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -21,15 +21,11 @@ export class CustomerMapper {
       email: Email.create(prismaRecord.email),
       phone: Phone.create(prismaRecord.phone),
       address: prismaRecord.address
-        ? new Address({
-            id: prismaRecord.address.id,
-            customerId: prismaRecord.address.customerId,
+        ? Address.create({
             street: prismaRecord.address.street,
             city: prismaRecord.address.city,
             state: prismaRecord.address.state,
             zipCode: prismaRecord.address.zipCode,
-            createdAt: prismaRecord.address.createdAt,
-            updatedAt: prismaRecord.address.updatedAt,
           })
         : null,
       createdAt: prismaRecord.createdAt,

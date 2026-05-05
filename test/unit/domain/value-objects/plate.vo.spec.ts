@@ -46,11 +46,4 @@ describe('Plate VO', () => {
       expect(Plate.create('ABC-1234').toString()).toBe('ABC1234');
     });
   });
-
-  describe('toJSON', () => {
-    it('serializes as the sanitized string value', () => {
-      const obj = { plate: Plate.create('ABC-1234') };
-      expect(JSON.stringify(obj)).toBe('{"plate":"ABC1234"}');
-    });
-  });
 });
