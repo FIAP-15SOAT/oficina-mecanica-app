@@ -9,7 +9,7 @@ type PrismaStatusHistoryRecord = PrismaStatusHistory & {
 
 export class StatusHistoryMapper {
   static toDomain(record: PrismaStatusHistoryRecord): StatusHistory {
-    const entity = new StatusHistory({
+    const entity = StatusHistory.reconstitute({
       id: record.id,
       workOrderId: record.workOrderId,
       changedById: record.changedById ?? null,

@@ -4,6 +4,7 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { Quote } from '@domain/entities/quote.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 describe('FindWorkOrderQuotesUseCase', () => {
@@ -23,10 +24,56 @@ describe('FindWorkOrderQuotesUseCase', () => {
 
   it('should return quotes for a work order', async () => {
     const workOrderId = 'wo-1';
-    const workOrder = new WorkOrder({ customerId: 'c1', vehicleId: 'v1' });
+
+    const workOrder = WorkOrder.reconstitute({
+      id: 'wo-1',
+      number: '000001',
+      customerId: 'c1',
+      vehicleId: 'v1',
+      assignedUserId: null,
+      status: WorkOrderStatus.RECEIVED,
+      problemDescription: null,
+      internalNotes: null,
+      mileageAtService: null,
+      totalAmount: 0,
+      approvedAt: null,
+      rejectedAt: null,
+      startedAt: null,
+      finishedAt: null,
+      deliveredAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
     const quotes = [
-      new Quote({ workOrderId, status: QuoteStatus.PENDING }),
-      new Quote({ workOrderId, status: QuoteStatus.SENT }),
+      Quote.reconstitute({
+        id: 'q1',
+        workOrderId,
+        status: QuoteStatus.PENDING,
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+      Quote.reconstitute({
+        id: 'q2',
+        workOrderId,
+        status: QuoteStatus.SENT,
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
     ];
 
     workOrderRepository.findById.mockResolvedValue(workOrder);

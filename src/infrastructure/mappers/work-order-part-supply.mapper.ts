@@ -11,7 +11,7 @@ type PrismaWorkOrderPartSupplyRecord = PrismaWorkOrderPartSupply & {
 
 export class WorkOrderPartSupplyMapper {
   static toDomain(record: PrismaWorkOrderPartSupplyRecord): WorkOrderPartSupply {
-    const entity = new WorkOrderPartSupply({
+    const entity = WorkOrderPartSupply.reconstitute({
       workOrderId: record.workOrderId,
       partSupplyId: record.partSupplyId,
       quantity: record.quantity,

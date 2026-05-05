@@ -5,7 +5,7 @@ import { Email } from '@domain/value-objects/email.vo';
 
 export class UserMapper {
   static toDomain(record: PrismaUser): User {
-    return new User({
+    return User.reconstitute({
       id: record.id,
       name: record.name,
       email: Email.create(record.email),

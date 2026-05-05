@@ -24,7 +24,8 @@ export function createMockPrismaCustomer(overrides: Record<string, unknown> = {}
 export function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
   const now = new Date();
   const type = overrides.type ?? CustomerType.INDIVIDUAL;
-  return new Customer({
+
+  return Customer.reconstitute({
     id: randomUUID(),
     name: 'João da Silva',
     document: Document.create('12345678909', type),

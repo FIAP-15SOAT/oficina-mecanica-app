@@ -31,24 +31,44 @@ export interface UpdateWorkOrderProps {
   assignedUser?: User | null;
 }
 
+export interface WorkOrderProps {
+  id: string;
+  number: string;
+  customerId: string;
+  vehicleId: string;
+  assignedUserId: string | null;
+  status: WorkOrderStatus;
+  problemDescription: string | null;
+  internalNotes: string | null;
+  mileageAtService: number | null;
+  totalAmount: number;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  deliveredAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class WorkOrder {
-  id!: string;
-  number!: string;
-  customerId!: string;
-  vehicleId!: string;
-  assignedUserId!: string | null;
-  status!: WorkOrderStatus;
-  problemDescription!: string | null;
-  internalNotes!: string | null;
-  mileageAtService!: number | null;
-  totalAmount!: number;
-  approvedAt!: Date | null;
-  rejectedAt!: Date | null;
-  startedAt!: Date | null;
-  finishedAt!: Date | null;
-  deliveredAt!: Date | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  readonly id: string;
+  readonly number: string;
+  readonly customerId: string;
+  readonly vehicleId: string;
+  assignedUserId: string | null;
+  status: WorkOrderStatus;
+  problemDescription: string | null;
+  internalNotes: string | null;
+  mileageAtService: number | null;
+  totalAmount: number;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  deliveredAt: Date | null;
+  readonly createdAt: Date;
+  updatedAt: Date;
 
   customer?: Customer;
   vehicle?: Vehicle;
@@ -56,12 +76,39 @@ export class WorkOrder {
   services?: WorkOrderService[];
   partSupplies?: WorkOrderPartSupply[];
 
-  constructor(partial: Partial<WorkOrder>) {
-    Object.assign(this, partial);
+  private constructor(props: WorkOrderProps) {
+    this.id = props.id;
+    this.number = props.number;
+    this.customerId = props.customerId;
+    this.vehicleId = props.vehicleId;
+    this.assignedUserId = props.assignedUserId;
+    this.status = props.status;
+    this.problemDescription = props.problemDescription;
+    this.internalNotes = props.internalNotes;
+    this.mileageAtService = props.mileageAtService;
+    this.totalAmount = props.totalAmount;
+    this.approvedAt = props.approvedAt;
+    this.rejectedAt = props.rejectedAt;
+    this.startedAt = props.startedAt;
+    this.finishedAt = props.finishedAt;
+    this.deliveredAt = props.deliveredAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: WorkOrderProps): WorkOrder {
+    return new WorkOrder(props);
   }
 
   static create(props: CreateWorkOrderProps): WorkOrder {
-    const workOrder = new WorkOrder({
+    WorkOrder.validateCustomerId(props.customerId);
+    WorkOrder.validateVehicleId(props.vehicleId);
+    WorkOrder.validateMileage(props.mileageAtService ?? null);
+    WorkOrder.validateProblemDescription(props.problemDescription ?? null);
+    WorkOrder.validateInternalNotes(props.internalNotes ?? null);
+    WorkOrder.validateAssignedUser(props.assignedUser ?? null);
+
+    const wo = new WorkOrder({
       id: randomUUID(),
       number: props.number,
       customerId: props.customerId,
@@ -72,7 +119,6 @@ export class WorkOrder {
       mileageAtService: props.mileageAtService ?? null,
       totalAmount: 0,
       assignedUserId: props.assignedUser?.id ?? null,
-      assignedUser: props.assignedUser ?? null,
       approvedAt: null,
       rejectedAt: null,
       startedAt: null,
@@ -81,15 +127,8 @@ export class WorkOrder {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    workOrder.validateCustomerId();
-    workOrder.validateVehicleId();
-    workOrder.validateMileage();
-    workOrder.validateProblemDescription();
-    workOrder.validateInternalNotes();
-    workOrder.validateAssignedUser();
-
-    return workOrder;
+    wo.assignedUser = props.assignedUser ?? null;
+    return wo;
   }
 
   canCreateQuote(): boolean {
@@ -115,18 +154,31 @@ export class WorkOrder {
       );
     }
 
-    if (props.problemDescription !== undefined) this.problemDescription = props.problemDescription;
-    if (props.internalNotes !== undefined) this.internalNotes = props.internalNotes;
-    if (props.mileageAtService !== undefined) this.mileageAtService = props.mileageAtService;
-    if (props.assignedUser !== undefined) {
-      this.assignedUserId = props.assignedUser?.id ?? null;
-      this.assignedUser = props.assignedUser ?? null;
-    }
+    const nextProblemDescription =
+      props.problemDescription !== undefined
+        ? (props.problemDescription?.trim() ?? null)
+        : this.problemDescription;
+    const nextInternalNotes =
+      props.internalNotes !== undefined
+        ? (props.internalNotes?.trim() ?? null)
+        : this.internalNotes;
+    const nextMileageAtService =
+      props.mileageAtService !== undefined ? props.mileageAtService : this.mileageAtService;
+    const nextAssignedUser =
+      props.assignedUser !== undefined ? (props.assignedUser ?? null) : (this.assignedUser ?? null);
+    const nextAssignedUserId =
+      props.assignedUser !== undefined ? (props.assignedUser?.id ?? null) : this.assignedUserId;
 
-    this.validateMileage();
-    this.validateProblemDescription();
-    this.validateInternalNotes();
-    this.validateAssignedUser();
+    WorkOrder.validateMileage(nextMileageAtService);
+    WorkOrder.validateProblemDescription(nextProblemDescription);
+    WorkOrder.validateInternalNotes(nextInternalNotes);
+    WorkOrder.validateAssignedUser(nextAssignedUser);
+
+    this.problemDescription = nextProblemDescription;
+    this.internalNotes = nextInternalNotes;
+    this.mileageAtService = nextMileageAtService;
+    this.assignedUser = nextAssignedUser;
+    this.assignedUserId = nextAssignedUserId;
 
     this.updatedAt = new Date();
   }
@@ -192,58 +244,63 @@ export class WorkOrder {
     }
   }
 
-  private validateCustomerId(): void {
-    if (!this.customerId) {
+  private static validateCustomerId(customerId: string): void {
+    if (!customerId) {
       throw new DomainValidationException('ID do cliente é obrigatório.');
     }
 
-    if (!isUuid(this.customerId)) {
+    if (!isUuid(customerId)) {
       throw new DomainValidationException('ID do cliente deve ser um UUID válido.');
     }
   }
 
-  private validateVehicleId(): void {
-    if (!this.vehicleId) {
+  private static validateVehicleId(vehicleId: string): void {
+    if (!vehicleId) {
       throw new DomainValidationException('ID do veículo é obrigatório.');
     }
 
-    if (!isUuid(this.vehicleId)) {
+    if (!isUuid(vehicleId)) {
       throw new DomainValidationException('ID do veículo deve ser um UUID válido.');
     }
   }
 
-  private validateMileage(): void {
-    if (
-      this.mileageAtService !== undefined &&
-      this.mileageAtService !== null &&
-      this.mileageAtService < 0
-    ) {
+  private static validateMileage(mileageAtService: number | null): void {
+    if (mileageAtService !== undefined && mileageAtService !== null && mileageAtService < 0) {
       throw new DomainValidationException('Quilometragem não pode ser negativa.');
     }
   }
 
-  private validateProblemDescription(): void {
-    if (
-      this.problemDescription &&
-      this.problemDescription.length > MAX_PROBLEM_DESCRIPTION_LENGTH
-    ) {
+  private static validateProblemDescription(problemDescription: string | null): void {
+    if (!problemDescription) {
+      return;
+    }
+
+    const trimmed = problemDescription.trim();
+
+    if (trimmed.length > MAX_PROBLEM_DESCRIPTION_LENGTH) {
       throw new DomainValidationException(
         `Descrição do problema deve ter no máximo ${MAX_PROBLEM_DESCRIPTION_LENGTH} caracteres.`,
       );
     }
   }
 
-  private validateInternalNotes(): void {
-    if (this.internalNotes && this.internalNotes.length > MAX_INTERNAL_NOTES_LENGTH) {
+  private static validateInternalNotes(internalNotes: string | null): void {
+    if (!internalNotes) {
+      return;
+    }
+
+    const trimmed = internalNotes.trim();
+
+    if (trimmed.length > MAX_INTERNAL_NOTES_LENGTH) {
       throw new DomainValidationException(
         `Notas internas devem ter no máximo ${MAX_INTERNAL_NOTES_LENGTH} caracteres.`,
       );
     }
   }
 
-  private validateAssignedUser(): void {
-    if (this.assignedUser) {
-      if (this.assignedUser.role !== UserRole.MECHANIC || !this.assignedUser.isActive) {
+  private static validateAssignedUser(assignedUser: User | null): void {
+    if (assignedUser) {
+      if (assignedUser.role !== UserRole.MECHANIC || !assignedUser.isActive) {
         throw new BusinessRuleViolationException(
           'Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço',
         );

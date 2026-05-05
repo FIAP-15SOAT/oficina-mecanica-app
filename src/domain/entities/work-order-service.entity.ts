@@ -12,28 +12,62 @@ export interface CreateWorkOrderServiceProps {
   unitPrice: number;
 }
 
+interface WorkOrderServiceProps {
+  id?: string;
+  workOrderId: string;
+  serviceId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  status: WorkOrderServiceStatus;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class WorkOrderService {
-  id!: string;
-  workOrderId!: string;
-  serviceId!: string;
-  quantity!: number;
-  unitPrice!: number;
-  totalPrice!: number;
-  status!: WorkOrderServiceStatus;
-  startedAt!: Date | null;
-  finishedAt!: Date | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  readonly id: string;
+  readonly workOrderId: string;
+  readonly serviceId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  status: WorkOrderServiceStatus;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  readonly createdAt: Date;
+  updatedAt: Date;
 
   service?: Service;
 
-  constructor(partial: Partial<WorkOrderService>) {
-    Object.assign(this, partial);
+  private constructor(props: WorkOrderServiceProps) {
+    this.id = props.id ?? randomUUID();
+    this.workOrderId = props.workOrderId;
+    this.serviceId = props.serviceId;
+    this.quantity = props.quantity;
+    this.unitPrice = props.unitPrice;
+    this.totalPrice = props.totalPrice;
+    this.status = props.status;
+    this.startedAt = props.startedAt;
+    this.finishedAt = props.finishedAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: WorkOrderServiceProps): WorkOrderService {
+    return new WorkOrderService(props);
   }
 
   static create(props: CreateWorkOrderServiceProps): WorkOrderService {
     const now = new Date();
-    const entity = new WorkOrderService({
+
+    WorkOrderService.validateWorkOrderId(props.workOrderId);
+    WorkOrderService.validateServiceId(props.serviceId);
+    WorkOrderService.validateQuantity(props.quantity);
+    WorkOrderService.validateUnitPrice(props.unitPrice);
+
+    return new WorkOrderService({
       id: randomUUID(),
       workOrderId: props.workOrderId,
       serviceId: props.serviceId,
@@ -46,13 +80,6 @@ export class WorkOrderService {
       createdAt: now,
       updatedAt: now,
     });
-
-    entity.validateWorkOrderId();
-    entity.validateServiceId();
-    entity.validateQuantity();
-    entity.validateUnitPrice();
-
-    return entity;
   }
 
   startService(): void {
@@ -77,34 +104,34 @@ export class WorkOrderService {
     this.updatedAt = now;
   }
 
-  private validateWorkOrderId(): void {
-    if (!this.workOrderId) {
+  private static validateWorkOrderId(workOrderId: string): void {
+    if (!workOrderId) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório.');
     }
 
-    if (!isUuid(this.workOrderId)) {
+    if (!isUuid(workOrderId)) {
       throw new DomainValidationException('ID da ordem de serviço deve ser um UUID válido.');
     }
   }
 
-  private validateServiceId(): void {
-    if (!this.serviceId) {
+  private static validateServiceId(serviceId: string): void {
+    if (!serviceId) {
       throw new DomainValidationException('ID do serviço é obrigatório.');
     }
 
-    if (!isUuid(this.serviceId)) {
+    if (!isUuid(serviceId)) {
       throw new DomainValidationException('ID do serviço deve ser um UUID válido.');
     }
   }
 
-  private validateQuantity(): void {
-    if (!Number.isInteger(this.quantity) || this.quantity < 1) {
+  private static validateQuantity(quantity: number): void {
+    if (!Number.isInteger(quantity) || quantity < 1) {
       throw new DomainValidationException('Quantidade deve ser um inteiro positivo.');
     }
   }
 
-  private validateUnitPrice(): void {
-    if (!Number.isFinite(this.unitPrice) || this.unitPrice < 0) {
+  private static validateUnitPrice(unitPrice: number): void {
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
       throw new DomainValidationException('Preço unitário deve ser um número não negativo.');
     }
   }

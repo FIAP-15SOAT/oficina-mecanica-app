@@ -118,7 +118,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
   }
 
   async updateStock(id: string, data: UpdateStockDto): Promise<PartSupply> {
-    const { quantity, type, reason, workOrderId } = data;
+    const { quantity, type } = data;
 
     let stockUpdate: { increment: number } | { decrement: number } | { set: number };
     if (type === StockMovementType.ENTRY) {
@@ -129,15 +129,10 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       stockUpdate = { set: quantity };
     }
 
-    const [updatedRecord] = await this.prisma.$transaction([
-      this.prisma.partSupply.update({
-        where: { id },
-        data: { stock: stockUpdate },
-      }),
-      this.prisma.stockMovement.create({
-        data: { partSupplyId: id, workOrderId: workOrderId ?? null, type, quantity, reason },
-      }),
-    ]);
+    const updatedRecord = await this.prisma.partSupply.update({
+      where: { id },
+      data: { stock: stockUpdate },
+    });
 
     return PartSupplyMapper.toDomain(updatedRecord);
   }

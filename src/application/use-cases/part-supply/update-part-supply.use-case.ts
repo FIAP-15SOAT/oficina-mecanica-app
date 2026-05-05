@@ -23,6 +23,8 @@ export class UpdatePartSupplyUseCase implements IUpdatePartSupplyUseCase {
       }
     }
 
-    return this.partSupplyRepository.update(id, input);
+    existing.update(input);
+
+    return this.partSupplyRepository.update(id, existing);
   }
 }

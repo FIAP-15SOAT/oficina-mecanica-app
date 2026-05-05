@@ -4,7 +4,7 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 
 export function createMockStatusHistory(overrides: Partial<StatusHistory> = {}): StatusHistory {
-  return new StatusHistory({
+  return StatusHistory.reconstitute({
     id: randomUUID(),
     workOrderId: randomUUID(),
     changedById: randomUUID(),

@@ -12,7 +12,7 @@ type PrismaWorkOrderServiceRecord = PrismaWorkOrderService & {
 
 export class WorkOrderServiceMapper {
   static toDomain(record: PrismaWorkOrderServiceRecord): WorkOrderService {
-    const entity = new WorkOrderService({
+    const entity = WorkOrderService.reconstitute({
       workOrderId: record.workOrderId,
       serviceId: record.serviceId,
       quantity: record.quantity,

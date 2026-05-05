@@ -107,7 +107,7 @@ describe('PrismaWorkOrderRepository', () => {
 
   describe('update', () => {
     it('should update a work order with all fields', async () => {
-      const workOrder = new WorkOrder({
+      const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '001',
         customerId: randomUUID(),
@@ -123,6 +123,7 @@ describe('PrismaWorkOrderRepository', () => {
         startedAt: new Date(),
         finishedAt: new Date(),
         deliveredAt: new Date(),
+        createdAt: new Date(),
         updatedAt: new Date(),
       });
 

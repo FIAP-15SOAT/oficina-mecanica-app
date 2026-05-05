@@ -6,7 +6,8 @@ export function createMockStockReservation(
   overrides: Partial<StockReservation> = {},
 ): StockReservation {
   const now = new Date();
-  return new StockReservation({
+
+  return StockReservation.reconstitute({
     id: randomUUID(),
     partSupplyId: randomUUID(),
     workOrderId: randomUUID(),

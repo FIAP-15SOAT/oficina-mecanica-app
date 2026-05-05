@@ -59,10 +59,11 @@ describe('WorkOrderPartSupply Entity', () => {
     });
   });
 
-  describe('constructor()', () => {
+  describe('reconstitute()', () => {
     it('should assign all partial props', () => {
       const now = new Date();
-      const entity = new WorkOrderPartSupply({
+
+      const entity = WorkOrderPartSupply.reconstitute({
         workOrderId: 'wo-id',
         partSupplyId: 'part-id',
         quantity: 1,

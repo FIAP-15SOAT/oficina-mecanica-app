@@ -9,7 +9,8 @@ import { IQuotePartSupplyRepository } from '@domain/interfaces/repositories/quot
 
 export function createMockQuote(overrides: Partial<Quote> = {}): Quote {
   const now = new Date();
-  return new Quote({
+
+  return Quote.reconstitute({
     id: randomUUID(),
     workOrderId: randomUUID(),
     status: QuoteStatus.PENDING,
@@ -27,12 +28,14 @@ export function createMockQuote(overrides: Partial<Quote> = {}): Quote {
 }
 
 export function createMockQuoteService(overrides: Partial<QuoteService> = {}): QuoteService {
-  return new QuoteService({
+  return QuoteService.reconstitute({
     quoteId: randomUUID(),
     serviceId: randomUUID(),
     quantity: 1,
     unitPrice: 100,
     totalPrice: 100,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   });
 }
@@ -40,12 +43,14 @@ export function createMockQuoteService(overrides: Partial<QuoteService> = {}): Q
 export function createMockQuotePartSupply(
   overrides: Partial<QuotePartSupply> = {},
 ): QuotePartSupply {
-  return new QuotePartSupply({
+  return QuotePartSupply.reconstitute({
     quoteId: randomUUID(),
     partSupplyId: randomUUID(),
     quantity: 2,
     unitPrice: 50,
     totalPrice: 100,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   });
 }

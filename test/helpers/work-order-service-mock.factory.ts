@@ -7,7 +7,8 @@ export function createMockWorkOrderService(
   overrides: Partial<WorkOrderService> = {},
 ): WorkOrderService {
   const now = new Date();
-  return new WorkOrderService({
+
+  return WorkOrderService.reconstitute({
     id: randomUUID(),
     workOrderId: randomUUID(),
     serviceId: randomUUID(),

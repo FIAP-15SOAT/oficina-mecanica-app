@@ -9,7 +9,7 @@ type PrismaVehicleWithCustomer = PrismaVehicle & {
 
 export class VehicleMapper {
   static toDomain(prismaRecord: PrismaVehicleWithCustomer): Vehicle {
-    return new Vehicle({
+    return Vehicle.reconstitute({
       id: prismaRecord.id,
       customerId: prismaRecord.customerId,
       plate: Plate.create(prismaRecord.plate),

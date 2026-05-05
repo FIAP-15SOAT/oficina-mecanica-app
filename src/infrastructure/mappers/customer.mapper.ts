@@ -13,7 +13,7 @@ type PrismaCustomerWithAddress = PrismaCustomer & {
 export class CustomerMapper {
   static toDomain(prismaRecord: PrismaCustomerWithAddress): Customer {
     const type = prismaRecord.type as CustomerType;
-    return new Customer({
+    return Customer.reconstitute({
       id: prismaRecord.id,
       name: prismaRecord.name,
       document: Document.create(prismaRecord.document, type),

@@ -10,58 +10,79 @@ export interface CreateStockReservationProps {
   quantity: number;
 }
 
+interface StockReservationProps {
+  id: string;
+  partSupplyId: string;
+  workOrderId: string;
+  quantity: number;
+  createdAt: Date;
+}
+
 export class StockReservation {
-  id!: string;
-  partSupplyId!: string;
-  workOrderId!: string;
-  quantity!: number;
-  createdAt!: Date;
+  readonly id: string;
+  readonly partSupplyId: string;
+  readonly workOrderId: string;
+  readonly quantity: number;
+  readonly createdAt: Date;
 
   partSupply?: PartSupply;
   workOrder?: WorkOrder;
 
-  constructor(partial: Partial<StockReservation>) {
-    Object.assign(this, partial);
+  private constructor(props: StockReservationProps) {
+    this.id = props.id;
+    this.partSupplyId = props.partSupplyId;
+    this.workOrderId = props.workOrderId;
+    this.quantity = props.quantity;
+    this.createdAt = props.createdAt;
+  }
+
+  static reconstitute(props: StockReservationProps): StockReservation {
+    return new StockReservation(props);
   }
 
   static create(props: CreateStockReservationProps): StockReservation {
-    const reservation = new StockReservation({
+    StockReservation.validatePartSupplyId(props.partSupplyId);
+    StockReservation.validateWorkOrderId(props.workOrderId);
+    StockReservation.validateQuantity(props.quantity);
+
+    const partSupplyId = props.partSupplyId.trim();
+    const workOrderId = props.workOrderId.trim();
+
+    return new StockReservation({
       id: randomUUID(),
-      partSupplyId: props.partSupplyId?.trim(),
-      workOrderId: props.workOrderId?.trim(),
+      partSupplyId,
+      workOrderId,
       quantity: props.quantity,
       createdAt: new Date(),
     });
-
-    reservation.validatePartSupplyId();
-    reservation.validateWorkOrderId();
-    reservation.validateQuantity();
-
-    return reservation;
   }
 
-  private validatePartSupplyId(): void {
-    if (!this.partSupplyId) {
+  private static validatePartSupplyId(partSupplyId: string): void {
+    const trimmed = partSupplyId?.trim();
+
+    if (!trimmed) {
       throw new DomainValidationException('ID da peça/insumo é obrigatório.');
     }
 
-    if (!isUuid(this.partSupplyId)) {
+    if (!isUuid(trimmed)) {
       throw new DomainValidationException(`ID da peça/insumo deve ser um UUID válido.`);
     }
   }
 
-  private validateWorkOrderId(): void {
-    if (!this.workOrderId) {
+  private static validateWorkOrderId(workOrderId: string): void {
+    const trimmed = workOrderId?.trim();
+
+    if (!trimmed) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório.');
     }
 
-    if (!isUuid(this.workOrderId)) {
+    if (!isUuid(trimmed)) {
       throw new DomainValidationException(`ID da ordem de serviço deve ser um UUID válido.`);
     }
   }
 
-  private validateQuantity(): void {
-    if (!Number.isInteger(this.quantity) || this.quantity <= 0) {
+  private static validateQuantity(quantity: number): void {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
       throw new DomainValidationException('Quantidade deve ser um inteiro positivo.');
     }
   }

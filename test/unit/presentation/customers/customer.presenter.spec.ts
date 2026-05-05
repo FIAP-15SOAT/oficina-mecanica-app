@@ -21,7 +21,7 @@ describe('CustomerPresenter', () => {
         })
       : null;
 
-    return new Customer({
+    return Customer.reconstitute({
       id: customerId,
       name: 'João da Silva',
       document: Document.create('12345678909', CustomerType.INDIVIDUAL),

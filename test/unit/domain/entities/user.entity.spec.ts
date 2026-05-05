@@ -271,7 +271,8 @@ describe('User Entity', () => {
   describe('toPublicView', () => {
     it('should return public view without passwordHash', () => {
       const now = new Date();
-      const user = new User({
+
+      const user = User.reconstitute({
         id: 'uuid-123',
         name: 'Rafael',
         email: Email.create('rafael@email.com'),

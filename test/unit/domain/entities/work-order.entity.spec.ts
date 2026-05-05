@@ -169,6 +169,28 @@ describe('WorkOrder Entity', () => {
       const wo = WorkOrder.create(baseProps);
       expect(() => wo.update({ mileageAtService: -100 })).toThrow(DomainValidationException);
     });
+
+    it('should set problemDescription to null when update receives null', () => {
+      const wo = WorkOrder.create({
+        ...baseProps,
+        problemDescription: 'Descrição inicial',
+      });
+
+      wo.update({ problemDescription: null });
+
+      expect(wo.problemDescription).toBeNull();
+    });
+
+    it('should set internalNotes to null when update receives null', () => {
+      const wo = WorkOrder.create({
+        ...baseProps,
+        internalNotes: 'Nota inicial',
+      });
+
+      wo.update({ internalNotes: null });
+
+      expect(wo.internalNotes).toBeNull();
+    });
   });
 
   describe('changeStatus()', () => {

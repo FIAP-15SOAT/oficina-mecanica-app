@@ -11,7 +11,8 @@ import { Plate } from '@domain/value-objects/plate.vo';
 export function createMockVehicleCustomer(overrides: Partial<Customer> = {}): Customer {
   const now = new Date();
   const type = overrides.type ?? CustomerType.INDIVIDUAL;
-  return new Customer({
+
+  return Customer.reconstitute({
     id: randomUUID(),
     name: 'João da Silva',
     document: Document.create('12345678909', type),
@@ -27,7 +28,8 @@ export function createMockVehicleCustomer(overrides: Partial<Customer> = {}): Cu
 
 export function createMockVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   const now = new Date();
-  return new Vehicle({
+
+  return Vehicle.reconstitute({
     id: randomUUID(),
     customerId: randomUUID(),
     plate: Plate.create('ABC-1234'),

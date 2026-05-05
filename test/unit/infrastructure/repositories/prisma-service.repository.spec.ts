@@ -36,7 +36,7 @@ describe('PrismaServiceRepository', () => {
       const result = await repository.create(service);
 
       expect(result).toEqual(
-        new Service({
+        Service.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           description: prismaModel.description,
@@ -87,7 +87,7 @@ describe('PrismaServiceRepository', () => {
       const result = await repository.findById(id);
 
       expect(result).toEqual(
-        new Service({
+        Service.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           description: prismaModel.description,
@@ -123,7 +123,7 @@ describe('PrismaServiceRepository', () => {
       const result = await repository.findByName(name);
 
       expect(result).toEqual(
-        new Service({
+        Service.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           description: prismaModel.description,
@@ -166,7 +166,7 @@ describe('PrismaServiceRepository', () => {
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
       expect(result.items[0]).toEqual(
-        new Service({
+        Service.reconstitute({
           id: prismaModels[0].id,
           name: prismaModels[0].name,
           description: prismaModels[0].description,

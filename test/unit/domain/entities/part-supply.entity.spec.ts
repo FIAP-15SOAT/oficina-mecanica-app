@@ -1,5 +1,6 @@
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
+import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
@@ -75,7 +76,7 @@ describe('PartSupply Entity', () => {
       it('should set description to undefined when not provided', () => {
         const partSupply = PartSupply.create(validProps);
 
-        expect(partSupply.description).toBeUndefined();
+        expect(partSupply.description).toBeNull();
       });
     });
 
@@ -234,14 +235,87 @@ describe('PartSupply Entity', () => {
   });
 
   describe('ensureHasSufficientStock()', () => {
-    it('should treat reservedStock as 0 when undefined', () => {
-      const partSupply = new PartSupply({
-        stock: 5,
-        reservedStock: undefined,
+    it('should not throw when sufficient stock is available', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-uuid-001',
         name: 'Filtro',
+        description: null,
+        sku: 'SKU-001',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 5,
+        minStock: 0,
+        reservedStock: 0,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
       expect(() => partSupply.ensureHasSufficientStock(5)).not.toThrow();
+    });
+  });
+
+  describe('applyStockMovement()', () => {
+    it('should increment stock for ENTRY movement', () => {
+      const partSupply = PartSupply.create({
+        ...validProps,
+        stock: 10,
+      });
+
+      partSupply.applyStockMovement(StockMovementType.ENTRY, 4);
+
+      expect(partSupply.stock).toBe(14);
+    });
+
+    it('should decrement stock for EXIT movement', () => {
+      const partSupply = PartSupply.create({
+        ...validProps,
+        stock: 10,
+      });
+
+      partSupply.applyStockMovement(StockMovementType.EXIT, 3);
+
+      expect(partSupply.stock).toBe(7);
+    });
+
+    it('should set stock for ADJUSTMENT movement', () => {
+      const partSupply = PartSupply.create({
+        ...validProps,
+        stock: 10,
+      });
+
+      partSupply.applyStockMovement(StockMovementType.ADJUSTMENT, 2);
+
+      expect(partSupply.stock).toBe(2);
+    });
+
+    it('should throw when quantity is invalid', () => {
+      const partSupply = PartSupply.create({
+        ...validProps,
+        stock: 10,
+      });
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.ENTRY, 0)).toThrow(
+        DomainValidationException,
+      );
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.ENTRY, 1.5)).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when EXIT quantity exceeds available stock', () => {
+      const partSupply = PartSupply.create({
+        ...validProps,
+        stock: 3,
+      });
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.EXIT, 4)).toThrow(
+        'Estoque insuficiente',
+      );
     });
   });
 });

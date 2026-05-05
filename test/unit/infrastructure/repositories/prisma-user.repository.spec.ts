@@ -38,7 +38,7 @@ describe('PrismaUserRepository', () => {
       const result = await repository.create(user);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
@@ -72,7 +72,7 @@ describe('PrismaUserRepository', () => {
       const result = await repository.findById(id);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
@@ -109,7 +109,7 @@ describe('PrismaUserRepository', () => {
       const result = await repository.findByEmail(email);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),

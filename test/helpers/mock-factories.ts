@@ -7,7 +7,8 @@ import { Email } from '@domain/value-objects/email.vo';
 
 export function createMockUser(overrides: Partial<User> = {}): User {
   const now = new Date();
-  return new User({
+
+  return User.reconstitute({
     id: 'user-uuid-123',
     name: 'Rafael Neves',
     email: Email.create('rafael@email.com'),

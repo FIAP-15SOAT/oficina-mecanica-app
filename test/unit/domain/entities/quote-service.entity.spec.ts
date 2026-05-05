@@ -54,6 +54,30 @@ describe('QuoteService Entity', () => {
         DomainValidationException,
       );
     });
+
+    it('should throw when quoteId is invalid', () => {
+      expect(() => QuoteService.create({ ...validProps, quoteId: 'invalid-id' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when quoteId is empty', () => {
+      expect(() => QuoteService.create({ ...validProps, quoteId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when serviceId is invalid', () => {
+      expect(() => QuoteService.create({ ...validProps, serviceId: 'invalid-id' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when serviceId is empty', () => {
+      expect(() => QuoteService.create({ ...validProps, serviceId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
   });
 
   describe('updateQuantity()', () => {

@@ -16,8 +16,34 @@ describe('FindAllQuotesPaginatedUseCase', () => {
 
   it('should return paginated quotes', async () => {
     const quotes = [
-      new Quote({ workOrderId: 'wo-1', status: QuoteStatus.PENDING }),
-      new Quote({ workOrderId: 'wo-2', status: QuoteStatus.SENT }),
+      Quote.reconstitute({
+        id: 'q1',
+        workOrderId: 'wo-1',
+        status: QuoteStatus.PENDING,
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+      Quote.reconstitute({
+        id: 'q2',
+        workOrderId: 'wo-2',
+        status: QuoteStatus.SENT,
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
     ];
     const paginatedResult = {
       items: quotes,

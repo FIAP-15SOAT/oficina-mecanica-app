@@ -23,7 +23,7 @@ type PrismaStockReservationRecord = PrismaStockReservation & {
 
 export class StockReservationMapper {
   static toDomain(record: PrismaStockReservationRecord): StockReservation {
-    const entity = new StockReservation({
+    const entity = StockReservation.reconstitute({
       id: record.id,
       partSupplyId: record.partSupplyId,
       workOrderId: record.workOrderId,

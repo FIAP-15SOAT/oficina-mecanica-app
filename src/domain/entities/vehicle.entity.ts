@@ -32,20 +32,58 @@ export interface UpdateVehicleProps {
 }
 
 export class Vehicle {
-  id!: string;
-  customerId!: string;
-  plate!: Plate;
-  brand!: string;
-  model!: string;
-  year!: number;
-  color!: string | null;
-  mileage!: number | null;
+  readonly id: string;
+  customerId: string;
+  plate: Plate;
+  brand: string;
+  model: string;
+  year: number;
+  color: string | null;
+  mileage: number | null;
   customer?: Customer;
-  createdAt!: Date;
-  updatedAt!: Date;
+  readonly createdAt: Date;
+  updatedAt: Date;
 
-  constructor(partial: Partial<Vehicle>) {
-    Object.assign(this, partial);
+  private constructor(props: {
+    id: string;
+    customerId: string;
+    plate: Plate;
+    brand: string;
+    model: string;
+    year: number;
+    color: string | null;
+    mileage: number | null;
+    customer?: Customer;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    this.id = props.id;
+    this.customerId = props.customerId;
+    this.plate = props.plate;
+    this.brand = props.brand;
+    this.model = props.model;
+    this.year = props.year;
+    this.color = props.color;
+    this.mileage = props.mileage;
+    this.customer = props.customer;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: {
+    id: string;
+    customerId: string;
+    plate: Plate;
+    brand: string;
+    model: string;
+    year: number;
+    color: string | null;
+    mileage: number | null;
+    customer?: Customer;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Vehicle {
+    return new Vehicle(props);
   }
 
   static create(props: CreateVehicleProps): Vehicle {

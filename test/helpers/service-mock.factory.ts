@@ -5,7 +5,7 @@ import { IServiceRepository } from '@domain/interfaces/repositories/service.repo
 export function createMockService(overrides: Partial<Service> = {}): Service {
   const now = new Date();
 
-  return new Service({
+  return Service.reconstitute({
     id: randomUUID(),
     name: 'Oil Change',
     description: 'Full engine oil change',

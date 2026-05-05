@@ -27,28 +27,50 @@ export interface UpdateCustomerProps {
   address: AddressProps;
 }
 
-export class Customer {
-  id!: string;
-  name!: string;
-  document!: Document;
-  type!: CustomerType;
-  email!: Email;
-  phone!: Phone;
-  address?: Address | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+interface CustomerProps {
+  id: string;
+  name: string;
+  document: Document;
+  type: CustomerType;
+  email: Email;
+  phone: Phone;
+  address: Address | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<Customer>) {
-    Object.assign(this, partial);
+export class Customer {
+  readonly id: string;
+  name: string;
+  document: Document;
+  type: CustomerType;
+  email: Email;
+  phone: Phone;
+  address: Address | null;
+  readonly createdAt: Date;
+  updatedAt: Date;
+
+  private constructor(props: CustomerProps) {
+    this.id = props.id;
+    this.name = props.name;
+    this.document = props.document;
+    this.type = props.type;
+    this.email = props.email;
+    this.phone = props.phone;
+    this.address = props.address;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: CustomerProps): Customer {
+    return new Customer(props);
   }
 
   static create(props: CreateCustomerProps): Customer {
-    const id = randomUUID();
-
     Customer.validateName(props.name);
 
-    const customer = new Customer({
-      id,
+    return new Customer({
+      id: randomUUID(),
       name: props.name.trim(),
       document: Document.create(props.document, props.type),
       type: props.type,
@@ -58,8 +80,6 @@ export class Customer {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    return customer;
   }
 
   update(props: UpdateCustomerProps): void {

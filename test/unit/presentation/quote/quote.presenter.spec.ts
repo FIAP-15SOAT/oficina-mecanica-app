@@ -19,7 +19,7 @@ describe('QuotePresenter', () => {
     updatedAt: new Date(),
   };
 
-  const quote = new Quote(quoteProps);
+  const quote = Quote.reconstitute(quoteProps);
 
   describe('toResponse', () => {
     it('should format a quote correctly', () => {
@@ -38,11 +38,9 @@ describe('QuotePresenter', () => {
 
   describe('toWithItemsResponse', () => {
     it('should include services and parts', () => {
-      const quoteWithItems = new Quote({
-        ...quoteProps,
-        services: [{ id: 's1' }] as unknown as Quote['services'],
-        partsSupplies: [{ id: 'p1' }] as unknown as Quote['partsSupplies'],
-      });
+      const quoteWithItems = Quote.reconstitute({ ...quoteProps });
+      quoteWithItems.services = [{ id: 's1' }] as unknown as Quote['services'];
+      quoteWithItems.partsSupplies = [{ id: 'p1' }] as unknown as Quote['partsSupplies'];
       const response = QuotePresenter.toWithItemsResponse(quoteWithItems);
       expect(response.data.services).toHaveLength(1);
       expect(response.data.partsSupplies).toHaveLength(1);

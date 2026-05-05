@@ -72,9 +72,21 @@ describe('PrismaQuoteRepository', () => {
   describe('update', () => {
     it('should update a quote', async () => {
       const id = randomUUID();
-      const quote = Quote.create({ workOrderId: randomUUID() });
-      quote.id = id;
-      quote.status = QuoteStatus.SENT;
+
+      const quote = Quote.reconstitute({
+        id,
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        status: QuoteStatus.SENT,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       prisma.quote.update.mockResolvedValue({
         id: quote.id,

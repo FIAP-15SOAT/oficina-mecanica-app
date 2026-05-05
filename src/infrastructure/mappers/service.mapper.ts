@@ -3,7 +3,7 @@ import { Service } from '@domain/entities/service.entity';
 
 export class ServiceMapper {
   static toDomain(record: PrismaService): Service {
-    return new Service({
+    return Service.reconstitute({
       id: record.id,
       name: record.name,
       description: record.description,

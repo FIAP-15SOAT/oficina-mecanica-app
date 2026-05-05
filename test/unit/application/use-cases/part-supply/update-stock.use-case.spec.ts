@@ -1,98 +1,128 @@
 import { UpdateStockUseCase } from '@application/use-cases/part-supply/update-stock.use-case';
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { randomUUID } from 'node:crypto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import {
-  createMockPartSupply,
-  createMockPartSupplyRepository,
-} from '../../../../helpers/part-supply-mock.factory';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
+import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
+import { createMockStockMovement } from '../../../../helpers/stock-movement-mock.factory';
 
 describe('UpdateStockUseCase', () => {
   let useCase: UpdateStockUseCase;
-  let partSupplyRepository: jest.Mocked<IPartSupplyRepository>;
+  let unitOfWork: jest.Mocked<IUnitOfWork>;
+  let repos: jest.Mocked<IRepositories>;
 
   beforeEach(() => {
-    partSupplyRepository = createMockPartSupplyRepository();
-    useCase = new UpdateStockUseCase(partSupplyRepository);
+    const uow = createMockUnitOfWorkWithRepos();
+    unitOfWork = uow.unitOfWork;
+    repos = uow.repos;
+    useCase = new UpdateStockUseCase(unitOfWork);
   });
 
   it('should register a Stock entry (ENTRY)', async () => {
-    const partSupply = createMockPartSupply({ id: 'uuid-1', stock: 10 });
-    const after = createMockPartSupply({ id: 'uuid-1', stock: 15 });
-    partSupplyRepository.findById.mockResolvedValue(partSupply);
-    partSupplyRepository.updateStock.mockResolvedValue(after);
+    const id = randomUUID();
+    const partSupply = createMockPartSupply({ id, stock: 10 });
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
-    const result = await useCase.execute('uuid-1', {
+    const result = await useCase.execute(id, {
       type: StockMovementType.ENTRY,
       quantity: 5,
       reason: 'Stock replenishment',
     });
 
-    expect(partSupplyRepository.updateStock).toHaveBeenCalledWith('uuid-1', {
+    expect(repos.partSupply.updateStock).toHaveBeenCalledWith(id, {
       type: StockMovementType.ENTRY,
       quantity: 5,
       reason: 'Stock replenishment',
       workOrderId: undefined,
     });
-    expect(result).toEqual(after);
+    expect(repos.stockMovement.create).toHaveBeenCalled();
+    expect(result).toEqual(partSupply);
   });
 
   it('should register a Stock exit linked to a Work Order (EXIT) with workOrderId', async () => {
-    const partSupply = createMockPartSupply({ id: 'uuid-1', stock: 10 });
-    const after = createMockPartSupply({ id: 'uuid-1', stock: 7 });
-    partSupplyRepository.findById.mockResolvedValue(partSupply);
-    partSupplyRepository.updateStock.mockResolvedValue(after);
+    const id = randomUUID();
+    const workOrderId = randomUUID();
+    const partSupply = createMockPartSupply({ id, stock: 10 });
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
-    const result = await useCase.execute('uuid-1', {
+    const result = await useCase.execute(id, {
       type: StockMovementType.EXIT,
       quantity: 3,
       reason: 'Work Order consumption',
-      workOrderId: 'uuid-1',
+      workOrderId,
     });
 
-    expect(partSupplyRepository.updateStock).toHaveBeenCalledWith('uuid-1', {
+    expect(repos.partSupply.updateStock).toHaveBeenCalledWith(id, {
       type: StockMovementType.EXIT,
       quantity: 3,
       reason: 'Work Order consumption',
-      workOrderId: 'uuid-1',
+      workOrderId,
     });
-    expect(result).toEqual(after);
+    expect(repos.stockMovement.create).toHaveBeenCalled();
+    expect(result).toEqual(partSupply);
   });
 
-  it('should throw ResourceConflictException when exit exceeds available Stock', async () => {
-    partSupplyRepository.findById.mockResolvedValue(
-      createMockPartSupply({ id: 'uuid-1', stock: 10 }),
+  it('should throw BusinessRuleViolationException when exit exceeds available stock', async () => {
+    const id = randomUUID();
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(
+      createMockPartSupply({ id, stock: 10 }),
     );
 
     await expect(
-      useCase.execute('uuid-1', {
+      useCase.execute(id, {
         type: StockMovementType.EXIT,
         quantity: 15,
-        workOrderId: 'uuid-1',
+        workOrderId: randomUUID(),
       }),
-    ).rejects.toThrow(ResourceConflictException);
+    ).rejects.toThrow(BusinessRuleViolationException);
 
-    expect(partSupplyRepository.updateStock).not.toHaveBeenCalled();
+    expect(repos.partSupply.updateStock).not.toHaveBeenCalled();
+    expect(repos.stockMovement.create).not.toHaveBeenCalled();
   });
 
   it('should register a Stock adjustment (ADJUSTMENT) without a Work Order', async () => {
-    const partSupply = createMockPartSupply({ id: 'uuid-1', stock: 10 });
-    const after = createMockPartSupply({ id: 'uuid-1', stock: 8 });
-    partSupplyRepository.findById.mockResolvedValue(partSupply);
-    partSupplyRepository.updateStock.mockResolvedValue(after);
+    const id = randomUUID();
+    const partSupply = createMockPartSupply({ id, stock: 10 });
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
-    const result = await useCase.execute('uuid-1', {
+    const result = await useCase.execute(id, {
       type: StockMovementType.ADJUSTMENT,
       quantity: 8,
       reason: 'Physical inventory adjustment',
     });
 
-    expect(result).toEqual(after);
+    expect(repos.stockMovement.create).toHaveBeenCalled();
+    expect(result).toEqual(partSupply);
+  });
+
+  it('should create stock movement with null reason when reason is not provided', async () => {
+    const id = randomUUID();
+
+    const partSupply = createMockPartSupply({ id, stock: 10 });
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
+
+    await useCase.execute(id, {
+      type: StockMovementType.ENTRY,
+      quantity: 1,
+    });
+
+    const movementArg = (repos.stockMovement.create as jest.Mock).mock.calls[0][0];
+
+    expect(movementArg.reason).toBeNull();
   });
 
   it('should throw ResourceNotFoundException when Part or Supply does not exist', async () => {
-    partSupplyRepository.findById.mockResolvedValue(null);
+    (repos.partSupply.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(
       useCase.execute('uuid-999', { type: StockMovementType.ENTRY, quantity: 1 }),

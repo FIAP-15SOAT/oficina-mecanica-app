@@ -21,18 +21,40 @@ export interface UpdateUserProps {
   role?: UserRole;
 }
 
-export class User {
-  id!: string;
-  name!: string;
-  email!: Email;
-  passwordHash!: string;
-  role!: UserRole;
-  isActive!: boolean;
-  createdAt!: Date;
-  updatedAt!: Date;
+interface UserProps {
+  id: string;
+  name: string;
+  email: Email;
+  passwordHash: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<User>) {
-    Object.assign(this, partial);
+export class User {
+  readonly id: string;
+  name: string;
+  email: Email;
+  passwordHash: string;
+  role: UserRole;
+  isActive: boolean;
+  readonly createdAt: Date;
+  updatedAt: Date;
+
+  private constructor(props: UserProps) {
+    this.id = props.id;
+    this.name = props.name;
+    this.email = props.email;
+    this.passwordHash = props.passwordHash;
+    this.role = props.role;
+    this.isActive = props.isActive;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: UserProps): User {
+    return new User(props);
   }
 
   static create(props: CreateUserProps): User {

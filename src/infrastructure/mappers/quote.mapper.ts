@@ -15,7 +15,7 @@ export type PrismaQuoteWithItems = PrismaQuote & {
 
 export class QuoteMapper {
   static toDomain(record: PrismaQuoteWithItems): Quote {
-    const quote = new Quote({
+    const quote = Quote.reconstitute({
       id: record.id,
       workOrderId: record.workOrderId,
       servicesAmount: Number(record.servicesAmount),

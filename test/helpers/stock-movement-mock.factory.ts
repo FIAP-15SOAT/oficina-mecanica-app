@@ -5,7 +5,8 @@ import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-
 
 export function createMockStockMovement(overrides: Partial<StockMovement> = {}): StockMovement {
   const now = new Date();
-  return new StockMovement({
+
+  return StockMovement.reconstitute({
     id: randomUUID(),
     partSupplyId: randomUUID(),
     workOrderId: randomUUID(),

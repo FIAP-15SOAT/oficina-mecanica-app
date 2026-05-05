@@ -54,6 +54,30 @@ describe('QuotePartSupply Entity', () => {
         DomainValidationException,
       );
     });
+
+    it('should throw when quoteId is invalid', () => {
+      expect(() => QuotePartSupply.create({ ...validProps, quoteId: 'invalid-id' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when quoteId is empty', () => {
+      expect(() => QuotePartSupply.create({ ...validProps, quoteId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when partSupplyId is invalid', () => {
+      expect(() => QuotePartSupply.create({ ...validProps, partSupplyId: 'invalid-id' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when partSupplyId is empty', () => {
+      expect(() => QuotePartSupply.create({ ...validProps, partSupplyId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
   });
 
   describe('updateQuantity()', () => {

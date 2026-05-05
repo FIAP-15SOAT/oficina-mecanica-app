@@ -24,7 +24,7 @@ type PrismaStockMovementRecord = PrismaStockMovement & {
 
 export class StockMovementMapper {
   static toDomain(record: PrismaStockMovementRecord): StockMovement {
-    const entity = new StockMovement({
+    const entity = StockMovement.reconstitute({
       id: record.id,
       partSupplyId: record.partSupplyId,
       workOrderId: record.workOrderId ?? null,

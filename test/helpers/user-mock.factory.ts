@@ -22,7 +22,7 @@ export function createMockPrismaUser(overrides: Record<string, unknown> = {}) {
 export function createMockUser(overrides: Partial<User> = {}): User {
   const now = new Date();
 
-  return new User({
+  return User.reconstitute({
     id: randomUUID(),
     name: 'John Doe',
     email: Email.create('john.doe@example.com'),
