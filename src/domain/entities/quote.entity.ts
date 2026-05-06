@@ -2,8 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { QuoteStatus } from '../enums/quote-status.enum';
 import { QuoteService } from './quote-service.entity';
 import { QuotePartSupply } from './quote-part-supply.entity';
+import { Service } from './service.entity';
+import { PartSupply } from './part-supply.entity';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { EntityNotFoundException } from '../exceptions/entity-not-found.exception';
 import { validate as isUuid } from 'uuid';
 
 const MAX_NOTES_LENGTH = 2000;
@@ -86,6 +89,210 @@ export class Quote {
     });
   }
 
+  addService(service: Service, quantity: number): QuoteService {
+    this.ensureCanChangeItems();
+
+    const services = this.services ?? [];
+    const alreadyAdded = services.some((s) => s.serviceId === service.id);
+
+    if (alreadyAdded) {
+      throw new BusinessRuleViolationException('Serviço já adicionado ao orçamento.');
+    }
+
+    const item = QuoteService.create({
+      quoteId: this.id,
+      serviceId: service.id,
+      quantity,
+      unitPrice: service.basePrice,
+    });
+
+    this.services = [...services, item];
+    this.recalculateTotals();
+
+    return item;
+  }
+
+  removeService(serviceId: string): void {
+    this.ensureCanChangeItems();
+
+    const services = this.services ?? [];
+    const existingService = services.some((s) => s.serviceId === serviceId);
+
+    if (!existingService) {
+      throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
+    }
+
+    this.services = services.filter((s) => s.serviceId !== serviceId);
+    this.recalculateTotals();
+  }
+
+  updateServiceQuantity(serviceId: string, quantity: number): QuoteService {
+    this.ensureCanChangeItems();
+
+    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+
+    if (!item) {
+      throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
+    }
+
+    item.updateQuantity(quantity);
+    this.recalculateTotals();
+
+    return item;
+  }
+
+  addPartSupply(partSupply: PartSupply, quantity: number): QuotePartSupply {
+    this.ensureCanChangeItems();
+
+    const parts = this.partsSupplies ?? [];
+    const alreadyAdded = parts.some((p) => p.partSupplyId === partSupply.id);
+
+    if (alreadyAdded) {
+      throw new BusinessRuleViolationException('Peça/Insumo já adicionado ao orçamento.');
+    }
+
+    const item = QuotePartSupply.create({
+      quoteId: this.id,
+      partSupplyId: partSupply.id,
+      quantity,
+      unitPrice: partSupply.salePrice,
+    });
+
+    this.partsSupplies = [...parts, item];
+    this.recalculateTotals();
+
+    return item;
+  }
+
+  removePartSupply(partSupplyId: string): void {
+    this.ensureCanChangeItems();
+
+    const parts = this.partsSupplies ?? [];
+
+    const existingPart = parts.some((p) => p.partSupplyId === partSupplyId);
+
+    if (!existingPart) {
+      throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
+    }
+
+    this.partsSupplies = parts.filter((p) => p.partSupplyId !== partSupplyId);
+
+    this.recalculateTotals();
+  }
+
+  updatePartSupplyQuantity(partSupplyId: string, quantity: number): QuotePartSupply {
+    this.ensureCanChangeItems();
+
+    const item = (this.partsSupplies ?? []).find((p) => p.partSupplyId === partSupplyId);
+    if (!item) {
+      throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
+    }
+
+    item.updateQuantity(quantity);
+    this.recalculateTotals();
+    return item;
+  }
+
+  submit(): void {
+    this.ensureCanSubmit();
+    this.ensureHasItems();
+
+    const now = new Date();
+
+    this.status = QuoteStatus.SENT;
+    this.sentAt = now;
+    this.updatedAt = now;
+  }
+
+  approve(): void {
+    this.ensureCanApprove();
+
+    const now = new Date();
+
+    this.status = QuoteStatus.APPROVED;
+    this.approvedAt = now;
+    this.updatedAt = now;
+  }
+
+  reject(): void {
+    this.ensureCanReject();
+
+    const now = new Date();
+
+    this.status = QuoteStatus.REJECTED;
+    this.rejectedAt = now;
+    this.updatedAt = now;
+  }
+
+  private recalculateTotals(): void {
+    const servicesAmount = (this.services ?? []).reduce((sum, s) => sum + s.totalPrice, 0);
+
+    const partsAmount = (this.partsSupplies ?? []).reduce((sum, p) => sum + p.totalPrice, 0);
+
+    this.servicesAmount = servicesAmount;
+    this.partsAmount = partsAmount;
+    this.totalAmount = servicesAmount + partsAmount;
+    this.updatedAt = new Date();
+  }
+
+  private canChangeItems(): boolean {
+    return this.status === QuoteStatus.PENDING;
+  }
+
+  private ensureCanChangeItems(): void {
+    if (!this.canChangeItems()) {
+      throw new BusinessRuleViolationException(
+        `Não é possível alterar itens em um orçamento que não está pendente.`,
+      );
+    }
+  }
+
+  private canSubmit(): boolean {
+    return this.status === QuoteStatus.PENDING;
+  }
+
+  private ensureCanSubmit(): void {
+    if (!this.canSubmit()) {
+      throw new BusinessRuleViolationException(
+        `Orçamento só pode ser enviado se estiver no status PENDING. Status atual: "${this.status}".`,
+      );
+    }
+  }
+
+  private ensureHasItems(): void {
+    const hasItems = (this.services ?? []).length > 0 || (this.partsSupplies ?? []).length > 0;
+
+    if (!hasItems) {
+      throw new BusinessRuleViolationException(
+        'O orçamento deve ter pelo menos um serviço ou peça/insumo antes de ser enviado.',
+      );
+    }
+  }
+
+  private canApprove(): boolean {
+    return this.status === QuoteStatus.SENT;
+  }
+
+  private ensureCanApprove(): void {
+    if (!this.canApprove()) {
+      throw new BusinessRuleViolationException(
+        `Orçamento só pode ser aprovado se estiver no status SENT. Status atual: "${this.status}".`,
+      );
+    }
+  }
+
+  private canReject(): boolean {
+    return this.status === QuoteStatus.SENT;
+  }
+
+  private ensureCanReject(): void {
+    if (!this.canReject()) {
+      throw new BusinessRuleViolationException(
+        `Orçamento só pode ser rejeitado se estiver no status SENT. Status atual: "${this.status}".`,
+      );
+    }
+  }
+
   private static validateWorkOrderId(workOrderId: string): void {
     if (!workOrderId || !workOrderId.trim()) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório');
@@ -108,78 +315,5 @@ export class Quote {
         `Notas devem ter no máximo ${MAX_NOTES_LENGTH} caracteres`,
       );
     }
-  }
-
-  recalculateTotals(): void {
-    const servicesAmount = (this.services ?? []).reduce((sum, s) => sum + s.totalPrice, 0);
-
-    const partsAmount = (this.partsSupplies ?? []).reduce((sum, p) => sum + p.totalPrice, 0);
-
-    this.servicesAmount = servicesAmount;
-    this.partsAmount = partsAmount;
-    this.totalAmount = servicesAmount + partsAmount;
-    this.updatedAt = new Date();
-  }
-
-  canChangeItems(): boolean {
-    return this.status === QuoteStatus.PENDING;
-  }
-
-  ensureCanChangeItems(): void {
-    if (!this.canChangeItems()) {
-      throw new BusinessRuleViolationException(
-        `Não é possível alterar itens em um orçamento que não está pendente.`,
-      );
-    }
-  }
-
-  canSubmit(): boolean {
-    return this.status === QuoteStatus.PENDING;
-  }
-
-  ensureCanSubmit(): void {
-    if (!this.canSubmit()) {
-      throw new BusinessRuleViolationException(
-        `Orçamento só pode ser enviado se estiver no status PENDING. Status atual: "${this.status}".`,
-      );
-    }
-  }
-
-  canApprove(): boolean {
-    return this.status === QuoteStatus.SENT;
-  }
-
-  ensureCanApprove(): void {
-    if (!this.canApprove()) {
-      throw new BusinessRuleViolationException(
-        `Orçamento só pode ser aprovado se estiver no status SENT. Status atual: "${this.status}".`,
-      );
-    }
-  }
-
-  canReject(): boolean {
-    return this.status === QuoteStatus.SENT;
-  }
-
-  ensureCanReject(): void {
-    if (!this.canReject()) {
-      throw new BusinessRuleViolationException(
-        `Orçamento só pode ser rejeitado se estiver no status SENT. Status atual: "${this.status}".`,
-      );
-    }
-  }
-
-  approve(): void {
-    const now = new Date();
-    this.status = QuoteStatus.APPROVED;
-    this.approvedAt = now;
-    this.updatedAt = now;
-  }
-
-  reject(): void {
-    const now = new Date();
-    this.status = QuoteStatus.REJECTED;
-    this.rejectedAt = now;
-    this.updatedAt = now;
   }
 }

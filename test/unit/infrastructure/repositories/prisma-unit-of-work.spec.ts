@@ -27,8 +27,6 @@ describe('PrismaUnitOfWork', () => {
       const repos = mockWork.mock.calls[0][0];
       expect(repos).toHaveProperty('workOrder');
       expect(repos).toHaveProperty('quote');
-      expect(repos).toHaveProperty('quotePartSupply');
-      expect(repos).toHaveProperty('quoteService');
       expect(repos).toHaveProperty('partSupply');
       expect(repos).toHaveProperty('service');
       expect(repos).toHaveProperty('stockReservation');

@@ -9,11 +9,7 @@ import { createMockWorkOrderServiceRepository } from './work-order-service-mock.
 import { createMockStatusHistoryRepository } from './status-history-mock.factory';
 import { createMockStockMovementRepository } from './stock-movement-mock.factory';
 import { createMockStockReservationRepository } from './stock-reservation-mock.factory';
-import {
-  createMockQuoteRepository,
-  createMockQuoteServiceRepository,
-  createMockQuotePartSupplyRepository,
-} from './quote-mock.factory';
+import { createMockQuoteRepository } from './quote-mock.factory';
 import { createMockPartSupplyRepository } from './part-supply-mock.factory';
 
 export function createMockRepositories(): jest.Mocked<IRepositories> {
@@ -44,8 +40,6 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       createMany: jest.fn(),
     } as unknown as jest.Mocked<IWorkOrderPartSupplyRepository>,
     quote: createMockQuoteRepository(),
-    quoteService: createMockQuoteServiceRepository(),
-    quotePartSupply: createMockQuotePartSupplyRepository(),
     statusHistory: createMockStatusHistoryRepository(),
     stockReservation: createMockStockReservationRepository(),
     stockMovement: createMockStockMovementRepository(),

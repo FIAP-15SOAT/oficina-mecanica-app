@@ -8,8 +8,6 @@ import { PrismaWorkOrderRepository } from './prisma-work-order.repository';
 import { PrismaWorkOrderServiceRepository } from './prisma-work-order-service.repository';
 import { PrismaWorkOrderPartSupplyRepository } from './prisma-work-order-part-supply.repository';
 import { PrismaQuoteRepository } from './prisma-quote.repository';
-import { PrismaQuoteServiceRepository } from './prisma-quote-service.repository';
-import { PrismaQuotePartSupplyRepository } from './prisma-quote-part-supply.repository';
 import { PrismaStatusHistoryRepository } from './prisma-status-history.repository';
 import { PrismaStockReservationRepository } from './prisma-stock-reservation.repository';
 import { PrismaStockMovementRepository } from './prisma-stock-movement.repository';
@@ -32,8 +30,6 @@ export class PrismaUnitOfWork implements IUnitOfWork {
           tx as unknown as PrismaService,
         ),
         quote: new PrismaQuoteRepository(tx as unknown as PrismaService),
-        quoteService: new PrismaQuoteServiceRepository(tx as unknown as PrismaService),
-        quotePartSupply: new PrismaQuotePartSupplyRepository(tx as unknown as PrismaService),
         statusHistory: new PrismaStatusHistoryRepository(tx as unknown as PrismaService),
         stockReservation: new PrismaStockReservationRepository(tx as unknown as PrismaService),
         stockMovement: new PrismaStockMovementRepository(tx as unknown as PrismaService),

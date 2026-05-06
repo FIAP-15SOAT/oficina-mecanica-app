@@ -1,5 +1,7 @@
 import { PrismaQuoteRepository } from '@infrastructure/repositories/prisma-quote.repository';
 import { Quote } from '@domain/entities/quote.entity';
+import { QuoteService } from '@domain/entities/quote-service.entity';
+import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
@@ -135,6 +137,200 @@ describe('PrismaQuoteRepository', () => {
       await repository.rejectPendingByWorkOrderId(randomUUID());
 
       expect(prisma.quote.updateMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('addServiceItem', () => {
+    it('should create a quoteService record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 100,
+        partsAmount: 0,
+        totalAmount: 100,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      prisma.quoteService.create.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      const item = QuoteService.reconstitute({
+        quoteId: quote.id,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+        totalPrice: 100,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await repository.addServiceItem(quote, item);
+
+      expect(prisma.quoteService.create).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('removeServiceItem', () => {
+    it('should delete the quoteService record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const serviceId = randomUUID();
+      prisma.quoteService.delete.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      await repository.removeServiceItem(quote, serviceId);
+
+      expect(prisma.quoteService.delete).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateServiceItemQuantity', () => {
+    it('should update the quoteService record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 200,
+        partsAmount: 0,
+        totalAmount: 200,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      prisma.quoteService.update.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      const item = QuoteService.reconstitute({
+        quoteId: quote.id,
+        serviceId: randomUUID(),
+        quantity: 2,
+        unitPrice: 100,
+        totalPrice: 200,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await repository.updateServiceItemQuantity(quote, item);
+
+      expect(prisma.quoteService.update).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('addPartSupplyItem', () => {
+    it('should create a quotePartSupply record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 80,
+        totalAmount: 80,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      prisma.quotePartSupply.create.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      const item = QuotePartSupply.reconstitute({
+        quoteId: quote.id,
+        partSupplyId: randomUUID(),
+        quantity: 2,
+        unitPrice: 40,
+        totalPrice: 80,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await repository.addPartSupplyItem(quote, item);
+
+      expect(prisma.quotePartSupply.create).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('removePartSupplyItem', () => {
+    it('should delete the quotePartSupply record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const partSupplyId = randomUUID();
+      prisma.quotePartSupply.delete.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      await repository.removePartSupplyItem(quote, partSupplyId);
+
+      expect(prisma.quotePartSupply.delete).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePartSupplyItemQuantity', () => {
+    it('should update the quotePartSupply record and update quote totals', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 160,
+        totalAmount: 160,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      prisma.quotePartSupply.update.mockResolvedValue({});
+      prisma.quote.update.mockResolvedValue({});
+
+      const item = QuotePartSupply.reconstitute({
+        quoteId: quote.id,
+        partSupplyId: randomUUID(),
+        quantity: 4,
+        unitPrice: 40,
+        totalPrice: 160,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await repository.updatePartSupplyItemQuantity(quote, item);
+
+      expect(prisma.quotePartSupply.update).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 

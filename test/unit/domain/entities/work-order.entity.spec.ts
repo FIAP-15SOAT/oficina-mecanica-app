@@ -330,28 +330,28 @@ describe('WorkOrder Entity', () => {
     });
   });
 
-  describe('canCreateQuote()', () => {
-    it('should return true for IN_DIAGNOSIS status', () => {
+  describe('ensureCanCreateQuote()', () => {
+    it('should not throw for IN_DIAGNOSIS status', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.IN_DIAGNOSIS;
-      expect(wo.canCreateQuote()).toBe(true);
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return true for AWAITING_APPROVAL status', () => {
+    it('should not throw for AWAITING_APPROVAL status', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.AWAITING_APPROVAL;
-      expect(wo.canCreateQuote()).toBe(true);
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return true for REJECTED status', () => {
+    it('should not throw for REJECTED status', () => {
       const wo = WorkOrder.create(baseProps);
       wo.status = WorkOrderStatus.REJECTED;
-      expect(wo.canCreateQuote()).toBe(true);
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return false for RECEIVED status', () => {
+    it('should throw for RECEIVED status', () => {
       const wo = WorkOrder.create(baseProps);
-      expect(wo.canCreateQuote()).toBe(false);
+      expect(() => wo.ensureCanCreateQuote()).toThrow(BusinessRuleViolationException);
     });
   });
 });

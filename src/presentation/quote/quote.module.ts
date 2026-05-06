@@ -22,9 +22,9 @@ import { MailerEmailSenderService } from '@infrastructure/services/mailer-email-
 import { JwtService } from '@nestjs/jwt';
 
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
-import { IQuoteServiceRepository } from '@domain/interfaces/repositories/quote-service.repository.interface';
-import { IQuotePartSupplyRepository } from '@domain/interfaces/repositories/quote-part-supply.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
+import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ITokenService } from '@domain/interfaces/services/token.service.interface';
 import { IEmailSenderService } from '@domain/interfaces/services/email-sender.service.interface';
@@ -46,32 +46,30 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IFindQuoteByIdUseCase',
-      useFactory: (
-        quoteRepo: IQuoteRepository,
-        quoteServiceRepo: IQuoteServiceRepository,
-        quotePartSupplyRepo: IQuotePartSupplyRepository,
-      ) => new FindQuoteByIdUseCase(quoteRepo, quoteServiceRepo, quotePartSupplyRepo),
-      inject: ['IQuoteRepository', 'IQuoteServiceRepository', 'IQuotePartSupplyRepository'],
+      useFactory: (quoteRepo: IQuoteRepository) => new FindQuoteByIdUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
     },
     {
       provide: 'IAddQuoteServiceUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new AddQuoteServiceUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository, serviceRepo: IServiceRepository) =>
+        new AddQuoteServiceUseCase(quoteRepo, serviceRepo),
+      inject: ['IQuoteRepository', 'IServiceRepository'],
     },
     {
       provide: 'IRemoveQuoteServiceUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new RemoveQuoteServiceUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository) => new RemoveQuoteServiceUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
     },
     {
       provide: 'IAddQuotePartSupplyUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new AddQuotePartSupplyUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository, partSupplyRepo: IPartSupplyRepository) =>
+        new AddQuotePartSupplyUseCase(quoteRepo, partSupplyRepo),
+      inject: ['IQuoteRepository', 'IPartSupplyRepository'],
     },
     {
       provide: 'IRemoveQuotePartSupplyUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new RemoveQuotePartSupplyUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository) => new RemoveQuotePartSupplyUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
     },
     {
       provide: 'ISubmitQuoteUseCase',
@@ -103,13 +101,14 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IUpdateQuoteServiceQuantityUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new UpdateQuoteServiceQuantityUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository) => new UpdateQuoteServiceQuantityUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
     },
     {
       provide: 'IUpdateQuotePartSupplyQuantityUseCase',
-      useFactory: (unitOfWork: IUnitOfWork) => new UpdateQuotePartSupplyQuantityUseCase(unitOfWork),
-      inject: ['IUnitOfWork'],
+      useFactory: (quoteRepo: IQuoteRepository) =>
+        new UpdateQuotePartSupplyQuantityUseCase(quoteRepo),
+      inject: ['IQuoteRepository'],
     },
     {
       provide: 'IUpdateQuoteStatusUseCase',

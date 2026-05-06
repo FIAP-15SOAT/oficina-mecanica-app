@@ -4,8 +4,6 @@ import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
-import { IQuoteServiceRepository } from '@domain/interfaces/repositories/quote-service.repository.interface';
-import { IQuotePartSupplyRepository } from '@domain/interfaces/repositories/quote-part-supply.repository.interface';
 
 export function createMockQuote(overrides: Partial<Quote> = {}): Quote {
   const now = new Date();
@@ -63,25 +61,11 @@ export function createMockQuoteRepository(): jest.Mocked<IQuoteRepository> {
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     rejectPendingByWorkOrderId: jest.fn(),
-  };
-}
-
-export function createMockQuoteServiceRepository(): jest.Mocked<IQuoteServiceRepository> {
-  return {
-    create: jest.fn(),
-    update: jest.fn(),
-    findOne: jest.fn(),
-    remove: jest.fn(),
-    findByQuoteId: jest.fn(),
-  };
-}
-
-export function createMockQuotePartSupplyRepository(): jest.Mocked<IQuotePartSupplyRepository> {
-  return {
-    create: jest.fn(),
-    update: jest.fn(),
-    findOne: jest.fn(),
-    remove: jest.fn(),
-    findByQuoteId: jest.fn(),
+    addServiceItem: jest.fn(),
+    removeServiceItem: jest.fn(),
+    updateServiceItemQuantity: jest.fn(),
+    addPartSupplyItem: jest.fn(),
+    removePartSupplyItem: jest.fn(),
+    updatePartSupplyItemQuantity: jest.fn(),
   };
 }

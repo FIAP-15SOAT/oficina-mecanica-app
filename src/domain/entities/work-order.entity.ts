@@ -108,7 +108,7 @@ export class WorkOrder {
     WorkOrder.validateInternalNotes(props.internalNotes ?? null);
     WorkOrder.validateAssignedUser(props.assignedUser ?? null);
 
-    const wo = new WorkOrder({
+    const workOrder = new WorkOrder({
       id: randomUUID(),
       number: props.number,
       customerId: props.customerId,
@@ -127,11 +127,13 @@ export class WorkOrder {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    wo.assignedUser = props.assignedUser ?? null;
-    return wo;
+
+    workOrder.assignedUser = props.assignedUser ?? null;
+
+    return workOrder;
   }
 
-  canCreateQuote(): boolean {
+  private canCreateQuote(): boolean {
     return (
       this.status === WorkOrderStatus.IN_DIAGNOSIS ||
       this.status === WorkOrderStatus.AWAITING_APPROVAL ||

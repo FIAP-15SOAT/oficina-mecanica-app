@@ -2,58 +2,53 @@ import { UpdateQuoteServiceQuantityUseCase } from '@application/use-cases/quote/
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
-import { createMockQuote, createMockQuoteService } from '../../../../helpers/quote-mock.factory';
-import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
-import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
+import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import {
+  createMockQuote,
+  createMockQuoteRepository,
+  createMockQuoteService,
+} from '../../../../helpers/quote-mock.factory';
 
 describe('UpdateQuoteServiceQuantityUseCase', () => {
   let useCase: UpdateQuoteServiceQuantityUseCase;
-  let mockRepos: jest.Mocked<IRepositories>;
-  let mockUow: jest.Mocked<IUnitOfWork>;
+  let quoteRepository: jest.Mocked<IQuoteRepository>;
 
   beforeEach(() => {
-    const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
-    mockRepos = repos;
-    mockUow = unitOfWork;
-    useCase = new UpdateQuoteServiceQuantityUseCase(mockUow);
+    quoteRepository = createMockQuoteRepository();
+    useCase = new UpdateQuoteServiceQuantityUseCase(quoteRepository);
   });
 
   it('should update a service item and recalculate totals', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
     const existing = createMockQuoteService({
-      quoteId: quote.id,
+      serviceId: 'svc-id',
       quantity: 1,
       unitPrice: 100,
       totalPrice: 100,
     });
-    const updatedService = createMockQuoteService({
-      ...existing,
-      quantity: 2,
-      unitPrice: 100,
-      totalPrice: 200,
-    });
-    const updatedQuote = createMockQuote({ ...quote, servicesAmount: 200, totalAmount: 200 });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findOne as jest.Mock).mockResolvedValue(existing);
-    (mockRepos.quoteService.update as jest.Mock).mockResolvedValue(updatedService);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([updatedService]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.quote.update as jest.Mock).mockResolvedValue(updatedQuote);
+    const quote = createMockQuote({
+      status: QuoteStatus.PENDING,
+      servicesAmount: 100,
+      totalAmount: 100,
+    });
+    quote.services = [existing];
+
+    quoteRepository.findById.mockResolvedValue(quote);
+    (quoteRepository.updateServiceItemQuantity as jest.Mock).mockResolvedValue(undefined);
 
     const result = await useCase.execute({
       quoteId: quote.id,
-      serviceId: existing.serviceId,
+      serviceId: 'svc-id',
       quantity: 2,
     });
 
-    expect(mockRepos.quoteService.update).toHaveBeenCalledTimes(1);
-    expect(mockRepos.quote.update).toHaveBeenCalledTimes(1);
+    expect(quoteRepository.updateServiceItemQuantity).toHaveBeenCalledTimes(1);
     expect(result.servicesAmount).toBe(200);
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(null);
+    quoteRepository.findById.mockResolvedValue(null);
 
     await expect(
       useCase.execute({ quoteId: 'bad', serviceId: 'any', quantity: 1 }),
@@ -62,20 +57,21 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    quote.services = [];
+    quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(
       useCase.execute({ quoteId: quote.id, serviceId: 'any', quantity: 1 }),
     ).rejects.toThrow(BusinessRuleViolationException);
   });
 
-  it('should throw ResourceNotFoundException when service item not found in quote', async () => {
+  it('should throw EntityNotFoundException when service item not found in quote', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findOne as jest.Mock).mockResolvedValue(null);
+    quote.services = [];
+    quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(
       useCase.execute({ quoteId: quote.id, serviceId: 'bad', quantity: 1 }),
-    ).rejects.toThrow(ResourceNotFoundException);
+    ).rejects.toThrow(EntityNotFoundException);
   });
 });
