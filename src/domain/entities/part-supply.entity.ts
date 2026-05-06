@@ -276,4 +276,22 @@ export class PartSupply {
       );
     }
   }
+
+  reserve(quantity: number): void {
+    this.ensureHasSufficientStock(quantity);
+    this.reservedStock += quantity;
+    this.updatedAt = new Date();
+  }
+
+  consumeReserved(quantity: number): void {
+    if (quantity > this.reservedStock) {
+      throw new BusinessRuleViolationException(
+        `Reserva insuficiente para "${this.name}". Reservado: ${this.reservedStock}, Solicitado: ${quantity}.`,
+      );
+    }
+
+    this.stock -= quantity;
+    this.reservedStock -= quantity;
+    this.updatedAt = new Date();
+  }
 }

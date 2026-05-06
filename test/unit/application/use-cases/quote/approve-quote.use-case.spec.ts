@@ -44,9 +44,9 @@ describe('ApproveQuoteUseCase', () => {
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([partSupply]);
     (mockRepos.stockReservation.createMany as jest.Mock).mockResolvedValue(undefined);
-    (mockRepos.partSupply.incrementReservedStock as jest.Mock).mockResolvedValue(undefined);
-    (mockRepos.workOrderService.createMany as jest.Mock).mockResolvedValue(undefined);
-    (mockRepos.workOrderPartSupply.createMany as jest.Mock).mockResolvedValue(undefined);
+    (mockRepos.partSupply.update as jest.Mock).mockResolvedValue(undefined);
+    (mockRepos.workOrder.addServiceItems as jest.Mock).mockResolvedValue(undefined);
+    (mockRepos.workOrder.addPartSupplyItems as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.quote.rejectPendingByWorkOrderId as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
@@ -62,8 +62,8 @@ describe('ApproveQuoteUseCase', () => {
       }),
     );
     expect(mockRepos.stockReservation.createMany).toHaveBeenCalledTimes(1);
-    expect(mockRepos.workOrderService.createMany).toHaveBeenCalledTimes(1);
-    expect(mockRepos.workOrderPartSupply.createMany).toHaveBeenCalledTimes(1);
+    expect(mockRepos.workOrder.addServiceItems).toHaveBeenCalledTimes(1);
+    expect(mockRepos.workOrder.addPartSupplyItems).toHaveBeenCalledTimes(1);
     expect(result.status).toBe(QuoteStatus.APPROVED);
   });
 
@@ -79,8 +79,8 @@ describe('ApproveQuoteUseCase', () => {
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.quote.rejectPendingByWorkOrderId as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.workOrderService.createMany as jest.Mock).mockResolvedValue(undefined);
-    (mockRepos.workOrderPartSupply.createMany as jest.Mock).mockResolvedValue(undefined);
+    (mockRepos.workOrder.addServiceItems as jest.Mock).mockResolvedValue(undefined);
+    (mockRepos.workOrder.addPartSupplyItems as jest.Mock).mockResolvedValue(undefined);
 
     await useCase.execute(quote.id);
 

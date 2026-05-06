@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Prisma } from '@generated/client';
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderService } from '@domain/entities/work-order-service.entity';
+import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import {
   IWorkOrderRepository,
   WorkOrderFilters,
@@ -128,5 +130,51 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     `;
 
     return String(rows[0].next).padStart(6, '0');
+  }
+
+  async addServiceItems(items: WorkOrderService[]): Promise<void> {
+    await this.prisma.workOrderService.createMany({
+      data: items.map((item) => ({
+        id: item.id,
+        workOrderId: item.workOrderId,
+        serviceId: item.serviceId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        status: item.status,
+        startedAt: item.startedAt,
+        finishedAt: item.finishedAt,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+    });
+  }
+
+  async updateServiceItemStatus(item: WorkOrderService): Promise<void> {
+    await this.prisma.workOrderService.update({
+      where: {
+        workOrderId_serviceId: { workOrderId: item.workOrderId, serviceId: item.serviceId },
+      },
+      data: {
+        status: item.status,
+        startedAt: item.startedAt,
+        finishedAt: item.finishedAt,
+        updatedAt: item.updatedAt,
+      },
+    });
+  }
+
+  async addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void> {
+    await this.prisma.workOrderPartSupply.createMany({
+      data: items.map((item) => ({
+        workOrderId: item.workOrderId,
+        partSupplyId: item.partSupplyId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+    });
   }
 }

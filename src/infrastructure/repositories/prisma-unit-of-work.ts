@@ -5,8 +5,6 @@ import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit
 import { PrismaCustomerRepository } from './prisma-customer.repository';
 import { PrismaVehicleRepository } from './prisma-vehicle.repository';
 import { PrismaWorkOrderRepository } from './prisma-work-order.repository';
-import { PrismaWorkOrderServiceRepository } from './prisma-work-order-service.repository';
-import { PrismaWorkOrderPartSupplyRepository } from './prisma-work-order-part-supply.repository';
 import { PrismaQuoteRepository } from './prisma-quote.repository';
 import { PrismaStatusHistoryRepository } from './prisma-status-history.repository';
 import { PrismaStockReservationRepository } from './prisma-stock-reservation.repository';
@@ -25,10 +23,6 @@ export class PrismaUnitOfWork implements IUnitOfWork {
         customer: new PrismaCustomerRepository(tx as unknown as PrismaService),
         vehicle: new PrismaVehicleRepository(tx as unknown as PrismaService),
         workOrder: new PrismaWorkOrderRepository(tx as unknown as PrismaService),
-        workOrderService: new PrismaWorkOrderServiceRepository(tx as unknown as PrismaService),
-        workOrderPartSupply: new PrismaWorkOrderPartSupplyRepository(
-          tx as unknown as PrismaService,
-        ),
         quote: new PrismaQuoteRepository(tx as unknown as PrismaService),
         statusHistory: new PrismaStatusHistoryRepository(tx as unknown as PrismaService),
         stockReservation: new PrismaStockReservationRepository(tx as unknown as PrismaService),

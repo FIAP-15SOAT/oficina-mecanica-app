@@ -18,8 +18,6 @@ export class UpdateStockUseCase implements IUpdateStockUseCase {
 
       partSupply.applyStockMovement(input.type, input.quantity);
 
-      await repos.partSupply.updateStock(id, input);
-
       const movement = StockMovement.create({
         partSupplyId: id,
         workOrderId: input.workOrderId ?? null,
@@ -28,7 +26,10 @@ export class UpdateStockUseCase implements IUpdateStockUseCase {
         reason: input.reason ?? null,
       });
 
-      await repos.stockMovement.create(movement);
+      await Promise.all([
+        repos.partSupply.updateStock(id, input),
+        repos.stockMovement.create(movement),
+      ]);
 
       return partSupply;
     });

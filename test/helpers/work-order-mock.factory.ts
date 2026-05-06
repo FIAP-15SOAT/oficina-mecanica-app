@@ -45,5 +45,8 @@ export function createMockWorkOrderRepository(): jest.Mocked<IWorkOrderRepositor
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     generateNextNumber: jest.fn(),
+    addServiceItems: jest.fn(),
+    updateServiceItemStatus: jest.fn(),
+    addPartSupplyItems: jest.fn(),
   };
 }

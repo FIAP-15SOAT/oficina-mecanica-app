@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
+import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
+import { EntityNotFoundException } from '../exceptions/entity-not-found.exception';
 import { Customer } from './customer.entity';
 import { Vehicle } from './vehicle.entity';
 import { User } from './user.entity';
 import { WorkOrderService } from './work-order-service.entity';
 import { WorkOrderPartSupply } from './work-order-part-supply.entity';
+import { Quote } from './quote.entity';
 
 const MAX_PROBLEM_DESCRIPTION_LENGTH = 2000;
 const MAX_INTERNAL_NOTES_LENGTH = 2000;
@@ -131,6 +134,66 @@ export class WorkOrder {
     workOrder.assignedUser = props.assignedUser ?? null;
 
     return workOrder;
+  }
+
+  startServiceItem(serviceId: string): void {
+    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+
+    if (!item) {
+      throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
+    }
+
+    item.startService();
+
+    if (this.status !== WorkOrderStatus.IN_PROGRESS) {
+      this.changeStatus(WorkOrderStatus.IN_PROGRESS);
+    }
+  }
+
+  completeServiceItem(serviceId: string): void {
+    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+
+    if (!item) {
+      throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
+    }
+
+    item.completeService();
+
+    const allCompleted = this.services!.every((s) => s.status === WorkOrderServiceStatus.COMPLETED);
+
+    if (allCompleted) {
+      this.changeStatus(WorkOrderStatus.COMPLETED);
+    }
+  }
+
+  applyQuoteItems(quote: Quote): {
+    services: WorkOrderService[];
+    partSupplies: WorkOrderPartSupply[];
+  } {
+    const services = (quote.services ?? []).map((s) =>
+      WorkOrderService.create({
+        workOrderId: this.id,
+        serviceId: s.serviceId,
+        quantity: s.quantity,
+        unitPrice: s.unitPrice,
+      }),
+    );
+
+    const partSupplies = (quote.partsSupplies ?? []).map((p) =>
+      WorkOrderPartSupply.create({
+        workOrderId: this.id,
+        partSupplyId: p.partSupplyId,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+      }),
+    );
+
+    this.services = [...(this.services ?? []), ...services];
+    this.partSupplies = [...(this.partSupplies ?? []), ...partSupplies];
+    this.totalAmount = quote.totalAmount;
+    this.updatedAt = new Date();
+
+    return { services, partSupplies };
   }
 
   private canCreateQuote(): boolean {

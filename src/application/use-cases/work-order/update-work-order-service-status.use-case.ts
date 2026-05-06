@@ -1,7 +1,6 @@
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
-import { StatusHistory } from '@domain/entities/status-history.entity';
 import { StockMovement } from '@domain/entities/stock-movement.entity';
-import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { WorkOrder } from '@domain/entities/work-order.entity';
@@ -14,95 +13,60 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
   async execute(dto: UpdateWorkOrderServiceStatusDto): Promise<WorkOrderService> {
     return this.unitOfWork.executeTransaction(async (repos) => {
-      const { workOrder, workOrderService } = await this.validateAndGetWorkOrderAndService(
-        repos,
-        dto,
-      );
+      const workOrder = await repos.workOrder.findById(dto.workOrderId);
 
-      if (dto.status === WorkOrderServiceStatus.IN_PROGRESS) {
-        await this.processInProgressStatus(repos, workOrder, workOrderService, dto.userId);
-      } else {
-        await this.processCompletedStatus(repos, workOrder, workOrderService, dto.userId);
+      if (!workOrder) {
+        throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
       }
 
-      return workOrderService;
-    });
-  }
-
-  private async validateAndGetWorkOrderAndService(
-    repos: IRepositories,
-    dto: UpdateWorkOrderServiceStatusDto,
-  ) {
-    const workOrder = await repos.workOrder.findById(dto.workOrderId);
-
-    if (!workOrder) {
-      throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
-    }
-
-    const workOrderService = await repos.workOrderService.findByWorkOrderAndService(
-      dto.workOrderId,
-      dto.serviceId,
-    );
-
-    if (!workOrderService) {
-      throw new ResourceNotFoundException('Serviço da Ordem de Serviço', `${dto.workOrderId}`);
-    }
-
-    return { workOrder, workOrderService };
-  }
-
-  private async processInProgressStatus(
-    repos: IRepositories,
-    workOrder: WorkOrder,
-    workOrderService: WorkOrderService,
-    userId: string,
-  ) {
-    workOrderService.startService();
-
-    if (workOrder.status !== WorkOrderStatus.IN_PROGRESS) {
-      const previousWoStatus = workOrder.status;
-
-      await this.updateStockFromReservations(repos, workOrder);
-      await this.updateWorkOrderStatus(repos, workOrder, WorkOrderStatus.IN_PROGRESS);
-      await this.createStatusHistory(
-        repos,
-        workOrder.id,
-        userId,
-        previousWoStatus,
-        WorkOrderStatus.IN_PROGRESS,
-      );
-    }
-
-    await repos.workOrderService.update(workOrderService);
-  }
-
-  private async processCompletedStatus(
-    repos: IRepositories,
-    workOrder: WorkOrder,
-    workOrderService: WorkOrderService,
-    userId: string,
-  ) {
-    workOrderService.completeService();
-    await repos.workOrderService.update(workOrderService);
-
-    const isAllCompleted = await repos.workOrderService.isAllCompletedByWorkOrderId(workOrder.id);
-    if (isAllCompleted) {
       const previousStatus = workOrder.status;
-      await this.updateWorkOrderStatus(repos, workOrder, WorkOrderStatus.COMPLETED);
-      await this.createStatusHistory(
-        repos,
-        workOrder.id,
-        userId,
-        previousStatus,
-        WorkOrderStatus.COMPLETED,
+
+      if (dto.status === WorkOrderServiceStatus.IN_PROGRESS) {
+        workOrder.startServiceItem(dto.serviceId);
+      } else {
+        workOrder.completeServiceItem(dto.serviceId);
+      }
+
+      const statusChanged = workOrder.status !== previousStatus;
+
+      if (dto.status === WorkOrderServiceStatus.IN_PROGRESS && statusChanged) {
+        await this.updateStockFromReservations(repos, workOrder);
+      }
+
+      await repos.workOrder.updateServiceItemStatus(
+        workOrder.services!.find((s) => s.serviceId === dto.serviceId)!,
       );
-    }
+
+      if (statusChanged) {
+        await Promise.all([
+          repos.workOrder.update(workOrder),
+          repos.statusHistory.create(
+            StatusHistory.create({
+              workOrderId: workOrder.id,
+              changedById: dto.userId,
+              previousStatus,
+              newStatus: workOrder.status,
+              notes: null,
+            }),
+          ),
+        ]);
+      }
+
+      return workOrder.services!.find((s) => s.serviceId === dto.serviceId)!;
+    });
   }
 
   private async updateStockFromReservations(repos: IRepositories, workOrder: WorkOrder) {
     const reservations = await repos.stockReservation.findByWorkOrderId(workOrder.id);
 
+    if (reservations.length === 0) return;
+
+    const partSupplyIds = reservations.map((r) => r.partSupplyId);
+    const partSupplies = await repos.partSupply.findByIds(partSupplyIds);
+
     for (const reservation of reservations) {
+      const partSupply = partSupplies.find((ps) => ps.id === reservation.partSupplyId)!;
+
       const movement = StockMovement.create({
         partSupplyId: reservation.partSupplyId,
         workOrderId: workOrder.id,
@@ -111,38 +75,18 @@ export class UpdateWorkOrderServiceStatusUseCase {
         reason: `Saída por Ordem de Serviço ${workOrder.number}`,
       });
 
-      await repos.stockMovement.create(movement);
-      await repos.partSupply.decrementStock(reservation.partSupplyId, reservation.quantity);
-      await repos.partSupply.decrementReservedStock(reservation.partSupplyId, reservation.quantity);
+      partSupply.consumeReserved(reservation.quantity);
+
+      await Promise.all([
+        repos.stockMovement.create(movement),
+        repos.partSupply.update(reservation.partSupplyId, {
+          stock: partSupply.stock,
+          reservedStock: partSupply.reservedStock,
+          updatedAt: partSupply.updatedAt,
+        }),
+      ]);
     }
 
     await repos.stockReservation.deleteByWorkOrderId(workOrder.id);
-  }
-
-  private async updateWorkOrderStatus(
-    repos: IRepositories,
-    workOrder: WorkOrder,
-    status: WorkOrderStatus,
-  ) {
-    workOrder.changeStatus(status);
-    await repos.workOrder.update(workOrder);
-  }
-
-  private async createStatusHistory(
-    repos: IRepositories,
-    workOrderId: string,
-    userId: string,
-    previousStatus: WorkOrderStatus,
-    newStatus: WorkOrderStatus,
-  ) {
-    const history = StatusHistory.create({
-      workOrderId: workOrderId,
-      changedById: userId,
-      previousStatus: previousStatus,
-      newStatus: newStatus,
-      notes: null,
-    });
-
-    await repos.statusHistory.create(history);
   }
 }

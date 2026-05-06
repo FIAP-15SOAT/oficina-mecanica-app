@@ -10,7 +10,7 @@ import { QuotePartSupplyMapper } from './quote-part-supply.mapper';
 
 export type PrismaQuoteWithItems = PrismaQuote & {
   services?: PrismaQuoteService[];
-  parts?: PrismaQuotePartSupply[];
+  partsSupplies?: PrismaQuotePartSupply[];
 };
 
 export class QuoteMapper {
@@ -34,8 +34,8 @@ export class QuoteMapper {
       quote.services = this.mapServicesToDomain(record.services);
     }
 
-    if (record.parts) {
-      quote.partsSupplies = this.mapPartsToDomain(record.parts);
+    if (record.partsSupplies) {
+      quote.partsSupplies = this.mapPartsToDomain(record.partsSupplies);
     }
 
     return quote;

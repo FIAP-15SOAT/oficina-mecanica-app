@@ -255,9 +255,9 @@ model Quote {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
 
-  workOrder WorkOrder         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  services  QuoteService[]
-  parts     QuotePartSupply[]
+  workOrder     WorkOrder         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  services      QuoteService[]
+  partsSupplies QuotePartSupply[]
 
   @@map("quotes")
 }

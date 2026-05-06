@@ -1,4 +1,6 @@
 import { WorkOrder } from '../../entities/work-order.entity';
+import { WorkOrderService } from '../../entities/work-order-service.entity';
+import { WorkOrderPartSupply } from '../../entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '../../enums/work-order-status.enum';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
@@ -19,4 +21,7 @@ export interface IWorkOrderRepository {
   ): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;
+  addServiceItems(items: WorkOrderService[]): Promise<void>;
+  updateServiceItemStatus(item: WorkOrderService): Promise<void>;
+  addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void>;
 }

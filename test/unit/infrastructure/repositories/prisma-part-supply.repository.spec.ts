@@ -272,6 +272,19 @@ describe('PrismaPartSupplyRepository', () => {
       const callArg = prisma.partSupply.update.mock.calls[0][0];
       expect(callArg.data).toEqual({ name: 'Novo Nome' });
     });
+
+    it('should update stock and reservedStock when provided', async () => {
+      const id = randomUUID();
+      const updatedAt = new Date('2026-05-06T10:00:00Z');
+      prisma.partSupply.update.mockResolvedValue(
+        createMockPartSupply({ id, stock: 7, reservedStock: 1 }),
+      );
+
+      await repository.update(id, { stock: 7, reservedStock: 1, updatedAt });
+
+      const callArg = prisma.partSupply.update.mock.calls[0][0];
+      expect(callArg.data).toEqual({ stock: 7, reservedStock: 1, updatedAt });
+    });
   });
 
   describe('updateStock', () => {
@@ -385,39 +398,6 @@ describe('PrismaPartSupplyRepository', () => {
       prisma.quotePartSupply.count.mockResolvedValue(0);
       const result = await repository.isPartSupplyInUse(randomUUID());
       expect(result).toBe(false);
-    });
-  });
-
-  describe('incrementReservedStock', () => {
-    it('should increment reserved stock', async () => {
-      const id = randomUUID();
-      await repository.incrementReservedStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { reservedStock: { increment: 5 } },
-      });
-    });
-  });
-
-  describe('decrementReservedStock', () => {
-    it('should decrement reserved stock', async () => {
-      const id = randomUUID();
-      await repository.decrementReservedStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { reservedStock: { decrement: 5 } },
-      });
-    });
-  });
-
-  describe('decrementStock', () => {
-    it('should decrement stock', async () => {
-      const id = randomUUID();
-      await repository.decrementStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { stock: { decrement: 5 } },
-      });
     });
   });
 });

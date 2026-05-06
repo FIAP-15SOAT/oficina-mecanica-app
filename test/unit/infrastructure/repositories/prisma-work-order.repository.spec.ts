@@ -1,5 +1,7 @@
 import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-work-order.repository';
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderService } from '@domain/entities/work-order-service.entity';
+import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
@@ -154,6 +156,84 @@ describe('PrismaWorkOrderRepository', () => {
       const result = await repository.generateNextNumber();
 
       expect(result).toBe('000042');
+    });
+  });
+
+  describe('addServiceItems', () => {
+    it('should call workOrderService.createMany with mapped data', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderService.create({
+        workOrderId: workOrder.id,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+      });
+
+      prisma.workOrderService.createMany.mockResolvedValue({ count: 1 });
+
+      await repository.addServiceItems([item]);
+
+      expect(prisma.workOrderService.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
+        }),
+      );
+    });
+  });
+
+  describe('updateServiceItemStatus', () => {
+    it('should call workOrderService.update with service status fields', async () => {
+      const serviceId = randomUUID();
+      const item = WorkOrderService.create({
+        workOrderId: randomUUID(),
+        serviceId,
+        quantity: 1,
+        unitPrice: 100,
+      });
+      item.startService();
+
+      prisma.workOrderService.update.mockResolvedValue({});
+
+      await repository.updateServiceItemStatus(item);
+
+      expect(prisma.workOrderService.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            workOrderId_serviceId: expect.objectContaining({ serviceId }),
+          }),
+          data: expect.objectContaining({ status: item.status }),
+        }),
+      );
+    });
+  });
+
+  describe('addPartSupplyItems', () => {
+    it('should call workOrderPartSupply.createMany with mapped data', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderPartSupply.create({
+        workOrderId: workOrder.id,
+        partSupplyId: randomUUID(),
+        quantity: 2,
+        unitPrice: 50,
+      });
+
+      prisma.workOrderPartSupply.createMany.mockResolvedValue({ count: 1 });
+
+      await repository.addPartSupplyItems([item]);
+
+      expect(prisma.workOrderPartSupply.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
+        }),
+      );
     });
   });
 });

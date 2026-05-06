@@ -30,8 +30,6 @@ describe('PrismaUnitOfWork', () => {
       expect(repos).toHaveProperty('partSupply');
       expect(repos).toHaveProperty('service');
       expect(repos).toHaveProperty('stockReservation');
-      expect(repos).toHaveProperty('workOrderService');
-      expect(repos).toHaveProperty('workOrderPartSupply');
       expect(repos).toHaveProperty('statusHistory');
       expect(repos).toHaveProperty('customer');
       expect(repos).toHaveProperty('stockMovement');

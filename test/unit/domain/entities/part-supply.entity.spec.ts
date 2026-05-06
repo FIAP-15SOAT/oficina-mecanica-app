@@ -3,6 +3,7 @@ import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 describe('PartSupply Entity', () => {
   const validProps = {
@@ -316,6 +317,103 @@ describe('PartSupply Entity', () => {
       expect(() => partSupply.applyStockMovement(StockMovementType.EXIT, 4)).toThrow(
         'Estoque insuficiente',
       );
+    });
+  });
+
+  describe('reserve()', () => {
+    it('should increment reservedStock when sufficient stock is available', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-001',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-001',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 10,
+        minStock: 0,
+        reservedStock: 2,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      partSupply.reserve(3);
+
+      expect(partSupply.reservedStock).toBe(5);
+    });
+
+    it('should throw BusinessRuleViolationException when insufficient available stock', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-001',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-001',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 5,
+        minStock: 0,
+        reservedStock: 4,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => partSupply.reserve(2)).toThrow(BusinessRuleViolationException);
+    });
+  });
+
+  describe('consumeReserved()', () => {
+    it('should decrement both stock and reservedStock', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-001',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-001',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 10,
+        minStock: 0,
+        reservedStock: 4,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      partSupply.consumeReserved(3);
+
+      expect(partSupply.stock).toBe(7);
+      expect(partSupply.reservedStock).toBe(1);
+    });
+
+    it('should throw BusinessRuleViolationException when quantity exceeds reservedStock', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-001',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-001',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 10,
+        minStock: 0,
+        reservedStock: 2,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => partSupply.consumeReserved(5)).toThrow(BusinessRuleViolationException);
     });
   });
 });

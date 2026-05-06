@@ -111,7 +111,10 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
         ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
         ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
         ...(data.minStock !== undefined && { minStock: data.minStock }),
+        ...(data.stock !== undefined && { stock: data.stock }),
+        ...(data.reservedStock !== undefined && { reservedStock: data.reservedStock }),
         ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
+        ...(data.updatedAt !== undefined && { updatedAt: data.updatedAt }),
       },
     });
     return PartSupplyMapper.toDomain(record);
@@ -148,26 +151,5 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     ]);
 
     return hasWorkOrders || hasQuotes;
-  }
-
-  async incrementReservedStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { reservedStock: { increment: amount } },
-    });
-  }
-
-  async decrementReservedStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { reservedStock: { decrement: amount } },
-    });
-  }
-
-  async decrementStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { stock: { decrement: amount } },
-    });
   }
 }

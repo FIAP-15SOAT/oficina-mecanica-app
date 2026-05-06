@@ -66,7 +66,7 @@ describe('QuoteMapper', () => {
             updatedAt: now,
           },
         ],
-        parts: [
+        partsSupplies: [
           {
             id: randomUUID(),
             quoteId,

@@ -42,7 +42,7 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   async findById(id: string): Promise<Quote | null> {
     const record = await this.prisma.quote.findUnique({
       where: { id },
-      include: { services: true, parts: true },
+      include: { services: true, partsSupplies: true },
     });
 
     return record ? QuoteMapper.toDomain(record) : null;
@@ -51,7 +51,7 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   async findByWorkOrderId(workOrderId: string): Promise<Quote[]> {
     const records = await this.prisma.quote.findMany({
       where: { workOrderId },
-      include: { services: true, parts: true },
+      include: { services: true, partsSupplies: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -73,7 +73,7 @@ export class PrismaQuoteRepository implements IQuoteRepository {
       this.prisma.quote,
       {
         where,
-        include: { services: true, parts: true },
+        include: { services: true, partsSupplies: true },
         orderBy: { createdAt: 'desc' },
       },
       pagination,

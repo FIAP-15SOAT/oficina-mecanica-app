@@ -36,9 +36,6 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     updateStock: jest.fn(),
-    incrementReservedStock: jest.fn(),
-    decrementReservedStock: jest.fn(),
-    decrementStock: jest.fn(),
     delete: jest.fn(),
     isPartSupplyInUse: jest.fn(),
   };

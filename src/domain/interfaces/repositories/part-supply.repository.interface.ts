@@ -22,9 +22,6 @@ export interface IPartSupplyRepository {
   ): Promise<PaginatedRepositoryResult<PartSupply>>;
   update(id: string, data: Partial<PartSupply>): Promise<PartSupply>;
   updateStock(id: string, data: UpdateStockDto): Promise<PartSupply>;
-  incrementReservedStock(id: string, amount: number): Promise<void>;
-  decrementReservedStock(id: string, amount: number): Promise<void>;
-  decrementStock(id: string, amount: number): Promise<void>;
   isPartSupplyInUse(id: string): Promise<boolean>;
   delete(id: string): Promise<void>;
 }
