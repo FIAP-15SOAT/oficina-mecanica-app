@@ -42,10 +42,10 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         reservedStock: 2,
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.stockReservation.findByWorkOrderId as jest.Mock).mockResolvedValue([reservation]);
       (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([partSupply]);
-      (mockRepos.stockMovement.create as jest.Mock).mockResolvedValue({});
+      (mockRepos.stockMovement.createMany as jest.Mock).mockResolvedValue(undefined);
       (mockRepos.partSupply.update as jest.Mock).mockResolvedValue(undefined);
       (mockRepos.stockReservation.deleteByWorkOrderId as jest.Mock).mockResolvedValue(undefined);
       (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
@@ -60,11 +60,16 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
       });
 
       expect(mockRepos.workOrder.updateServiceItemStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ id: workOrder.id }),
         expect.objectContaining({ serviceId }),
       );
-      expect(mockRepos.workOrder.update).toHaveBeenCalled();
+      expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
       expect(mockRepos.statusHistory.create).toHaveBeenCalled();
-      expect(mockRepos.stockMovement.create).toHaveBeenCalledTimes(1);
+      expect(mockRepos.stockMovement.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ partSupplyId: reservation.partSupplyId }),
+        ]),
+      );
       expect(mockRepos.stockReservation.deleteByWorkOrderId).toHaveBeenCalledWith(workOrder.id);
       expect(result.serviceId).toBe(serviceId);
     });
@@ -80,7 +85,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [woService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.stockReservation.findByWorkOrderId as jest.Mock).mockResolvedValue([]);
       (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
       (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
@@ -94,8 +99,8 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
       });
 
       expect(mockRepos.partSupply.findByIds).not.toHaveBeenCalled();
-      expect(mockRepos.stockMovement.create).not.toHaveBeenCalled();
-      expect(mockRepos.workOrder.update).toHaveBeenCalled();
+      expect(mockRepos.stockMovement.createMany).not.toHaveBeenCalled();
+      expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
     });
 
     it('should not create stock movements if WO is already IN_PROGRESS', async () => {
@@ -109,7 +114,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [woService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
 
       await useCase.execute({
@@ -139,7 +144,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
 
     it('should throw EntityNotFoundException when service not found in work order', async () => {
       const workOrder = createMockWorkOrder({ services: [] });
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
 
       await expect(
         useCase.execute({
@@ -162,7 +167,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [woService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
 
       await expect(
         useCase.execute({
@@ -187,7 +192,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [woService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
       (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
@@ -200,9 +205,10 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
       });
 
       expect(mockRepos.workOrder.updateServiceItemStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ id: workOrder.id }),
         expect.objectContaining({ serviceId }),
       );
-      expect(mockRepos.workOrder.update).toHaveBeenCalled();
+      expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
       expect(mockRepos.statusHistory.create).toHaveBeenCalled();
     });
 
@@ -221,7 +227,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [completingService, pendingService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
       (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
 
       await useCase.execute({
@@ -247,7 +253,7 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
         services: [woService],
       });
 
-      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
 
       await expect(
         useCase.execute({

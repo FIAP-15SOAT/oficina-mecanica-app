@@ -32,9 +32,10 @@ export class AddressRequestDto {
   @Length(2, 2, { message: 'Estado deve ter exatamente 2 caracteres (ex: SP).' })
   state!: string;
 
-  @ApiProperty({ description: 'CEP', example: '01310-100' })
+  @ApiProperty({ description: 'CEP (com ou sem hífen)', example: '01310-100' })
+  @Transform(({ value }: { value: string }) => value?.replace(/\D/g, ''))
   @IsString({ message: 'CEP deve ser um texto.' })
-  @Matches(/^\d{5}-\d{3}$/, { message: 'CEP inválido. Formato esperado: 00000-000.' })
+  @Matches(/^\d{8}$/, { message: 'CEP inválido. Formato esperado: 00000-000.' })
   zipCode!: string;
 }
 

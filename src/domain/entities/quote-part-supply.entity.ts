@@ -1,5 +1,6 @@
-import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { validate as isUuid } from 'uuid';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 
 export interface CreateQuotePartSupplyProps {
   quoteId: string;
@@ -9,6 +10,14 @@ export interface CreateQuotePartSupplyProps {
 }
 
 interface QuotePartSupplyProps {
+  quoteId: string;
+  partSupplyId: string;
+  lineItem: LineItemPrice;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ReconstitueQuotePartSupplyProps {
   quoteId: string;
   partSupplyId: string;
   quantity: number;
@@ -21,61 +30,62 @@ interface QuotePartSupplyProps {
 export class QuotePartSupply {
   readonly quoteId: string;
   readonly partSupplyId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  private _lineItem: LineItemPrice;
   readonly createdAt: Date;
   updatedAt: Date;
 
   private constructor(props: QuotePartSupplyProps) {
     this.quoteId = props.quoteId;
     this.partSupplyId = props.partSupplyId;
-    this.quantity = props.quantity;
-    this.unitPrice = props.unitPrice;
-    this.totalPrice = props.totalPrice;
+    this._lineItem = props.lineItem;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
 
-  static reconstitute(props: QuotePartSupplyProps): QuotePartSupply {
-    return new QuotePartSupply(props);
+  static reconstitute(props: ReconstitueQuotePartSupplyProps): QuotePartSupply {
+    return new QuotePartSupply({
+      quoteId: props.quoteId,
+      partSupplyId: props.partSupplyId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateQuotePartSupplyProps): QuotePartSupply {
     QuotePartSupply.validateQuoteId(props.quoteId);
     QuotePartSupply.validatePartSupplyId(props.partSupplyId);
-    QuotePartSupply.validateQuantity(props.quantity);
-    QuotePartSupply.validateUnitPrice(props.unitPrice);
 
     const now = new Date();
 
     return new QuotePartSupply({
       quoteId: props.quoteId,
       partSupplyId: props.partSupplyId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
+      lineItem: LineItemPrice.create(props.quantity, props.unitPrice),
       createdAt: now,
       updatedAt: now,
     });
   }
 
   updateQuantity(quantity: number): void {
-    QuotePartSupply.validateQuantity(quantity);
-
-    this.quantity = quantity;
-    this.totalPrice = this.quantity * this.unitPrice;
+    this._lineItem = this._lineItem.withQuantity(quantity);
     this.updatedAt = new Date();
   }
 
-  private static validateQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity)) {
-      throw new DomainValidationException('Quantidade deve ser um número inteiro');
-    }
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
+  }
 
-    if (quantity <= 0) {
-      throw new DomainValidationException('Quantidade deve ser maior que zero');
-    }
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
   }
 
   private static validateQuoteId(quoteId: string): void {
@@ -95,16 +105,6 @@ export class QuotePartSupply {
 
     if (!isUuid(partSupplyId.trim())) {
       throw new DomainValidationException('ID da peça/insumo deve ser um UUID válido');
-    }
-  }
-
-  private static validateUnitPrice(unitPrice: number): void {
-    if (!Number.isFinite(unitPrice)) {
-      throw new DomainValidationException('Preço unitário inválido');
-    }
-
-    if (unitPrice <= 0) {
-      throw new DomainValidationException('Preço unitário deve ser maior que zero');
     }
   }
 }

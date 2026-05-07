@@ -27,7 +27,7 @@ export class UpdateStockUseCase implements IUpdateStockUseCase {
       });
 
       await Promise.all([
-        repos.partSupply.updateStock(id, input),
+        repos.partSupply.update(id, partSupply),
         repos.stockMovement.create(movement),
       ]);
 

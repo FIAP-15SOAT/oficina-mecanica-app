@@ -12,6 +12,7 @@ import {
   createMockQuoteService,
   createMockQuotePartSupply,
 } from '../../../helpers/quote-mock.factory';
+import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { randomUUID } from 'node:crypto';
 
 describe('WorkOrder Entity', () => {
@@ -123,10 +124,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw BusinessRuleViolationException when updating AWAITING_APPROVAL status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS);
-      // Simulate going to AWAITING_APPROVAL via internal update (bypass transitions)
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
 
       expect(() => wo.update({ problemDescription: 'test' })).toThrow(
         BusinessRuleViolationException,
@@ -254,8 +252,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw when transitioning from terminal status DELIVERED', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.COMPLETED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.COMPLETED });
       wo.changeStatus(WorkOrderStatus.DELIVERED);
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
@@ -271,48 +268,42 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should set rejectedAt when transitioning to REJECTED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
 
       expect(wo.rejectedAt).toBeInstanceOf(Date);
     });
 
     it('should set approvedAt when transitioning to APPROVED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.APPROVED);
 
       expect(wo.approvedAt).toBeInstanceOf(Date);
     });
 
     it('should set startedAt when transitioning to IN_PROGRESS (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.APPROVED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.APPROVED });
       wo.changeStatus(WorkOrderStatus.IN_PROGRESS);
 
       expect(wo.startedAt).toBeInstanceOf(Date);
     });
 
     it('should set finishedAt when transitioning to COMPLETED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.IN_PROGRESS;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.IN_PROGRESS });
       wo.changeStatus(WorkOrderStatus.COMPLETED);
 
       expect(wo.finishedAt).toBeInstanceOf(Date);
     });
 
     it('should set deliveredAt when transitioning to DELIVERED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.COMPLETED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.COMPLETED });
       wo.changeStatus(WorkOrderStatus.DELIVERED);
 
       expect(wo.deliveredAt).toBeInstanceOf(Date);
     });
 
     it('REJECTED -> AWAITING_APPROVAL is allowed', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
       wo.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
 
@@ -320,8 +311,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('REJECTED -> IN_DIAGNOSIS should throw', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
@@ -330,8 +320,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should fall back to empty transitions when current status is not in the map', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = 'UNKNOWN_STATUS' as unknown as WorkOrderStatus;
+      const wo = createMockWorkOrder({ status: 'UNKNOWN_STATUS' as unknown as WorkOrderStatus });
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
         BusinessRuleViolationException,
@@ -341,20 +330,17 @@ describe('WorkOrder Entity', () => {
 
   describe('ensureCanCreateQuote()', () => {
     it('should not throw for IN_DIAGNOSIS status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.IN_DIAGNOSIS;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.IN_DIAGNOSIS });
       expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
     it('should not throw for AWAITING_APPROVAL status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
     it('should not throw for REJECTED status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.REJECTED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.REJECTED });
       expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
@@ -390,8 +376,8 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [woService],
       });
-      wo.services = [woService];
 
       wo.startServiceItem(serviceId);
 
@@ -424,8 +410,8 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [woService],
       });
-      wo.services = [woService];
 
       wo.startServiceItem(serviceId);
 
@@ -434,8 +420,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw EntityNotFoundException when service not found', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.services = [];
+      const wo = createMockWorkOrder({ services: [] });
 
       expect(() => wo.startServiceItem(randomUUID())).toThrow(EntityNotFoundException);
     });
@@ -453,9 +438,10 @@ describe('WorkOrder Entity', () => {
         serviceId,
         status: WorkOrderServiceStatus.IN_PROGRESS,
       });
-      const wo = WorkOrder.create(baseProps);
-      wo.services = [woService];
-      wo.status = WorkOrderStatus.IN_PROGRESS;
+      const wo = createMockWorkOrder({
+        status: WorkOrderStatus.IN_PROGRESS,
+        services: [woService],
+      });
 
       expect(() => wo.startServiceItem(serviceId)).toThrow(BusinessRuleViolationException);
     });
@@ -487,8 +473,8 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [woService],
       });
-      wo.services = [woService];
 
       wo.completeServiceItem(serviceId);
 
@@ -525,8 +511,8 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [woService1, woService2],
       });
-      wo.services = [woService1, woService2];
 
       wo.completeServiceItem(serviceId);
 
@@ -563,8 +549,8 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [completingService, pendingService],
       });
-      wo.services = [completingService, pendingService];
 
       wo.completeServiceItem(serviceId);
 
@@ -573,8 +559,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw EntityNotFoundException when service not found', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.services = [];
+      const wo = createMockWorkOrder({ services: [] });
 
       expect(() => wo.completeServiceItem(randomUUID())).toThrow(EntityNotFoundException);
     });
@@ -611,20 +596,18 @@ describe('WorkOrder Entity', () => {
         deliveredAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        services: [woService],
       });
-      wo.services = [woService];
 
       expect(() => wo.completeServiceItem(serviceId)).toThrow(BusinessRuleViolationException);
     });
   });
 
   describe('applyQuoteItems()', () => {
-    it('should create WO service/part items and set totalAmount from quote', () => {
+    it('should create WO service/part items and recalculate totalAmount from item prices', () => {
       const qService = createMockQuoteService();
       const qPart = createMockQuotePartSupply();
-      const quote = createMockQuote({ totalAmount: 750 });
-      quote.services = [qService];
-      quote.partsSupplies = [qPart];
+      const quote = createMockQuote({ services: [qService], partsSupplies: [qPart] });
 
       const wo = WorkOrder.create(baseProps);
       const result = wo.applyQuoteItems(quote);
@@ -633,15 +616,15 @@ describe('WorkOrder Entity', () => {
       expect(result.partSupplies).toHaveLength(1);
       expect(result.services[0].serviceId).toBe(qService.serviceId);
       expect(result.partSupplies[0].partSupplyId).toBe(qPart.partSupplyId);
-      expect(wo.totalAmount).toBe(750);
+      expect(wo.totalAmount).toBe(
+        result.services[0].totalPrice + result.partSupplies[0].totalPrice,
+      );
       expect(wo.services).toHaveLength(1);
       expect(wo.partSupplies).toHaveLength(1);
     });
 
     it('should handle quote with no services or parts', () => {
-      const quote = createMockQuote({ totalAmount: 0 });
-      quote.services = [];
-      quote.partsSupplies = [];
+      const quote = createMockQuote({ services: [], partsSupplies: [] });
 
       const wo = WorkOrder.create(baseProps);
       const result = wo.applyQuoteItems(quote);

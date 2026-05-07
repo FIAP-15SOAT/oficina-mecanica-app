@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
+import { UserRole } from '../enums/user-role.enum';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
@@ -14,8 +15,6 @@ import { Quote } from './quote.entity';
 
 const MAX_PROBLEM_DESCRIPTION_LENGTH = 2000;
 const MAX_INTERNAL_NOTES_LENGTH = 2000;
-
-import { UserRole } from '../enums/user-role.enum';
 
 export interface CreateWorkOrderProps {
   number: string;
@@ -53,6 +52,8 @@ export interface WorkOrderProps {
   deliveredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  services?: WorkOrderService[];
+  partSupplies?: WorkOrderPartSupply[];
 }
 
 export class WorkOrder {
@@ -61,11 +62,11 @@ export class WorkOrder {
   readonly customerId: string;
   readonly vehicleId: string;
   assignedUserId: string | null;
-  status: WorkOrderStatus;
+  private _status: WorkOrderStatus;
   problemDescription: string | null;
   internalNotes: string | null;
   mileageAtService: number | null;
-  totalAmount: number;
+  private _totalAmount: number;
   version: number;
   approvedAt: Date | null;
   rejectedAt: Date | null;
@@ -78,8 +79,8 @@ export class WorkOrder {
   customer?: Customer;
   vehicle?: Vehicle;
   assignedUser?: User | null;
-  services?: WorkOrderService[];
-  partSupplies?: WorkOrderPartSupply[];
+  private _services?: WorkOrderService[];
+  private _partSupplies?: WorkOrderPartSupply[];
 
   private constructor(props: WorkOrderProps) {
     this.id = props.id;
@@ -87,11 +88,11 @@ export class WorkOrder {
     this.customerId = props.customerId;
     this.vehicleId = props.vehicleId;
     this.assignedUserId = props.assignedUserId;
-    this.status = props.status;
+    this._status = props.status;
     this.problemDescription = props.problemDescription;
     this.internalNotes = props.internalNotes;
     this.mileageAtService = props.mileageAtService;
-    this.totalAmount = props.totalAmount;
+    this._totalAmount = props.totalAmount;
     this.version = props.version;
     this.approvedAt = props.approvedAt;
     this.rejectedAt = props.rejectedAt;
@@ -100,6 +101,8 @@ export class WorkOrder {
     this.deliveredAt = props.deliveredAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
+    this._services = props.services;
+    this._partSupplies = props.partSupplies;
   }
 
   static reconstitute(props: WorkOrderProps): WorkOrder {
@@ -141,7 +144,7 @@ export class WorkOrder {
   }
 
   startServiceItem(serviceId: string): void {
-    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
@@ -155,7 +158,7 @@ export class WorkOrder {
   }
 
   completeServiceItem(serviceId: string): void {
-    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
@@ -163,7 +166,9 @@ export class WorkOrder {
 
     item.completeService();
 
-    const allCompleted = this.services!.every((s) => s.status === WorkOrderServiceStatus.COMPLETED);
+    const allCompleted = this._services!.every(
+      (s) => s.status === WorkOrderServiceStatus.COMPLETED,
+    );
 
     if (allCompleted) {
       this.changeStatus(WorkOrderStatus.COMPLETED);
@@ -192,12 +197,19 @@ export class WorkOrder {
       }),
     );
 
-    this.services = [...(this.services ?? []), ...services];
-    this.partSupplies = [...(this.partSupplies ?? []), ...partSupplies];
-    this.totalAmount = quote.totalAmount;
+    this._services = [...(this._services ?? []), ...services];
+    this._partSupplies = [...(this._partSupplies ?? []), ...partSupplies];
+    this.recalculateTotalAmount();
     this.updatedAt = new Date();
 
     return { services, partSupplies };
+  }
+
+  private recalculateTotalAmount(): void {
+    const servicesTotal = this._services!.reduce((sum, s) => sum + s.totalPrice, 0);
+    const partsTotal = this._partSupplies!.reduce((sum, p) => sum + p.totalPrice, 0);
+
+    this._totalAmount = servicesTotal + partsTotal;
   }
 
   private canCreateQuote(): boolean {
@@ -255,7 +267,7 @@ export class WorkOrder {
   changeStatus(newStatus: WorkOrderStatus, notes?: string | null): void {
     this.validateStatusTransition(newStatus, notes);
     this.updateTimestampsForStatus(newStatus);
-    this.status = newStatus;
+    this._status = newStatus;
     this.updatedAt = new Date();
   }
 
@@ -375,5 +387,21 @@ export class WorkOrder {
         );
       }
     }
+  }
+
+  get status(): WorkOrderStatus {
+    return this._status;
+  }
+
+  get totalAmount(): number {
+    return this._totalAmount;
+  }
+
+  get services(): WorkOrderService[] | undefined {
+    return this._services;
+  }
+
+  get partSupplies(): WorkOrderPartSupply[] | undefined {
+    return this._partSupplies;
   }
 }

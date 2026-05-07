@@ -15,7 +15,7 @@ export type PrismaQuoteWithItems = PrismaQuote & {
 
 export class QuoteMapper {
   static toDomain(record: PrismaQuoteWithItems): Quote {
-    const quote = Quote.reconstitute({
+    return Quote.reconstitute({
       id: record.id,
       workOrderId: record.workOrderId,
       servicesAmount: Number(record.servicesAmount),
@@ -29,17 +29,9 @@ export class QuoteMapper {
       rejectedAt: record.rejectedAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      services: record.services ? this.mapServicesToDomain(record.services) : undefined,
+      partsSupplies: record.partsSupplies ? this.mapPartsToDomain(record.partsSupplies) : undefined,
     });
-
-    if (record.services) {
-      quote.services = this.mapServicesToDomain(record.services);
-    }
-
-    if (record.partsSupplies) {
-      quote.partsSupplies = this.mapPartsToDomain(record.partsSupplies);
-    }
-
-    return quote;
   }
 
   private static mapServicesToDomain(services: PrismaQuoteService[]) {

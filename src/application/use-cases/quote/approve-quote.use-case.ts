@@ -11,7 +11,7 @@ export class ApproveQuoteUseCase {
 
   async execute(quoteId: string, userId?: string | null): Promise<Quote> {
     return this.unitOfWork.executeTransaction(async (repos) => {
-      const quote = await repos.quote.findById(quoteId);
+      const quote = await repos.quote.findByIdWithDetails(quoteId);
 
       if (!quote) {
         throw new ResourceNotFoundException('Orçamento', quoteId);
@@ -33,8 +33,8 @@ export class ApproveQuoteUseCase {
         workOrder.applyQuoteItems(quote);
 
       await Promise.all([
-        repos.workOrder.addServiceItems(woServices),
-        repos.workOrder.addPartSupplyItems(woPartSupplies),
+        repos.workOrder.addServiceItems(workOrder, woServices),
+        repos.workOrder.addPartSupplyItems(workOrder, woPartSupplies),
         repos.quote.update(quote),
         repos.quote.rejectPendingByWorkOrderId(workOrder.id),
         repos.workOrder.update(workOrder),

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
@@ -59,6 +61,37 @@ describe('PrismaUserRepository', () => {
           isActive: user.isActive,
         },
       });
+    });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate email', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should rethrow unexpected errors', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const error = new Error('Database connection lost');
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow('Database connection lost');
     });
   });
 
@@ -249,6 +282,29 @@ describe('PrismaUserRepository', () => {
           isActive: false,
         },
       });
+    });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const id = randomUUID();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate email', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.user.update.mockRejectedValue(error);
+
+      await expect(
+        repository.update(id, { email: Email.create('dup@example.com') }),
+      ).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should rethrow unexpected errors from update', async () => {
+      const id = randomUUID();
+      const unexpectedError = new Error('Database connection lost');
+      prisma.user.update.mockRejectedValue(unexpectedError);
+
+      await expect(repository.update(id, { name: 'Test' })).rejects.toThrow(
+        'Database connection lost',
+      );
     });
   });
 

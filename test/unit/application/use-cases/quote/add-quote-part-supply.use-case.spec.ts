@@ -26,8 +26,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   });
 
   it('should add a part supply and recalculate totals', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
     const partSupply = createMockPartSupply({ salePrice: 80 });
 
     quoteRepository.findById.mockResolvedValue(quote);
@@ -54,8 +53,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.APPROVED });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.APPROVED, partsSupplies: [] });
     const partSupply = createMockPartSupply();
     quoteRepository.findById.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(partSupply);
@@ -66,8 +64,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   });
 
   it('should throw ResourceNotFoundException when part supply not found', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
     quoteRepository.findById.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(null);
 
@@ -79,8 +76,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   it('should throw BusinessRuleViolationException when part supply already exists in quote', async () => {
     const partSupply = createMockPartSupply({ salePrice: 80 });
     const existing = createMockQuotePartSupply({ partSupplyId: partSupply.id });
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.partsSupplies = [existing];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [existing] });
 
     quoteRepository.findById.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(partSupply);

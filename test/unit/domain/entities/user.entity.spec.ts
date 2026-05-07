@@ -226,48 +226,6 @@ describe('User Entity', () => {
     });
   });
 
-  describe('update', () => {
-    it('updates only provided fields', () => {
-      const user = User.create(validProps);
-      user.update({ name: 'Novo Nome' });
-      expect(user.name).toBe('Novo Nome');
-      expect(user.email.value).toBe('rafael@email.com');
-    });
-
-    it('updates email successfully', () => {
-      const user = User.create(validProps);
-      user.update({ email: 'novo@email.com' });
-      expect(user.email.value).toBe('novo@email.com');
-    });
-
-    it('updates passwordHash successfully', () => {
-      const user = User.create(validProps);
-      user.update({ passwordHash: '$2b$12$newhash' });
-      expect(user.passwordHash).toBe('$2b$12$newhash');
-    });
-
-    it('updates role successfully', () => {
-      const user = User.create(validProps);
-      user.update({ role: UserRole.MECHANIC });
-      expect(user.role).toBe(UserRole.MECHANIC);
-    });
-
-    it('validates name on update', () => {
-      const user = User.create(validProps);
-      expect(() => user.update({ name: 'Ab' })).toThrow(DomainValidationException);
-    });
-
-    it('validates passwordHash on update', () => {
-      const user = User.create(validProps);
-      expect(() => user.update({ passwordHash: '' })).toThrow(DomainValidationException);
-    });
-
-    it('validates role on update', () => {
-      const user = User.create(validProps);
-      expect(() => user.update({ role: 'X' as UserRole })).toThrow(DomainValidationException);
-    });
-  });
-
   describe('toPublicView', () => {
     it('should return public view without passwordHash', () => {
       const now = new Date();

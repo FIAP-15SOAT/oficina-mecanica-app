@@ -28,14 +28,14 @@ export function createMockWorkOrder(overrides: Partial<WorkOrder> = {}): WorkOrd
     deliveredAt: null,
     createdAt: now,
     updatedAt: now,
+    services,
+    partSupplies,
     ...(dataOverrides as Partial<WorkOrderProps>),
   });
 
   if (customer !== undefined) wo.customer = customer;
   if (vehicle !== undefined) wo.vehicle = vehicle;
   if (assignedUser !== undefined) wo.assignedUser = assignedUser;
-  if (services !== undefined) wo.services = services;
-  if (partSupplies !== undefined) wo.partSupplies = partSupplies;
   return wo;
 }
 
@@ -43,6 +43,7 @@ export function createMockWorkOrderRepository(): jest.Mocked<IWorkOrderRepositor
   return {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIdWithDetails: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     generateNextNumber: jest.fn(),

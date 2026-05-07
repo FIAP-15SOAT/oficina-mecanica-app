@@ -186,8 +186,8 @@ describe('WorkOrderPresenter', () => {
         deliveredAt: null,
         createdAt: now,
         updatedAt: now,
+        services: [wos],
       });
-      workOrder.services = [wos];
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -233,8 +233,8 @@ describe('WorkOrderPresenter', () => {
         deliveredAt: null,
         createdAt: now,
         updatedAt: now,
+        services: [wos],
       });
-      workOrder.services = [wos];
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -277,8 +277,8 @@ describe('WorkOrderPresenter', () => {
         deliveredAt: null,
         createdAt: now,
         updatedAt: now,
+        partSupplies: [wop],
       });
-      workOrder.partSupplies = [wop];
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -322,8 +322,8 @@ describe('WorkOrderPresenter', () => {
         deliveredAt: null,
         createdAt: now,
         updatedAt: now,
+        partSupplies: [wop],
       });
-      workOrder.partSupplies = [wop];
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 

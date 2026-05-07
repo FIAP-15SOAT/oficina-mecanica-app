@@ -41,11 +41,15 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   }
 
   async findById(id: string): Promise<Quote | null> {
+    const record = await this.prisma.quote.findUnique({ where: { id } });
+    return record ? QuoteMapper.toDomain(record) : null;
+  }
+
+  async findByIdWithDetails(id: string): Promise<Quote | null> {
     const record = await this.prisma.quote.findUnique({
       where: { id },
       include: { services: true, partsSupplies: true },
     });
-
     return record ? QuoteMapper.toDomain(record) : null;
   }
 

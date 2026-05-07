@@ -30,16 +30,18 @@ interface QuoteProps {
   rejectedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  services?: QuoteService[];
+  partsSupplies?: QuotePartSupply[];
 }
 
 export class Quote {
   readonly id: string;
   readonly workOrderId: string;
-  servicesAmount: number;
-  partsAmount: number;
-  totalAmount: number;
+  private _servicesAmount: number;
+  private _partsAmount: number;
+  private _totalAmount: number;
   version: number;
-  status: QuoteStatus;
+  private _status: QuoteStatus;
   notes: string | null;
   sentAt: Date | null;
   approvedAt: Date | null;
@@ -47,23 +49,25 @@ export class Quote {
   readonly createdAt: Date;
   updatedAt: Date;
 
-  services?: QuoteService[];
-  partsSupplies?: QuotePartSupply[];
+  private _services?: QuoteService[];
+  private _partsSupplies?: QuotePartSupply[];
 
   private constructor(props: QuoteProps) {
     this.id = props.id;
     this.workOrderId = props.workOrderId;
-    this.servicesAmount = props.servicesAmount;
-    this.partsAmount = props.partsAmount;
-    this.totalAmount = props.totalAmount;
+    this._servicesAmount = props.servicesAmount;
+    this._partsAmount = props.partsAmount;
+    this._totalAmount = props.totalAmount;
     this.version = props.version;
-    this.status = props.status;
+    this._status = props.status;
     this.notes = props.notes;
     this.sentAt = props.sentAt;
     this.approvedAt = props.approvedAt;
     this.rejectedAt = props.rejectedAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
+    this._services = props.services;
+    this._partsSupplies = props.partsSupplies;
   }
 
   static reconstitute(props: QuoteProps): Quote {
@@ -96,7 +100,7 @@ export class Quote {
   addService(service: Service, quantity: number): QuoteService {
     this.ensureCanChangeItems();
 
-    const services = this.services ?? [];
+    const services = this._services ?? [];
     const alreadyAdded = services.some((s) => s.serviceId === service.id);
 
     if (alreadyAdded) {
@@ -110,7 +114,7 @@ export class Quote {
       unitPrice: service.basePrice,
     });
 
-    this.services = [...services, item];
+    this._services = [...services, item];
     this.recalculateTotals();
 
     return item;
@@ -119,21 +123,21 @@ export class Quote {
   removeService(serviceId: string): void {
     this.ensureCanChangeItems();
 
-    const services = this.services ?? [];
+    const services = this._services ?? [];
     const existingService = services.some((s) => s.serviceId === serviceId);
 
     if (!existingService) {
       throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
     }
 
-    this.services = services.filter((s) => s.serviceId !== serviceId);
+    this._services = services.filter((s) => s.serviceId !== serviceId);
     this.recalculateTotals();
   }
 
   updateServiceQuantity(serviceId: string, quantity: number): QuoteService {
     this.ensureCanChangeItems();
 
-    const item = (this.services ?? []).find((s) => s.serviceId === serviceId);
+    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
@@ -148,7 +152,7 @@ export class Quote {
   addPartSupply(partSupply: PartSupply, quantity: number): QuotePartSupply {
     this.ensureCanChangeItems();
 
-    const parts = this.partsSupplies ?? [];
+    const parts = this._partsSupplies ?? [];
     const alreadyAdded = parts.some((p) => p.partSupplyId === partSupply.id);
 
     if (alreadyAdded) {
@@ -162,7 +166,7 @@ export class Quote {
       unitPrice: partSupply.salePrice,
     });
 
-    this.partsSupplies = [...parts, item];
+    this._partsSupplies = [...parts, item];
     this.recalculateTotals();
 
     return item;
@@ -171,7 +175,7 @@ export class Quote {
   removePartSupply(partSupplyId: string): void {
     this.ensureCanChangeItems();
 
-    const parts = this.partsSupplies ?? [];
+    const parts = this._partsSupplies ?? [];
 
     const existingPart = parts.some((p) => p.partSupplyId === partSupplyId);
 
@@ -179,7 +183,7 @@ export class Quote {
       throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
     }
 
-    this.partsSupplies = parts.filter((p) => p.partSupplyId !== partSupplyId);
+    this._partsSupplies = parts.filter((p) => p.partSupplyId !== partSupplyId);
 
     this.recalculateTotals();
   }
@@ -187,7 +191,8 @@ export class Quote {
   updatePartSupplyQuantity(partSupplyId: string, quantity: number): QuotePartSupply {
     this.ensureCanChangeItems();
 
-    const item = (this.partsSupplies ?? []).find((p) => p.partSupplyId === partSupplyId);
+    const item = (this._partsSupplies ?? []).find((p) => p.partSupplyId === partSupplyId);
+
     if (!item) {
       throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
     }
@@ -203,7 +208,7 @@ export class Quote {
 
     const now = new Date();
 
-    this.status = QuoteStatus.SENT;
+    this._status = QuoteStatus.SENT;
     this.sentAt = now;
     this.updatedAt = now;
   }
@@ -213,7 +218,7 @@ export class Quote {
 
     const now = new Date();
 
-    this.status = QuoteStatus.APPROVED;
+    this._status = QuoteStatus.APPROVED;
     this.approvedAt = now;
     this.updatedAt = now;
   }
@@ -223,19 +228,19 @@ export class Quote {
 
     const now = new Date();
 
-    this.status = QuoteStatus.REJECTED;
+    this._status = QuoteStatus.REJECTED;
     this.rejectedAt = now;
     this.updatedAt = now;
   }
 
   private recalculateTotals(): void {
-    const servicesAmount = (this.services ?? []).reduce((sum, s) => sum + s.totalPrice, 0);
+    const servicesAmount = (this._services ?? []).reduce((sum, s) => sum + s.totalPrice, 0);
 
-    const partsAmount = (this.partsSupplies ?? []).reduce((sum, p) => sum + p.totalPrice, 0);
+    const partsAmount = (this._partsSupplies ?? []).reduce((sum, p) => sum + p.totalPrice, 0);
 
-    this.servicesAmount = servicesAmount;
-    this.partsAmount = partsAmount;
-    this.totalAmount = servicesAmount + partsAmount;
+    this._servicesAmount = servicesAmount;
+    this._partsAmount = partsAmount;
+    this._totalAmount = servicesAmount + partsAmount;
     this.updatedAt = new Date();
   }
 
@@ -264,7 +269,7 @@ export class Quote {
   }
 
   private ensureHasItems(): void {
-    const hasItems = (this.services ?? []).length > 0 || (this.partsSupplies ?? []).length > 0;
+    const hasItems = (this._services ?? []).length > 0 || (this._partsSupplies ?? []).length > 0;
 
     if (!hasItems) {
       throw new BusinessRuleViolationException(
@@ -319,5 +324,29 @@ export class Quote {
         `Notas devem ter no máximo ${MAX_NOTES_LENGTH} caracteres`,
       );
     }
+  }
+
+  get servicesAmount(): number {
+    return this._servicesAmount;
+  }
+
+  get partsAmount(): number {
+    return this._partsAmount;
+  }
+
+  get totalAmount(): number {
+    return this._totalAmount;
+  }
+
+  get status(): QuoteStatus {
+    return this._status;
+  }
+
+  get services(): QuoteService[] | undefined {
+    return this._services;
+  }
+
+  get partsSupplies(): QuotePartSupply[] | undefined {
+    return this._partsSupplies;
   }
 }

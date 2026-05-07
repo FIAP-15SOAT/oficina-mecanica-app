@@ -17,12 +17,8 @@ export class AuthenticateUserUseCase {
   async execute(input: AuthenticateUserInputDto): Promise<AuthenticateUserOutputDto> {
     const user = await this.userRepository.findByEmail(input.email);
 
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedAccessException('Credenciais inválidas');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedAccessException('Usuário desativado');
     }
 
     const passwordMatches = await this.hashService.compare(input.password, user.passwordHash);

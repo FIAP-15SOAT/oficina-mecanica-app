@@ -55,7 +55,7 @@ describe('AuthenticateUserUseCase', () => {
 
     await expect(
       useCase.execute({ email: 'rafael@email.com', password: 'Senha@123' }),
-    ).rejects.toThrow('Usuário desativado');
+    ).rejects.toThrow('Credenciais inválidas');
   });
 
   it('should throw UnauthorizedAccessException if password is incorrect', async () => {

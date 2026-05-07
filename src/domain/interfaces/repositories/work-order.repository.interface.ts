@@ -15,13 +15,14 @@ export interface WorkOrderFilters {
 export interface IWorkOrderRepository {
   create(workOrder: WorkOrder): Promise<WorkOrder>;
   findById(id: string): Promise<WorkOrder | null>;
+  findByIdWithDetails(id: string): Promise<WorkOrder | null>;
   findAllPaginated(
     pagination: PaginationInput,
     filters: WorkOrderFilters,
   ): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;
-  addServiceItems(items: WorkOrderService[]): Promise<void>;
-  updateServiceItemStatus(item: WorkOrderService): Promise<void>;
-  addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void>;
+  addServiceItems(workOrder: WorkOrder, items: WorkOrderService[]): Promise<void>;
+  updateServiceItemStatus(workOrder: WorkOrder, item: WorkOrderService): Promise<void>;
+  addPartSupplyItems(workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void>;
 }

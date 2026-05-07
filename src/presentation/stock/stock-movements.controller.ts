@@ -1,8 +1,10 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -20,6 +22,8 @@ import { StockMovementPaginatedResponseDto } from './dto/stock-movement-response
 import { FindStockMovementsQueryDto } from './dto/filter-stock-movements.dto';
 
 @ApiTags('Estoque - Movimentações')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('stock-movements')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')

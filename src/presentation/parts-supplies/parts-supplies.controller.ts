@@ -15,17 +15,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiTags,
-  ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiResponse,
-  ApiForbiddenResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -50,6 +52,8 @@ import { PartSupplyPaginatedResponseDto } from './dto/part-supply-paginated-resp
 import { PartSupplyPresenter } from './part-supply.presenter';
 
 @ApiTags('Gestão de Peças e Insumos')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('parts-supplies')
@@ -77,7 +81,7 @@ export class PartsSuppliesController {
     description: 'Peça ou Insumo cadastrado com sucesso',
   })
   @ApiConflictResponse({ description: 'Já existe uma Peça ou Insumo com este SKU no Estoque' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   async create(@Body() dto: CreatePartSupplyRequestDto): Promise<PartSupplyDataResponseDto> {
@@ -115,7 +119,7 @@ export class PartsSuppliesController {
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
   @ApiOkResponse({ type: PartSupplyDataResponseDto, description: 'Peça ou Insumo encontrado' })
   @ApiNotFoundResponse({ description: 'Peça ou Insumo não encontrado no Estoque' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<PartSupplyDataResponseDto> {
@@ -133,7 +137,7 @@ export class PartsSuppliesController {
   })
   @ApiNotFoundResponse({ description: 'Peça ou Insumo não encontrado no Estoque' })
   @ApiConflictResponse({ description: 'SKU já está em uso por outra Peça ou Insumo' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID inválido' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   async update(
@@ -154,7 +158,7 @@ export class PartsSuppliesController {
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID da Peça ou Insumo' })
   @ApiNoContentResponse({ description: 'Peça ou Insumo removido do Estoque com sucesso' })
   @ApiNotFoundResponse({ description: 'Peça ou Insumo não encontrado no Estoque' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
@@ -168,7 +172,7 @@ export class PartsSuppliesController {
   @ApiOkResponse({ type: PartSupplyDataResponseDto, description: 'Estoque atualizado com sucesso' })
   @ApiNotFoundResponse({ description: 'Peça ou Insumo não encontrado no Estoque' })
   @ApiConflictResponse({ description: 'Estoque insuficiente para realizar a saída' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   async updateStock(

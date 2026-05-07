@@ -87,8 +87,9 @@ export class Vehicle {
   }
 
   static create(props: CreateVehicleProps): Vehicle {
-    const plate = Plate.create(props.plate);
     Vehicle.validateProps(props);
+
+    const plate = Plate.create(props.plate);
 
     return new Vehicle({
       id: randomUUID(),
@@ -105,8 +106,9 @@ export class Vehicle {
   }
 
   update(props: UpdateVehicleProps): void {
-    const plate = Plate.create(props.plate);
     Vehicle.validateProps(props);
+
+    const plate = Plate.create(props.plate);
 
     this.customerId = props.customerId;
     this.plate = plate;

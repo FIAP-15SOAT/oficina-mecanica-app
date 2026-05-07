@@ -1,4 +1,6 @@
+import { Prisma } from '@generated/client';
 import { PrismaVehicleRepository } from '@infrastructure/repositories/prisma-vehicle.repository';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockPrismaVehicle } from '../../../helpers/vehicle-mock.factory';
@@ -36,6 +38,39 @@ describe('PrismaVehicleRepository', () => {
 
       expect(result.id).toBe(vehicle.id);
       expect(prisma.vehicle.create).toHaveBeenCalled();
+    });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const vehicle = Vehicle.create({
+        customerId: randomUUID(),
+        plate: 'ABC-1234',
+        brand: 'Toyota',
+        model: 'Corolla',
+        year: 2020,
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate plate', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.vehicle.create.mockRejectedValue(error);
+
+      await expect(repository.create(vehicle)).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should rethrow unexpected errors', async () => {
+      const vehicle = Vehicle.create({
+        customerId: randomUUID(),
+        plate: 'ABC-1234',
+        brand: 'Toyota',
+        model: 'Corolla',
+        year: 2020,
+      });
+
+      const error = new Error('Database connection lost');
+      prisma.vehicle.create.mockRejectedValue(error);
+
+      await expect(repository.create(vehicle)).rejects.toThrow('Database connection lost');
     });
   });
 
@@ -154,6 +189,29 @@ describe('PrismaVehicleRepository', () => {
         expect.objectContaining({ where: { id } }),
       );
     });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const id = randomUUID();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate plate', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.vehicle.update.mockRejectedValue(error);
+
+      await expect(repository.update(id, { plate: Plate.create('XYZ-9999') })).rejects.toThrow(
+        ResourceConflictException,
+      );
+    });
+
+    it('should rethrow unexpected errors from update', async () => {
+      const id = randomUUID();
+      const unexpectedError = new Error('Database connection lost');
+      prisma.vehicle.update.mockRejectedValue(unexpectedError);
+
+      await expect(repository.update(id, { brand: 'Test' })).rejects.toThrow(
+        'Database connection lost',
+      );
+    });
   });
 
   describe('delete', () => {
@@ -169,7 +227,7 @@ describe('PrismaVehicleRepository', () => {
 
   describe('isVehicleInUse', () => {
     it('should return true if vehicle has work orders', async () => {
-      prisma.workOrder.count.mockResolvedValue(1);
+      prisma.workOrder.findFirst.mockResolvedValue({ id: 'some-id' });
 
       const result = await repository.isVehicleInUse(randomUUID());
 
@@ -177,7 +235,7 @@ describe('PrismaVehicleRepository', () => {
     });
 
     it('should return false if vehicle has no work orders', async () => {
-      prisma.workOrder.count.mockResolvedValue(0);
+      prisma.workOrder.findFirst.mockResolvedValue(null);
 
       const result = await repository.isVehicleInUse(randomUUID());
 

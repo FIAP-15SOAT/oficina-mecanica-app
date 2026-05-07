@@ -62,6 +62,15 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   async findById(id: string): Promise<WorkOrder | null> {
     const record = await this.prisma.workOrder.findUnique({
       where: { id },
+      include: WORK_ORDER_LIST_INCLUDE,
+    });
+
+    return record ? WorkOrderMapper.toDomain(record) : null;
+  }
+
+  async findByIdWithDetails(id: string): Promise<WorkOrder | null> {
+    const record = await this.prisma.workOrder.findUnique({
+      where: { id },
       include: WORK_ORDER_DETAIL_INCLUDE,
     });
     return record ? WorkOrderMapper.toDomain(record) : null;
@@ -140,49 +149,82 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     return String(rows[0].next).padStart(6, '0');
   }
 
-  async addServiceItems(items: WorkOrderService[]): Promise<void> {
-    await this.prisma.workOrderService.createMany({
-      data: items.map((item) => ({
-        id: item.id,
-        workOrderId: item.workOrderId,
-        serviceId: item.serviceId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        status: item.status,
-        startedAt: item.startedAt,
-        finishedAt: item.finishedAt,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      })),
-    });
+  async addServiceItems(workOrder: WorkOrder, items: WorkOrderService[]): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.workOrderService.createMany({
+        data: items.map((item) => ({
+          id: item.id,
+          workOrderId: item.workOrderId,
+          serviceId: item.serviceId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          status: item.status,
+          startedAt: item.startedAt,
+          finishedAt: item.finishedAt,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        })),
+      }),
+      this.prisma.workOrder.update({
+        where: { id: workOrder.id },
+        data: { updatedAt: workOrder.updatedAt },
+      }),
+    ]);
   }
 
-  async updateServiceItemStatus(item: WorkOrderService): Promise<void> {
-    await this.prisma.workOrderService.update({
-      where: {
-        workOrderId_serviceId: { workOrderId: item.workOrderId, serviceId: item.serviceId },
-      },
-      data: {
-        status: item.status,
-        startedAt: item.startedAt,
-        finishedAt: item.finishedAt,
-        updatedAt: item.updatedAt,
-      },
-    });
+  async updateServiceItemStatus(workOrder: WorkOrder, item: WorkOrderService): Promise<void> {
+    try {
+      await this.prisma.$transaction([
+        this.prisma.workOrderService.update({
+          where: {
+            workOrderId_serviceId: { workOrderId: item.workOrderId, serviceId: item.serviceId },
+          },
+          data: {
+            status: item.status,
+            startedAt: item.startedAt,
+            finishedAt: item.finishedAt,
+            updatedAt: item.updatedAt,
+          },
+        }),
+        this.prisma.workOrder.update({
+          where: { id: workOrder.id, version: workOrder.version },
+          data: {
+            status: workOrder.status,
+            startedAt: workOrder.startedAt,
+            finishedAt: workOrder.finishedAt,
+            updatedAt: workOrder.updatedAt,
+            version: { increment: 1 },
+          },
+        }),
+      ]);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new ConcurrencyException(
+          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 
-  async addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void> {
-    await this.prisma.workOrderPartSupply.createMany({
-      data: items.map((item) => ({
-        workOrderId: item.workOrderId,
-        partSupplyId: item.partSupplyId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      })),
-    });
+  async addPartSupplyItems(workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.workOrderPartSupply.createMany({
+        data: items.map((item) => ({
+          workOrderId: item.workOrderId,
+          partSupplyId: item.partSupplyId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        })),
+      }),
+      this.prisma.workOrder.update({
+        where: { id: workOrder.id },
+        data: { updatedAt: workOrder.updatedAt },
+      }),
+    ]);
   }
 }

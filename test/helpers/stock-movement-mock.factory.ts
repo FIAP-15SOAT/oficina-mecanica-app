@@ -21,6 +21,7 @@ export function createMockStockMovement(overrides: Partial<StockMovement> = {}):
 export function createMockStockMovementRepository(): jest.Mocked<IStockMovementRepository> {
   return {
     create: jest.fn(),
+    createMany: jest.fn(),
     findAllPaginated: jest.fn(),
   };
 }

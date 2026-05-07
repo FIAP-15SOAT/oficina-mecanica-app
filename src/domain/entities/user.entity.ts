@@ -14,13 +14,6 @@ export interface CreateUserProps {
   role: UserRole;
 }
 
-export interface UpdateUserProps {
-  name?: string;
-  email?: string;
-  passwordHash?: string;
-  role?: UserRole;
-}
-
 interface UserProps {
   id: string;
   name: string;
@@ -74,29 +67,6 @@ export class User {
       createdAt: now,
       updatedAt: now,
     });
-  }
-
-  update(props: UpdateUserProps): void {
-    if (props.name !== undefined) {
-      User.validateName(props.name);
-      this.name = props.name.trim();
-    }
-
-    if (props.email !== undefined) {
-      this.email = Email.create(props.email);
-    }
-
-    if (props.passwordHash !== undefined) {
-      User.validatePasswordHash(props.passwordHash);
-      this.passwordHash = props.passwordHash;
-    }
-
-    if (props.role !== undefined) {
-      User.validateRole(props.role);
-      this.role = props.role;
-    }
-
-    this.updatedAt = new Date();
   }
 
   changeName(name: string): void {

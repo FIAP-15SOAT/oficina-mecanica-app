@@ -1,4 +1,5 @@
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
+import { LineItemPrice } from '@domain/value-objects/line-item-price.vo';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('WorkOrderPartSupply Entity', () => {
@@ -20,6 +21,15 @@ describe('WorkOrderPartSupply Entity', () => {
       expect(entity.unitPrice).toBe(50);
       expect(entity.totalPrice).toBe(100);
       expect(entity.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('should expose the lineItem as a LineItemPrice VO', () => {
+      const entity = WorkOrderPartSupply.create(validProps);
+
+      expect(entity.lineItem).toBeInstanceOf(LineItemPrice);
+      expect(entity.lineItem.quantity).toBe(2);
+      expect(entity.lineItem.unitPrice).toBe(50);
+      expect(entity.lineItem.totalPrice).toBe(100);
     });
 
     it('should throw when quantity is zero', () => {
@@ -60,7 +70,7 @@ describe('WorkOrderPartSupply Entity', () => {
   });
 
   describe('reconstitute()', () => {
-    it('should assign all partial props', () => {
+    it('should assign all partial props and expose a LineItemPrice VO', () => {
       const now = new Date();
 
       const entity = WorkOrderPartSupply.reconstitute({
@@ -73,7 +83,10 @@ describe('WorkOrderPartSupply Entity', () => {
         updatedAt: now,
       });
 
+      expect(entity.quantity).toBe(1);
+      expect(entity.unitPrice).toBe(20);
       expect(entity.totalPrice).toBe(20);
+      expect(entity.lineItem).toBeInstanceOf(LineItemPrice);
     });
   });
 });

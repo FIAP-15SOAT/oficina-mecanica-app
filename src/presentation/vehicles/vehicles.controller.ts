@@ -19,11 +19,13 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -45,6 +47,8 @@ import { VehiclePaginatedResponseDto } from './dto/vehicle-paginated-response.dt
 import { VehiclePresenter } from './vehicle.presenter';
 
 @ApiTags('Gestão de Veículos')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('vehicles')

@@ -13,7 +13,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
   async execute(dto: UpdateWorkOrderServiceStatusDto): Promise<WorkOrderService> {
     return this.unitOfWork.executeTransaction(async (repos) => {
-      const workOrder = await repos.workOrder.findById(dto.workOrderId);
+      const workOrder = await repos.workOrder.findByIdWithDetails(dto.workOrderId);
 
       if (!workOrder) {
         throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
@@ -33,26 +33,22 @@ export class UpdateWorkOrderServiceStatusUseCase {
         await this.updateStockFromReservations(repos, workOrder);
       }
 
-      await repos.workOrder.updateServiceItemStatus(
-        workOrder.services!.find((s) => s.serviceId === dto.serviceId)!,
-      );
+      const item = workOrder.services!.find((s) => s.serviceId === dto.serviceId)!;
+      await repos.workOrder.updateServiceItemStatus(workOrder, item);
 
       if (statusChanged) {
-        await Promise.all([
-          repos.workOrder.update(workOrder),
-          repos.statusHistory.create(
-            StatusHistory.create({
-              workOrderId: workOrder.id,
-              changedById: dto.userId,
-              previousStatus,
-              newStatus: workOrder.status,
-              notes: null,
-            }),
-          ),
-        ]);
+        await repos.statusHistory.create(
+          StatusHistory.create({
+            workOrderId: workOrder.id,
+            changedById: dto.userId,
+            previousStatus,
+            newStatus: workOrder.status,
+            notes: null,
+          }),
+        );
       }
 
-      return workOrder.services!.find((s) => s.serviceId === dto.serviceId)!;
+      return item;
     });
   }
 
@@ -64,29 +60,35 @@ export class UpdateWorkOrderServiceStatusUseCase {
     const partSupplyIds = reservations.map((r) => r.partSupplyId);
     const partSupplies = await repos.partSupply.findByIds(partSupplyIds);
 
+    const movements: StockMovement[] = [];
+    const updates: Promise<unknown>[] = [];
+
     for (const reservation of reservations) {
       const partSupply = partSupplies.find((ps) => ps.id === reservation.partSupplyId)!;
 
-      const movement = StockMovement.create({
-        partSupplyId: reservation.partSupplyId,
-        workOrderId: workOrder.id,
-        quantity: reservation.quantity,
-        type: StockMovementType.EXIT,
-        reason: `Saída por Ordem de Serviço ${workOrder.number}`,
-      });
-
       partSupply.consumeReserved(reservation.quantity);
 
-      await Promise.all([
-        repos.stockMovement.create(movement),
+      movements.push(
+        StockMovement.create({
+          partSupplyId: reservation.partSupplyId,
+          workOrderId: workOrder.id,
+          quantity: reservation.quantity,
+          type: StockMovementType.EXIT,
+          reason: `Saída por Ordem de Serviço ${workOrder.number}`,
+        }),
+      );
+
+      updates.push(
         repos.partSupply.update(reservation.partSupplyId, {
           stock: partSupply.stock,
           reservedStock: partSupply.reservedStock,
           version: partSupply.version,
           updatedAt: partSupply.updatedAt,
         }),
-      ]);
+      );
     }
+
+    await Promise.all([repos.stockMovement.createMany(movements), ...updates]);
 
     await repos.stockReservation.deleteByWorkOrderId(workOrder.id);
   }

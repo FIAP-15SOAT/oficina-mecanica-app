@@ -1,4 +1,5 @@
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
+import { LineItemPrice } from '@domain/value-objects/line-item-price.vo';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
@@ -27,6 +28,15 @@ describe('WorkOrderService Entity', () => {
       expect(wos.finishedAt).toBeNull();
       expect(wos.createdAt).toBeInstanceOf(Date);
       expect(wos.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('should expose the lineItem as a LineItemPrice VO', () => {
+      const wos = WorkOrderService.create(validProps);
+
+      expect(wos.lineItem).toBeInstanceOf(LineItemPrice);
+      expect(wos.lineItem.quantity).toBe(2);
+      expect(wos.lineItem.unitPrice).toBe(150.0);
+      expect(wos.lineItem.totalPrice).toBe(300.0);
     });
 
     it('should throw if workOrderId is missing', () => {
@@ -71,8 +81,10 @@ describe('WorkOrderService Entity', () => {
       );
     });
 
-    it('should not throw if unitPrice is zero', () => {
-      expect(() => WorkOrderService.create({ ...validProps, unitPrice: 0 })).not.toThrow();
+    it('should throw if unitPrice is zero', () => {
+      expect(() => WorkOrderService.create({ ...validProps, unitPrice: 0 })).toThrow(
+        DomainValidationException,
+      );
     });
   });
 

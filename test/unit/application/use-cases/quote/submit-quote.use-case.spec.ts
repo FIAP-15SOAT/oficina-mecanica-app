@@ -45,8 +45,7 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should submit quote and change WO to AWAITING_APPROVAL when IN_DIAGNOSIS', async () => {
     const service = createMockQuoteService();
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [service];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.IN_DIAGNOSIS,
@@ -71,8 +70,7 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should submit quote without changing WO status when already AWAITING_APPROVAL', async () => {
     const service = createMockQuoteService();
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [service];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
@@ -113,8 +111,7 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should send email when customer has email', async () => {
     const service = createMockQuoteService();
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [service];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
@@ -134,8 +131,7 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should fail if email sending fails', async () => {
     const service = createMockQuoteService();
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [service];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,

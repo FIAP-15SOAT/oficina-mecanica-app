@@ -24,7 +24,7 @@ describe('UpdateStockUseCase', () => {
     const id = randomUUID();
     const partSupply = createMockPartSupply({ id, stock: 10 });
     (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
-    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.update as jest.Mock).mockResolvedValue(partSupply);
     (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
     const result = await useCase.execute(id, {
@@ -33,12 +33,7 @@ describe('UpdateStockUseCase', () => {
       reason: 'Stock replenishment',
     });
 
-    expect(repos.partSupply.updateStock).toHaveBeenCalledWith(id, {
-      type: StockMovementType.ENTRY,
-      quantity: 5,
-      reason: 'Stock replenishment',
-      workOrderId: undefined,
-    });
+    expect(repos.partSupply.update).toHaveBeenCalledWith(id, partSupply);
     expect(repos.stockMovement.create).toHaveBeenCalled();
     expect(result).toEqual(partSupply);
   });
@@ -48,7 +43,7 @@ describe('UpdateStockUseCase', () => {
     const workOrderId = randomUUID();
     const partSupply = createMockPartSupply({ id, stock: 10 });
     (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
-    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.update as jest.Mock).mockResolvedValue(partSupply);
     (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
     const result = await useCase.execute(id, {
@@ -58,12 +53,7 @@ describe('UpdateStockUseCase', () => {
       workOrderId,
     });
 
-    expect(repos.partSupply.updateStock).toHaveBeenCalledWith(id, {
-      type: StockMovementType.EXIT,
-      quantity: 3,
-      reason: 'Work Order consumption',
-      workOrderId,
-    });
+    expect(repos.partSupply.update).toHaveBeenCalledWith(id, partSupply);
     expect(repos.stockMovement.create).toHaveBeenCalled();
     expect(result).toEqual(partSupply);
   });
@@ -82,7 +72,7 @@ describe('UpdateStockUseCase', () => {
       }),
     ).rejects.toThrow(BusinessRuleViolationException);
 
-    expect(repos.partSupply.updateStock).not.toHaveBeenCalled();
+    expect(repos.partSupply.update).not.toHaveBeenCalled();
     expect(repos.stockMovement.create).not.toHaveBeenCalled();
   });
 
@@ -90,7 +80,7 @@ describe('UpdateStockUseCase', () => {
     const id = randomUUID();
     const partSupply = createMockPartSupply({ id, stock: 10 });
     (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
-    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.update as jest.Mock).mockResolvedValue(partSupply);
     (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
     const result = await useCase.execute(id, {
@@ -108,7 +98,7 @@ describe('UpdateStockUseCase', () => {
 
     const partSupply = createMockPartSupply({ id, stock: 10 });
     (repos.partSupply.findById as jest.Mock).mockResolvedValue(partSupply);
-    (repos.partSupply.updateStock as jest.Mock).mockResolvedValue(partSupply);
+    (repos.partSupply.update as jest.Mock).mockResolvedValue(partSupply);
     (repos.stockMovement.create as jest.Mock).mockResolvedValue(createMockStockMovement());
 
     await useCase.execute(id, {

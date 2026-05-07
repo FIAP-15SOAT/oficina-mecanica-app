@@ -45,6 +45,8 @@ export class WorkOrderMapper {
       deliveredAt: record.deliveredAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      services: record.services?.map((s) => WorkOrderServiceMapper.toDomain(s)),
+      partSupplies: record.partSupplies?.map((p) => WorkOrderPartSupplyMapper.toDomain(p)),
     });
 
     if (record.customer) {
@@ -57,14 +59,6 @@ export class WorkOrderMapper {
 
     if (record.assignedUser) {
       entity.assignedUser = UserMapper.toDomain(record.assignedUser);
-    }
-
-    if (record.services) {
-      entity.services = record.services.map((s) => WorkOrderServiceMapper.toDomain(s));
-    }
-
-    if (record.partSupplies) {
-      entity.partSupplies = record.partSupplies.map((p) => WorkOrderPartSupplyMapper.toDomain(p));
     }
 
     return entity;

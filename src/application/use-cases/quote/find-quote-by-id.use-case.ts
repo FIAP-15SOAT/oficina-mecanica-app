@@ -6,7 +6,7 @@ export class FindQuoteByIdUseCase {
   constructor(private readonly quoteRepository: IQuoteRepository) {}
 
   async execute(id: string): Promise<Quote> {
-    const quote = await this.quoteRepository.findById(id);
+    const quote = await this.quoteRepository.findByIdWithDetails(id);
 
     if (!quote) {
       throw new ResourceNotFoundException('Orçamento', id);

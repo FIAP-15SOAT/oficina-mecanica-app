@@ -44,8 +44,9 @@ export class SubmitQuoteUseCase {
       const [updatedQuote] = await Promise.all([
         repos.quote.update(quote),
         this.updateWorkOrderStatus(repos, workOrder),
-        this.sendEmailNotification(quote, customer, workOrder.number),
       ]);
+
+      await this.sendEmailNotification(quote, customer, workOrder.number);
 
       return updatedQuote;
     });

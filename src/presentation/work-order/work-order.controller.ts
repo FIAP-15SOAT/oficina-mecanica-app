@@ -12,12 +12,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -54,6 +59,8 @@ import { WorkOrderPresenter } from './work-order.presenter';
 import { QuotePresenter } from '../quote/quote.presenter';
 
 @ApiTags('Gestão de Ordens de Serviço')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('work-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -91,9 +98,12 @@ export class WorkOrderController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Criar nova Ordem de Serviço' })
-  @ApiOkResponse({ type: WorkOrderDataResponseDto })
-  @ApiUnauthorizedResponse()
-  @ApiForbiddenResponse()
+  @ApiCreatedResponse({
+    type: WorkOrderDataResponseDto,
+    description: 'Ordem de Serviço criada com sucesso',
+  })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   async create(@Body() dto: CreateWorkOrderRequestDto, @CurrentUser() user: AuthenticatedUser) {
     const workOrder = await this.createWorkOrderUseCase.execute({
       ...dto,
@@ -151,9 +161,13 @@ export class WorkOrderController {
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Atualizar status da Ordem de Serviço' })
-  @ApiOkResponse({ type: WorkOrderDataResponseDto })
-  @ApiNotFoundResponse()
-  @ApiUnprocessableEntityResponse()
+  @ApiOkResponse({ type: WorkOrderDataResponseDto, description: 'Status atualizado com sucesso' })
+  @ApiNotFoundResponse({ description: 'Ordem de Serviço não encontrada' })
+  @ApiUnprocessableEntityResponse({ description: 'Transição de status inválida' })
+  @ApiConflictResponse({ description: 'Modificação concorrente detectada. Tente novamente.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiParam({ name: 'id', format: 'uuid' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
@@ -171,8 +185,15 @@ export class WorkOrderController {
   @Patch(':workOrderId/services/:serviceId')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT, UserRole.MECHANIC)
   @ApiOperation({ summary: 'Atualizar status de serviço da Ordem de Serviço' })
-  @ApiOkResponse({ type: WorkOrderServiceItemDataResponseDto })
-  @ApiNotFoundResponse()
+  @ApiOkResponse({
+    type: WorkOrderServiceItemDataResponseDto,
+    description: 'Status do serviço atualizado',
+  })
+  @ApiNotFoundResponse({ description: 'Ordem de Serviço ou serviço não encontrado' })
+  @ApiConflictResponse({ description: 'Modificação concorrente detectada. Tente novamente.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiParam({ name: 'workOrderId', format: 'uuid' })
   @ApiParam({ name: 'serviceId', format: 'uuid' })
   async updateServiceStatus(

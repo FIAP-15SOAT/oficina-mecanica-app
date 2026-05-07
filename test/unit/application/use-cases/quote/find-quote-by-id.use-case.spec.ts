@@ -20,11 +20,9 @@ describe('FindQuoteByIdUseCase', () => {
   it('should return quote with populated services and parts loaded by findById', async () => {
     const service = createMockQuoteService();
     const part = createMockQuotePartSupply();
-    const quote = createMockQuote();
-    quote.services = [service];
-    quote.partsSupplies = [part];
+    const quote = createMockQuote({ services: [service], partsSupplies: [part] });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
 
     const result = await useCase.execute(quote.id);
 
@@ -35,7 +33,7 @@ describe('FindQuoteByIdUseCase', () => {
 
   it('should return quote when findById returns it without services', async () => {
     const quote = createMockQuote();
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
 
     const result = await useCase.execute(quote.id);
 

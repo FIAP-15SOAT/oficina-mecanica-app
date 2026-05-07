@@ -124,6 +124,12 @@ export class PartSupply {
         );
       }
 
+      if (this.stock - quantity < this.reservedStock) {
+        throw new BusinessRuleViolationException(
+          `Não é possível reduzir o estoque abaixo do estoque reservado. Estoque atual: ${this.stock}, Reservado: ${this.reservedStock}, Redução solicitada: ${quantity}.`,
+        );
+      }
+
       this.stock -= quantity;
     } else {
       this.stock = quantity;

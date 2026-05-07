@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Customer as PrismaCustomer, Prisma } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Customer } from '@domain/entities/customer.entity';
 import {
   CustomerFilters,
@@ -21,28 +22,35 @@ export class PrismaCustomerRepository implements ICustomerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(customer: Customer): Promise<Customer> {
-    const record = await this.prisma.customer.create({
-      data: {
-        id: customer.id,
-        name: customer.name,
-        type: customer.type,
-        document: customer.document.value,
-        email: customer.email.value,
-        phone: customer.phone.value,
-        ...(customer.address && {
-          address: {
-            create: {
-              street: customer.address.street,
-              city: customer.address.city,
-              state: customer.address.state,
-              zipCode: customer.address.zipCode.value,
+    try {
+      const record = await this.prisma.customer.create({
+        data: {
+          id: customer.id,
+          name: customer.name,
+          type: customer.type,
+          document: customer.document.value,
+          email: customer.email.value,
+          phone: customer.phone.value,
+          ...(customer.address && {
+            address: {
+              create: {
+                street: customer.address.street,
+                city: customer.address.city,
+                state: customer.address.state,
+                zipCode: customer.address.zipCode.value,
+              },
             },
-          },
-        }),
-      },
-      include: ADDRESS_INCLUDE,
-    });
-    return CustomerMapper.toDomain(record);
+          }),
+        },
+        include: ADDRESS_INCLUDE,
+      });
+      return CustomerMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('E-mail ou documento já cadastrado');
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Customer | null> {
@@ -101,38 +109,46 @@ export class PrismaCustomerRepository implements ICustomerRepository {
   }
 
   async update(id: string, data: Partial<Customer>): Promise<Customer> {
-    const record = await this.prisma.customer.update({
-      where: { id },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.document !== undefined && { document: data.document.value }),
-        ...(data.type !== undefined && { type: data.type }),
-        ...(data.email !== undefined && { email: data.email.value }),
-        ...(data.phone !== undefined && { phone: data.phone.value }),
-        ...(data.address !== undefined && {
-          address: data.address
-            ? {
-                upsert: {
-                  create: {
-                    street: data.address.street,
-                    city: data.address.city,
-                    state: data.address.state,
-                    zipCode: data.address.zipCode.value,
+    try {
+      const record = await this.prisma.customer.update({
+        where: { id },
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.document !== undefined && { document: data.document.value }),
+          ...(data.type !== undefined && { type: data.type }),
+          ...(data.email !== undefined && { email: data.email.value }),
+          ...(data.phone !== undefined && { phone: data.phone.value }),
+          ...(data.address !== undefined && {
+            address: data.address
+              ? {
+                  upsert: {
+                    create: {
+                      street: data.address.street,
+                      city: data.address.city,
+                      state: data.address.state,
+                      zipCode: data.address.zipCode.value,
+                    },
+                    update: {
+                      street: data.address.street,
+                      city: data.address.city,
+                      state: data.address.state,
+                      zipCode: data.address.zipCode.value,
+                    },
                   },
-                  update: {
-                    street: data.address.street,
-                    city: data.address.city,
-                    state: data.address.state,
-                    zipCode: data.address.zipCode.value,
-                  },
-                },
-              }
-            : { delete: true },
-        }),
-      },
-      include: ADDRESS_INCLUDE,
-    });
-    return CustomerMapper.toDomain(record);
+                }
+              : { delete: true },
+          }),
+        },
+        include: ADDRESS_INCLUDE,
+      });
+      return CustomerMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('E-mail ou documento já cadastrado para outro cliente');
+      }
+
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<void> {

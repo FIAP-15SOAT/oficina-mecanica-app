@@ -319,6 +319,31 @@ describe('PartSupply Entity', () => {
         'Estoque insuficiente',
       );
     });
+
+    it('should throw when EXIT would reduce stock below reservedStock', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-01',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-01',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 5,
+        minStock: 0,
+        reservedStock: 3,
+        version: 1,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.EXIT, 3)).toThrow(
+        BusinessRuleViolationException,
+      );
+    });
   });
 
   describe('reserve()', () => {

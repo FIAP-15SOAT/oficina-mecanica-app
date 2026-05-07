@@ -15,17 +15,20 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
+  ApiProduces,
   ApiTags,
+  ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
@@ -46,6 +49,9 @@ import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/user-respon
 import { UserPresenter } from './user.presenter';
 
 @ApiTags('Gestão de Usuários')
+@ApiProduces('application/json')
+@ApiUnauthorizedResponse({ description: 'Não autenticado' })
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -69,7 +75,7 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Criar novo usuário (somente Admin)' })
   @ApiCreatedResponse({ type: UserDataResponseDto, description: 'Usuário criado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiConflictResponse({ description: 'E-mail já cadastrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
@@ -98,7 +104,7 @@ export class UserController {
   @ApiOperation({ summary: 'Buscar usuário por ID (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiOkResponse({ type: UserDataResponseDto, description: 'Usuário encontrado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
@@ -111,7 +117,7 @@ export class UserController {
   @ApiOperation({ summary: 'Atualizar dados do usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiOkResponse({ type: UserDataResponseDto, description: 'Usuário atualizado' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID com formato incorreto' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'E-mail já cadastrado' })
@@ -129,7 +135,7 @@ export class UserController {
   @ApiOperation({ summary: 'Alterar status do usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiOkResponse({ type: UserDataResponseDto, description: 'Status do usuário atualizado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Usuário já está no status informado' })
@@ -147,7 +153,7 @@ export class UserController {
   @ApiOperation({ summary: 'Remover usuário (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do usuário' })
   @ApiNoContentResponse({ description: 'Usuário removido' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {

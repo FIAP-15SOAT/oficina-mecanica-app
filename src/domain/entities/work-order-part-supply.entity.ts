@@ -1,4 +1,4 @@
-﻿import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 import { PartSupply } from './part-supply.entity';
 
 export interface CreateWorkOrderPartSupplyProps {
@@ -11,6 +11,14 @@ export interface CreateWorkOrderPartSupplyProps {
 interface WorkOrderPartSupplyProps {
   workOrderId: string;
   partSupplyId: string;
+  lineItem: LineItemPrice;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ReconstitueWorkOrderPartSupplyProps {
+  workOrderId: string;
+  partSupplyId: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -21,9 +29,7 @@ interface WorkOrderPartSupplyProps {
 export class WorkOrderPartSupply {
   readonly workOrderId: string;
   readonly partSupplyId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  private _lineItem: LineItemPrice;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -32,49 +38,46 @@ export class WorkOrderPartSupply {
   private constructor(props: WorkOrderPartSupplyProps) {
     this.workOrderId = props.workOrderId;
     this.partSupplyId = props.partSupplyId;
-    this.quantity = props.quantity;
-    this.unitPrice = props.unitPrice;
-    this.totalPrice = props.totalPrice;
+    this._lineItem = props.lineItem;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
 
-  static reconstitute(props: WorkOrderPartSupplyProps): WorkOrderPartSupply {
-    return new WorkOrderPartSupply(props);
+  static reconstitute(props: ReconstitueWorkOrderPartSupplyProps): WorkOrderPartSupply {
+    return new WorkOrderPartSupply({
+      workOrderId: props.workOrderId,
+      partSupplyId: props.partSupplyId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateWorkOrderPartSupplyProps): WorkOrderPartSupply {
-    WorkOrderPartSupply.validateQuantity(props.quantity);
-    WorkOrderPartSupply.validateUnitPrice(props.unitPrice);
-
     const now = new Date();
 
     return new WorkOrderPartSupply({
       workOrderId: props.workOrderId,
       partSupplyId: props.partSupplyId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
+      lineItem: LineItemPrice.create(props.quantity, props.unitPrice),
       createdAt: now,
       updatedAt: now,
     });
   }
 
-  private static validateQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity)) {
-      throw new DomainValidationException('Quantidade deve ser um número inteiro');
-    }
-    if (quantity <= 0) {
-      throw new DomainValidationException('Quantidade deve ser maior que zero');
-    }
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
   }
 
-  private static validateUnitPrice(unitPrice: number): void {
-    if (!Number.isFinite(unitPrice)) {
-      throw new DomainValidationException('Preço unitário inválido');
-    }
-    if (unitPrice <= 0) {
-      throw new DomainValidationException('Preço unitário deve ser maior que zero');
-    }
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
   }
 }

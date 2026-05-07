@@ -26,8 +26,7 @@ describe('AddQuoteServiceUseCase', () => {
   });
 
   it('should add a service and recalculate totals', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
     const service = createMockService({ basePrice: 150 });
 
     quoteRepository.findById.mockResolvedValue(quote);
@@ -54,8 +53,7 @@ describe('AddQuoteServiceUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [] });
     const service = createMockService();
     quoteRepository.findById.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(service);
@@ -66,8 +64,7 @@ describe('AddQuoteServiceUseCase', () => {
   });
 
   it('should throw ResourceNotFoundException when service not found', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
     quoteRepository.findById.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(null);
 
@@ -79,8 +76,7 @@ describe('AddQuoteServiceUseCase', () => {
   it('should throw BusinessRuleViolationException when service already exists in quote', async () => {
     const service = createMockService({ basePrice: 150 });
     const existing = createMockQuoteService({ serviceId: service.id });
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [existing];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [existing] });
 
     quoteRepository.findById.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(service);

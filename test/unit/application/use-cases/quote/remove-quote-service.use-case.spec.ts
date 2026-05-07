@@ -26,12 +26,13 @@ describe('RemoveQuoteServiceUseCase', () => {
       quantity: 1,
       totalPrice: 100,
     });
+
     const quote = createMockQuote({
       status: QuoteStatus.PENDING,
       servicesAmount: 100,
       totalAmount: 100,
+      services: [existingItem],
     });
-    quote.services = [existingItem];
 
     quoteRepository.findById.mockResolvedValue(quote);
     (quoteRepository.removeServiceItem as jest.Mock).mockResolvedValue(undefined);
@@ -50,8 +51,7 @@ describe('RemoveQuoteServiceUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'svc')).rejects.toThrow(BusinessRuleViolationException);
@@ -60,8 +60,7 @@ describe('RemoveQuoteServiceUseCase', () => {
   });
 
   it('should throw EntityNotFoundException when service is not associated with the quote', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'nonexistent-service')).rejects.toThrow(

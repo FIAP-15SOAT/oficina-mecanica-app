@@ -9,10 +9,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiResponse,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -28,6 +30,8 @@ import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { AuthPresenter } from './auth.presenter';
 
 @ApiTags('Autenticação')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -43,7 +47,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autenticar usuário' })
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Login realizado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
   async login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.authenticateUseCase.execute({
@@ -57,7 +61,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renovar tokens com refresh token' })
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Tokens renovados com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
   async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
     const result = await this.refreshTokenUseCase.execute({

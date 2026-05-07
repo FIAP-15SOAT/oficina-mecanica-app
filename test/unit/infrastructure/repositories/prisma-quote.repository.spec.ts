@@ -47,7 +47,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('findById', () => {
-    it('should return a quote when found', async () => {
+    it('should return a quote without services (minimal) when found', async () => {
       const id = randomUUID();
       prisma.quote.findUnique.mockResolvedValue({
         id,
@@ -61,6 +61,7 @@ describe('PrismaQuoteRepository', () => {
 
       expect(result).toBeDefined();
       expect(result?.id).toBe(id);
+      expect(prisma.quote.findUnique).toHaveBeenCalledWith({ where: { id } });
     });
 
     it('should return null when not found', async () => {
@@ -68,6 +69,38 @@ describe('PrismaQuoteRepository', () => {
 
       const result = await repository.findById(randomUUID());
 
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIdWithDetails', () => {
+    it('should return a quote with services and partsSupplies when found', async () => {
+      const id = randomUUID();
+      prisma.quote.findUnique.mockResolvedValue({
+        id,
+        status: QuoteStatus.PENDING,
+        servicesAmount: new Prisma.Decimal(0),
+        partsAmount: new Prisma.Decimal(0),
+        totalAmount: new Prisma.Decimal(0),
+        services: [],
+        partsSupplies: [],
+      });
+
+      const result = await repository.findByIdWithDetails(id);
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe(id);
+      expect(prisma.quote.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id },
+          include: { services: true, partsSupplies: true },
+        }),
+      );
+    });
+
+    it('should return null when not found', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+      const result = await repository.findByIdWithDetails(randomUUID());
       expect(result).toBeNull();
     });
   });

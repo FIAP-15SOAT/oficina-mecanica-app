@@ -39,6 +39,34 @@ describe('PrismaStockMovementRepository', () => {
     });
   });
 
+  describe('createMany', () => {
+    it('should call createMany with mapped data', async () => {
+      const m1 = StockMovement.create({
+        partSupplyId: randomUUID(),
+        type: StockMovementType.EXIT,
+        quantity: 5,
+        reason: 'OS-001',
+      });
+      const m2 = StockMovement.create({
+        partSupplyId: randomUUID(),
+        type: StockMovementType.EXIT,
+        quantity: 2,
+        reason: 'OS-001',
+      });
+
+      prisma.stockMovement.createMany.mockResolvedValue({ count: 2 });
+
+      await repository.createMany([m1, m2]);
+
+      expect(prisma.stockMovement.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ partSupplyId: m1.partSupplyId, quantity: 5 }),
+          expect.objectContaining({ partSupplyId: m2.partSupplyId, quantity: 2 }),
+        ]),
+      });
+    });
+  });
+
   describe('findAllPaginated', () => {
     it('should return paginated stock movements', async () => {
       prisma.stockMovement.findMany.mockResolvedValue([

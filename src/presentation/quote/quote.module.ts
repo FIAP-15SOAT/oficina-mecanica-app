@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 import { CreateQuoteUseCase } from '@application/use-cases/quote/create-quote.use-case';
 import { FindQuoteByIdUseCase } from '@application/use-cases/quote/find-quote-by-id.use-case';
@@ -17,9 +16,7 @@ import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-qu
 import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-decision-quote.use-case';
 import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
 import { FindWorkOrderQuotesUseCase } from '@application/use-cases/quote/find-work-order-quotes.use-case';
-import { JwtTokenService } from '@infrastructure/services/jwt-token.service';
-import { MailerEmailSenderService } from '@infrastructure/services/mailer-email-sender.service';
-import { JwtService } from '@nestjs/jwt';
+import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
@@ -32,12 +29,9 @@ import { IEmailSenderService } from '@domain/interfaces/services/email-sender.se
 import { QuoteController } from './quote.controller';
 
 @Module({
-  imports: [JwtModule.register({}), ConfigModule],
+  imports: [InfrastructureServicesModule],
   controllers: [QuoteController],
   providers: [
-    { provide: 'IEmailSenderService', useClass: MailerEmailSenderService },
-    { provide: 'ITokenService', useClass: JwtTokenService },
-    JwtService,
     {
       provide: 'ICreateQuoteUseCase',
       useFactory: (quoteRepo: IQuoteRepository, workOrderRepo: IWorkOrderRepository) =>

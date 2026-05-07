@@ -31,8 +31,8 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
       status: QuoteStatus.PENDING,
       servicesAmount: 100,
       totalAmount: 100,
+      services: [existing],
     });
-    quote.services = [existing];
 
     quoteRepository.findById.mockResolvedValue(quote);
     (quoteRepository.updateServiceItemQuantity as jest.Mock).mockResolvedValue(undefined);
@@ -56,8 +56,7 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(
@@ -66,8 +65,7 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
   });
 
   it('should throw EntityNotFoundException when service item not found in quote', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.services = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(

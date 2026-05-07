@@ -1,18 +1,10 @@
-type CountableDelegate = {
-  count(args?: Record<string, unknown>): Promise<number>;
+type FindFirstDelegate = {
+  findFirst(args?: Record<string, unknown>): Promise<unknown>;
 };
 
-/**
- * Helper genérico de verificação de existência para uso nos repositories Prisma.
- * Usa count com take: 1 para que o banco pare na primeira linha encontrada,
- * evitando varredura completa e tráfego de colunas desnecessárias.
- *
- * @param delegate - Delegate do Prisma (ex: prisma.vehicle, prisma.workOrder)
- * @param where    - Filtro de existência
- */
 export async function existsBy(
-  delegate: CountableDelegate,
+  delegate: FindFirstDelegate,
   where: Record<string, unknown>,
 ): Promise<boolean> {
-  return (await delegate.count({ where, take: 1 })) > 0;
+  return (await delegate.findFirst({ where, select: { id: true } })) !== null;
 }

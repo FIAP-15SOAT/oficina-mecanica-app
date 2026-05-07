@@ -31,9 +31,8 @@ describe('RemoveQuotePartSupplyUseCase', () => {
       status: QuoteStatus.PENDING,
       partsAmount: 100,
       totalAmount: 100,
+      partsSupplies: [partSupply],
     });
-
-    quote.partsSupplies = [partSupply];
 
     quoteRepository.findById.mockResolvedValue(quote);
     (quoteRepository.removePartSupplyItem as jest.Mock).mockResolvedValue(undefined);
@@ -55,8 +54,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.SENT, partsSupplies: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'part-id')).rejects.toThrow(
@@ -66,9 +64,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
   });
 
   it('should throw EntityNotFoundException when part/supply is not associated with the quote', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'nonexistent-part')).rejects.toThrow(

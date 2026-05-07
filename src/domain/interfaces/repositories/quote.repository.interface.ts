@@ -12,6 +12,7 @@ export interface QuoteFilters {
 export interface IQuoteRepository {
   create(quote: Quote): Promise<Quote>;
   findById(id: string): Promise<Quote | null>;
+  findByIdWithDetails(id: string): Promise<Quote | null>;
   findByWorkOrderId(workOrderId: string): Promise<Quote[]>;
   findAllPaginated(
     pagination: PaginationInput,

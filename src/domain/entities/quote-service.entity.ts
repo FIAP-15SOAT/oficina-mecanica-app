@@ -1,5 +1,6 @@
-import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { validate as isUuid } from 'uuid';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 
 export interface CreateQuoteServiceProps {
   quoteId: string;
@@ -9,6 +10,14 @@ export interface CreateQuoteServiceProps {
 }
 
 interface QuoteServiceProps {
+  quoteId: string;
+  serviceId: string;
+  lineItem: LineItemPrice;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ReconstitueQuoteServiceProps {
   quoteId: string;
   serviceId: string;
   quantity: number;
@@ -21,59 +30,62 @@ interface QuoteServiceProps {
 export class QuoteService {
   readonly quoteId: string;
   readonly serviceId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  private _lineItem: LineItemPrice;
   readonly createdAt: Date;
   updatedAt: Date;
 
   private constructor(props: QuoteServiceProps) {
     this.quoteId = props.quoteId;
     this.serviceId = props.serviceId;
-    this.quantity = props.quantity;
-    this.unitPrice = props.unitPrice;
-    this.totalPrice = props.totalPrice;
+    this._lineItem = props.lineItem;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
 
-  static reconstitute(props: QuoteServiceProps): QuoteService {
-    return new QuoteService(props);
+  static reconstitute(props: ReconstitueQuoteServiceProps): QuoteService {
+    return new QuoteService({
+      quoteId: props.quoteId,
+      serviceId: props.serviceId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateQuoteServiceProps): QuoteService {
     QuoteService.validateQuoteId(props.quoteId);
     QuoteService.validateServiceId(props.serviceId);
-    QuoteService.validateQuantity(props.quantity);
-    QuoteService.validateUnitPrice(props.unitPrice);
 
     const now = new Date();
 
     return new QuoteService({
       quoteId: props.quoteId,
       serviceId: props.serviceId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
+      lineItem: LineItemPrice.create(props.quantity, props.unitPrice),
       createdAt: now,
       updatedAt: now,
     });
   }
 
   updateQuantity(quantity: number): void {
-    QuoteService.validateQuantity(quantity);
-    this.quantity = quantity;
-    this.totalPrice = this.quantity * this.unitPrice;
+    this._lineItem = this._lineItem.withQuantity(quantity);
     this.updatedAt = new Date();
   }
 
-  private static validateQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity)) {
-      throw new DomainValidationException('Quantidade deve ser um número inteiro');
-    }
-    if (quantity <= 0) {
-      throw new DomainValidationException('Quantidade deve ser maior que zero');
-    }
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
+  }
+
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
   }
 
   private static validateQuoteId(quoteId: string): void {
@@ -93,16 +105,6 @@ export class QuoteService {
 
     if (!isUuid(serviceId.trim())) {
       throw new DomainValidationException('ID do serviço deve ser um UUID válido');
-    }
-  }
-
-  private static validateUnitPrice(unitPrice: number): void {
-    if (!Number.isFinite(unitPrice)) {
-      throw new DomainValidationException('Preço unitário inválido');
-    }
-
-    if (unitPrice <= 0) {
-      throw new DomainValidationException('Preço unitário deve ser maior que zero');
     }
   }
 }

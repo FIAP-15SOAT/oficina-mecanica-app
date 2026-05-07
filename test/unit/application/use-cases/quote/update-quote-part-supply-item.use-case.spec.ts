@@ -31,9 +31,8 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
       status: QuoteStatus.PENDING,
       partsAmount: 80,
       totalAmount: 80,
+      partsSupplies: [existing],
     });
-
-    quote.partsSupplies = [existing];
 
     quoteRepository.findById.mockResolvedValue(quote);
     (quoteRepository.updatePartSupplyItemQuantity as jest.Mock).mockResolvedValue(undefined);
@@ -57,8 +56,7 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
   });
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.APPROVED });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.APPROVED, partsSupplies: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(
@@ -67,8 +65,7 @@ describe('UpdateQuotePartSupplyQuantityUseCase', () => {
   });
 
   it('should throw EntityNotFoundException when part supply item not found in quote', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    quote.partsSupplies = [];
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
     quoteRepository.findById.mockResolvedValue(quote);
 
     await expect(

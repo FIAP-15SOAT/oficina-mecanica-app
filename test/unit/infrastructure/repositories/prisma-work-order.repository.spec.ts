@@ -27,6 +27,8 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrder.create.mockResolvedValue({
         ...workOrder,
+        status: workOrder.status,
+        totalAmount: workOrder.totalAmount,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -39,7 +41,7 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('findById', () => {
-    it('should return a work order when found', async () => {
+    it('should return a work order when found (without services/partSupplies)', async () => {
       const id = randomUUID();
       prisma.workOrder.findUnique.mockResolvedValue({ id, number: '000001' });
 
@@ -47,11 +49,41 @@ describe('PrismaWorkOrderRepository', () => {
 
       expect(result).toBeDefined();
       expect(result?.id).toBe(id);
+      expect(prisma.workOrder.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id },
+          include: expect.not.objectContaining({ services: expect.anything() }),
+        }),
+      );
     });
 
     it('should return null when not found', async () => {
       prisma.workOrder.findUnique.mockResolvedValue(null);
       const result = await repository.findById(randomUUID());
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIdWithDetails', () => {
+    it('should return a work order with relations when found', async () => {
+      const id = randomUUID();
+      prisma.workOrder.findUnique.mockResolvedValue({ id, number: '000001' });
+
+      const result = await repository.findByIdWithDetails(id);
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe(id);
+      expect(prisma.workOrder.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id },
+          include: expect.objectContaining({ services: expect.anything() }),
+        }),
+      );
+    });
+
+    it('should return null when not found', async () => {
+      prisma.workOrder.findUnique.mockResolvedValue(null);
+      const result = await repository.findByIdWithDetails(randomUUID());
       expect(result).toBeNull();
     });
   });
@@ -132,7 +164,12 @@ describe('PrismaWorkOrderRepository', () => {
         updatedAt: new Date(),
       });
 
-      prisma.workOrder.update.mockResolvedValue({ ...workOrder, version: 2 });
+      prisma.workOrder.update.mockResolvedValue({
+        ...workOrder,
+        status: workOrder.status,
+        totalAmount: workOrder.totalAmount,
+        version: 2,
+      });
 
       const result = await repository.update(workOrder);
 
@@ -237,21 +274,48 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrderService.createMany.mockResolvedValue({ count: 1 });
 
-      await repository.addServiceItems([item]);
+      await repository.addServiceItems(workOrder, [item]);
 
       expect(prisma.workOrderService.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
         }),
       );
+      expect(prisma.workOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: workOrder.id },
+          data: expect.objectContaining({ updatedAt: workOrder.updatedAt }),
+        }),
+      );
     });
   });
 
   describe('updateServiceItemStatus', () => {
-    it('should call workOrderService.update with service status fields', async () => {
+    it('should atomically update service item and work order root', async () => {
+      const workOrderId = randomUUID();
       const serviceId = randomUUID();
+      const workOrder = WorkOrder.reconstitute({
+        id: workOrderId,
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 2,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const item = WorkOrderService.create({
-        workOrderId: randomUUID(),
+        workOrderId,
         serviceId,
         quantity: 1,
         unitPrice: 100,
@@ -259,8 +323,9 @@ describe('PrismaWorkOrderRepository', () => {
       item.startService();
 
       prisma.workOrderService.update.mockResolvedValue({});
+      prisma.workOrder.update.mockResolvedValue({});
 
-      await repository.updateServiceItemStatus(item);
+      await repository.updateServiceItemStatus(workOrder, item);
 
       expect(prisma.workOrderService.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -269,6 +334,91 @@ describe('PrismaWorkOrderRepository', () => {
           }),
           data: expect.objectContaining({ status: item.status }),
         }),
+      );
+      expect(prisma.workOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: workOrderId, version: 2 },
+          data: expect.objectContaining({ version: { increment: 1 } }),
+        }),
+      );
+    });
+
+    it('should throw ConcurrencyException on P2025 during atomic update', async () => {
+      const workOrderId = randomUUID();
+      const workOrder = WorkOrder.reconstitute({
+        id: workOrderId,
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 1,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const item = WorkOrderService.create({
+        workOrderId,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+      });
+
+      prisma.workOrder.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
+      prisma.workOrderService.update.mockResolvedValue({});
+
+      await expect(repository.updateServiceItemStatus(workOrder, item)).rejects.toThrow(
+        ConcurrencyException,
+      );
+    });
+
+    it('should rethrow unexpected errors from atomic update', async () => {
+      const workOrderId = randomUUID();
+      const workOrder = WorkOrder.reconstitute({
+        id: workOrderId,
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 1,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const item = WorkOrderService.create({
+        workOrderId,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+      });
+
+      prisma.workOrderService.update.mockRejectedValue(new Error('Unexpected DB error'));
+      prisma.workOrder.update.mockResolvedValue({});
+
+      await expect(repository.updateServiceItemStatus(workOrder, item)).rejects.toThrow(
+        'Unexpected DB error',
       );
     });
   });
@@ -289,11 +439,17 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrderPartSupply.createMany.mockResolvedValue({ count: 1 });
 
-      await repository.addPartSupplyItems([item]);
+      await repository.addPartSupplyItems(workOrder, [item]);
 
       expect(prisma.workOrderPartSupply.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
+        }),
+      );
+      expect(prisma.workOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: workOrder.id },
+          data: expect.objectContaining({ updatedAt: workOrder.updatedAt }),
         }),
       );
     });

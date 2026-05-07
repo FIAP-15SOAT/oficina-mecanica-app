@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 import { Service } from './service.entity';
 
 export interface CreateWorkOrderServiceProps {
@@ -13,6 +14,18 @@ export interface CreateWorkOrderServiceProps {
 }
 
 interface WorkOrderServiceProps {
+  id?: string;
+  workOrderId: string;
+  serviceId: string;
+  lineItem: LineItemPrice;
+  status: WorkOrderServiceStatus;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ReconstitueWorkOrderServiceProps {
   id?: string;
   workOrderId: string;
   serviceId: string;
@@ -30,9 +43,7 @@ export class WorkOrderService {
   readonly id: string;
   readonly workOrderId: string;
   readonly serviceId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  private _lineItem: LineItemPrice;
   status: WorkOrderServiceStatus;
   startedAt: Date | null;
   finishedAt: Date | null;
@@ -45,9 +56,7 @@ export class WorkOrderService {
     this.id = props.id ?? randomUUID();
     this.workOrderId = props.workOrderId;
     this.serviceId = props.serviceId;
-    this.quantity = props.quantity;
-    this.unitPrice = props.unitPrice;
-    this.totalPrice = props.totalPrice;
+    this._lineItem = props.lineItem;
     this.status = props.status;
     this.startedAt = props.startedAt;
     this.finishedAt = props.finishedAt;
@@ -55,8 +64,18 @@ export class WorkOrderService {
     this.updatedAt = props.updatedAt;
   }
 
-  static reconstitute(props: WorkOrderServiceProps): WorkOrderService {
-    return new WorkOrderService(props);
+  static reconstitute(props: ReconstitueWorkOrderServiceProps): WorkOrderService {
+    return new WorkOrderService({
+      id: props.id,
+      workOrderId: props.workOrderId,
+      serviceId: props.serviceId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      status: props.status,
+      startedAt: props.startedAt,
+      finishedAt: props.finishedAt,
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateWorkOrderServiceProps): WorkOrderService {
@@ -64,16 +83,14 @@ export class WorkOrderService {
 
     WorkOrderService.validateWorkOrderId(props.workOrderId);
     WorkOrderService.validateServiceId(props.serviceId);
-    WorkOrderService.validateQuantity(props.quantity);
-    WorkOrderService.validateUnitPrice(props.unitPrice);
+
+    const lineItem = LineItemPrice.create(props.quantity, props.unitPrice);
 
     return new WorkOrderService({
       id: randomUUID(),
       workOrderId: props.workOrderId,
       serviceId: props.serviceId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
+      lineItem,
       status: WorkOrderServiceStatus.PENDING,
       startedAt: null,
       finishedAt: null,
@@ -104,6 +121,22 @@ export class WorkOrderService {
     this.updatedAt = now;
   }
 
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
+  }
+
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
+  }
+
   private static validateWorkOrderId(workOrderId: string): void {
     if (!workOrderId) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório.');
@@ -121,18 +154,6 @@ export class WorkOrderService {
 
     if (!isUuid(serviceId)) {
       throw new DomainValidationException('ID do serviço deve ser um UUID válido.');
-    }
-  }
-
-  private static validateQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      throw new DomainValidationException('Quantidade deve ser um inteiro positivo.');
-    }
-  }
-
-  private static validateUnitPrice(unitPrice: number): void {
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-      throw new DomainValidationException('Preço unitário deve ser um número não negativo.');
     }
   }
 }
