@@ -45,6 +45,7 @@ export interface WorkOrderProps {
   internalNotes: string | null;
   mileageAtService: number | null;
   totalAmount: number;
+  version: number;
   approvedAt: Date | null;
   rejectedAt: Date | null;
   startedAt: Date | null;
@@ -65,6 +66,7 @@ export class WorkOrder {
   internalNotes: string | null;
   mileageAtService: number | null;
   totalAmount: number;
+  version: number;
   approvedAt: Date | null;
   rejectedAt: Date | null;
   startedAt: Date | null;
@@ -90,6 +92,7 @@ export class WorkOrder {
     this.internalNotes = props.internalNotes;
     this.mileageAtService = props.mileageAtService;
     this.totalAmount = props.totalAmount;
+    this.version = props.version;
     this.approvedAt = props.approvedAt;
     this.rejectedAt = props.rejectedAt;
     this.startedAt = props.startedAt;
@@ -121,6 +124,7 @@ export class WorkOrder {
       internalNotes: props.internalNotes?.trim() ?? null,
       mileageAtService: props.mileageAtService ?? null,
       totalAmount: 0,
+      version: 1,
       assignedUserId: props.assignedUser?.id ?? null,
       approvedAt: null,
       rejectedAt: null,

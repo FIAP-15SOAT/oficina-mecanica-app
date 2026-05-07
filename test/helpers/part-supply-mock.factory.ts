@@ -20,6 +20,7 @@ export function createMockPartSupply(overrides: Partial<PartSupply> = {}): PartS
     stock: 10,
     minStock: 2,
     reservedStock: 0,
+    version: 1,
     expiresAt: null,
     createdAt: now,
     updatedAt: now,

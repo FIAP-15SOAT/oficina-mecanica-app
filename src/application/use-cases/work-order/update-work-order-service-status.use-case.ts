@@ -82,6 +82,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
         repos.partSupply.update(reservation.partSupplyId, {
           stock: partSupply.stock,
           reservedStock: partSupply.reservedStock,
+          version: partSupply.version,
           updatedAt: partSupply.updatedAt,
         }),
       ]);

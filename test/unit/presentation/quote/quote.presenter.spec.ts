@@ -10,6 +10,7 @@ describe('QuotePresenter', () => {
     servicesAmount: 150,
     partsAmount: 50,
     totalAmount: 200,
+    version: 0,
     status: QuoteStatus.PENDING,
     notes: 'test notes',
     sentAt: new Date(),

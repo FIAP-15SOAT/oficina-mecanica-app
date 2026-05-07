@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PartSupply as PrismaPartSupply } from '@generated/client';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
@@ -99,6 +100,39 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
   }
 
   async update(id: string, data: Partial<PartSupply>): Promise<PartSupply> {
+    if (data.version !== undefined) {
+      try {
+        const record = await this.prisma.partSupply.update({
+          where: { id, version: data.version },
+          data: {
+            ...(data.name !== undefined && { name: data.name }),
+            ...(data.description !== undefined && { description: data.description }),
+            ...(data.sku !== undefined && { sku: data.sku }),
+            ...(data.partNumber !== undefined && { partNumber: data.partNumber }),
+            ...(data.category !== undefined && { category: data.category }),
+            ...(data.unit !== undefined && { unit: data.unit }),
+            ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
+            ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
+            ...(data.minStock !== undefined && { minStock: data.minStock }),
+            ...(data.stock !== undefined && { stock: data.stock }),
+            ...(data.reservedStock !== undefined && { reservedStock: data.reservedStock }),
+            ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
+            ...(data.updatedAt !== undefined && { updatedAt: data.updatedAt }),
+            version: { increment: 1 },
+          },
+        });
+
+        return PartSupplyMapper.toDomain(record);
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+          throw new ConcurrencyException(
+            'Peça/insumo foi modificado por outra operação. Tente novamente.',
+          );
+        }
+        throw error;
+      }
+    }
+
     const record = await this.prisma.partSupply.update({
       where: { id },
       data: {

@@ -20,6 +20,7 @@ export function createMockWorkOrder(overrides: Partial<WorkOrder> = {}): WorkOrd
     internalNotes: null,
     mileageAtService: null,
     totalAmount: 0,
+    version: 1,
     approvedAt: null,
     rejectedAt: null,
     startedAt: null,

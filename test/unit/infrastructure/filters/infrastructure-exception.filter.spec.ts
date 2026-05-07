@@ -3,6 +3,7 @@ import { InfrastructureExceptionFilter } from '@infrastructure/filters/infrastru
 import { AuthenticationFailedException } from '@infrastructure/exceptions/authentication-failed.exception';
 import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
 import { InfrastructureException } from '@infrastructure/exceptions/infrastructure.exception';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 
 function createMockHost() {
   const jsonFn = jest.fn();
@@ -91,6 +92,20 @@ describe('InfrastructureExceptionFilter', () => {
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
       error: 'Service Unavailable',
       message: 'Erro na operação DELETE',
+    });
+  });
+
+  it('should return 409 for ConcurrencyException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new ConcurrencyException('Conflito de versão');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      error: 'Conflict',
+      message: 'Conflito de versão',
     });
   });
 

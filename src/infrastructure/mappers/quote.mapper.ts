@@ -21,6 +21,7 @@ export class QuoteMapper {
       servicesAmount: Number(record.servicesAmount),
       partsAmount: Number(record.partsAmount),
       totalAmount: Number(record.totalAmount),
+      version: record.version,
       status: record.status as QuoteStatus,
       notes: record.notes ?? null,
       sentAt: record.sentAt ?? null,

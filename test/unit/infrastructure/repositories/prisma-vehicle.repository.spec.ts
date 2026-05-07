@@ -122,7 +122,7 @@ describe('PrismaVehicleRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a vehicle with all fields', async () => {
+    it('should update a vehicle', async () => {
       const id = randomUUID();
       const data: Partial<Vehicle> = {
         customerId: randomUUID(),
@@ -150,7 +150,9 @@ describe('PrismaVehicleRepository', () => {
       const result = await repository.update(id, data);
 
       expect(result.brand).toBe('Honda');
-      expect(prisma.vehicle.update).toHaveBeenCalled();
+      expect(prisma.vehicle.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id } }),
+      );
     });
   });
 

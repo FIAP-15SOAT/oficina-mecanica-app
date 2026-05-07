@@ -53,6 +53,7 @@ describe('WorkOrderPartSupplyMapper', () => {
           stock: 50,
           minStock: 10,
           reservedStock: 3,
+          version: 0,
           expiresAt: null,
           createdAt: now,
           updatedAt: now,

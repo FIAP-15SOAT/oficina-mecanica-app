@@ -38,6 +38,7 @@ interface PartSupplyProps {
   stock: number;
   minStock: number;
   reservedStock: number;
+  version: number;
   expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +57,7 @@ export class PartSupply {
   stock: number;
   minStock: number;
   reservedStock: number;
+  version: number;
   expiresAt: Date | null;
   readonly createdAt: Date;
   updatedAt: Date;
@@ -73,6 +75,7 @@ export class PartSupply {
     this.stock = props.stock;
     this.minStock = props.minStock;
     this.reservedStock = props.reservedStock;
+    this.version = props.version;
     this.expiresAt = props.expiresAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -100,6 +103,7 @@ export class PartSupply {
       stock: props.stock ?? 0,
       minStock: props.minStock ?? 0,
       reservedStock: 0,
+      version: 1,
       expiresAt: props.expiresAt ?? null,
       createdAt: now,
       updatedAt: now,

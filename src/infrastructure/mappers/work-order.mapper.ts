@@ -37,6 +37,7 @@ export class WorkOrderMapper {
       internalNotes: record.internalNotes ?? null,
       mileageAtService: record.mileageAtService ?? null,
       totalAmount: Number(record.totalAmount),
+      version: record.version,
       approvedAt: record.approvedAt ?? null,
       rejectedAt: record.rejectedAt ?? null,
       startedAt: record.startedAt ?? null,

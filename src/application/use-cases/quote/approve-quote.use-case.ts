@@ -64,26 +64,24 @@ export class ApproveQuoteUseCase {
 
     const partSupplies = await repos.partSupply.findByIds(partSupplyIds);
 
-    const reservations = partsSupplies.map((part) => {
-      const partSupply = partSupplies.find((ps) => ps.id === part.partSupplyId)!;
+    const reservations: StockReservation[] = [];
 
-      partSupply.reserve(part.quantity);
+    for (const partSupply of partsSupplies) {
+      const entity = partSupplies.find((p) => p.id === partSupply.partSupplyId)!;
 
-      return StockReservation.create({
-        partSupplyId: part.partSupplyId,
-        workOrderId,
-        quantity: part.quantity,
-      });
-    });
+      entity.reserve(partSupply.quantity);
 
-    await Promise.all([
-      repos.stockReservation.createMany(reservations),
-      ...partSupplies.map((ps) =>
-        repos.partSupply.update(ps.id, {
-          reservedStock: ps.reservedStock,
-          updatedAt: ps.updatedAt,
+      await repos.partSupply.update(entity.id, entity);
+
+      reservations.push(
+        StockReservation.create({
+          partSupplyId: partSupply.partSupplyId,
+          workOrderId,
+          quantity: partSupply.quantity,
         }),
-      ),
-    ]);
+      );
+    }
+
+    await repos.stockReservation.createMany(reservations);
   }
 }

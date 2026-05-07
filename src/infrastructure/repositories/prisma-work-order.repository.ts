@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Prisma } from '@generated/client';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
@@ -99,29 +100,36 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   }
 
   async update(workOrder: WorkOrder): Promise<WorkOrder> {
-    const record = await this.prisma.workOrder.update({
-      where: { id: workOrder.id },
-      data: {
-        ...(workOrder.assignedUserId !== undefined && { assignedUserId: workOrder.assignedUserId }),
-        ...(workOrder.status !== undefined && { status: workOrder.status }),
-        ...(workOrder.problemDescription !== undefined && {
+    try {
+      const record = await this.prisma.workOrder.update({
+        where: { id: workOrder.id, version: workOrder.version },
+        data: {
+          assignedUserId: workOrder.assignedUserId,
+          status: workOrder.status,
           problemDescription: workOrder.problemDescription,
-        }),
-        ...(workOrder.internalNotes !== undefined && { internalNotes: workOrder.internalNotes }),
-        ...(workOrder.mileageAtService !== undefined && {
+          internalNotes: workOrder.internalNotes,
           mileageAtService: workOrder.mileageAtService,
-        }),
-        ...(workOrder.totalAmount !== undefined && { totalAmount: workOrder.totalAmount }),
-        ...(workOrder.approvedAt !== undefined && { approvedAt: workOrder.approvedAt }),
-        ...(workOrder.rejectedAt !== undefined && { rejectedAt: workOrder.rejectedAt }),
-        ...(workOrder.startedAt !== undefined && { startedAt: workOrder.startedAt }),
-        ...(workOrder.finishedAt !== undefined && { finishedAt: workOrder.finishedAt }),
-        ...(workOrder.deliveredAt !== undefined && { deliveredAt: workOrder.deliveredAt }),
-        updatedAt: workOrder.updatedAt,
-      },
-      include: WORK_ORDER_DETAIL_INCLUDE,
-    });
-    return WorkOrderMapper.toDomain(record);
+          totalAmount: workOrder.totalAmount,
+          approvedAt: workOrder.approvedAt,
+          rejectedAt: workOrder.rejectedAt,
+          startedAt: workOrder.startedAt,
+          finishedAt: workOrder.finishedAt,
+          deliveredAt: workOrder.deliveredAt,
+          updatedAt: workOrder.updatedAt,
+          version: { increment: 1 },
+        },
+        include: WORK_ORDER_DETAIL_INCLUDE,
+      });
+
+      return WorkOrderMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new ConcurrencyException(
+          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 
   async generateNextNumber(): Promise<string> {

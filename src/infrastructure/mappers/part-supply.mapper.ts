@@ -18,6 +18,7 @@ export class PartSupplyMapper {
       stock: prismaRecord.stock,
       minStock: prismaRecord.minStock,
       reservedStock: prismaRecord.reservedStock,
+      version: prismaRecord.version,
       expiresAt: prismaRecord.expiresAt ?? null,
 
       createdAt: prismaRecord.createdAt,

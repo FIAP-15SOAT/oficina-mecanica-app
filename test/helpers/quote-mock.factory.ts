@@ -16,6 +16,7 @@ export function createMockQuote(overrides: Partial<Quote> = {}): Quote {
     servicesAmount: 0,
     partsAmount: 0,
     totalAmount: 0,
+    version: 1,
     sentAt: null,
     approvedAt: null,
     rejectedAt: null,

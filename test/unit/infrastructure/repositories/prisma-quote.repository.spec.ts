@@ -6,6 +6,7 @@ import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 
 describe('PrismaQuoteRepository', () => {
   let repository: PrismaQuoteRepository;
@@ -72,7 +73,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a quote', async () => {
+    it('should update a quote using optimistic locking', async () => {
       const id = randomUUID();
 
       const quote = Quote.reconstitute({
@@ -86,6 +87,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -101,6 +103,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: quote.sentAt,
         approvedAt: quote.approvedAt,
         rejectedAt: quote.rejectedAt,
+        version: 2,
         createdAt: quote.createdAt,
         updatedAt: quote.updatedAt,
       });
@@ -108,7 +111,58 @@ describe('PrismaQuoteRepository', () => {
       const result = await repository.update(quote);
 
       expect(result.status).toBe(QuoteStatus.SENT);
-      expect(prisma.quote.update).toHaveBeenCalled();
+      expect(prisma.quote.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: quote.id, version: 1 } }),
+      );
+    });
+
+    it('should throw ConcurrencyException when quote was modified concurrently', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        version: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.quote.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '7.0.0',
+        }),
+      );
+
+      await expect(repository.update(quote)).rejects.toThrow(ConcurrencyException);
+    });
+
+    it('should rethrow unexpected errors from update', async () => {
+      const quote = Quote.reconstitute({
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: 0,
+        partsAmount: 0,
+        totalAmount: 0,
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        version: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.quote.update.mockRejectedValue(new Error('Database connection lost'));
+
+      await expect(repository.update(quote)).rejects.toThrow('Database connection lost');
     });
   });
 
@@ -153,6 +207,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -188,6 +243,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -215,6 +271,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -250,6 +307,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -285,6 +343,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -312,6 +371,7 @@ describe('PrismaQuoteRepository', () => {
         sentAt: null,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

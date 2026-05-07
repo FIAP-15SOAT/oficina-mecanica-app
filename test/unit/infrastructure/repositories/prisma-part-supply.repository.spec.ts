@@ -7,6 +7,7 @@ import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PrismaPartSupplyRepository } from '@infrastructure/repositories/prisma-part-supply.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 
 describe('PrismaPartSupplyRepository', () => {
   let repository: PrismaPartSupplyRepository;
@@ -284,6 +285,72 @@ describe('PrismaPartSupplyRepository', () => {
 
       const callArg = prisma.partSupply.update.mock.calls[0][0];
       expect(callArg.data).toEqual({ stock: 7, reservedStock: 1, updatedAt });
+    });
+
+    it('should use update with version check when version is provided', async () => {
+      const id = randomUUID();
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
+
+      await repository.update(id, { name: 'Novo Nome', version: 0 });
+
+      expect(prisma.partSupply.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id, version: 0 } }),
+      );
+    });
+
+    it('should include all optional fields in versioned update when provided', async () => {
+      const id = randomUUID();
+      const expiresAt = new Date('2028-01-01');
+      const updatedAt = new Date();
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
+
+      await repository.update(id, {
+        name: 'Filtro Premium',
+        description: 'Nova descrição',
+        sku: 'FO-002',
+        partNumber: 'MANN-W713',
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 30,
+        salePrice: 59.9,
+        minStock: 5,
+        stock: 10,
+        reservedStock: 2,
+        expiresAt,
+        updatedAt,
+        version: 1,
+      });
+
+      expect(prisma.partSupply.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id, version: 1 },
+          data: expect.objectContaining({ name: 'Filtro Premium', reservedStock: 2 }),
+        }),
+      );
+    });
+
+    it('should throw ConcurrencyException when part supply was modified concurrently', async () => {
+      const id = randomUUID();
+      prisma.partSupply.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
+
+      await expect(repository.update(id, { stock: 5, version: 0 })).rejects.toThrow(
+        ConcurrencyException,
+      );
+    });
+
+    it('should rethrow unexpected errors from versioned update', async () => {
+      const id = randomUUID();
+      const unexpectedError = new Error('Database connection lost');
+      prisma.partSupply.update.mockRejectedValue(unexpectedError);
+
+      await expect(repository.update(id, { name: 'Test', version: 1 })).rejects.toThrow(
+        'Database connection lost',
+      );
     });
   });
 

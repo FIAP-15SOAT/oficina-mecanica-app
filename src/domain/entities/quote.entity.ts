@@ -22,6 +22,7 @@ interface QuoteProps {
   servicesAmount: number;
   partsAmount: number;
   totalAmount: number;
+  version: number;
   status: QuoteStatus;
   notes: string | null;
   sentAt: Date | null;
@@ -37,6 +38,7 @@ export class Quote {
   servicesAmount: number;
   partsAmount: number;
   totalAmount: number;
+  version: number;
   status: QuoteStatus;
   notes: string | null;
   sentAt: Date | null;
@@ -54,6 +56,7 @@ export class Quote {
     this.servicesAmount = props.servicesAmount;
     this.partsAmount = props.partsAmount;
     this.totalAmount = props.totalAmount;
+    this.version = props.version;
     this.status = props.status;
     this.notes = props.notes;
     this.sentAt = props.sentAt;
@@ -79,6 +82,7 @@ export class Quote {
       servicesAmount: 0,
       partsAmount: 0,
       totalAmount: 0,
+      version: 1,
       status: QuoteStatus.PENDING,
       notes: props.notes?.trim() ?? null,
       sentAt: null,

@@ -5,6 +5,8 @@ import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.ent
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
+import { Prisma } from '@generated/client';
 
 describe('PrismaWorkOrderRepository', () => {
   let repository: PrismaWorkOrderRepository;
@@ -108,7 +110,7 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a work order with all fields', async () => {
+    it('should update a work order using optimistic locking', async () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '001',
@@ -120,6 +122,7 @@ describe('PrismaWorkOrderRepository', () => {
         internalNotes: 'Notes',
         mileageAtService: 50000,
         totalAmount: 500,
+        version: 1,
         approvedAt: new Date(),
         rejectedAt: null,
         startedAt: new Date(),
@@ -129,14 +132,73 @@ describe('PrismaWorkOrderRepository', () => {
         updatedAt: new Date(),
       });
 
-      prisma.workOrder.update.mockResolvedValue({
-        ...workOrder,
-      });
+      prisma.workOrder.update.mockResolvedValue({ ...workOrder, version: 2 });
 
       const result = await repository.update(workOrder);
 
       expect(result.status).toBe(WorkOrderStatus.COMPLETED);
-      expect(prisma.workOrder.update).toHaveBeenCalled();
+      expect(prisma.workOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: workOrder.id, version: 1 } }),
+      );
+    });
+
+    it('should throw ConcurrencyException when work order was modified concurrently', async () => {
+      const workOrder = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.RECEIVED,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 1,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.workOrder.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '7.0.0',
+        }),
+      );
+
+      await expect(repository.update(workOrder)).rejects.toThrow(ConcurrencyException);
+    });
+
+    it('should rethrow unexpected errors from update', async () => {
+      const workOrder = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.RECEIVED,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 1,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.workOrder.update.mockRejectedValue(new Error('Database connection lost'));
+
+      await expect(repository.update(workOrder)).rejects.toThrow('Database connection lost');
     });
   });
 

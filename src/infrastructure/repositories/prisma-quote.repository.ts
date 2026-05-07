@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@generated/client';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
@@ -86,22 +87,33 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   }
 
   async update(quote: Quote): Promise<Quote> {
-    const record = await this.prisma.quote.update({
-      where: { id: quote.id },
-      data: {
-        servicesAmount: quote.servicesAmount,
-        partsAmount: quote.partsAmount,
-        totalAmount: quote.totalAmount,
-        status: quote.status,
-        notes: quote.notes,
-        sentAt: quote.sentAt,
-        approvedAt: quote.approvedAt,
-        rejectedAt: quote.rejectedAt,
-        updatedAt: quote.updatedAt,
-      },
-    });
+    try {
+      const record = await this.prisma.quote.update({
+        where: { id: quote.id, version: quote.version },
+        data: {
+          servicesAmount: quote.servicesAmount,
+          partsAmount: quote.partsAmount,
+          totalAmount: quote.totalAmount,
+          status: quote.status,
+          notes: quote.notes,
+          sentAt: quote.sentAt,
+          approvedAt: quote.approvedAt,
+          rejectedAt: quote.rejectedAt,
+          updatedAt: quote.updatedAt,
+          version: { increment: 1 },
+        },
+        include: { services: true, partsSupplies: true },
+      });
 
-    return QuoteMapper.toDomain(record);
+      return QuoteMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new ConcurrencyException(
+          'Orçamento foi modificado por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 
   async rejectPendingByWorkOrderId(workOrderId: string): Promise<void> {
