@@ -38,7 +38,7 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
       BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
       QUOTE_DECISION_TOKEN_SECRET: ${QUOTE_DECISION_TOKEN_SECRET:-change-me-quote-decision-in-production}
-      MAIL_HOST: localhost
+      MAIL_HOST: mailhog
       MAIL_PORT: 1025
       TZ: America/Sao_Paulo
     depends_on:
@@ -52,12 +52,6 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
-    environment:
-      - MH_STORAGE=maildir
-      - MH_MAILDIR_PATH=/maildir
-    volumes:
-      - mailhog_data:/maildir
 
 volumes:
   postgres_data:
-  mailhog_data:
