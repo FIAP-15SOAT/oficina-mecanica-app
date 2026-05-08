@@ -525,7 +525,9 @@ describe('PrismaWorkOrderRepository', () => {
         unitPrice: 50,
       });
 
-      prisma.workOrderPartSupply.createMany.mockRejectedValue(new Error('Database connection lost'));
+      prisma.workOrderPartSupply.createMany.mockRejectedValue(
+        new Error('Database connection lost'),
+      );
 
       await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
         'Database connection lost',

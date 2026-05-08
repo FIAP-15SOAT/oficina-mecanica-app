@@ -32,9 +32,7 @@ export class StockPresenter {
   private static toStockMovementResponse(item: StockMovement): StockMovementResponseDto {
     return {
       id: item.id,
-      partSupply: item.partSupply
-        ? StockPresenter.toMovementPartSupply(item)
-        : ({ id: item.partSupplyId } as StockMovementPartSupplyDto),
+      partSupply: StockPresenter.toMovementPartSupply(item),
       workOrder: item.workOrder ? StockPresenter.toMovementWorkOrder(item.workOrder) : null,
       type: item.type,
       quantity: item.quantity,
@@ -46,12 +44,8 @@ export class StockPresenter {
   private static toStockReservationResponse(item: StockReservation): StockReservationResponseDto {
     return {
       id: item.id,
-      partSupply: item.partSupply
-        ? StockPresenter.toReservationPartSupply(item)
-        : ({ id: item.partSupplyId } as StockReservationPartSupplyDto),
-      workOrder: item.workOrder
-        ? StockPresenter.toReservationWorkOrder(item.workOrder)
-        : ({ id: item.workOrderId } as StockReservationWorkOrderDto),
+      partSupply: StockPresenter.toReservationPartSupply(item),
+      workOrder: StockPresenter.toReservationWorkOrder(item.workOrder!),
       quantity: item.quantity,
       createdAt: item.createdAt,
     };

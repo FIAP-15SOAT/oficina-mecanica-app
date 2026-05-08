@@ -246,6 +246,15 @@ describe('PartSupply (E2E)', () => {
       });
     });
 
+    it('should return all items when lowStock=false (no low-stock filter applied)', async () => {
+      const res = await request(httpServer)
+        .get('/api/parts-supplies?lowStock=false&limit=20')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.totalRecords).toBe(12);
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });

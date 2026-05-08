@@ -141,6 +141,19 @@ describe('WorkOrder (E2E)', () => {
         .expect(404);
     });
 
+    it('should create a work order with mileageAtService specified', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      const res = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id, mileageAtService: 75000 })
+        .expect(201);
+
+      expect(res.body.data.mileageAtService).toBe(75000);
+    });
+
     it('should create a work order with assigned user (mechanic)', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
@@ -1053,6 +1066,98 @@ describe('WorkOrder (E2E)', () => {
 
       expect(res.body.data.status).toBe('DELIVERED');
       expect(res.body.data.deliveredAt).toBeTruthy();
+    });
+  });
+
+  // ─── GET /api/work-orders/:id — service.description and partSupply details ───
+
+  describe('GET /api/work-orders/:id — service description and partSupply description/partNumber', () => {
+    it('should return work order with service description and partSupply description and partNumber', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Revisão Com Descrição',
+          basePrice: 200,
+          estimatedTimeMin: 60,
+          description: 'Revisão completa do motor',
+        })
+        .expect(201);
+
+      const serviceId = serviceRes.body.data.id as string;
+
+      const partRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Filtro Detalhado',
+          sku: `FLT-DET-${Date.now()}`,
+          category: 'PART',
+          unit: 'UN',
+          costPrice: 25,
+          salePrice: 50,
+          stock: 20,
+          minStock: 3,
+          description: 'Filtro de ar original',
+          partNumber: 'FA-9999',
+        })
+        .expect(201);
+
+      const partId = partRes.body.data.id as string;
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      const res = await request(httpServer)
+        .get(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const serviceItem = res.body.data.services.find((s: { id: string }) => s.id === serviceId);
+      const partItem = res.body.data.partSupplies.find((p: { id: string }) => p.id === partId);
+
+      expect(serviceItem).toBeDefined();
+      expect(serviceItem.description).toBe('Revisão completa do motor');
+      expect(partItem).toBeDefined();
+      expect(partItem.description).toBe('Filtro de ar original');
+      expect(partItem.partNumber).toBe('FA-9999');
     });
   });
 

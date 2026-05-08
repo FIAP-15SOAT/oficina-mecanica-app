@@ -329,6 +329,27 @@ describe('Customer (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(400);
     });
+
+    it('should return customer with null address when no address exists in DB', async () => {
+      // Create a customer directly in the DB without an address to cover the
+      // null branch in customer.presenter.ts (the HTTP API requires address).
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'Sem Endereço',
+          document: '98765432100',
+          type: 'INDIVIDUAL',
+          email: 'semendereco@email.com',
+          phone: '11987654321',
+        },
+      });
+
+      const res = await request(httpServer)
+        .get(`/api/customers/${customer.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.address).toBeNull();
+    });
   });
 
   // ─── PUT /api/customers/:id ───────────────────────────────────────────────

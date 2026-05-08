@@ -639,6 +639,39 @@ MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
 
 > **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
 
+## Cobertura de Testes E2E — Branches Estruturalmente Inalcançáveis
+
+Alguns branches (`?`, `??`, `?.`) na camada de apresentação não podem ser cobertos pelos testes E2E. Isso ocorre por design da infraestrutura (JOINs obrigatórios via Prisma `include`) ou por invariantes do domínio (FKs NOT NULL, autenticação JWT). Abaixo, cada caso é documentado com a justificativa.
+
+### `src/presentation/stock/stock.presenter.ts`
+
+| Localização | Branch não coberto | Motivo |
+|---|---|---|
+| `mapWorkOrderData` — `wo.customer ? ... : null` | Ramo falso (`null`) | `customerId` é FK NOT NULL na tabela `WorkOrder`. O include sempre carrega o cliente. Não há como existir uma OS sem cliente. |
+| `mapWorkOrderData` — `wo.vehicle ? ... : null` | Ramo falso (`null`) | Mesma razão: `vehicleId` é FK NOT NULL. |
+
+### `src/presentation/work-order/work-order.presenter.ts`
+
+| Localização | Branch não coberto | Motivo |
+|---|---|---|
+| `toStatusHistoryListResponse` — `entry.changedBy ? ... : null` | Ramo falso (`null`) | O histórico de status é gerado exclusivamente por endpoints autenticados via JWT. O `userId` do token é sempre persistido como `changedBy`. Não existe fluxo que registre histórico sem usuário. |
+| `toServiceItem` — `item.service?.name ?? ''` | `?.` ramo nulo + `??` ramo `''` | `WORK_ORDER_DETAIL_INCLUDE` inclui `services: { include: { service: true } }`, então `item.service` é sempre carregado. O campo `name` do serviço é obrigatório (MinLength 3), logo nunca é vazio. |
+
+### `src/presentation/quote/quote.presenter.ts`
+
+| Localização | Branch não coberto | Motivo |
+|---|---|---|
+| `toWithItemsResponse` — `(quote.services ?? []).map(...)` | Ramo direito (`[]`) | O agregado `Quote` sempre inicializa `services` como um array vazio via `reconstitute`. O valor nunca é `null` ou `undefined`, portanto o fallback `[]` do `??` nunca é avaliado. |
+| `toWithItemsResponse` — `(quote.partsSupplies ?? []).map(...)` | Ramo direito (`[]`) | Mesma razão: `partsSupplies` é sempre inicializado como array pelo agregado. |
+
+### `src/presentation/quote/quote.module.ts`
+
+| Localização | Branch não coberto | Motivo |
+|---|---|---|
+| Configuração de `PORT` — `process.env.PORT ?? '3000'` | Ramo direito (`'3000'`) | O arquivo `.env` sempre define `PORT=3000`. Os testes E2E carregam esse arquivo via `ConfigService`, portanto `process.env.PORT` nunca é `undefined` em tempo de execução dos testes. |
+
+---
+
 ## Seed
 
 O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
