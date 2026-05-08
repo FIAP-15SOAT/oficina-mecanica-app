@@ -215,6 +215,43 @@ describe('Quote (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
+
+    it('should return quote with populated services and partsSupplies arrays', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const part = await createPartSupply();
+
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const quoteId = createRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 2 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 3 })
+        .expect(200);
+
+      const res = await request(httpServer)
+        .get(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.services).toHaveLength(1);
+      expect(res.body.data.partsSupplies).toHaveLength(1);
+      expect(res.body.data.services[0].serviceId).toBe(service.id);
+      expect(res.body.data.services[0].quantity).toBe(2);
+      expect(res.body.data.partsSupplies[0].partSupplyId).toBe(part.id);
+      expect(res.body.data.partsSupplies[0].quantity).toBe(3);
+    });
   });
 
   // ─── POST /api/quotes/:id/services ───────────────────────────────────────────

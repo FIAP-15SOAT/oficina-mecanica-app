@@ -28,12 +28,8 @@ export class WorkOrderPresenter {
     return {
       id: workOrder.id,
       number: workOrder.number,
-      customer: workOrder.customer
-        ? WorkOrderPresenter.toCustomer(workOrder.customer)
-        : ({ id: workOrder.customerId } as WorkOrderCustomerResponseDto),
-      vehicle: workOrder.vehicle
-        ? WorkOrderPresenter.toVehicle(workOrder.vehicle)
-        : ({ id: workOrder.vehicleId } as WorkOrderVehicleResponseDto),
+      customer: WorkOrderPresenter.toCustomer(workOrder.customer!),
+      vehicle: WorkOrderPresenter.toVehicle(workOrder.vehicle!),
       assignedUser: workOrder.assignedUser
         ? WorkOrderPresenter.toUser(workOrder.assignedUser)
         : null,

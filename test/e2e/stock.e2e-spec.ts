@@ -315,4 +315,129 @@ describe('Stock (E2E)', () => {
       expect(res.body.data[0].workOrder.id).toBe(workOrder.id);
     });
   });
+
+  describe('GET /api/stock-movements — reason null, assignedUser and partSupply details', () => {
+    it('should return movement with null reason when reason is omitted', async () => {
+      const part = await createPartSupply('Peça Sem Motivo', `NO-RSN-${Date.now()}`);
+
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 3 })
+        .expect(200);
+
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .query({ partSupplyId: part.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data[0].reason).toBeNull();
+    });
+
+    it('should return movement with assignedUser populated when workOrder has an assigned mechanic', async () => {
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic Stock Test',
+          email: `mech.stk.${Date.now()}@test.com`,
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
+
+      const part = await createPartSupply('Peça Mecanico', `MECH-${Date.now()}`);
+
+      const customer = await ctx.prisma.customer.create({
+        data: {
+          name: 'Cliente Mecanico',
+          document: '12345678909',
+          type: 'INDIVIDUAL',
+          email: `mech.cust.${Date.now()}@test.com`,
+          phone: '11999999999',
+        },
+      });
+
+      const vehicle = await ctx.prisma.vehicle.create({
+        data: {
+          customerId: customer.id,
+          plate: 'MCH-0001',
+          brand: 'Test',
+          model: 'Test',
+          year: 2020,
+        },
+      });
+
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          number: 'MECH-001',
+          status: 'IN_PROGRESS',
+          assignedUserId: mechanic.user.id,
+        },
+      });
+
+      await ctx.prisma.stockMovement.create({
+        data: {
+          partSupplyId: part.id,
+          workOrderId: workOrder.id,
+          quantity: 1,
+          type: 'EXIT',
+          reason: 'Test assigned user movement',
+        },
+      });
+
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .query({ workOrderId: workOrder.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].workOrder.assignedUser).not.toBeNull();
+      expect(res.body.data[0].workOrder.assignedUser.id).toBe(mechanic.user.id);
+    });
+
+    it('should return movement with partSupply description and partNumber when set', async () => {
+      const partRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Peça Com Detalhes',
+          sku: `DTLS-${Date.now()}`,
+          category: 'PART',
+          unit: 'UN',
+          costPrice: 10,
+          salePrice: 20,
+          stock: 50,
+          minStock: 5,
+          description: 'Filtro de óleo original',
+          partNumber: 'OEM-4321',
+        })
+        .expect(201);
+
+      const part = partRes.body.data as { id: string };
+
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 5, reason: 'Reposição de peça com detalhes' })
+        .expect(200);
+
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .query({ partSupplyId: part.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+
+      const movement = res.body.data[0];
+
+      expect(movement.partSupply.description).toBe('Filtro de óleo original');
+      expect(movement.partSupply.partNumber).toBe('OEM-4321');
+    });
+  });
 });
