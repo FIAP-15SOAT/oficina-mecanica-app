@@ -281,11 +281,50 @@ describe('PrismaWorkOrderRepository', () => {
           data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
         }),
       );
-      expect(prisma.workOrder.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: workOrder.id },
-          data: expect.objectContaining({ updatedAt: workOrder.updatedAt }),
+    });
+
+    it('should throw ConcurrencyException on P2002 (duplicate service item)', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderService.create({
+        workOrderId: workOrder.id,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+      });
+
+      prisma.workOrderService.createMany.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.0.0',
         }),
+      );
+
+      await expect(repository.addServiceItems(workOrder, [item])).rejects.toThrow(
+        ConcurrencyException,
+      );
+    });
+
+    it('should rethrow unexpected errors from addServiceItems', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderService.create({
+        workOrderId: workOrder.id,
+        serviceId: randomUUID(),
+        quantity: 1,
+        unitPrice: 100,
+      });
+
+      prisma.workOrderService.createMany.mockRejectedValue(new Error('Database connection lost'));
+
+      await expect(repository.addServiceItems(workOrder, [item])).rejects.toThrow(
+        'Database connection lost',
       );
     });
   });
@@ -446,11 +485,50 @@ describe('PrismaWorkOrderRepository', () => {
           data: expect.arrayContaining([expect.objectContaining({ workOrderId: workOrder.id })]),
         }),
       );
-      expect(prisma.workOrder.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: workOrder.id },
-          data: expect.objectContaining({ updatedAt: workOrder.updatedAt }),
+    });
+
+    it('should throw ConcurrencyException on P2002 (duplicate part supply item)', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderPartSupply.create({
+        workOrderId: workOrder.id,
+        partSupplyId: randomUUID(),
+        quantity: 2,
+        unitPrice: 50,
+      });
+
+      prisma.workOrderPartSupply.createMany.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.0.0',
         }),
+      );
+
+      await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
+        ConcurrencyException,
+      );
+    });
+
+    it('should rethrow unexpected errors from addPartSupplyItems', async () => {
+      const workOrder = WorkOrder.create({
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+      });
+      const item = WorkOrderPartSupply.create({
+        workOrderId: workOrder.id,
+        partSupplyId: randomUUID(),
+        quantity: 2,
+        unitPrice: 50,
+      });
+
+      prisma.workOrderPartSupply.createMany.mockRejectedValue(new Error('Database connection lost'));
+
+      await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
+        'Database connection lost',
       );
     });
   });

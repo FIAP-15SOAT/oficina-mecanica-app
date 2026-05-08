@@ -29,7 +29,7 @@ describe('AddQuotePartSupplyUseCase', () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
     const partSupply = createMockPartSupply({ salePrice: 80 });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(partSupply);
     (quoteRepository.addPartSupplyItem as jest.Mock).mockResolvedValue(undefined);
 
@@ -45,7 +45,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
-    quoteRepository.findById.mockResolvedValue(null);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(null);
 
     await expect(
       useCase.execute({ quoteId: 'bad', partSupplyId: 'any', quantity: 1 }),
@@ -55,7 +55,7 @@ describe('AddQuotePartSupplyUseCase', () => {
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.APPROVED, partsSupplies: [] });
     const partSupply = createMockPartSupply();
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(partSupply);
 
     await expect(
@@ -65,7 +65,7 @@ describe('AddQuotePartSupplyUseCase', () => {
 
   it('should throw ResourceNotFoundException when part supply not found', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(null);
 
     await expect(
@@ -78,7 +78,7 @@ describe('AddQuotePartSupplyUseCase', () => {
     const existing = createMockQuotePartSupply({ partSupplyId: partSupply.id });
     const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [existing] });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     partSupplyRepository.findById.mockResolvedValue(partSupply);
 
     await expect(

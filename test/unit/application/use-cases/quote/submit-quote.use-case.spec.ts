@@ -53,7 +53,7 @@ describe('SubmitQuoteUseCase', () => {
     const customer = createMockCustomer({ id: workOrder.customerId });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
@@ -78,7 +78,7 @@ describe('SubmitQuoteUseCase', () => {
     const customer = createMockCustomer({ id: workOrder.customerId });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
@@ -96,7 +96,7 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
@@ -104,7 +104,7 @@ describe('SubmitQuoteUseCase', () => {
   it('should throw BusinessRuleViolationException when quote has no services or parts', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
     // services and partsSupplies not set → treated as empty
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
@@ -119,7 +119,7 @@ describe('SubmitQuoteUseCase', () => {
     const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
@@ -139,7 +139,7 @@ describe('SubmitQuoteUseCase', () => {
     const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);

@@ -30,7 +30,7 @@ export class SubmitQuoteUseCase {
 
   async execute(quoteId: string): Promise<Quote> {
     return await this.unitOfWork.executeTransaction(async (repos) => {
-      const quote = await repos.quote.findById(quoteId);
+      const quote = await repos.quote.findByIdWithDetails(quoteId);
 
       if (!quote) {
         throw new ResourceNotFoundException('Orçamento', quoteId);

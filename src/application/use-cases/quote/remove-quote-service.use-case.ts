@@ -6,7 +6,7 @@ export class RemoveQuoteServiceUseCase {
   constructor(private readonly quoteRepository: IQuoteRepository) {}
 
   async execute(quoteId: string, serviceId: string): Promise<Quote> {
-    const quote = await this.quoteRepository.findById(quoteId);
+    const quote = await this.quoteRepository.findByIdWithDetails(quoteId);
 
     if (!quote) {
       throw new ResourceNotFoundException('Orçamento', quoteId);

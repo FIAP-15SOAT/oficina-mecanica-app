@@ -11,7 +11,7 @@ export class AddQuotePartSupplyUseCase {
   ) {}
 
   async execute(dto: AddQuotePartSupplyDto): Promise<Quote> {
-    const quote = await this.quoteRepository.findById(dto.quoteId);
+    const quote = await this.quoteRepository.findByIdWithDetails(dto.quoteId);
 
     if (!quote) {
       throw new ResourceNotFoundException('Orçamento', dto.quoteId);

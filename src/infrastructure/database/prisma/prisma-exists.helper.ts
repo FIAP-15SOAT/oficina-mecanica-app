@@ -6,5 +6,5 @@ export async function existsBy(
   delegate: FindFirstDelegate,
   where: Record<string, unknown>,
 ): Promise<boolean> {
-  return (await delegate.findFirst({ where, select: { id: true } })) !== null;
+  return (await delegate.findFirst({ where, select: { createdAt: true } })) !== null;
 }

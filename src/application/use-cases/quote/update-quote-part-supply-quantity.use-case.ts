@@ -7,7 +7,7 @@ export class UpdateQuotePartSupplyQuantityUseCase {
   constructor(private readonly quoteRepository: IQuoteRepository) {}
 
   async execute(dto: UpdateQuotePartSupplyQuantityDto): Promise<Quote> {
-    const quote = await this.quoteRepository.findById(dto.quoteId);
+    const quote = await this.quoteRepository.findByIdWithDetails(dto.quoteId);
 
     if (!quote) {
       throw new ResourceNotFoundException('Orçamento', dto.quoteId);

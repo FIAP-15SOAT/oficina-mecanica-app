@@ -131,7 +131,7 @@ describe('Stock (E2E)', () => {
           document: '12345678909',
           type: 'INDIVIDUAL',
           email: 'test@stock.com',
-          phone: '123',
+          phone: '11999999999',
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({
@@ -186,10 +186,10 @@ describe('Stock (E2E)', () => {
       const customer = await ctx.prisma.customer.create({
         data: {
           name: 'Test Filter',
-          document: '12345678900',
+          document: '11144477735',
           type: 'INDIVIDUAL',
           email: 'filter@stock.com',
-          phone: '123',
+          phone: '11999999999',
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({
@@ -250,10 +250,10 @@ describe('Stock (E2E)', () => {
       const customer = await ctx.prisma.customer.create({
         data: {
           name: 'Test Mov',
-          document: '09876543211',
+          document: '22233344405',
           type: 'INDIVIDUAL',
           email: 'mov@stock.com',
-          phone: '123',
+          phone: '11999999999',
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({

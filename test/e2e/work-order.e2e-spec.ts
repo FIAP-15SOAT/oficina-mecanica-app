@@ -771,4 +771,155 @@ describe('WorkOrder (E2E)', () => {
       ).toBe(true);
     });
   });
+
+  // ─── Full lifecycle: all services COMPLETED → work order COMPLETED ──────────
+
+  describe('Full lifecycle: completing all services transitions work order to COMPLETED', () => {
+    it('should set work order status to COMPLETED when all service items are completed', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const service1Res = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: `Serviço A ${Date.now()}`, basePrice: 100, estimatedTimeMin: 30 })
+        .expect(201);
+
+      const service2Res = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: `Serviço B ${Date.now()}`, basePrice: 80, estimatedTimeMin: 20 })
+        .expect(201);
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service1Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service2Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      // Start and complete service 1
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${service1Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${service1Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(200);
+
+      // Work order should still be IN_PROGRESS (service 2 not done yet)
+      const woMid = await request(httpServer)
+        .get(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(woMid.body.data.status).toBe('IN_PROGRESS');
+
+      // Start and complete service 2
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${service2Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${service2Res.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(200);
+
+      // All services done — work order must be COMPLETED now
+      const woFinal = await request(httpServer)
+        .get(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(woFinal.body.data.status).toBe('COMPLETED');
+    });
+  });
+
+  // ─── PATCH /api/work-orders/:id — Concorrência (Optimistic Locking) ─────────
+
+  describe('PATCH /api/work-orders/:id — Concurrency (optimistic locking)', () => {
+    it('should maintain consistency under concurrent status transitions', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      const [r1, r2] = await Promise.all([
+        request(httpServer)
+          .patch(`/api/work-orders/${wo.id}`)
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ status: 'IN_DIAGNOSIS' }),
+        request(httpServer)
+          .patch(`/api/work-orders/${wo.id}`)
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ status: 'IN_DIAGNOSIS' }),
+      ]);
+
+      // Neither may be a server error (500)
+      expect([200, 409]).toContain(r1.status);
+      expect([200, 409]).toContain(r2.status);
+
+      // At least one must succeed
+      expect([r1.status, r2.status]).toContain(200);
+
+      // Final state must be consistent — only one transition happened
+      const finalWo = await ctx.prisma.workOrder.findUnique({ where: { id: wo.id } });
+      expect(finalWo!.status).toBe('IN_DIAGNOSIS');
+    });
+
+    it('should return 409 for stale-version update (direct optimistic lock verification)', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      // Advance version via HTTP (version 0 → 1)
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      // Simulate stale second transaction with version=0
+      await expect(
+        ctx.prisma.workOrder.update({
+          where: { id: wo.id, version: 0 }, // stale — version is now 1
+          data: { status: 'IN_DIAGNOSIS', version: { increment: 1 } },
+        }),
+      ).rejects.toMatchObject({ code: 'P2025' });
+    });
+  });
 });

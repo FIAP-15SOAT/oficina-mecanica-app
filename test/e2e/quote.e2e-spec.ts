@@ -1387,4 +1387,112 @@ describe('Quote (E2E)', () => {
       });
     });
   });
+
+  // ─── Concorrência — Optimistic Locking ──────────────────────────────────────
+
+  describe('Quote approval — Concurrency (optimistic locking)', () => {
+    async function setupSentQuote() {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      return { quoteId, workOrderId };
+    }
+
+    it('should allow exactly one of two concurrent APPROVE requests to succeed', async () => {
+      const { quoteId } = await setupSentQuote();
+
+      const [res1, res2] = await Promise.all([
+        request(httpServer)
+          .patch(`/api/quotes/${quoteId}`)
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ status: 'APPROVED' }),
+        request(httpServer)
+          .patch(`/api/quotes/${quoteId}`)
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ status: 'APPROVED' }),
+      ]);
+
+      // Neither may be a server error (500)
+      expect([200, 409]).toContain(res1.status);
+      expect([200, 409]).toContain(res2.status);
+
+      // Exactly one succeeds; the other gets ConcurrencyException or BusinessRuleViolation (both 409)
+      const statuses = [res1.status, res2.status];
+      expect(statuses).toContain(200);
+      expect(statuses).toContain(409);
+
+      // DB state must reflect a single approval
+      const record = await ctx.prisma.quote.findUnique({ where: { id: quoteId } });
+      expect(record!.status).toBe('APPROVED');
+    });
+
+    it('should return 409 when approving an already-approved quote (deterministic)', async () => {
+      const { quoteId } = await setupSentQuote();
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(409);
+    });
+
+    it('should return 409 when rejecting an already-rejected quote (deterministic)', async () => {
+      const { quoteId } = await setupSentQuote();
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Preço elevado' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Outro motivo' })
+        .expect(409);
+    });
+
+    it('should reject stale-version update with P2025 (direct optimistic lock verification)', async () => {
+      const { quoteId } = await setupSentQuote();
+
+      // Advance version via one approval (version 0 → N)
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      // Simulate what the losing concurrent transaction would attempt
+      await expect(
+        ctx.prisma.quote.update({
+          where: { id: quoteId, version: 0 }, // stale — version advanced past 0
+          data: { status: 'REJECTED', version: { increment: 1 } },
+        }),
+      ).rejects.toMatchObject({ code: 'P2025' });
+    });
+  });
 });

@@ -34,7 +34,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
       partsSupplies: [partSupply],
     });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     (quoteRepository.removePartSupplyItem as jest.Mock).mockResolvedValue(undefined);
 
     await useCase.execute(quote.id, 'part-id');
@@ -45,7 +45,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
-    quoteRepository.findById.mockResolvedValue(null);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(null);
 
     await expect(useCase.execute('nonexistent-id', 'part-id')).rejects.toThrow(
       ResourceNotFoundException,
@@ -55,7 +55,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT, partsSupplies: [] });
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'part-id')).rejects.toThrow(
       BusinessRuleViolationException,
@@ -65,7 +65,7 @@ describe('RemoveQuotePartSupplyUseCase', () => {
 
   it('should throw EntityNotFoundException when part/supply is not associated with the quote', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, partsSupplies: [] });
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id, 'nonexistent-part')).rejects.toThrow(
       EntityNotFoundException,

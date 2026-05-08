@@ -65,6 +65,7 @@ describe('User (E2E)', () => {
           name: 'User A',
           email: 'dup@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(201);
 
@@ -75,6 +76,7 @@ describe('User (E2E)', () => {
           name: 'User B',
           email: 'dup@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(409);
     });
@@ -223,6 +225,7 @@ describe('User (E2E)', () => {
           name: 'Find Me',
           email: 'findme@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(201);
 
@@ -298,6 +301,7 @@ describe('User (E2E)', () => {
           name: 'Other',
           email: 'other@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(201);
 
@@ -345,6 +349,7 @@ describe('User (E2E)', () => {
           name: 'Status User',
           email: 'status@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(201);
       userId = createRes.body.data.id;
@@ -396,6 +401,7 @@ describe('User (E2E)', () => {
           name: 'Delete Me',
           email: 'deleteme@e2e.test',
           password: 'Senha@123',
+          role: 'MECHANIC',
         })
         .expect(201);
 

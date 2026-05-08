@@ -149,11 +149,10 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     return String(rows[0].next).padStart(6, '0');
   }
 
-  async addServiceItems(workOrder: WorkOrder, items: WorkOrderService[]): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.workOrderService.createMany({
+  async addServiceItems(_workOrder: WorkOrder, items: WorkOrderService[]): Promise<void> {
+    try {
+      await this.prisma.workOrderService.createMany({
         data: items.map((item) => ({
-          id: item.id,
           workOrderId: item.workOrderId,
           serviceId: item.serviceId,
           quantity: item.quantity,
@@ -165,12 +164,15 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         })),
-      }),
-      this.prisma.workOrder.update({
-        where: { id: workOrder.id },
-        data: { updatedAt: workOrder.updatedAt },
-      }),
-    ]);
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConcurrencyException(
+          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 
   async updateServiceItemStatus(workOrder: WorkOrder, item: WorkOrderService): Promise<void> {
@@ -208,9 +210,9 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     }
   }
 
-  async addPartSupplyItems(workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.workOrderPartSupply.createMany({
+  async addPartSupplyItems(_workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void> {
+    try {
+      await this.prisma.workOrderPartSupply.createMany({
         data: items.map((item) => ({
           workOrderId: item.workOrderId,
           partSupplyId: item.partSupplyId,
@@ -220,11 +222,14 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         })),
-      }),
-      this.prisma.workOrder.update({
-        where: { id: workOrder.id },
-        data: { updatedAt: workOrder.updatedAt },
-      }),
-    ]);
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConcurrencyException(
+          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 }

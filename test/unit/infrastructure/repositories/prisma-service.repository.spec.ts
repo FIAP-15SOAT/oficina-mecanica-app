@@ -274,7 +274,7 @@ describe('PrismaServiceRepository', () => {
   describe('isServiceInUse', () => {
     it('should return true when service is referenced by a work order', async () => {
       const id = randomUUID();
-      prisma.workOrderService.findFirst.mockResolvedValue({ id: 'some-id' });
+      prisma.workOrderService.findFirst.mockResolvedValue({ createdAt: new Date() });
       prisma.quoteService.findFirst.mockResolvedValue(null);
 
       const result = await repository.isServiceInUse(id);
@@ -282,14 +282,14 @@ describe('PrismaServiceRepository', () => {
       expect(result).toBe(true);
       expect(prisma.workOrderService.findFirst).toHaveBeenCalledWith({
         where: { serviceId: id },
-        select: { id: true },
+        select: { createdAt: true },
       });
     });
 
     it('should return true when service is referenced by a quote', async () => {
       const id = randomUUID();
       prisma.workOrderService.findFirst.mockResolvedValue(null);
-      prisma.quoteService.findFirst.mockResolvedValue({ id: 'some-id' });
+      prisma.quoteService.findFirst.mockResolvedValue({ createdAt: new Date() });
 
       const result = await repository.isServiceInUse(id);
 

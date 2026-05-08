@@ -377,7 +377,7 @@ describe('PrismaPartSupplyRepository', () => {
   describe('isPartSupplyInUse', () => {
     it('should return true if associated with work orders', async () => {
       const id = randomUUID();
-      prisma.workOrderPartSupply.findFirst.mockResolvedValue({ id: 'some-id' });
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue({ createdAt: new Date() });
       prisma.quotePartSupply.findFirst.mockResolvedValue(null);
       const result = await repository.isPartSupplyInUse(id);
       expect(result).toBe(true);
@@ -386,7 +386,7 @@ describe('PrismaPartSupplyRepository', () => {
     it('should return true if associated with quotes', async () => {
       const id = randomUUID();
       prisma.workOrderPartSupply.findFirst.mockResolvedValue(null);
-      prisma.quotePartSupply.findFirst.mockResolvedValue({ id: 'some-id' });
+      prisma.quotePartSupply.findFirst.mockResolvedValue({ createdAt: new Date() });
       const result = await repository.isPartSupplyInUse(id);
       expect(result).toBe(true);
     });

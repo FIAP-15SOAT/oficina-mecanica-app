@@ -29,7 +29,7 @@ describe('AddQuoteServiceUseCase', () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
     const service = createMockService({ basePrice: 150 });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(service);
     (quoteRepository.addServiceItem as jest.Mock).mockResolvedValue(undefined);
 
@@ -45,7 +45,7 @@ describe('AddQuoteServiceUseCase', () => {
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
-    quoteRepository.findById.mockResolvedValue(null);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(null);
 
     await expect(
       useCase.execute({ quoteId: 'bad', serviceId: 'any', quantity: 1 }),
@@ -55,7 +55,7 @@ describe('AddQuoteServiceUseCase', () => {
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT, services: [] });
     const service = createMockService();
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(service);
 
     await expect(
@@ -65,7 +65,7 @@ describe('AddQuoteServiceUseCase', () => {
 
   it('should throw ResourceNotFoundException when service not found', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [] });
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(null);
 
     await expect(
@@ -78,7 +78,7 @@ describe('AddQuoteServiceUseCase', () => {
     const existing = createMockQuoteService({ serviceId: service.id });
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [existing] });
 
-    quoteRepository.findById.mockResolvedValue(quote);
+    quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
     serviceRepository.findById.mockResolvedValue(service);
 
     await expect(
