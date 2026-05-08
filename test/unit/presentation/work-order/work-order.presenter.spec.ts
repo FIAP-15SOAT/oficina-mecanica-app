@@ -16,13 +16,15 @@ describe('WorkOrderPresenter', () => {
   describe('toResponse', () => {
     it('should format a work order correctly', () => {
       const now = new Date();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
 
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '000001',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
-        assignedUserId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: null,
         status: WorkOrderStatus.IN_DIAGNOSIS,
         problemDescription: 'Some problem',
         internalNotes: 'Some notes',
@@ -37,13 +39,15 @@ describe('WorkOrderPresenter', () => {
         createdAt: now,
         updatedAt: now,
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
       expect(response.id).toBe(workOrder.id);
       expect(response.number).toBe(workOrder.number);
-      expect(response.customer).toEqual({ id: workOrder.customerId });
-      expect(response.vehicle).toEqual({ id: workOrder.vehicleId });
+      expect(response.customer.id).toBe(customer.id);
+      expect(response.vehicle.id).toBe(vehicle.id);
       expect(response.assignedUser).toBeNull();
       expect(response.status).toBe(workOrder.status);
       expect(response.totalAmount).toBe(workOrder.totalAmount);
@@ -88,11 +92,13 @@ describe('WorkOrderPresenter', () => {
 
   describe('toDataResponse', () => {
     it('should wrap response in data property', () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '001',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -108,6 +114,8 @@ describe('WorkOrderPresenter', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
       const result = WorkOrderPresenter.toDataResponse(workOrder);
       expect(result.data).toBeDefined();
       expect(result.data.id).toBe(workOrder.id);
@@ -116,11 +124,13 @@ describe('WorkOrderPresenter', () => {
 
   describe('toPaginatedResponse', () => {
     it('should format paginated results', () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '001',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -136,6 +146,8 @@ describe('WorkOrderPresenter', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
       const paginatedResult = {
         items: [workOrder],
         pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
@@ -151,6 +163,8 @@ describe('WorkOrderPresenter', () => {
   describe('toResponse with services and partSupplies', () => {
     it('should include services with nested service entity data', () => {
       const now = new Date();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const service = createMockService();
 
       const wos = WorkOrderService.reconstitute({
@@ -170,8 +184,8 @@ describe('WorkOrderPresenter', () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '002',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -188,6 +202,8 @@ describe('WorkOrderPresenter', () => {
         updatedAt: now,
         services: [wos],
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -199,6 +215,8 @@ describe('WorkOrderPresenter', () => {
 
     it('should include services with fallback when service relation is absent', () => {
       const now = new Date();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const serviceId = randomUUID();
 
       const wos = WorkOrderService.reconstitute({
@@ -217,8 +235,8 @@ describe('WorkOrderPresenter', () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '003',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -235,6 +253,8 @@ describe('WorkOrderPresenter', () => {
         updatedAt: now,
         services: [wos],
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -245,6 +265,8 @@ describe('WorkOrderPresenter', () => {
 
     it('should include partSupplies with nested partSupply entity data', () => {
       const now = new Date();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const partSupply = createMockPartSupply();
 
       const wop = WorkOrderPartSupply.reconstitute({
@@ -261,8 +283,8 @@ describe('WorkOrderPresenter', () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '004',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -279,6 +301,8 @@ describe('WorkOrderPresenter', () => {
         updatedAt: now,
         partSupplies: [wop],
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 
@@ -290,6 +314,8 @@ describe('WorkOrderPresenter', () => {
 
     it('should use null for partNumber when partSupply has no partNumber', () => {
       const now = new Date();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
       const partSupply = createMockPartSupply({ partNumber: undefined });
 
       const wop = WorkOrderPartSupply.reconstitute({
@@ -306,8 +332,8 @@ describe('WorkOrderPresenter', () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
         number: '005',
-        customerId: randomUUID(),
-        vehicleId: randomUUID(),
+        customerId: customer.id,
+        vehicleId: vehicle.id,
         assignedUserId: null,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -324,6 +350,8 @@ describe('WorkOrderPresenter', () => {
         updatedAt: now,
         partSupplies: [wop],
       });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
 
       const response = WorkOrderPresenter.toResponse(workOrder);
 

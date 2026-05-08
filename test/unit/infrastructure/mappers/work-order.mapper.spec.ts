@@ -211,9 +211,9 @@ describe('WorkOrderMapper', () => {
       expect(domainEntity.assignedUser).toBeDefined();
       expect(domainEntity.assignedUser!.id).toBe(userId);
       expect(domainEntity.services).toHaveLength(1);
-      expect(domainEntity.services![0].service!.id).toBe(serviceId);
+      expect(domainEntity.services[0].service!.id).toBe(serviceId);
       expect(domainEntity.partSupplies).toHaveLength(1);
-      expect(domainEntity.partSupplies![0].partSupply!.id).toBe(partSupplyId);
+      expect(domainEntity.partSupplies[0].partSupply!.id).toBe(partSupplyId);
     });
   });
 });

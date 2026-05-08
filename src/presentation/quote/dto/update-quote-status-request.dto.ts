@@ -12,7 +12,7 @@ export class UpdateQuoteStatusRequestDto {
     message: 'O status deve ser APPROVED ou REJECTED',
   })
   @IsNotEmpty({ message: 'O status é obrigatório' })
-  status: QuoteStatus.APPROVED | QuoteStatus.REJECTED;
+  status!: QuoteStatus.APPROVED | QuoteStatus.REJECTED;
 
   @ApiPropertyOptional({
     description: 'Motivo da rejeição (obrigatório se o status for REJECTED)',

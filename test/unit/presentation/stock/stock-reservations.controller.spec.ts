@@ -1,6 +1,8 @@
 import { StockReservationsController } from '@presentation/stock/stock-reservations.controller';
 import { randomUUID } from 'node:crypto';
 import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-reservations.use-case.interface';
+import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
+import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 
 describe('StockReservationsController', () => {
   let controller: StockReservationsController;
@@ -15,11 +17,19 @@ describe('StockReservationsController', () => {
     it('should return paginated stock reservations', async () => {
       const page = 1;
       const limit = 10;
-      const partSupplyId = randomUUID();
-      const workOrderId = randomUUID();
+      const partSupply = createMockPartSupply();
+      const workOrder = createMockWorkOrder();
       const resultUseCase = {
         items: [
-          { id: randomUUID(), partSupplyId, workOrderId, quantity: 5, createdAt: new Date() },
+          {
+            id: randomUUID(),
+            partSupplyId: partSupply.id,
+            partSupply,
+            workOrderId: workOrder.id,
+            workOrder,
+            quantity: 5,
+            createdAt: new Date(),
+          },
         ],
         pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
       };
@@ -29,16 +39,16 @@ describe('StockReservationsController', () => {
       const result = await controller.getStockReservations({
         page,
         limit,
-        partSupplyId,
-        workOrderId,
+        partSupplyId: partSupply.id,
+        workOrderId: workOrder.id,
       });
 
       expect(result.data).toHaveLength(1);
       expect(findStockReservationsUseCase.execute).toHaveBeenCalledWith({
         page,
         limit,
-        partSupplyId,
-        workOrderId,
+        partSupplyId: partSupply.id,
+        workOrderId: workOrder.id,
       });
     });
 
