@@ -1,8 +1,60 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { QuoteService } from '@domain/entities/quote-service.entity';
-import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+
+export class QuoteServiceItemResponseDto {
+  @ApiProperty({
+    description: 'ID do serviço',
+    format: 'uuid',
+    example: '4f7ce3e3-672d-472a-b2d4-a896809015e6',
+  })
+  serviceId!: string;
+
+  @ApiProperty({ description: 'Quantidade', example: 2 })
+  quantity!: number;
+
+  @ApiProperty({ description: 'Preço unitário', example: 129.9 })
+  unitPrice!: number;
+
+  @ApiProperty({ description: 'Preço total', example: 259.8 })
+  totalPrice!: number;
+
+  @ApiProperty({ description: 'Data de criação', example: '2026-05-08T09:52:54.102-03:00' })
+  createdAt!: Date;
+
+  @ApiProperty({
+    description: 'Data de última atualização',
+    example: '2026-05-08T09:52:59.754-03:00',
+  })
+  updatedAt!: Date;
+}
+
+export class QuotePartSupplyItemResponseDto {
+  @ApiProperty({
+    description: 'ID da peça/insumo',
+    format: 'uuid',
+    example: 'a2e1790b-fc57-4855-8749-268b6ce72d21',
+  })
+  partSupplyId!: string;
+
+  @ApiProperty({ description: 'Quantidade', example: 1 })
+  quantity!: number;
+
+  @ApiProperty({ description: 'Preço unitário', example: 45.0 })
+  unitPrice!: number;
+
+  @ApiProperty({ description: 'Preço total', example: 45.0 })
+  totalPrice!: number;
+
+  @ApiProperty({ description: 'Data de criação', example: '2026-05-08T09:51:11.226-03:00' })
+  createdAt!: Date;
+
+  @ApiProperty({
+    description: 'Data de última atualização',
+    example: '2026-05-08T09:51:11.226-03:00',
+  })
+  updatedAt!: Date;
+}
 
 export class QuoteResponseDto {
   @ApiProperty({
@@ -71,11 +123,14 @@ export class QuoteResponseDto {
 }
 
 export class QuoteWithItemsResponseDto extends QuoteResponseDto {
-  @ApiProperty({ description: 'Lista de serviços incluídos', type: [Object] })
-  services!: QuoteService[];
+  @ApiProperty({ description: 'Lista de serviços incluídos', type: [QuoteServiceItemResponseDto] })
+  services!: QuoteServiceItemResponseDto[];
 
-  @ApiProperty({ description: 'Lista de peças/insumos incluídos', type: [Object] })
-  partsSupplies!: QuotePartSupply[];
+  @ApiProperty({
+    description: 'Lista de peças/insumos incluídos',
+    type: [QuotePartSupplyItemResponseDto],
+  })
+  partsSupplies!: QuotePartSupplyItemResponseDto[];
 }
 
 export class QuoteDataResponseDto {
