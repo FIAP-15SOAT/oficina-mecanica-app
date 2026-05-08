@@ -110,6 +110,7 @@
       "!src/**/*.enums.ts",
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
+      "!src/**/*.dto.ts",
       "!src/infrastructure/database/prisma/prisma.service.ts"
     ],
     "coverageDirectory": "coverage",

@@ -388,6 +388,28 @@ describe('User (E2E)', () => {
         .send({ active: false })
         .expect(404);
     });
+
+    it('should return 422 when deactivating an already-inactive user', async () => {
+      await request(httpServer)
+        .patch(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ active: false })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ active: false })
+        .expect(422);
+    });
+
+    it('should return 422 when activating an already-active user', async () => {
+      await request(httpServer)
+        .patch(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ active: true })
+        .expect(422);
+    });
   });
 
   // ─── DELETE /api/users/:id ────────────────────────────────────────────────

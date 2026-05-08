@@ -33,7 +33,8 @@ export class UpdateWorkOrderServiceStatusUseCase {
         await this.updateStockFromReservations(repos, workOrder);
       }
 
-      const item = workOrder.services!.find((s) => s.serviceId === dto.serviceId)!;
+      const item = workOrder.services.find((s) => s.serviceId === dto.serviceId)!;
+
       await repos.workOrder.updateServiceItemStatus(workOrder, item);
 
       if (statusChanged) {

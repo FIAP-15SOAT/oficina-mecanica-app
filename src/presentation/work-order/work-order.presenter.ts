@@ -24,7 +24,7 @@ import {
 } from './dto/status-history-response.dto';
 
 export class WorkOrderPresenter {
-  static toResponse(this: void, workOrder: WorkOrder): WorkOrderResponseDto {
+  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
     return {
       id: workOrder.id,
       number: workOrder.number,
@@ -48,12 +48,8 @@ export class WorkOrderPresenter {
       deliveredAt: workOrder.deliveredAt,
       createdAt: workOrder.createdAt,
       updatedAt: workOrder.updatedAt,
-      ...(workOrder.services !== undefined && {
-        services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
-      }),
-      ...(workOrder.partSupplies !== undefined && {
-        partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
-      }),
+      services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
+      partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
     };
   }
 

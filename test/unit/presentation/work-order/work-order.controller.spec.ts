@@ -50,7 +50,7 @@ describe('WorkOrderController', () => {
 
   it('should create a work order', async () => {
     const dto = { number: '001', customerId: randomUUID(), vehicleId: randomUUID() };
-    const workOrder = { id: randomUUID(), ...dto };
+    const workOrder = { id: randomUUID(), ...dto, services: [], partSupplies: [] };
     createUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const userId = randomUUID();
@@ -92,7 +92,7 @@ describe('WorkOrderController', () => {
 
   it('should find one work order', async () => {
     const id = randomUUID();
-    const workOrder = { id, number: '001' };
+    const workOrder = { id, number: '001', services: [], partSupplies: [] };
     findByIdUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const result = await controller.findOne(id);
@@ -104,7 +104,7 @@ describe('WorkOrderController', () => {
   it('should update a work order', async () => {
     const id = randomUUID();
     const dto = { problemDescription: 'test' };
-    const workOrder = { id, ...dto };
+    const workOrder = { id, ...dto, services: [], partSupplies: [] };
     updateUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const userId = randomUUID();
@@ -120,7 +120,7 @@ describe('WorkOrderController', () => {
     const id = randomUUID();
     const userId = randomUUID();
     const dto = { status: WorkOrderStatus.IN_PROGRESS, notes: 'starting' };
-    const workOrder = { id, ...dto };
+    const workOrder = { id, ...dto, services: [], partSupplies: [] };
     updateStatusUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const result = await controller.updateStatus(

@@ -79,8 +79,8 @@ export class WorkOrder {
   customer?: Customer;
   vehicle?: Vehicle;
   assignedUser?: User | null;
-  private _services?: WorkOrderService[];
-  private _partSupplies?: WorkOrderPartSupply[];
+  private _services: WorkOrderService[];
+  private _partSupplies: WorkOrderPartSupply[];
 
   private constructor(props: WorkOrderProps) {
     this.id = props.id;
@@ -101,8 +101,8 @@ export class WorkOrder {
     this.deliveredAt = props.deliveredAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
-    this._services = props.services;
-    this._partSupplies = props.partSupplies;
+    this._services = props.services ?? [];
+    this._partSupplies = props.partSupplies ?? [];
   }
 
   static reconstitute(props: WorkOrderProps): WorkOrder {
@@ -144,7 +144,7 @@ export class WorkOrder {
   }
 
   startServiceItem(serviceId: string): void {
-    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
+    const item = this._services.find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
@@ -158,7 +158,7 @@ export class WorkOrder {
   }
 
   completeServiceItem(serviceId: string): void {
-    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
+    const item = this._services.find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
@@ -166,9 +166,7 @@ export class WorkOrder {
 
     item.completeService();
 
-    const allCompleted = this._services!.every(
-      (s) => s.status === WorkOrderServiceStatus.COMPLETED,
-    );
+    const allCompleted = this._services.every((s) => s.status === WorkOrderServiceStatus.COMPLETED);
 
     if (allCompleted) {
       this.changeStatus(WorkOrderStatus.COMPLETED);
@@ -197,8 +195,8 @@ export class WorkOrder {
       }),
     );
 
-    this._services = [...(this._services ?? []), ...services];
-    this._partSupplies = [...(this._partSupplies ?? []), ...partSupplies];
+    this._services = [...this._services, ...services];
+    this._partSupplies = [...this._partSupplies, ...partSupplies];
     this.recalculateTotalAmount();
     this.updatedAt = new Date();
 
@@ -206,8 +204,8 @@ export class WorkOrder {
   }
 
   private recalculateTotalAmount(): void {
-    const servicesTotal = this._services!.reduce((sum, s) => sum + s.totalPrice, 0);
-    const partsTotal = this._partSupplies!.reduce((sum, p) => sum + p.totalPrice, 0);
+    const servicesTotal = this._services.reduce((sum, s) => sum + s.totalPrice, 0);
+    const partsTotal = this._partSupplies.reduce((sum, p) => sum + p.totalPrice, 0);
 
     this._totalAmount = servicesTotal + partsTotal;
   }
@@ -269,6 +267,20 @@ export class WorkOrder {
     this.updateTimestampsForStatus(newStatus);
     this._status = newStatus;
     this.updatedAt = new Date();
+  }
+
+  private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
+    WorkOrderStatus.IN_DIAGNOSIS,
+    WorkOrderStatus.CANCELLED,
+    WorkOrderStatus.DELIVERED,
+  ]);
+
+  static assertAllowedPatchStatus(status: WorkOrderStatus): void {
+    if (!WorkOrder.PATCH_STATUS_ALLOWED.has(status)) {
+      throw new BusinessRuleViolationException(
+        `O status "${status}" não é permitido nesta operação.`,
+      );
+    }
   }
 
   private static readonly STATUS_TRANSITION_MAP: Record<WorkOrderStatus, WorkOrderStatus[]> = {
@@ -397,11 +409,11 @@ export class WorkOrder {
     return this._totalAmount;
   }
 
-  get services(): WorkOrderService[] | undefined {
+  get services(): WorkOrderService[] {
     return this._services;
   }
 
-  get partSupplies(): WorkOrderPartSupply[] | undefined {
+  get partSupplies(): WorkOrderPartSupply[] {
     return this._partSupplies;
   }
 }

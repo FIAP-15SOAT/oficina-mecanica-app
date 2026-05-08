@@ -200,32 +200,6 @@ describe('User Entity', () => {
     });
   });
 
-  describe('role checks', () => {
-    it('should identify Admin', () => {
-      const user = User.create({ ...validProps, role: UserRole.ADMIN });
-
-      expect(user.isAdmin()).toBe(true);
-      expect(user.isMechanic()).toBe(false);
-      expect(user.isAttendant()).toBe(false);
-    });
-
-    it('should identify Mechanic', () => {
-      const user = User.create({ ...validProps, role: UserRole.MECHANIC });
-
-      expect(user.isAdmin()).toBe(false);
-      expect(user.isMechanic()).toBe(true);
-      expect(user.isAttendant()).toBe(false);
-    });
-
-    it('should identify Attendant', () => {
-      const user = User.create(validProps);
-
-      expect(user.isAdmin()).toBe(false);
-      expect(user.isMechanic()).toBe(false);
-      expect(user.isAttendant()).toBe(true);
-    });
-  });
-
   describe('toPublicView', () => {
     it('should return public view without passwordHash', () => {
       const now = new Date();

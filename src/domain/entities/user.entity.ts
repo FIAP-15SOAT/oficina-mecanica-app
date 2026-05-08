@@ -108,18 +108,6 @@ export class User {
     this.updatedAt = new Date();
   }
 
-  isAdmin(): boolean {
-    return this.role === UserRole.ADMIN;
-  }
-
-  isMechanic(): boolean {
-    return this.role === UserRole.MECHANIC;
-  }
-
-  isAttendant(): boolean {
-    return this.role === UserRole.ATTENDANT;
-  }
-
   toPublicView(): UserPublicView {
     return {
       id: this.id,

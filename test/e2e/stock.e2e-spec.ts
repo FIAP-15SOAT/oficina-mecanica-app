@@ -244,6 +244,27 @@ describe('Stock (E2E)', () => {
     });
   });
 
+  describe('GET /api/stock-movements — workOrder null branch', () => {
+    it('should return movement with null workOrder for manual ENTRY movements', async () => {
+      const part = await createPartSupply('Peça Entry', `ENTRY-${Date.now()}`);
+
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 5, reason: 'Reposição manual' })
+        .expect(200);
+
+      const res = await request(httpServer)
+        .get('/api/stock-movements')
+        .query({ partSupplyId: part.id })
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data[0].workOrder).toBeNull();
+    });
+  });
+
   describe('GET /api/stock-movements (Advanced)', () => {
     it('should filter stock movements by workOrderId', async () => {
       const part = await createPartSupply('Peça Mov', 'MOV-001');
