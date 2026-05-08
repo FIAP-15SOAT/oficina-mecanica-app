@@ -13,16 +13,18 @@ describe('StockPresenter', () => {
   const now = new Date();
 
   describe('toPaginatedStockMovementsResponse', () => {
-    it('should format a stock movement without relations (fallback to id only)', () => {
+    it('should format a stock movement with partSupply but no workOrder (ENTRY type)', () => {
+      const partSupply = createMockPartSupply();
       const movement = StockMovement.reconstitute({
         id: randomUUID(),
-        partSupplyId: randomUUID(),
+        partSupplyId: partSupply.id,
         workOrderId: null,
         type: StockMovementType.ENTRY,
         quantity: 5,
         reason: 'Restock',
         createdAt: now,
       });
+      movement.partSupply = partSupply;
 
       const result = StockPresenter.toPaginatedStockMovementsResponse({
         items: [movement],
@@ -30,7 +32,7 @@ describe('StockPresenter', () => {
       });
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0].partSupply.id).toBe(movement.partSupplyId);
+      expect(result.data[0].partSupply.id).toBe(partSupply.id);
       expect(result.data[0].workOrder).toBeNull();
       expect(result.pagination.totalRecords).toBe(1);
     });
@@ -121,14 +123,19 @@ describe('StockPresenter', () => {
   });
 
   describe('toPaginatedStockReservationsResponse', () => {
-    it('should format a stock reservation without relations (fallback to id only)', () => {
+    it('should format a stock reservation with partSupply and workOrder relations', () => {
+      const partSupply = createMockPartSupply();
+      const workOrder = createMockWorkOrder();
+
       const reservation = StockReservation.reconstitute({
         id: randomUUID(),
-        partSupplyId: randomUUID(),
-        workOrderId: randomUUID(),
+        partSupplyId: partSupply.id,
+        workOrderId: workOrder.id,
         quantity: 3,
         createdAt: now,
       });
+      reservation.partSupply = partSupply;
+      reservation.workOrder = workOrder;
 
       const result = StockPresenter.toPaginatedStockReservationsResponse({
         items: [reservation],
@@ -136,8 +143,8 @@ describe('StockPresenter', () => {
       });
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0].partSupply.id).toBe(reservation.partSupplyId);
-      expect(result.data[0].workOrder.id).toBe(reservation.workOrderId);
+      expect(result.data[0].partSupply.id).toBe(partSupply.id);
+      expect(result.data[0].workOrder.id).toBe(workOrder.id);
     });
 
     it('should format a stock reservation with partSupply and workOrder relations', () => {

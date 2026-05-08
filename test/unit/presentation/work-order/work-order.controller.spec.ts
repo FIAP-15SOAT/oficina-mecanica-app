@@ -6,6 +6,8 @@ import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { Quote } from '@domain/entities/quote.entity';
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { ICreateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/create-work-order.use-case.interface';
 import { IFindWorkOrderByIdUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-by-id.use-case.interface';
 import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases/work-order/find-all-work-orders-paginated.use-case.interface';
@@ -49,8 +51,17 @@ describe('WorkOrderController', () => {
   });
 
   it('should create a work order', async () => {
-    const dto = { number: '001', customerId: randomUUID(), vehicleId: randomUUID() };
-    const workOrder = { id: randomUUID(), ...dto, services: [], partSupplies: [] };
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const dto = { number: '001', customerId: customer.id, vehicleId: vehicle.id };
+    const workOrder = {
+      id: randomUUID(),
+      ...dto,
+      customer,
+      vehicle,
+      services: [],
+      partSupplies: [],
+    };
     createUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const userId = randomUUID();
@@ -92,7 +103,9 @@ describe('WorkOrderController', () => {
 
   it('should find one work order', async () => {
     const id = randomUUID();
-    const workOrder = { id, number: '001', services: [], partSupplies: [] };
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const workOrder = { id, number: '001', customer, vehicle, services: [], partSupplies: [] };
     findByIdUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const result = await controller.findOne(id);
@@ -103,8 +116,10 @@ describe('WorkOrderController', () => {
 
   it('should update a work order', async () => {
     const id = randomUUID();
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
     const dto = { problemDescription: 'test' };
-    const workOrder = { id, ...dto, services: [], partSupplies: [] };
+    const workOrder = { id, ...dto, customer, vehicle, services: [], partSupplies: [] };
     updateUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const userId = randomUUID();
@@ -119,8 +134,10 @@ describe('WorkOrderController', () => {
   it('should update status', async () => {
     const id = randomUUID();
     const userId = randomUUID();
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
     const dto = { status: WorkOrderStatus.IN_PROGRESS, notes: 'starting' };
-    const workOrder = { id, ...dto, services: [], partSupplies: [] };
+    const workOrder = { id, ...dto, customer, vehicle, services: [], partSupplies: [] };
     updateStatusUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const result = await controller.updateStatus(
