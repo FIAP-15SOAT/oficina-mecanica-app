@@ -186,4 +186,12 @@ export async function seedWorkOrders(
 
     console.log('  ✓ WorkOrder: 000003 (RECEIVED)');
   }
+
+  await prisma.$queryRaw`
+    SELECT setval(
+      'work_order_number_seq',
+      GREATEST(COALESCE((SELECT MAX(CAST(number AS INTEGER)) FROM work_orders), 1), 1),
+      (SELECT COUNT(*) FROM work_orders) > 0
+    )
+  `;
 }
