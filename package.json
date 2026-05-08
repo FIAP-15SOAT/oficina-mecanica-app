@@ -107,11 +107,10 @@
       "src/**/*.(t|j)s",
       "!src/**/*.module.ts",
       "!src/main.ts",
-      "!src/domain/enums/**/*.ts",
-      "!src/infrastructure/database/prisma/**/*.ts",
+      "!src/**/*.enums.ts",
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
-      "!src/**/*.dto.ts"
+      "!src/infrastructure/database/prisma/prisma.service.ts"
     ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node",
