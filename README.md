@@ -28,16 +28,25 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 
 ## Arquitetura
 
-O projeto segue **Clean Architecture** com separação clara de quatro camadas. As dependências fluem apenas para dentro (Presentation → Application → Domain; Infrastructure implementa contratos do Domain).
+O projeto segue **Clean Architecture** com separação estrita de quatro camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. As dependências fluem apenas para dentro (Presentation → Application → Domain; Infrastructure implementa contratos do Domain).
 
 ```
 src/
 ├── domain/                          # Camada de domínio (regras de negócio puras)
 │   ├── entities/                    # Entidades ricas com validação de domínio
-│   ├── enums/                       # Enums de negócio (UserRole, WorkOrderStatus, QuoteStatus, etc.)
-│   ├── exceptions/                  # DomainValidationException, EntityNotFoundException, BusinessRuleViolationException
-│   ├── interfaces/                  # Contratos de repositórios e DTOs de use-cases
-│   └── validators/                  # DocumentValidator (validação de CPF e CNPJ com dígito verificador)
+│   │                                # WorkOrder e Quote são Aggregate Roots
+│   ├── value-objects/               # Document (CPF/CNPJ), Email, Phone, Plate,
+│   │                                # ZipCode, Address, LineItemPrice
+│   ├── enums/                       # UserRole, CustomerType, WorkOrderStatus,
+│   │                                # WorkOrderServiceStatus, QuoteStatus,
+│   │                                # QuoteDecisionAction, StockMovementType, Unit,
+│   │                                # PartSupplyCategory, TokenType
+│   ├── exceptions/                  # DomainValidationException, EntityNotFoundException,
+│   │                                # BusinessRuleViolationException
+│   ├── constants/                   # Regex compartilhadas (placa, telefone)
+│   ├── validators/                  # DocumentValidator (CPF/CNPJ com dígito verificador)
+│   └── interfaces/                  # Contratos de repositórios, IUnitOfWork,
+│                                    # serviços (token, e-mail, hash) e DTOs de use-cases
 │
 ├── application/                     # Camada de aplicação (orquestração de casos de uso)
 │   ├── use-cases/
@@ -45,24 +54,31 @@ src/
 │   │   ├── user/                    # CRUD + atualização de status
 │   │   ├── customer/                # CRUD completo de clientes
 │   │   ├── vehicle/                 # CRUD + busca por cliente
-│   │   ├── service/                 # CRUD + métricas por serviço
+│   │   ├── service/                 # CRUD + métricas (individual e agregada)
 │   │   ├── part-supply/             # CRUD + movimentação de estoque
-│   │   ├── stock/                   # Consulta de movimentações e reservas de estoque
-│   │   ├── work-order/              # Criação, consulta, atualização, status, histórico
-│   │   └── quote/                   # CRUD de orçamentos, itens, envio, aprovação, decisão via email
-│   └── exceptions/                  # ResourceNotFoundException, ResourceConflictException, UnauthorizedAccessException, BadRequestException
+│   │   ├── stock/                   # Consulta de movimentações e reservas
+│   │   ├── work-order/              # Criação, busca, atualização, status,
+│   │   │                            # status de serviços, histórico
+│   │   └── quote/                   # CRUD, itens, envio por e-mail, aprovação
+│   │                                # (Approve/Reject/EmailDecision/UpdateStatus)
+│   └── exceptions/                  # ResourceNotFoundException, ResourceConflictException,
+│                                    # UnauthorizedAccessException, BadRequestException
 │
 ├── infrastructure/                  # Implementações concretas (framework e serviços externos)
-│   ├── auth/                        # JWT Strategy, Guards (JwtAuthGuard, RolesGuard), @CurrentUser, @Roles, @Public
+│   ├── auth/                        # JWT Strategy, Guards (JwtAuthGuard, RolesGuard),
+│   │                                # @CurrentUser, @Roles, @Public
 │   ├── database/                    # PrismaService (singleton de conexão)
-│   ├── exceptions/                  # AuthenticationFailedException, DatabaseOperationException, ServiceIntegrationException
-│   ├── filters/                     # Exception Filters: Domain, Application, Infrastructure, AllExceptions
+│   ├── exceptions/                  # AuthenticationFailedException, DatabaseOperationException,
+│   │                                # ServiceIntegrationException, ConcurrencyException
+│   ├── filters/                     # Exception Filters: Domain, Application,
+│   │                                # Infrastructure, AllExceptions
 │   ├── interceptors/                # DateSerializerInterceptor (ISO 8601 com timezone)
 │   ├── mappers/                     # Conversão Prisma model → Entidade de domínio
-│   ├── pipes/                       # SanitizeStringsPipe (global — sanitiza strings em DTOs)
-│   ├── repositories/                # Implementações Prisma de todos os repositórios + PrismaUnitOfWork
-│   ├── services/                    # BcryptHashService, JwtTokenService, MailerEmailSenderService
-│   └── validators/                  # IsValidCpfCnpj / IsValidCpfCnpjConstraint (adapter class-validator que delega ao DocumentValidator do domain)
+│   ├── pipes/                       # SanitizeStringsPipe (global)
+│   ├── repositories/                # Implementações Prisma + PrismaUnitOfWork
+│   ├── services/                    # BcryptHashService, JwtTokenService,
+│   │                                # MailerEmailSenderService
+│   └── validators/                  # IsValidCpfCnpj (adapter class-validator)
 │
 ├── presentation/                    # Camada de apresentação (controllers, DTOs, presenters)
 │   ├── auth/                        # AuthController + DTOs
@@ -73,20 +89,23 @@ src/
 │   ├── vehicles/                    # VehiclesController + DTOs
 │   ├── work-order/                  # WorkOrderController + DTOs
 │   ├── quote/                       # QuoteController + DTOs
-│   └── stock/                       # StockMovementsController + StockReservationsController + DTOs
+│   └── stock/                       # StockMovementsController + StockReservationsController
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
-└── main.ts                          # helmet, CORS (ALLOWED_ORIGINS), SanitizeStringsPipe, ValidationPipe, DateSerializerInterceptor
+└── main.ts                          # helmet, CORS (ALLOWED_ORIGINS), SanitizeStringsPipe,
+                                     # ValidationPipe, DateSerializerInterceptor
 
 test/
-├── helpers/                         # Factories de mocks reutilizáveis por entidade (incluindo UnitOfWorkMockFactory)
-├── unit/                            # 129 suites de testes unitários (espelham src/)
-│   ├── domain/                      # entities/, validators/
+├── helpers/                         # Mock factories reutilizáveis (incluindo
+│                                    # UnitOfWorkMockFactory) e helpers de E2E
+├── unit/                            # 132 suites de testes unitários (espelham src/)
+│   ├── domain/                      # entities/, value-objects/, validators/
 │   ├── application/use-cases/
-│   ├── infrastructure/              # auth, exceptions, filters, interceptors, mappers, pipes, repositories, services, validators
-│   └── presentation/               # controllers e presenters
-└── e2e/                             # 9 suites de testes E2E (Testcontainers / PostgreSQL real)
+│   ├── infrastructure/              # auth, exceptions, filters, interceptors,
+│   │                                # mappers, pipes, repositories, services, validators
+│   └── presentation/                # controllers e presenters
+└── e2e/                             # 9 suites de testes E2E (Testcontainers + PostgreSQL real)
     ├── auth.e2e-spec.ts
     ├── customer.e2e-spec.ts
     ├── part-supply.e2e-spec.ts
@@ -100,7 +119,8 @@ test/
 prisma/
 ├── schema.prisma                    # Schema do banco de dados (15 modelos)
 ├── prisma.config.ts                 # Configuração do Prisma v7
-├── migrations/                      # Migrations geradas pelo Prisma
+├── migrations/                      # Migrations geradas pelo Prisma (incluindo a sequence
+│                                    # `work_order_number_seq` usada para gerar números de OS)
 ├── seed.ts                          # Entry point do seed
 └── seeds/                           # Scripts de seed por entidade
 ```
@@ -111,9 +131,27 @@ prisma/
 
 Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`.
 
+### DDD — Aggregate Roots, Entidades e Value Objects
+
+O domínio é modelado seguindo princípios de DDD:
+
+- **Aggregate Roots** — `WorkOrder` e `Quote` são raízes de agregado. Toda mutação dos itens (serviços, peças/insumos), transições de status e cálculos de totais ocorrem **através** da raiz, que protege os invariantes do agregado.
+  - `WorkOrder` encapsula seus `WorkOrderService[]` e `WorkOrderPartSupply[]`, controla as transições de status (state machine), recalcula `totalAmount`, valida o mecânico atribuído (apenas usuários ativos com role `MECHANIC`) e aplica os itens herdados de um orçamento aprovado (`applyQuoteItems`).
+  - `Quote` encapsula seus `QuoteService[]` e `QuotePartSupply[]`, recalcula `servicesAmount`/`partsAmount`/`totalAmount` automaticamente e expõe operações `submit()`, `approve()`, `reject()` que validam o status atual antes da transição.
+- **Entidades** — `Customer`, `Vehicle`, `Service`, `PartSupply`, `User`, `StatusHistory`, `StockMovement`, `StockReservation`. Possuem identidade própria, estado mutável e validações de invariantes em seus próprios métodos.
+- **Value Objects** — imutáveis, sem identidade, validados na criação:
+  - `Document` (CPF ou CNPJ com dígito verificador), `Email`, `Phone`, `Plate` (placa antiga `ABC-1234` ou Mercosul `ABC1D23`), `ZipCode`, `Address`, `LineItemPrice` (quantidade × preço unitário com cálculo de total).
+- **Reconstituição** — todas as entidades têm `static create(...)` (com validações completas) e `static reconstitute(...)` (rehidratação a partir do banco, sem revalidar dados já persistidos). Os mappers da infraestrutura sempre usam `reconstitute`.
+
+### Concorrência otimista
+
+Os agregados expostos a operações concorrentes (`WorkOrder`, `Quote`, `PartSupply`) possuem uma coluna `version` (Int) usada como **lock otimista**. Toda atualização verifica `WHERE id = ? AND version = ?` e incrementa a versão. Quando o Prisma retorna o erro `P2025` (registro não encontrado para o filtro), a infraestrutura traduz para uma `ConcurrencyException`, que o filtro de exceções mapeia para **HTTP 409 Conflict**, instruindo o cliente a tentar novamente.
+
+Esse mecanismo protege fluxos críticos como atualização de status de OS, aprovação/rejeição de orçamentos e movimentações concorrentes de estoque.
+
 ### Perfis de usuário (RBAC)
 
-A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Endpoints podem ainda ser marcados com `@Public()` quando dispensam autenticação (ex.: `/auth/login`, decisão de orçamento via link assinado).
+A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Endpoints podem ser marcados com `@Public()` quando dispensam autenticação (ex.: `/auth/login`, decisão de orçamento via link assinado).
 
 | Perfil | Permissões |
 |---|---|
@@ -123,7 +161,70 @@ A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator
 
 ### Unit of Work
 
-Operações críticas que envolvem múltiplos repositórios (criação e atualização de status de OS, atualização de status de serviço) são executadas dentro de uma transação Prisma gerenciada pelo `IUnitOfWork`. O `PrismaUnitOfWork` implementa esse contrato e injeta todos os repositórios já conectados à transação ativa.
+Operações que tocam múltiplos repositórios são executadas dentro de uma transação Prisma gerenciada pelo contrato `IUnitOfWork`. O `PrismaUnitOfWork` injeta todos os repositórios já conectados à transação ativa em uma única callback (`executeTransaction`).
+
+Casos de uso transacionais incluem:
+- Criação de OS (cria a OS + registra `StatusHistory` inicial)
+- Atualização de status de OS (atualiza OS + registra histórico)
+- Atualização de status de serviço da OS (atualiza item, eventualmente promove OS para `IN_PROGRESS`/`COMPLETED`, consome reservas e gera `StockMovement` de saída quando aplicável)
+- Aprovação de orçamento (aprova quote, reserva estoque, materializa itens na OS, transiciona OS para `APPROVED`, rejeita demais quotes pendentes da mesma OS)
+- Rejeição de orçamento (rejeita quote, transiciona OS para `REJECTED`, registra histórico)
+- Envio de orçamento (transiciona quote para `SENT`, eventualmente avança OS para `AWAITING_APPROVAL`, dispara e-mail com tokens assinados)
+- Movimentação de estoque (atualiza `PartSupply` + cria `StockMovement`)
+
+### Ciclo de vida da Ordem de Serviço
+
+Transições permitidas (state machine validada no agregado `WorkOrder`):
+
+| De | Transições permitidas |
+|---|---|
+| `RECEIVED` | `IN_DIAGNOSIS`, `CANCELLED` |
+| `IN_DIAGNOSIS` | `AWAITING_APPROVAL`, `CANCELLED` |
+| `AWAITING_APPROVAL` | `APPROVED`, `REJECTED`, `CANCELLED` |
+| `REJECTED` | `AWAITING_APPROVAL` |
+| `APPROVED` | `IN_PROGRESS` |
+| `IN_PROGRESS` | `COMPLETED` |
+| `COMPLETED` | `DELIVERED` |
+| `DELIVERED` | (terminal) |
+| `CANCELLED` | (terminal) |
+
+Regras adicionais:
+- `CANCELLED` exige `notes` no payload.
+- Atualização de campos editáveis (problema, notas, quilometragem, mecânico) só é permitida em `RECEIVED` ou `IN_DIAGNOSIS`.
+- O endpoint `PATCH /work-orders/:id` aceita apenas as transições "operacionais" para `IN_DIAGNOSIS`, `CANCELLED` e `DELIVERED`. As demais (APPROVED/REJECTED, AWAITING_APPROVAL, IN_PROGRESS, COMPLETED) são disparadas como efeito colateral dos fluxos de orçamento e dos status de serviço.
+- Timestamps `approvedAt`, `rejectedAt`, `startedAt`, `finishedAt` e `deliveredAt` são preenchidos automaticamente pelo agregado quando o status correspondente é atingido.
+- O número da OS é gerado por uma sequence PostgreSQL (`work_order_number_seq`) e formatado com 6 dígitos zero-padded.
+
+### Ciclo de vida do Orçamento
+
+Transições permitidas no agregado `Quote`:
+
+| De | Transição | Gatilho |
+|---|---|---|
+| `PENDING` | `SENT` | `submit()` (envio para o cliente, exige ao menos um item) |
+| `SENT` | `APPROVED` | `approve()` (manual via PATCH ou link de e-mail) |
+| `SENT` | `REJECTED` | `reject()` (manual ou via link, requer justificativa quando manual) |
+
+Itens só podem ser adicionados/atualizados/removidos enquanto o orçamento estiver `PENDING`.
+
+### Estoque, reservas e movimentações
+
+Cada `PartSupply` controla três campos: `stock` (estoque físico), `reservedStock` (já comprometido com OS aprovadas) e `version` (lock otimista). Tipos de movimentação: `ENTRY`, `EXIT`, `ADJUSTMENT`.
+
+Fluxo automático no ciclo de vida da OS:
+
+1. **Aprovação de orçamento** — para cada peça/insumo do quote aprovado, o caso de uso valida estoque disponível (`stock - reservedStock`), incrementa `reservedStock` no `PartSupply` e cria um registro em `StockReservation`. Os itens são materializados como `WorkOrderPartSupply` na OS.
+2. **Início do primeiro serviço (`IN_PROGRESS`)** — quando um serviço da OS é iniciado e a OS transiciona para `IN_PROGRESS`, todas as reservas vinculadas à OS são consumidas: o `PartSupply` tem `stock` e `reservedStock` decrementados, é criado um `StockMovement` de tipo `EXIT` por reserva e os registros de `StockReservation` são removidos.
+3. **Movimentação manual** — o endpoint `PATCH /parts-supplies/:id` permite registrar `ENTRY`, `EXIT` ou `ADJUSTMENT` com `reason` opcional, sempre validando que a saída não comprometa o estoque já reservado.
+
+### Aprovação de orçamento por e-mail
+
+Ao chamar `POST /quotes/:id/submissions`:
+
+1. O agregado `Quote` transiciona para `SENT`. A OS, se ainda em `IN_DIAGNOSIS` ou `REJECTED`, avança para `AWAITING_APPROVAL`.
+2. Dois tokens JWT independentes (com segredo `QUOTE_DECISION_TOKEN_SECRET` e expiração de 7 dias) são gerados — um para `APPROVE` e outro para `REJECT`.
+3. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) com dois links absolutos: `GET /quotes/:id/decisions?action=approve|reject&token=...`.
+4. O endpoint público `GET /quotes/:id/decisions` (decorator `@Public()`) verifica o token, valida `quoteId` + `action` + `type` e delega para `ApproveQuoteUseCase` ou `RejectQuoteUseCase`.
 
 ### Exceções por Camada
 
@@ -139,6 +240,7 @@ Cada camada tem suas próprias exceções, sem dependência de framework HTTP. O
 | Application | `UnauthorizedAccessException` | 401 |
 | Application | `BadRequestException` | 400 |
 | Infrastructure | `AuthenticationFailedException` | 401 |
+| Infrastructure | `ConcurrencyException` | 409 |
 | Infrastructure | `DatabaseOperationException` | 503 |
 | Infrastructure | `ServiceIntegrationException` | 503 |
 
@@ -229,7 +331,7 @@ Após a inicialização:
 |---|---|
 | `npm run start` | Inicia a aplicação |
 | `npm run start:dev` | Inicia em modo watch (hot reload) |
-| `npm run start:prod` | Inicia em modo produção |
+| `npm run start:prod` | Inicia em modo produção (`node dist/src/main`) |
 | `npm run build` | Compila o projeto |
 | `npm run test` | Roda testes unitários |
 | `npm run test:watch` | Testes em modo watch |
@@ -240,10 +342,11 @@ Após a inicialização:
 | `npm run format` | Formata código com Prettier |
 | `npm run prisma:generate` | Gera o Prisma Client |
 | `npm run prisma:migrate` | Cria/aplica migrations (dev) |
+| `npm run prisma:migrate:prod` | Aplica migrations em produção (`migrate deploy`) |
 | `npm run prisma:studio` | Abre o Prisma Studio (GUI do banco) |
 | `npm run prisma:seed` | Popula o banco com dados iniciais |
 | `npm run db:setup` | migrate:deploy + generate + seed (primeiro setup) |
-| `npm run db:reset` | Reseta o banco e re-executa o seed (apenas dev) |
+| `npm run db:reset` | Reseta o banco e re-executa o seed (apenas dev — bloqueado em `production`/`staging`) |
 
 ## API
 
@@ -260,7 +363,7 @@ Após iniciar a aplicação:
 
 | Método | Rota | Descrição | Acesso |
 |---|---|---|---|
-| POST | `/login` | Autenticar e obter tokens | Público |
+| POST | `/login` | Autenticar e obter tokens (access + refresh) | Público |
 | POST | `/refresh` | Renovar tokens com refresh token | Público |
 | GET | `/me` | Dados do usuário autenticado | JWT |
 
@@ -286,7 +389,7 @@ Após iniciar a aplicação:
 | POST | `/` | Cadastrar serviço | ADMIN |
 | GET | `/` | Listar (paginado) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN |
-| GET | `/:id/metrics` | Métricas de uso do serviço | ADMIN |
+| GET | `/:id/metrics` | Métricas de uso de um serviço (execuções concluídas e tempo médio em minutos) | ADMIN |
 | PUT | `/:id` | Atualizar | ADMIN |
 | DELETE | `/:id` | Remover | ADMIN |
 
@@ -305,11 +408,11 @@ Após iniciar a aplicação:
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
 | POST | `/` | Cadastrar peça ou insumo | ADMIN |
-| GET | `/` | Listar estoque (paginado; filtros: name, sku, category, isActive, lowStock) | ADMIN, MECHANIC, ATTENDANT |
+| GET | `/` | Listar estoque (paginado; filtros: `name`, `sku`, `category`, `isActive`, `lowStock`) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
 | PUT | `/:id` | Atualizar dados | ADMIN |
-| PATCH | `/:id` | Movimentar estoque (`ENTRY` / `EXIT` / `ADJUSTMENT`) | ADMIN, ATTENDANT |
-| DELETE | `/:id` | Remover | ADMIN |
+| PATCH | `/:id` | Movimentar estoque (`ENTRY` / `EXIT` / `ADJUSTMENT`) — gera `StockMovement` | ADMIN, ATTENDANT |
+| DELETE | `/:id` | Remover (bloqueado se houver `reservedStock > 0`) | ADMIN |
 
 ---
 
@@ -318,9 +421,9 @@ Após iniciar a aplicação:
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
 | POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório) | ADMIN, ATTENDANT |
-| GET | `/` | Listar (paginado; filtros: name, type, document) | ADMIN, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: `name`, `type`, `document`) | ADMIN, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
-| GET | `/:id/vehicles` | Listar veículos do cliente (paginado) | ADMIN, ATTENDANT |
+| GET | `/:id/vehicles` | Listar veículos do cliente | ADMIN, ATTENDANT |
 | PUT | `/:id` | Atualizar dados (incluindo endereço) | ADMIN, ATTENDANT |
 | DELETE | `/:id` | Remover (bloqueado se houver veículos vinculados) | ADMIN, ATTENDANT |
 
@@ -331,7 +434,7 @@ Após iniciar a aplicação:
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
 | POST | `/` | Cadastrar veículo (placa `ABC-1234` ou Mercosul `ABC1D23`) | ADMIN, ATTENDANT |
-| GET | `/` | Listar (paginado; filtros: plate, brand, customerId) | ADMIN, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: `plate`, `brand`, `customerId`) | ADMIN, ATTENDANT |
 | GET | `/:id` | Buscar por ID (retorna cliente aninhado) | ADMIN, ATTENDANT |
 | PUT | `/:id` | Atualizar dados (placa normalizada para maiúsculas) | ADMIN, ATTENDANT |
 | DELETE | `/:id` | Remover (bloqueado se houver ordens de serviço vinculadas) | ADMIN, ATTENDANT |
@@ -342,16 +445,16 @@ Após iniciar a aplicação:
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/` | Criar nova OS (`userId` extraído do JWT) | ADMIN, ATTENDANT |
-| GET | `/` | Listar (paginado; filtros: status, customerId, vehicleId, assignedUserId) | ADMIN, MECHANIC, ATTENDANT |
+| POST | `/` | Criar nova OS (`userId` extraído do JWT, número gerado por sequence) | ADMIN, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: `number`, `status`, `customerId`, `vehicleId`, `assignedUserId`) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, MECHANIC, ATTENDANT |
-| PUT | `/:id` | Atualizar OS (`userId` extraído do JWT) | ADMIN, MECHANIC, ATTENDANT |
-| PATCH | `/:id` | Atualizar status da OS | ADMIN, MECHANIC, ATTENDANT |
-| PATCH | `/:workOrderId/services/:serviceId` | Atualizar status de um serviço da OS | ADMIN, MECHANIC |
+| PUT | `/:id` | Atualizar OS (apenas em `RECEIVED`/`IN_DIAGNOSIS`; `userId` extraído do JWT) | ADMIN, MECHANIC, ATTENDANT |
+| PATCH | `/:id` | Atualizar status da OS (apenas `IN_DIAGNOSIS`, `CANCELLED`, `DELIVERED`) | ADMIN, MECHANIC, ATTENDANT |
+| PATCH | `/:workOrderId/services/:serviceId` | Atualizar status de um serviço da OS (`IN_PROGRESS`/`COMPLETED`) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id/status-history` | Histórico de mudanças de status | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id/quotes` | Listar orçamentos da OS | ADMIN, MECHANIC, ATTENDANT |
 
-Status da OS: `RECEIVED` → `IN_DIAGNOSIS` → `AWAITING_APPROVAL` → `APPROVED` / `REJECTED` → `IN_PROGRESS` → `COMPLETED` → `DELIVERED` / `CANCELLED`
+> Demais transições (`AWAITING_APPROVAL`, `APPROVED`, `REJECTED`, `IN_PROGRESS`, `COMPLETED`) são derivadas automaticamente dos fluxos de orçamento e dos status de serviço — veja "Ciclo de vida da Ordem de Serviço".
 
 ---
 
@@ -359,8 +462,8 @@ Status da OS: `RECEIVED` → `IN_DIAGNOSIS` → `AWAITING_APPROVAL` → `APPROVE
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| GET | `/` | Listar (paginado; filtros: workOrderId, status) | ADMIN, MECHANIC, ATTENDANT |
-| POST | `/` | Criar orçamento para uma OS | ADMIN, MECHANIC, ATTENDANT |
+| GET | `/` | Listar (paginado; filtros: `workOrderId`, `status`) | ADMIN, MECHANIC, ATTENDANT |
+| POST | `/` | Criar orçamento para uma OS (OS deve estar em `IN_DIAGNOSIS`/`AWAITING_APPROVAL`/`REJECTED`) | ADMIN, MECHANIC, ATTENDANT |
 | GET | `/:id` | Buscar por ID com itens | ADMIN, MECHANIC, ATTENDANT |
 | POST | `/:id/services/:serviceId` | Adicionar serviço ao orçamento | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id/services/:serviceId` | Atualizar quantidade de serviço | ADMIN, MECHANIC, ATTENDANT |
@@ -368,11 +471,11 @@ Status da OS: `RECEIVED` → `IN_DIAGNOSIS` → `AWAITING_APPROVAL` → `APPROVE
 | POST | `/:id/parts-supplies/:partSupplyId` | Adicionar peça/insumo ao orçamento | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id/parts-supplies/:partSupplyId` | Atualizar quantidade de peça/insumo | ADMIN, MECHANIC, ATTENDANT |
 | DELETE | `/:id/parts-supplies/:partSupplyId` | Remover peça/insumo do orçamento | ADMIN, MECHANIC, ATTENDANT |
-| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente | ADMIN, MECHANIC, ATTENDANT |
-| PATCH | `/:id` | Aprovar ou rejeitar orçamento | ADMIN, ATTENDANT |
-| GET | `/:id/decisions` | Decisão via link de e-mail (token assinado) | Público |
+| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail com links assinados) | ADMIN, MECHANIC, ATTENDANT |
+| PATCH | `/:id` | Aprovar (ou rejeitar com `reason`) orçamento manualmente | ADMIN, ATTENDANT |
+| GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?action=approve|reject&token=...` | Público |
 
-Status do orçamento: `PENDING` → `SENT` → `APPROVED` / `REJECTED`
+> Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. Aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais quotes pendentes da mesma OS.
 
 ---
 
@@ -380,7 +483,7 @@ Status do orçamento: `PENDING` → `SENT` → `APPROVED` / `REJECTED`
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| GET | `/` | Listar movimentações (paginado; filtros: partSupplyId, type, workOrderId) | ADMIN, ATTENDANT |
+| GET | `/` | Listar movimentações (paginado; filtros: `partSupplyId`, `type`, `workOrderId`) | ADMIN, ATTENDANT |
 
 ---
 
@@ -388,7 +491,7 @@ Status do orçamento: `PENDING` → `SENT` → `APPROVED` / `REJECTED`
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| GET | `/` | Listar reservas ativas (paginado; filtros: partSupplyId, workOrderId) | ADMIN, ATTENDANT |
+| GET | `/` | Listar reservas ativas (paginado; filtros: `partSupplyId`, `workOrderId`) | ADMIN, ATTENDANT |
 
 ---
 
@@ -420,6 +523,16 @@ Erros seguem o padrão NestJS com mensagens em português:
 { "statusCode": 404, "error": "Não Encontrado", "message": "Recurso não encontrado" }
 ```
 
+Conflitos de concorrência otimista retornam **409 Conflict** com mensagem orientando nova tentativa:
+
+```json
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "Ordem de serviço foi modificada por outra operação. Tente novamente."
+}
+```
+
 Todas as datas são serializadas em ISO 8601 com fuso horário via `DateSerializerInterceptor`.
 
 ## Testes
@@ -431,7 +544,9 @@ npm test          # executa os testes
 npm run test:cov  # com relatório de cobertura
 ```
 
-129 suites cobrindo todas as camadas (`application/`, `domain/`, `infrastructure/`, `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks estão em `test/helpers/`.
+132 suites cobrindo todas as camadas (`application/`, `domain/` — incluindo entidades e value objects, `infrastructure/` e `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks (incluindo `UnitOfWorkMockFactory`) estão em `test/helpers/`.
+
+A cobertura é coletada nas camadas `application/` e `domain/`. DTOs, modules, enums, `main.ts`, exceções e arquivos gerados pelo Prisma são excluídos dos thresholds (ver `package.json` → `jest.collectCoverageFrom`).
 
 ### E2E
 
@@ -440,7 +555,7 @@ npm run test:e2e      # executa os testes
 npm run test:e2e:cov  # com cobertura
 ```
 
-9 suites cobrindo todos os domínios: auth, user, customer, vehicle, service, part-supply, work-order, quote, stock. Os testes E2E sobem um PostgreSQL real via **Testcontainers**, sem necessidade de banco externo.
+9 suites cobrindo todos os domínios: auth, user, customer, vehicle, service, part-supply, work-order, quote, stock. Os testes E2E sobem um PostgreSQL real via **Testcontainers**, sem necessidade de banco externo. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
 
 ### Postman / Newman
 
@@ -469,8 +584,7 @@ A configuração do Sonar (chave do projeto, organização, exclusões e caminho
 
 ## Relatórios de Segurança, Qualidade e Cobertura
 
-Relatórios de segurança da aplicação ficam versionados em [`reports/`](./reports):
-Na raiz de cada ferramenta fica o relatório mais recente, enquanto o histórico é organizado por data no formato `YYYY-MM-DD`.
+Relatórios de segurança da aplicação ficam versionados em [`reports/`](./reports). Na raiz de cada ferramenta fica o relatório mais recente, enquanto o histórico é organizado por data no formato `YYYY-MM-DD`.
 
 - **DAST (OWASP ZAP)** — relatórios em [`reports/zap/`](./reports/zap) (HTML e PDF).
 - **SAST (Semgrep)** — relatórios em [`reports/semgrep/`](./reports/semgrep).
@@ -482,10 +596,11 @@ Mitigações já aplicadas no código:
 - Helmet (cabeçalhos de segurança HTTP)
 - CORS com lista branca via `ALLOWED_ORIGINS`
 - `SanitizeStringsPipe` global (sanitização de inputs em DTOs)
-- `ValidationPipe` global com `whitelist: true` e `forbidNonWhitelisted: true`
+- `ValidationPipe` global com `whitelist: true`, `forbidNonWhitelisted: true` e `transform: true`
 - Senhas com bcrypt (`BCRYPT_SALT_ROUNDS`)
 - JWT com access + refresh token e segredos separados
 - Token assinado dedicado para o link público de decisão de orçamento (`QUOTE_DECISION_TOKEN_SECRET`)
+- Concorrência otimista em agregados sensíveis (`WorkOrder`, `Quote`, `PartSupply`) para evitar lost updates
 
 ## Variáveis de Ambiente
 
@@ -509,6 +624,9 @@ BCRYPT_SALT_ROUNDS=12
 
 # Token assinado para o link público de decisão de orçamento (e-mail)
 QUOTE_DECISION_TOKEN_SECRET=your-quote-decision-secret-key
+# Opcional — base URL usada para montar os links enviados por e-mail
+# (default: http://localhost:${PORT}/api)
+# QUOTE_DECISION_BASE_URL=https://api.suaempresa.com/api
 
 # CORS — separar múltiplas origens por vírgula
 ALLOWED_ORIGINS=http://localhost:3000
@@ -533,4 +651,4 @@ O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
 | Ramoon Lincoln Barros Camacho | `ramooncamacho@hotmail.com` | `Tech@2026` |
 | Renan Santana Camacho | `camacho.renan@gmail.com` | `Tech@2026` |
 
-Use qualquer um desses e-mails com a senha `Tech@2026` no endpoint `POST /login` para autenticar e obter o token JWT.
+Use qualquer um desses e-mails com a senha `Tech@2026` no endpoint `POST /api/auth/login` para autenticar e obter o token JWT.
