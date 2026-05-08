@@ -61,7 +61,7 @@ export class StockMovement {
 
     const partSupplyId = props.partSupplyId.trim();
     const trimmedWorkOrderId = props.workOrderId?.trim();
-    const workOrderId = trimmedWorkOrderId ? trimmedWorkOrderId : null;
+    const workOrderId = trimmedWorkOrderId || null;
     const trimmedReason = props.reason?.trim();
 
     return new StockMovement({
@@ -70,7 +70,7 @@ export class StockMovement {
       workOrderId,
       type: props.type,
       quantity: props.quantity,
-      reason: trimmedReason ? trimmedReason : null,
+      reason: trimmedReason || null,
       createdAt: new Date(),
     });
   }

@@ -43,7 +43,7 @@ export class WorkOrderService {
   readonly id: string;
   readonly workOrderId: string;
   readonly serviceId: string;
-  private _lineItem: LineItemPrice;
+  private readonly _lineItem: LineItemPrice;
   status: WorkOrderServiceStatus;
   startedAt: Date | null;
   finishedAt: Date | null;

@@ -89,7 +89,7 @@ export class QuotePartSupply {
   }
 
   private static validateQuoteId(quoteId: string): void {
-    if (!quoteId || !quoteId.trim()) {
+    if (!quoteId?.trim()) {
       throw new DomainValidationException('ID do orçamento é obrigatório');
     }
 
@@ -99,7 +99,7 @@ export class QuotePartSupply {
   }
 
   private static validatePartSupplyId(partSupplyId: string): void {
-    if (!partSupplyId || !partSupplyId.trim()) {
+    if (!partSupplyId?.trim()) {
       throw new DomainValidationException('ID da peça/insumo é obrigatório');
     }
 

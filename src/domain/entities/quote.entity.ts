@@ -303,7 +303,7 @@ export class Quote {
   }
 
   private static validateWorkOrderId(workOrderId: string): void {
-    if (!workOrderId || !workOrderId.trim()) {
+    if (!workOrderId?.trim()) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório');
     }
 

@@ -20,7 +20,7 @@ export class Document {
 
   private static sanitize(value: string): string {
     return value
-      .replace(/[.\-/]/g, '')
+      .replaceAll(/[.\-/]/g, '')
       .trim()
       .toUpperCase();
   }

@@ -33,7 +33,7 @@ export class AddressRequestDto {
   state!: string;
 
   @ApiProperty({ description: 'CEP (com ou sem hífen)', example: '01310-100' })
-  @Transform(({ value }: { value: string }) => value?.replace(/\D/g, ''))
+  @Transform(({ value }: { value: string }) => value?.replaceAll(/\D/g, ''))
   @IsString({ message: 'CEP deve ser um texto.' })
   @Matches(/^\d{8}$/, { message: 'CEP inválido. Formato esperado: 00000-000.' })
   zipCode!: string;
@@ -50,7 +50,7 @@ export class CreateCustomerRequestDto {
     description: 'CPF (000.000.000-00) ou CNPJ válido (suporta formato alfanumérico)',
     example: '123.456.789-09',
   })
-  @Transform(({ value }: { value: string }) => value?.replace(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) => value?.replaceAll(/[.\-/]/g, '').toUpperCase())
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsNotEmpty({ message: 'O documento é obrigatório.' })
   @IsValidCpfCnpj()
@@ -71,7 +71,7 @@ export class CreateCustomerRequestDto {
   email!: string;
 
   @ApiProperty({ description: 'Telefone do Cliente', example: '(11) 99999-9999' })
-  @Transform(({ value }: { value: string }) => value?.replace(/\D/g, ''))
+  @Transform(({ value }: { value: string }) => value?.replaceAll(/\D/g, ''))
   @IsString({ message: 'O telefone deve ser um texto.' })
   @IsNotEmpty({ message: 'O telefone é obrigatório.' })
   @Matches(PHONE_REGEX, {

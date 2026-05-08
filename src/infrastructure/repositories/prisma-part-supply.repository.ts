@@ -101,22 +101,7 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     try {
       const record = await this.prisma.partSupply.update({
         where: { id, version: data.version },
-        data: {
-          ...(data.name !== undefined && { name: data.name }),
-          ...(data.description !== undefined && { description: data.description }),
-          ...(data.sku !== undefined && { sku: data.sku }),
-          ...(data.partNumber !== undefined && { partNumber: data.partNumber }),
-          ...(data.category !== undefined && { category: data.category }),
-          ...(data.unit !== undefined && { unit: data.unit }),
-          ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
-          ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
-          ...(data.minStock !== undefined && { minStock: data.minStock }),
-          ...(data.stock !== undefined && { stock: data.stock }),
-          ...(data.reservedStock !== undefined && { reservedStock: data.reservedStock }),
-          ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
-          ...(data.updatedAt !== undefined && { updatedAt: data.updatedAt }),
-          version: { increment: 1 },
-        },
+        data: { ...this.buildUpdateData(data), version: { increment: 1 } },
       });
 
       return PartSupplyMapper.toDomain(record);
@@ -128,6 +113,24 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
       }
       throw error;
     }
+  }
+
+  private buildUpdateData(data: Partial<PartSupply>): Prisma.PartSupplyUpdateInput {
+    return {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.sku !== undefined && { sku: data.sku }),
+      ...(data.partNumber !== undefined && { partNumber: data.partNumber }),
+      ...(data.category !== undefined && { category: data.category }),
+      ...(data.unit !== undefined && { unit: data.unit }),
+      ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
+      ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
+      ...(data.minStock !== undefined && { minStock: data.minStock }),
+      ...(data.stock !== undefined && { stock: data.stock }),
+      ...(data.reservedStock !== undefined && { reservedStock: data.reservedStock }),
+      ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
+      ...(data.updatedAt !== undefined && { updatedAt: data.updatedAt }),
+    };
   }
 
   async delete(id: string): Promise<void> {

@@ -234,19 +234,19 @@ export class WorkOrder {
     }
 
     const nextProblemDescription =
-      props.problemDescription !== undefined
-        ? (props.problemDescription?.trim() ?? null)
-        : this.problemDescription;
+      props.problemDescription === undefined
+        ? this.problemDescription
+        : (props.problemDescription?.trim() ?? null);
     const nextInternalNotes =
-      props.internalNotes !== undefined
-        ? (props.internalNotes?.trim() ?? null)
-        : this.internalNotes;
+      props.internalNotes === undefined
+        ? this.internalNotes
+        : (props.internalNotes?.trim() ?? null);
     const nextMileageAtService =
-      props.mileageAtService !== undefined ? props.mileageAtService : this.mileageAtService;
+      props.mileageAtService === undefined ? this.mileageAtService : props.mileageAtService;
     const nextAssignedUser =
-      props.assignedUser !== undefined ? (props.assignedUser ?? null) : (this.assignedUser ?? null);
+      props.assignedUser === undefined ? (this.assignedUser ?? null) : (props.assignedUser ?? null);
     const nextAssignedUserId =
-      props.assignedUser !== undefined ? (props.assignedUser?.id ?? null) : this.assignedUserId;
+      props.assignedUser === undefined ? this.assignedUserId : (props.assignedUser?.id ?? null);
 
     WorkOrder.validateMileage(nextMileageAtService);
     WorkOrder.validateProblemDescription(nextProblemDescription);

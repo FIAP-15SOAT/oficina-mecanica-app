@@ -29,7 +29,7 @@ interface ReconstitueWorkOrderPartSupplyProps {
 export class WorkOrderPartSupply {
   readonly workOrderId: string;
   readonly partSupplyId: string;
-  private _lineItem: LineItemPrice;
+  private readonly _lineItem: LineItemPrice;
   readonly createdAt: Date;
   updatedAt: Date;
 

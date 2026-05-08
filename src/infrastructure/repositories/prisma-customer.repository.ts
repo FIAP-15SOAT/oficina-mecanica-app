@@ -90,7 +90,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
 
     if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
     if (type) where.type = type;
-    if (document) where.document = document.replace(/[.\-/]/g, '').trim();
+    if (document) where.document = document.replaceAll(/[.\-/]/g, '').trim();
 
     const result = await paginate(
       this.prisma.customer,

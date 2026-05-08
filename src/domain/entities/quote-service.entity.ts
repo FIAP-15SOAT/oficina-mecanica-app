@@ -89,7 +89,7 @@ export class QuoteService {
   }
 
   private static validateQuoteId(quoteId: string): void {
-    if (!quoteId || !quoteId.trim()) {
+    if (!quoteId?.trim()) {
       throw new DomainValidationException('ID do orçamento é obrigatório');
     }
 
@@ -99,7 +99,7 @@ export class QuoteService {
   }
 
   private static validateServiceId(serviceId: string): void {
-    if (!serviceId || !serviceId.trim()) {
+    if (!serviceId?.trim()) {
       throw new DomainValidationException('ID do serviço é obrigatório');
     }
 

@@ -16,7 +16,7 @@ export class ZipCode {
   }
 
   private static sanitize(value: string): string {
-    return value.replace(/\D/g, '').trim();
+    return value.replaceAll(/\D/g, '').trim();
   }
 
   private static validatePresence(value: string | null | undefined): void {

@@ -208,7 +208,7 @@ describe('Customer (E2E)', () => {
           .send({
             ...validCustomer,
             document: doc,
-            email: `test-${doc.replace(/\D/g, '')}@email.com`,
+            email: `test-${doc.replaceAll(/\D/g, '')}@email.com`,
           })
           .expect(400);
       }

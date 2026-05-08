@@ -8,7 +8,7 @@ export class SanitizeStringsPipe implements PipeTransform {
 
   private sanitize(value: unknown): unknown {
     if (typeof value === 'string') {
-      return value.replace(/\0/g, '');
+      return value.replaceAll('\0', '');
     }
     if (Array.isArray(value)) {
       return value.map((item) => this.sanitize(item));

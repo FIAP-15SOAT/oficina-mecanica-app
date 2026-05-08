@@ -15,7 +15,7 @@ export class Plate {
   }
 
   private static sanitize(value: string): string {
-    return value.trim().toUpperCase().replace(/-/g, '');
+    return value.trim().toUpperCase().replaceAll('-', '');
   }
 
   private static validatePresence(value: string | null | undefined): void {
