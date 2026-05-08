@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PrismaUserRepository } from '@infrastructure/repositories/prisma-user.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 
-import { createMockUser } from '../../../helpers/user-mock.factory';
+import { createMockPrismaUser } from '../../../helpers/user-mock.factory';
+import { Email } from '@domain/value-objects/email.vo';
 
 describe('PrismaUserRepository', () => {
   let repository: PrismaUserRepository;
@@ -24,9 +27,9 @@ describe('PrismaUserRepository', () => {
         role: UserRole.MECHANIC,
       });
 
-      const prismaModel = createMockUser({
+      const prismaModel = createMockPrismaUser({
         name: user.name,
-        email: user.email,
+        email: user.email.value,
         passwordHash: user.passwordHash,
         role: user.role,
         isActive: user.isActive,
@@ -37,10 +40,10 @@ describe('PrismaUserRepository', () => {
       const result = await repository.create(user);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
-          email: prismaModel.email,
+          email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -52,29 +55,60 @@ describe('PrismaUserRepository', () => {
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
           name: user.name,
-          email: user.email,
+          email: user.email.value,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
         },
       });
     });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate email', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should rethrow unexpected errors', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const error = new Error('Database connection lost');
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow('Database connection lost');
+    });
   });
 
   describe('findById', () => {
     it('should find a user by id and return domain entity', async () => {
       const id = randomUUID();
-      const prismaModel = createMockUser({ id });
+      const prismaModel = createMockPrismaUser({ id });
 
       prisma.user.findUnique.mockResolvedValue(prismaModel);
 
       const result = await repository.findById(id);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
-          email: prismaModel.email,
+          email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -101,17 +135,17 @@ describe('PrismaUserRepository', () => {
   describe('findByEmail', () => {
     it('should find a user by email and return domain entity', async () => {
       const email = 'john.doe@example.com';
-      const prismaModel = createMockUser({ email });
+      const prismaModel = createMockPrismaUser({ email });
 
       prisma.user.findUnique.mockResolvedValue(prismaModel);
 
       const result = await repository.findByEmail(email);
 
       expect(result).toEqual(
-        new User({
+        User.reconstitute({
           id: prismaModel.id,
           name: prismaModel.name,
-          email: prismaModel.email,
+          email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -137,7 +171,7 @@ describe('PrismaUserRepository', () => {
 
   describe('findAllPaginated', () => {
     it('should return paginated users without filters', async () => {
-      const prismaModels = [createMockUser({ id: randomUUID(), name: 'User 1' })];
+      const prismaModels = [createMockPrismaUser({ id: randomUUID(), name: 'User 1' })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
@@ -155,7 +189,7 @@ describe('PrismaUserRepository', () => {
     });
 
     it('should return paginated users with role filter', async () => {
-      const prismaModels = [createMockUser({ id: randomUUID(), role: UserRole.ADMIN })];
+      const prismaModels = [createMockPrismaUser({ id: randomUUID(), role: UserRole.ADMIN })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
@@ -175,7 +209,7 @@ describe('PrismaUserRepository', () => {
     });
 
     it('should return paginated users with name filter', async () => {
-      const prismaModels = [createMockUser({ id: randomUUID(), name: 'Target User' })];
+      const prismaModels = [createMockPrismaUser({ id: randomUUID(), name: 'Target User' })];
 
       prisma.user.findMany.mockResolvedValue(prismaModels);
       prisma.user.count.mockResolvedValue(1);
@@ -199,16 +233,16 @@ describe('PrismaUserRepository', () => {
       const id = randomUUID();
       const updateData = {
         name: 'Updated Name',
-        email: 'updated@example.com',
+        email: Email.create('updated@example.com'),
         passwordHash: '$2b$10$newhash',
         role: UserRole.ADMIN,
         isActive: false,
       };
 
-      const updatedPrismaModel = createMockUser({
+      const updatedPrismaModel = createMockPrismaUser({
         id,
         name: updateData.name,
-        email: updateData.email,
+        email: updateData.email.value,
         passwordHash: updateData.passwordHash,
         role: updateData.role,
         isActive: updateData.isActive,
@@ -222,7 +256,7 @@ describe('PrismaUserRepository', () => {
       expect(result.role).toBe(updateData.role);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id },
-        data: updateData,
+        data: { ...updateData, email: updateData.email.value },
       });
     });
 
@@ -232,7 +266,7 @@ describe('PrismaUserRepository', () => {
         isActive: false,
       };
 
-      const updatedPrismaModel = createMockUser({
+      const updatedPrismaModel = createMockPrismaUser({
         id,
         isActive: false,
       });
@@ -249,13 +283,36 @@ describe('PrismaUserRepository', () => {
         },
       });
     });
+
+    it('should throw ResourceConflictException on P2002', async () => {
+      const id = randomUUID();
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate email', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
+      prisma.user.update.mockRejectedValue(error);
+
+      await expect(
+        repository.update(id, { email: Email.create('dup@example.com') }),
+      ).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should rethrow unexpected errors from update', async () => {
+      const id = randomUUID();
+      const unexpectedError = new Error('Database connection lost');
+      prisma.user.update.mockRejectedValue(unexpectedError);
+
+      await expect(repository.update(id, { name: 'Test' })).rejects.toThrow(
+        'Database connection lost',
+      );
+    });
   });
 
   describe('delete', () => {
     it('should delete a user', async () => {
       const id = randomUUID();
 
-      prisma.user.delete.mockResolvedValue(createMockUser({ id }));
+      prisma.user.delete.mockResolvedValue(createMockPrismaUser({ id }));
 
       await repository.delete(id);
 

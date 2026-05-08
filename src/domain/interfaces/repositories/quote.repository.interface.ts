@@ -1,4 +1,6 @@
 import { Quote } from '../../entities/quote.entity';
+import { QuoteService } from '../../entities/quote-service.entity';
+import { QuotePartSupply } from '../../entities/quote-part-supply.entity';
 import { QuoteStatus } from '../../enums/quote-status.enum';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
@@ -10,11 +12,20 @@ export interface QuoteFilters {
 export interface IQuoteRepository {
   create(quote: Quote): Promise<Quote>;
   findById(id: string): Promise<Quote | null>;
+  findByIdWithDetails(id: string): Promise<Quote | null>;
   findByWorkOrderId(workOrderId: string): Promise<Quote[]>;
-  update(quote: Quote): Promise<Quote>;
-  rejectPendingByWorkOrderId(workOrderId: string): Promise<void>;
   findAllPaginated(
     pagination: PaginationInput,
     filters: QuoteFilters,
   ): Promise<PaginatedRepositoryResult<Quote>>;
+  update(quote: Quote): Promise<Quote>;
+  rejectPendingByWorkOrderId(workOrderId: string): Promise<void>;
+
+  addServiceItem(quote: Quote, item: QuoteService): Promise<void>;
+  removeServiceItem(quote: Quote, serviceId: string): Promise<void>;
+  updateServiceItemQuantity(quote: Quote, item: QuoteService): Promise<void>;
+
+  addPartSupplyItem(quote: Quote, item: QuotePartSupply): Promise<void>;
+  removePartSupplyItem(quote: Quote, partSupplyId: string): Promise<void>;
+  updatePartSupplyItemQuantity(quote: Quote, item: QuotePartSupply): Promise<void>;
 }

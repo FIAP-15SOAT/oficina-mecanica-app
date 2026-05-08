@@ -5,7 +5,7 @@ export interface CreateUserDto {
   name: string;
   email: string;
   password: string;
-  role?: UserRole;
+  role: UserRole;
 }
 
 export type CreateUserOutputDto = UserPublicView;

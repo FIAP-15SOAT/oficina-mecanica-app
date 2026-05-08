@@ -444,6 +444,99 @@
           }
         },
         {
+          "name": "TC-USER-11 — Desativar usuário já inativo (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica usuário já desativado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('desativado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": false}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-12 — Ativar usuário inativo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Usuário está ativo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.isActive).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": true}"
+            }
+          }
+        },
+        {
+          "name": "TC-USER-13 — Ativar usuário já ativo (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica usuário já ativo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('ativo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": true}"
+            }
+          }
+        },
+        {
           "name": "TC-USER-09 — Remover usuário (204)",
           "event": [
             {
@@ -2343,6 +2436,38 @@
                   "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-10\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"minStock\":-1}"
                 }
               }
+            },
+            {
+              "name": "TC-VAL-12 — JSON malformado (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                      "pm.test('Mensagem indica erro de parsing no body', () => {",
+                      "    const res = pm.response.json();",
+                      "    pm.expect(res.statusCode).to.equal(400);",
+                      "    pm.expect(res.message).to.be.a('string').and.not.empty;",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/parts-supplies",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{broken json"
+                }
+              }
             }
           ]
         }
@@ -3752,13 +3877,17 @@
           }
         },
         {
-          "name": "TC-WO-18 — Criar OS com veículo não pertencente ao cliente (422)",
+          "name": "TC-WO-18 — Criar OS com veículo não pertencente ao cliente (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica violação de regra de negócio', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
                 ]
               }
             }
@@ -3779,13 +3908,17 @@
           }
         },
         {
-          "name": "TC-WO-19 — Tentar PATCH com status não permitido pela operação (422)",
+          "name": "TC-WO-19 — Tentar PATCH com status não permitido pela operação (400)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensagem indica status inválido para o PATCH', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.statusCode).to.equal(400);",
+                  "});"
                 ]
               }
             }
@@ -3806,13 +3939,17 @@
           }
         },
         {
-          "name": "TC-WO-20 — Cancelar OS sem notas obrigatórias (422)",
+          "name": "TC-WO-20 — Cancelar OS sem notas obrigatórias (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica notas obrigatórias para cancelamento', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
                 ]
               }
             }
@@ -3871,6 +4008,99 @@
             "method": "GET",
             "url": "{{baseUrl}}/work-orders?vehicleId={{vehicleId}}",
             "header": []
+          }
+        },
+        {
+          "name": "TC-WO-23 — PATCH com transição inválida (DELIVERED sem APPROVED) (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica transição de status inválida', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/work-orders/{{workOrderId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"DELIVERED\", \"notes\": \"Tentativa de entrega prematura\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-WO-24 — PUT em OS com status != RECEIVED (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica que edição não é permitida no status atual', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/work-orders/{{workOrderId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"problemDescription\": \"Tentativa de edição em OS fora do status RECEIVED\"}"
+            }
+          }
+        },
+        {
+          "name": "TC-WO-25 — PATCH status de serviço com serviceId inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('Mensagem indica serviço não encontrado na OS', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.statusCode).to.equal(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/work-orders/{{workOrderId}}/services/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"IN_PROGRESS\"}"
+            }
           }
         }
       ]
@@ -4853,6 +5083,32 @@
             },
             "method": "GET",
             "url": "{{baseUrl}}/stock-movements",
+            "header": []
+          }
+        },
+        {
+          "name": "TC-ST-07 — Movimentações ENTRY têm workOrder: null",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Movimentações ENTRY não têm workOrder associado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    const entry = res.data.find(m => m.type === 'ENTRY');",
+                  "    if (entry) {",
+                  "        pm.expect(entry.workOrder).to.be.null;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/stock-movements?type=ENTRY&page=1&limit=10",
             "header": []
           }
         }

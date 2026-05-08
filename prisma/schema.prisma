@@ -105,18 +105,15 @@ model Customer {
 }
 
 model Address {
-  id         String   @id @default(uuid()) @db.Uuid
-  customerId String   @unique @map("customer_id") @db.Uuid
-  street     String   @db.VarChar(255)
-  city       String   @db.VarChar(100)
-  state      String   @db.VarChar(2)
-  zipCode    String   @map("zip_code") @db.VarChar(9)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  customerId String @id @map("customer_id") @db.Uuid
+  street     String @db.VarChar(255)
+  city       String @db.VarChar(100)
+  state      String @db.VarChar(2)
+  zipCode    String @map("zip_code") @db.VarChar(9)
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  @@map("addresses")
+  @@map("customer_addresses")
 }
 
 model Vehicle {
@@ -165,6 +162,7 @@ model PartSupply {
   stock         Int                @default(0)
   minStock      Int                @default(0) @map("min_stock")
   reservedStock Int                @default(0) @map("reserved_stock")
+  version       Int                @default(1)
   expiresAt     DateTime?          @map("expires_at")
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @default(now()) @updatedAt @map("updated_at")
@@ -188,6 +186,7 @@ model WorkOrder {
   internalNotes      String?         @map("internal_notes") @db.Text
   mileageAtService   Int?            @map("mileage_at_service")
   totalAmount        Decimal         @default(0) @map("total_amount") @db.Decimal(10, 2)
+  version            Int             @default(1)
   approvedAt         DateTime?       @map("approved_at")
   rejectedAt         DateTime?       @map("rejected_at")
   startedAt          DateTime?       @map("started_at")
@@ -250,6 +249,7 @@ model Quote {
   servicesAmount Decimal     @default(0) @map("services_amount") @db.Decimal(10, 2)
   partsAmount    Decimal     @default(0) @map("parts_amount") @db.Decimal(10, 2)
   totalAmount    Decimal     @default(0) @map("total_amount") @db.Decimal(10, 2)
+  version        Int         @default(1)
   status         QuoteStatus @default(PENDING)
   notes          String?     @db.Text
   sentAt         DateTime?   @map("sent_at")
@@ -258,9 +258,9 @@ model Quote {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
 
-  workOrder WorkOrder         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  services  QuoteService[]
-  parts     QuotePartSupply[]
+  workOrder     WorkOrder         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  services      QuoteService[]
+  partsSupplies QuotePartSupply[]
 
   @@map("quotes")
 }

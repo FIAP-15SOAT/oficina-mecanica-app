@@ -29,7 +29,7 @@ describe('RefreshTokenUseCase', () => {
     expect(tokenService.verifyRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
     expect(tokenService.signTokenPair).toHaveBeenCalledWith({
       sub: user.id,
-      email: user.email,
+      email: user.email.value,
       role: user.role,
     });
   });

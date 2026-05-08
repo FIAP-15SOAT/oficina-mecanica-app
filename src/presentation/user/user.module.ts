@@ -7,16 +7,13 @@ import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@domain/interfaces/services/hash.service.interface';
-import { BcryptHashService } from '@infrastructure/services/bcrypt-hash.service';
+import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 import { UserController } from './user.controller';
 
 @Module({
+  imports: [InfrastructureServicesModule],
   controllers: [UserController],
   providers: [
-    {
-      provide: 'IHashService',
-      useClass: BcryptHashService,
-    },
     {
       provide: 'ICreateUserUseCase',
       useFactory: (userRepo: IUserRepository, hashService: IHashService) =>

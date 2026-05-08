@@ -1,5 +1,12 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
@@ -12,6 +19,8 @@ import { ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-respon
 import { ServiceMetricsPresenter } from './service-metrics.presenter';
 
 @ApiTags('Gestão de Serviços - Métricas')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('services-metrics')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')

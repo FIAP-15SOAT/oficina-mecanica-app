@@ -1,8 +1,6 @@
 import { StockReservationsController } from '@presentation/stock/stock-reservations.controller';
 import { randomUUID } from 'node:crypto';
 import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-reservations.use-case.interface';
-import { StockReservation } from '@domain/entities/stock-reservation.entity';
-import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 
 describe('StockReservationsController', () => {
   let controller: StockReservationsController;
@@ -25,9 +23,8 @@ describe('StockReservationsController', () => {
         ],
         pagination: { totalRecords: 1, totalPages: 1, page: 1, limit: 10 },
       };
-      findStockReservationsUseCase.execute.mockResolvedValue(
-        resultUseCase as unknown as PaginatedResult<StockReservation>,
-      );
+
+      findStockReservationsUseCase.execute.mockResolvedValue(resultUseCase);
 
       const result = await controller.getStockReservations({
         page,

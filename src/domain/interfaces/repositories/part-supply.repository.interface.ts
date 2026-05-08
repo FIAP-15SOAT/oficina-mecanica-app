@@ -1,6 +1,5 @@
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
-import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface PartSupplyFilters {
@@ -21,10 +20,6 @@ export interface IPartSupplyRepository {
     filters: PartSupplyFilters,
   ): Promise<PaginatedRepositoryResult<PartSupply>>;
   update(id: string, data: Partial<PartSupply>): Promise<PartSupply>;
-  updateStock(id: string, data: UpdateStockDto): Promise<PartSupply>;
-  incrementReservedStock(id: string, amount: number): Promise<void>;
-  decrementReservedStock(id: string, amount: number): Promise<void>;
-  decrementStock(id: string, amount: number): Promise<void>;
   isPartSupplyInUse(id: string): Promise<boolean>;
   delete(id: string): Promise<void>;
 }

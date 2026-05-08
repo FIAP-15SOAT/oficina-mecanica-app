@@ -17,16 +17,16 @@ describe('FindWorkOrderByIdUseCase', () => {
 
   it('should return work order when found', async () => {
     const wo = createMockWorkOrder();
-    workOrderRepository.findById.mockResolvedValue(wo);
+    workOrderRepository.findByIdWithDetails.mockResolvedValue(wo);
 
     const result = await useCase.execute(wo.id);
 
     expect(result).toBe(wo);
-    expect(workOrderRepository.findById).toHaveBeenCalledWith(wo.id);
+    expect(workOrderRepository.findByIdWithDetails).toHaveBeenCalledWith(wo.id);
   });
 
   it('should throw ResourceNotFoundException when not found', async () => {
-    workOrderRepository.findById.mockResolvedValue(null);
+    workOrderRepository.findByIdWithDetails.mockResolvedValue(null);
 
     await expect(useCase.execute('nonexistent-id')).rejects.toThrow(ResourceNotFoundException);
   });

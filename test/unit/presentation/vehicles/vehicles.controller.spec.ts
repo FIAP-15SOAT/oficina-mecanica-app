@@ -7,6 +7,7 @@ import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/fi
 import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
 import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 describe('VehiclesController', () => {
   let controller: VehiclesController;
@@ -40,7 +41,7 @@ describe('VehiclesController', () => {
         model: 'Corolla',
         year: 2020,
       };
-      const created = createMockVehicle(dto);
+      const created = createMockVehicle({ ...dto, plate: Plate.create(dto.plate) });
       createUseCase.execute.mockResolvedValue(created);
 
       const result = await controller.create(dto);

@@ -6,10 +6,11 @@ import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supp
 
 export function createMockPartSupply(overrides: Partial<PartSupply> = {}): PartSupply {
   const now = new Date();
-  return new PartSupply({
+
+  return PartSupply.reconstitute({
     id: randomUUID(),
     name: 'Filtro de Óleo',
-    description: undefined,
+    description: null,
     sku: 'FO-001',
     partNumber: 'MANN-W712',
     category: PartSupplyCategory.PART,
@@ -19,6 +20,8 @@ export function createMockPartSupply(overrides: Partial<PartSupply> = {}): PartS
     stock: 10,
     minStock: 2,
     reservedStock: 0,
+    version: 1,
+    expiresAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -33,10 +36,6 @@ export function createMockPartSupplyRepository(): jest.Mocked<IPartSupplyReposit
     findBySku: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
-    updateStock: jest.fn(),
-    incrementReservedStock: jest.fn(),
-    decrementReservedStock: jest.fn(),
-    decrementStock: jest.fn(),
     delete: jest.fn(),
     isPartSupplyInUse: jest.fn(),
   };

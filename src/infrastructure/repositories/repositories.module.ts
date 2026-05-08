@@ -7,8 +7,6 @@ import { PrismaPartSupplyRepository } from './prisma-part-supply.repository';
 import { PrismaServiceRepository } from './prisma-service.repository';
 import { PrismaWorkOrderRepository } from './prisma-work-order.repository';
 import { PrismaQuoteRepository } from './prisma-quote.repository';
-import { PrismaQuoteServiceRepository } from './prisma-quote-service.repository';
-import { PrismaQuotePartSupplyRepository } from './prisma-quote-part-supply.repository';
 import { PrismaStatusHistoryRepository } from './prisma-status-history.repository';
 import { PrismaStockMovementRepository } from './prisma-stock-movement.repository';
 import { PrismaStockReservationRepository } from './prisma-stock-reservation.repository';
@@ -22,8 +20,6 @@ const REPOSITORY_PROVIDERS = [
   { provide: 'IServiceRepository', useClass: PrismaServiceRepository },
   { provide: 'IWorkOrderRepository', useClass: PrismaWorkOrderRepository },
   { provide: 'IQuoteRepository', useClass: PrismaQuoteRepository },
-  { provide: 'IQuoteServiceRepository', useClass: PrismaQuoteServiceRepository },
-  { provide: 'IQuotePartSupplyRepository', useClass: PrismaQuotePartSupplyRepository },
   { provide: 'IStatusHistoryRepository', useClass: PrismaStatusHistoryRepository },
   { provide: 'IStockMovementRepository', useClass: PrismaStockMovementRepository },
   { provide: 'IStockReservationRepository', useClass: PrismaStockReservationRepository },

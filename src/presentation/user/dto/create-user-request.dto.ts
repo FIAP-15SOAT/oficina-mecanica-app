@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 export class CreateUserRequestDto {
@@ -19,8 +19,8 @@ export class CreateUserRequestDto {
   @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
   password!: string;
 
-  @ApiPropertyOptional({ enum: UserRole, example: UserRole.ATTENDANT })
-  @IsOptional()
+  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT, description: 'Role do usuário' })
+  @IsNotEmpty({ message: 'A role é obrigatória' })
   @IsEnum(UserRole, { message: 'Role inválida' })
-  role?: UserRole;
+  role!: UserRole;
 }

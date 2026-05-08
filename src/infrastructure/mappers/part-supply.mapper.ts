@@ -5,7 +5,7 @@ import { Unit } from '@domain/enums/unit.enum';
 
 export class PartSupplyMapper {
   static toDomain(prismaRecord: PrismaPartSupply): PartSupply {
-    return new PartSupply({
+    return PartSupply.reconstitute({
       id: prismaRecord.id,
       name: prismaRecord.name,
       description: prismaRecord.description,
@@ -18,7 +18,8 @@ export class PartSupplyMapper {
       stock: prismaRecord.stock,
       minStock: prismaRecord.minStock,
       reservedStock: prismaRecord.reservedStock,
-      expiresAt: prismaRecord.expiresAt ?? undefined,
+      version: prismaRecord.version,
+      expiresAt: prismaRecord.expiresAt ?? null,
 
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,

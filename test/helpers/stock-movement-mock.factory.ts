@@ -5,7 +5,8 @@ import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-
 
 export function createMockStockMovement(overrides: Partial<StockMovement> = {}): StockMovement {
   const now = new Date();
-  return new StockMovement({
+
+  return StockMovement.reconstitute({
     id: randomUUID(),
     partSupplyId: randomUUID(),
     workOrderId: randomUUID(),
@@ -20,6 +21,7 @@ export function createMockStockMovement(overrides: Partial<StockMovement> = {}):
 export function createMockStockMovementRepository(): jest.Mocked<IStockMovementRepository> {
   return {
     create: jest.fn(),
+    createMany: jest.fn(),
     findAllPaginated: jest.fn(),
   };
 }

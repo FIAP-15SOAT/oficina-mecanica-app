@@ -3,6 +3,7 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { PartSupplyCategory } from '../enums/part-supply-category.enum';
 import { Unit } from '../enums/unit.enum';
+import { StockMovementType } from '../enums/stock-movement-type.enum';
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
@@ -24,35 +25,77 @@ export interface CreatePartSupplyProps {
   expiresAt?: Date;
 }
 
+interface PartSupplyProps {
+  id: string;
+  name: string;
+  description: string | null;
+  sku: string;
+  partNumber: string | null;
+  category: PartSupplyCategory;
+  unit: Unit;
+  costPrice: number;
+  salePrice: number;
+  stock: number;
+  minStock: number;
+  reservedStock: number;
+  version: number;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class PartSupply {
-  id!: string;
-  name!: string;
-  description?: string | null;
-  sku!: string;
-  partNumber?: string | null;
-  category!: PartSupplyCategory;
-  unit!: Unit;
-  costPrice!: number;
-  salePrice!: number;
-  stock!: number;
-  minStock!: number;
-  reservedStock!: number;
-  expiresAt?: Date | null;
+  readonly id: string;
+  name: string;
+  description: string | null;
+  sku: string;
+  partNumber: string | null;
+  category: PartSupplyCategory;
+  unit: Unit;
+  costPrice: number;
+  salePrice: number;
+  stock: number;
+  minStock: number;
+  reservedStock: number;
+  version: number;
+  expiresAt: Date | null;
+  readonly createdAt: Date;
+  updatedAt: Date;
 
-  createdAt!: Date;
-  updatedAt!: Date;
+  private constructor(props: PartSupplyProps) {
+    this.id = props.id;
+    this.name = props.name;
+    this.description = props.description;
+    this.sku = props.sku;
+    this.partNumber = props.partNumber;
+    this.category = props.category;
+    this.unit = props.unit;
+    this.costPrice = props.costPrice;
+    this.salePrice = props.salePrice;
+    this.stock = props.stock;
+    this.minStock = props.minStock;
+    this.reservedStock = props.reservedStock;
+    this.version = props.version;
+    this.expiresAt = props.expiresAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
 
-  constructor(partial: Partial<PartSupply>) {
-    Object.assign(this, partial);
+  static reconstitute(props: PartSupplyProps): PartSupply {
+    return new PartSupply(props);
   }
 
   static create(props: CreatePartSupplyProps): PartSupply {
-    const partSupply = new PartSupply({
+    PartSupply.validateProps(props);
+
+    const now = new Date();
+
+    return new PartSupply({
       id: randomUUID(),
       name: props.name.trim(),
-      description: props.description?.trim() ?? undefined,
+      description: props.description?.trim() ?? null,
       sku: props.sku.trim(),
-      partNumber: props.partNumber?.trim() ?? undefined,
+      partNumber: props.partNumber?.trim() ?? null,
       category: props.category,
       unit: props.unit,
       costPrice: props.costPrice,
@@ -60,116 +103,168 @@ export class PartSupply {
       stock: props.stock ?? 0,
       minStock: props.minStock ?? 0,
       reservedStock: 0,
-      expiresAt: props.expiresAt,
-
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      version: 1,
+      expiresAt: props.expiresAt ?? null,
+      createdAt: now,
+      updatedAt: now,
     });
-
-    partSupply.validateName();
-    partSupply.validateSku();
-    partSupply.validatePartNumber();
-    partSupply.validateDescription();
-    partSupply.validateCostPrice();
-    partSupply.validateSalePrice();
-    partSupply.validateStock();
-    partSupply.validateMinStock();
-    partSupply.validateExpiresAt();
-
-    return partSupply;
   }
 
-  private validateName(): void {
-    if (!this.name) {
+  applyStockMovement(type: StockMovementType, quantity: number): void {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new DomainValidationException('Quantidade deve ser um inteiro positivo.');
+    }
+
+    if (type === StockMovementType.ENTRY) {
+      this.stock += quantity;
+    } else if (type === StockMovementType.EXIT) {
+      if (quantity > this.stock) {
+        throw new BusinessRuleViolationException(
+          `Estoque insuficiente. Solicitado: ${quantity}, disponível: ${this.stock}.`,
+        );
+      }
+
+      if (this.stock - quantity < this.reservedStock) {
+        throw new BusinessRuleViolationException(
+          `Não é possível reduzir o estoque abaixo do estoque reservado. Estoque atual: ${this.stock}, Reservado: ${this.reservedStock}, Redução solicitada: ${quantity}.`,
+        );
+      }
+
+      this.stock -= quantity;
+    } else {
+      this.stock = quantity;
+    }
+
+    this.updatedAt = new Date();
+  }
+
+  update(props: CreatePartSupplyProps): void {
+    PartSupply.validateProps(props);
+
+    this.name = props.name.trim();
+    this.description = props.description?.trim() ?? null;
+    this.sku = props.sku.trim();
+    this.partNumber = props.partNumber?.trim() ?? null;
+    this.category = props.category;
+    this.unit = props.unit;
+    this.costPrice = props.costPrice;
+    this.salePrice = props.salePrice;
+    this.minStock = props.minStock ?? this.minStock;
+    this.expiresAt = props.expiresAt ?? null;
+    this.updatedAt = new Date();
+  }
+
+  private static validateProps(props: CreatePartSupplyProps): void {
+    PartSupply.validateName(props.name);
+    PartSupply.validateSku(props.sku);
+    PartSupply.validatePartNumber(props.partNumber ?? null);
+    PartSupply.validateDescription(props.description ?? null);
+    PartSupply.validateCostPrice(props.costPrice);
+    PartSupply.validateSalePrice(props.salePrice);
+    PartSupply.validateStock(props.stock ?? 0);
+    PartSupply.validateMinStock(props.minStock ?? 0);
+    PartSupply.validateExpiresAt(props.expiresAt ?? null);
+  }
+
+  private static validateName(name: string): void {
+    const trimmed = name?.trim();
+
+    if (!trimmed) {
       throw new DomainValidationException('Nome é obrigatório');
     }
 
-    if (this.name.length < MIN_NAME_LENGTH) {
+    if (trimmed.length < MIN_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no mínimo ${MIN_NAME_LENGTH} caracteres`);
     }
 
-    if (this.name.length > MAX_NAME_LENGTH) {
+    if (trimmed.length > MAX_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres`);
     }
   }
 
-  private validateSku(): void {
-    if (!this.sku) {
+  private static validateSku(sku: string): void {
+    const trimmed = sku?.trim();
+
+    if (!trimmed) {
       throw new DomainValidationException('SKU é obrigatório');
     }
 
-    if (this.sku.length > MAX_SKU_LENGTH) {
+    if (trimmed.length > MAX_SKU_LENGTH) {
       throw new DomainValidationException(`SKU deve ter no máximo ${MAX_SKU_LENGTH} caracteres`);
     }
   }
 
-  private validatePartNumber(): void {
-    if (!this.partNumber) return;
+  private static validatePartNumber(partNumber: string | null): void {
+    const trimmed = partNumber?.trim();
 
-    if (this.partNumber.length > MAX_PART_NUMBER_LENGTH) {
+    if (!trimmed) return;
+
+    if (trimmed.length > MAX_PART_NUMBER_LENGTH) {
       throw new DomainValidationException(
         `Número de referência deve ter no máximo ${MAX_PART_NUMBER_LENGTH} caracteres`,
       );
     }
   }
 
-  private validateDescription(): void {
-    if (!this.description) return;
+  private static validateDescription(description: string | null): void {
+    const trimmed = description?.trim();
 
-    if (this.description.length > MAX_DESCRIPTION_LENGTH) {
+    if (!trimmed) return;
+
+    if (trimmed.length > MAX_DESCRIPTION_LENGTH) {
       throw new DomainValidationException(
         `Descrição deve ter no máximo ${MAX_DESCRIPTION_LENGTH} caracteres`,
       );
     }
   }
 
-  private validateCostPrice(): void {
-    if (!Number.isFinite(this.costPrice)) {
+  private static validateCostPrice(costPrice: number): void {
+    if (!Number.isFinite(costPrice)) {
       throw new DomainValidationException('Preço de custo inválido');
     }
 
-    if (this.costPrice <= 0) {
+    if (costPrice <= 0) {
       throw new DomainValidationException('Preço de custo deve ser maior que zero');
     }
   }
 
-  private validateSalePrice(): void {
-    if (!Number.isFinite(this.salePrice)) {
+  private static validateSalePrice(salePrice: number): void {
+    if (!Number.isFinite(salePrice)) {
       throw new DomainValidationException('Preço de venda inválido');
     }
 
-    if (this.salePrice <= 0) {
+    if (salePrice <= 0) {
       throw new DomainValidationException('Preço de venda deve ser maior que zero');
     }
   }
 
-  private validateStock(): void {
-    if (!Number.isInteger(this.stock)) {
+  private static validateStock(stock: number): void {
+    if (!Number.isInteger(stock)) {
       throw new DomainValidationException('Estoque deve ser um número inteiro');
     }
 
-    if (this.stock < 0) {
+    if (stock < 0) {
       throw new DomainValidationException('Estoque não pode ser negativo');
     }
   }
 
-  private validateMinStock(): void {
-    if (!Number.isInteger(this.minStock)) {
+  private static validateMinStock(minStock: number): void {
+    if (!Number.isInteger(minStock)) {
       throw new DomainValidationException('Estoque mínimo deve ser um número inteiro');
     }
 
-    if (this.minStock < 0) {
+    if (minStock < 0) {
       throw new DomainValidationException('Estoque mínimo não pode ser negativo');
     }
   }
 
-  private validateExpiresAt(): void {
-    if (!this.expiresAt) return;
+  private static validateExpiresAt(expiresAt: Date | null): void {
+    if (!expiresAt) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (this.expiresAt < today) {
+    if (expiresAt < today) {
       throw new DomainValidationException('Data de validade não pode ser anterior a hoje.');
     }
   }
@@ -183,12 +278,30 @@ export class PartSupply {
   }
 
   ensureHasSufficientStock(requestedQuantity: number): void {
-    const available = this.stock - (this.reservedStock ?? 0);
+    const available = this.stock - this.reservedStock;
 
     if (available < requestedQuantity) {
       throw new BusinessRuleViolationException(
         `Estoque insuficiente para a peça/insumo "${this.name}". Disponível: ${available}, Solicitado: ${requestedQuantity}`,
       );
     }
+  }
+
+  reserve(quantity: number): void {
+    this.ensureHasSufficientStock(quantity);
+    this.reservedStock += quantity;
+    this.updatedAt = new Date();
+  }
+
+  consumeReserved(quantity: number): void {
+    if (quantity > this.reservedStock) {
+      throw new BusinessRuleViolationException(
+        `Reserva insuficiente para "${this.name}". Reservado: ${this.reservedStock}, Solicitado: ${quantity}.`,
+      );
+    }
+
+    this.stock -= quantity;
+    this.reservedStock -= quantity;
+    this.updatedAt = new Date();
   }
 }

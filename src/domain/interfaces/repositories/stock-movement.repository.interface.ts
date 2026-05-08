@@ -12,6 +12,7 @@ export interface StockMovementFilters {
 
 export interface IStockMovementRepository {
   create(movement: StockMovement): Promise<StockMovement>;
+  createMany(movements: StockMovement[]): Promise<void>;
   findAllPaginated(
     pagination: PaginationInput,
     filters: StockMovementFilters,

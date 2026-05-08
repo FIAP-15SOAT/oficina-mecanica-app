@@ -90,10 +90,11 @@ describe('StockMovement Entity', () => {
     });
   });
 
-  describe('constructor()', () => {
+  describe('reconstitute()', () => {
     it('should set all props from partial', () => {
       const now = new Date();
-      const movement = new StockMovement({
+
+      const movement = StockMovement.reconstitute({
         id: 'some-id',
         partSupplyId: 'part-id',
         type: StockMovementType.EXIT,

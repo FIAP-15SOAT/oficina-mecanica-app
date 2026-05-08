@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nest
 import { Response } from 'express';
 import { InfrastructureException } from '../exceptions/infrastructure.exception';
 import { AuthenticationFailedException } from '../exceptions/authentication-failed.exception';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
 
@@ -30,6 +31,10 @@ export class InfrastructureExceptionFilter implements ExceptionFilter {
   } {
     if (exception instanceof AuthenticationFailedException) {
       return { status: HttpStatus.UNAUTHORIZED, error: 'Unauthorized' };
+    }
+
+    if (exception instanceof ConcurrencyException) {
+      return { status: HttpStatus.CONFLICT, error: 'Conflict' };
     }
 
     if (

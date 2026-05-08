@@ -1,7 +1,10 @@
 import { Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
 import { Customer } from '@domain/entities/customer.entity';
-import { Address } from '@domain/entities/address.entity';
+import { Address } from '@domain/value-objects/address.vo';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { Email } from '@domain/value-objects/email.vo';
+import { Phone } from '@domain/value-objects/phone.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 type PrismaCustomerWithAddress = PrismaCustomer & {
   address?: PrismaAddress | null;
@@ -9,23 +12,20 @@ type PrismaCustomerWithAddress = PrismaCustomer & {
 
 export class CustomerMapper {
   static toDomain(prismaRecord: PrismaCustomerWithAddress): Customer {
-    return new Customer({
+    const type = prismaRecord.type as CustomerType;
+    return Customer.reconstitute({
       id: prismaRecord.id,
       name: prismaRecord.name,
-      document: prismaRecord.document,
-      type: prismaRecord.type as CustomerType,
-      email: prismaRecord.email,
-      phone: prismaRecord.phone,
+      document: Document.create(prismaRecord.document, type),
+      type,
+      email: Email.create(prismaRecord.email),
+      phone: Phone.create(prismaRecord.phone),
       address: prismaRecord.address
-        ? new Address({
-            id: prismaRecord.address.id,
-            customerId: prismaRecord.address.customerId,
+        ? Address.create({
             street: prismaRecord.address.street,
             city: prismaRecord.address.city,
             state: prismaRecord.address.state,
             zipCode: prismaRecord.address.zipCode,
-            createdAt: prismaRecord.address.createdAt,
-            updatedAt: prismaRecord.address.updatedAt,
           })
         : null,
       createdAt: prismaRecord.createdAt,

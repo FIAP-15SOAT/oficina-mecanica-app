@@ -47,6 +47,19 @@ export class PrismaStockMovementRepository implements IStockMovementRepository {
     return StockMovementMapper.toDomain(record);
   }
 
+  async createMany(movements: StockMovement[]): Promise<void> {
+    await this.prisma.stockMovement.createMany({
+      data: movements.map((m) => ({
+        id: m.id,
+        partSupplyId: m.partSupplyId,
+        workOrderId: m.workOrderId,
+        type: m.type,
+        quantity: m.quantity,
+        reason: m.reason,
+      })),
+    });
+  }
+
   async findAllPaginated(
     pagination: PaginationInput,
     filters: StockMovementFilters,

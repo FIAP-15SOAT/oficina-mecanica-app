@@ -1,7 +1,6 @@
 import { SubmitQuoteUseCase } from '@application/use-cases/quote/submit-quote.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockQuote, createMockQuoteService } from '../../../../helpers/quote-mock.factory';
@@ -9,6 +8,7 @@ import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { Email } from '@domain/value-objects/email.vo';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),
@@ -44,23 +44,21 @@ describe('SubmitQuoteUseCase', () => {
   });
 
   it('should submit quote and change WO to AWAITING_APPROVAL when IN_DIAGNOSIS', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.IN_DIAGNOSIS,
     });
     const customer = createMockCustomer({ id: workOrder.customerId });
-    const service = createMockQuoteService({ quoteId: quote.id });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
-    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
 
     const result = await useCase.execute(quote.id);
 
@@ -71,21 +69,19 @@ describe('SubmitQuoteUseCase', () => {
   });
 
   it('should submit quote without changing WO status when already AWAITING_APPROVAL', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
     const customer = createMockCustomer({ id: workOrder.customerId });
-    const service = createMockQuoteService({ quoteId: quote.id });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
 
     await useCase.execute(quote.id);
 
@@ -100,37 +96,33 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
-  it('should throw ResourceConflictException when quote has no services or parts', async () => {
+  it('should throw BusinessRuleViolationException when quote has no services or parts', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
+    // services and partsSupplies not set → treated as empty
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
 
-    await expect(useCase.execute(quote.id)).rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
   it('should send email when customer has email', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
-    const customer = createMockCustomer({ email: 'test@example.com' });
+    const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([
-      createMockQuoteService(),
-    ]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
 
     await useCase.execute(quote.id);
 
@@ -138,22 +130,19 @@ describe('SubmitQuoteUseCase', () => {
   });
 
   it('should fail if email sending fails', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.PENDING });
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
-    const customer = createMockCustomer({ email: 'test@example.com' });
+    const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
-    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.quoteService.findByQuoteId as jest.Mock).mockResolvedValue([
-      createMockQuoteService(),
-    ]);
-    (mockRepos.quotePartSupply.findByQuoteId as jest.Mock).mockResolvedValue([]);
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     mockEmailSender.send.mockRejectedValue(new Error('SMTP error'));
 
     await expect(useCase.execute(quote.id)).rejects.toThrow('SMTP error');

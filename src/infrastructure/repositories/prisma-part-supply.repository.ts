@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PartSupply as PrismaPartSupply } from '@generated/client';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
-import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import {
   IPartSupplyRepository,
   PartSupplyFilters,
 } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { PartSupplyMapper } from '@infrastructure/mappers/part-supply.mapper';
 import {
@@ -99,47 +98,39 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
   }
 
   async update(id: string, data: Partial<PartSupply>): Promise<PartSupply> {
-    const record = await this.prisma.partSupply.update({
-      where: { id },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.sku !== undefined && { sku: data.sku }),
-        ...(data.partNumber !== undefined && { partNumber: data.partNumber }),
-        ...(data.category !== undefined && { category: data.category }),
-        ...(data.unit !== undefined && { unit: data.unit }),
-        ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
-        ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
-        ...(data.minStock !== undefined && { minStock: data.minStock }),
-        ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
-      },
-    });
-    return PartSupplyMapper.toDomain(record);
+    try {
+      const record = await this.prisma.partSupply.update({
+        where: { id, version: data.version },
+        data: { ...this.buildUpdateData(data), version: { increment: 1 } },
+      });
+
+      return PartSupplyMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new ConcurrencyException(
+          'Peça/insumo foi modificado por outra operação. Tente novamente.',
+        );
+      }
+      throw error;
+    }
   }
 
-  async updateStock(id: string, data: UpdateStockDto): Promise<PartSupply> {
-    const { quantity, type, reason, workOrderId } = data;
-
-    let stockUpdate: { increment: number } | { decrement: number } | { set: number };
-    if (type === StockMovementType.ENTRY) {
-      stockUpdate = { increment: quantity };
-    } else if (type === StockMovementType.EXIT) {
-      stockUpdate = { decrement: quantity };
-    } else {
-      stockUpdate = { set: quantity };
-    }
-
-    const [updatedRecord] = await this.prisma.$transaction([
-      this.prisma.partSupply.update({
-        where: { id },
-        data: { stock: stockUpdate },
-      }),
-      this.prisma.stockMovement.create({
-        data: { partSupplyId: id, workOrderId: workOrderId ?? null, type, quantity, reason },
-      }),
-    ]);
-
-    return PartSupplyMapper.toDomain(updatedRecord);
+  private buildUpdateData(data: Partial<PartSupply>): Prisma.PartSupplyUpdateInput {
+    return {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.sku !== undefined && { sku: data.sku }),
+      ...(data.partNumber !== undefined && { partNumber: data.partNumber }),
+      ...(data.category !== undefined && { category: data.category }),
+      ...(data.unit !== undefined && { unit: data.unit }),
+      ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
+      ...(data.salePrice !== undefined && { salePrice: data.salePrice }),
+      ...(data.minStock !== undefined && { minStock: data.minStock }),
+      ...(data.stock !== undefined && { stock: data.stock }),
+      ...(data.reservedStock !== undefined && { reservedStock: data.reservedStock }),
+      ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
+      ...(data.updatedAt !== undefined && { updatedAt: data.updatedAt }),
+    };
   }
 
   async delete(id: string): Promise<void> {
@@ -153,26 +144,5 @@ export class PrismaPartSupplyRepository implements IPartSupplyRepository {
     ]);
 
     return hasWorkOrders || hasQuotes;
-  }
-
-  async incrementReservedStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { reservedStock: { increment: amount } },
-    });
-  }
-
-  async decrementReservedStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { reservedStock: { decrement: amount } },
-    });
-  }
-
-  async decrementStock(id: string, amount: number): Promise<void> {
-    await this.prisma.partSupply.update({
-      where: { id },
-      data: { stock: { decrement: amount } },
-    });
   }
 }

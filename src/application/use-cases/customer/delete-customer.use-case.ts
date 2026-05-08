@@ -17,7 +17,7 @@ export class DeleteCustomerUseCase implements IDeleteCustomerUseCase {
 
     if (inUse) {
       throw new ResourceConflictException(
-        'Cliente possui veículos cadastrados ou o rdens de serviço e não pode ser excluído.',
+        'Cliente possui veículos cadastrados ou ordens de serviço e não pode ser excluído.',
       );
     }
 

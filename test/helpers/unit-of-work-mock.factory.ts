@@ -1,19 +1,13 @@
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { IWorkOrderPartSupplyRepository } from '@domain/interfaces/repositories/work-order-part-supply.repository.interface';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { createMockWorkOrderRepository } from './work-order-mock.factory';
-import { createMockWorkOrderServiceRepository } from './work-order-service-mock.factory';
 import { createMockStatusHistoryRepository } from './status-history-mock.factory';
 import { createMockStockMovementRepository } from './stock-movement-mock.factory';
 import { createMockStockReservationRepository } from './stock-reservation-mock.factory';
-import {
-  createMockQuoteRepository,
-  createMockQuoteServiceRepository,
-  createMockQuotePartSupplyRepository,
-} from './quote-mock.factory';
+import { createMockQuoteRepository } from './quote-mock.factory';
 import { createMockPartSupplyRepository } from './part-supply-mock.factory';
 
 export function createMockRepositories(): jest.Mocked<IRepositories> {
@@ -38,14 +32,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       isVehicleInUse: jest.fn(),
     } as unknown as jest.Mocked<IVehicleRepository>,
     workOrder: createMockWorkOrderRepository(),
-    workOrderService: createMockWorkOrderServiceRepository(),
-    workOrderPartSupply: {
-      create: jest.fn(),
-      createMany: jest.fn(),
-    } as unknown as jest.Mocked<IWorkOrderPartSupplyRepository>,
     quote: createMockQuoteRepository(),
-    quoteService: createMockQuoteServiceRepository(),
-    quotePartSupply: createMockQuotePartSupplyRepository(),
     statusHistory: createMockStatusHistoryRepository(),
     stockReservation: createMockStockReservationRepository(),
     stockMovement: createMockStockMovementRepository(),

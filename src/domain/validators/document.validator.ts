@@ -1,6 +1,6 @@
 export class DocumentValidator {
   static validateCpf(value: string): boolean {
-    const cpf = value.replace(/\D/g, '');
+    const cpf = value.replaceAll(/\D/g, '');
     if (cpf.length !== 11) return false;
     if (/^(\d)\1{10}$/.test(cpf)) return false;
 
@@ -19,7 +19,7 @@ export class DocumentValidator {
 
   static validateCnpj(value: string): boolean {
     // Strips formatting; keeps alphanumeric (new format allows letters in base)
-    const cnpj = value.replace(/[.\-/]/g, '').toUpperCase();
+    const cnpj = value.replaceAll(/[.\-/]/g, '').toUpperCase();
     if (cnpj.length !== 14) return false;
     if (/^(.)\1{13}$/.test(cnpj)) return false;
 
@@ -46,7 +46,7 @@ export class DocumentValidator {
   }
 
   static validateCpfCnpj(value: string): boolean {
-    const stripped = value.replace(/[.\-/]/g, '');
+    const stripped = value.replaceAll(/[.\-/]/g, '');
     if (stripped.length === 11) return DocumentValidator.validateCpf(value);
     if (stripped.length === 14) return DocumentValidator.validateCnpj(value);
     return false;

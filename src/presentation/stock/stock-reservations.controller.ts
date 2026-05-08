@@ -1,8 +1,10 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -20,6 +22,8 @@ import { StockReservationPaginatedResponseDto } from './dto/stock-reservation-re
 import { FindStockReservationsQueryDto } from './dto/filter-stock-reservations.dto';
 
 @ApiTags('Estoque - Reservas')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('stock-reservations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')

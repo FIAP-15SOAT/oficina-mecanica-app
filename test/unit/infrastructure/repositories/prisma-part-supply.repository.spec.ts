@@ -3,10 +3,10 @@ import { Prisma } from '@generated/client';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 import { PrismaPartSupplyRepository } from '@infrastructure/repositories/prisma-part-supply.repository';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
+import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 
 describe('PrismaPartSupplyRepository', () => {
   let repository: PrismaPartSupplyRepository;
@@ -270,91 +270,94 @@ describe('PrismaPartSupplyRepository', () => {
       await repository.update(id, { name: 'Novo Nome' });
 
       const callArg = prisma.partSupply.update.mock.calls[0][0];
-      expect(callArg.data).toEqual({ name: 'Novo Nome' });
-    });
-  });
-
-  describe('updateStock', () => {
-    it('should register ENTRY stock movement and return updated entity', async () => {
-      const id = randomUUID();
-      const updatedModel = createMockPartSupply({ id, stock: 15 });
-
-      prisma.$transaction.mockResolvedValue([updatedModel, {}]);
-
-      const result = await repository.updateStock(id, {
-        type: StockMovementType.ENTRY,
-        quantity: 5,
-        reason: 'Reposição',
-      });
-
-      expect(result).toBeInstanceOf(PartSupply);
-      expect(result.stock).toBe(15);
-
-      const transactionArg = prisma.$transaction.mock.calls[0][0];
-      expect(transactionArg).toHaveLength(2);
+      expect(callArg.data).toEqual({ name: 'Novo Nome', version: { increment: 1 } });
     });
 
-    it('should use increment for ENTRY', async () => {
+    it('should update stock and reservedStock when provided', async () => {
       const id = randomUUID();
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
-        await Promise.all(ops);
-        return [createMockPartSupply({ id }), {}];
+      const updatedAt = new Date('2026-05-06T10:00:00Z');
+      prisma.partSupply.update.mockResolvedValue(
+        createMockPartSupply({ id, stock: 7, reservedStock: 1 }),
+      );
+
+      await repository.update(id, { stock: 7, reservedStock: 1, updatedAt });
+
+      const callArg = prisma.partSupply.update.mock.calls[0][0];
+      expect(callArg.data).toEqual({
+        stock: 7,
+        reservedStock: 1,
+        updatedAt,
+        version: { increment: 1 },
       });
+    });
+
+    it('should use update with version check when version is provided', async () => {
+      const id = randomUUID();
       prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
-      prisma.stockMovement.create.mockResolvedValue({});
 
-      await repository.updateStock(id, { type: StockMovementType.ENTRY, quantity: 5 });
+      await repository.update(id, { name: 'Novo Nome', version: 0 });
 
       expect(prisma.partSupply.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { stock: { increment: 5 } },
+          where: { id, version: 0 },
+          data: expect.objectContaining({ version: { increment: 1 } }),
         }),
       );
     });
 
-    it('should use decrement for EXIT', async () => {
+    it('should include all optional fields in versioned update when provided', async () => {
       const id = randomUUID();
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
-        await Promise.all(ops);
-        return [createMockPartSupply({ id }), {}];
-      });
+      const expiresAt = new Date('2028-01-01');
+      const updatedAt = new Date();
       prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
-      prisma.stockMovement.create.mockResolvedValue({});
 
-      await repository.updateStock(id, {
-        type: StockMovementType.EXIT,
-        quantity: 3,
-        workOrderId: randomUUID(),
+      await repository.update(id, {
+        name: 'Filtro Premium',
+        description: 'Nova descrição',
+        sku: 'FO-002',
+        partNumber: 'MANN-W713',
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 30,
+        salePrice: 59.9,
+        minStock: 5,
+        stock: 10,
+        reservedStock: 2,
+        expiresAt,
+        updatedAt,
+        version: 1,
       });
 
       expect(prisma.partSupply.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { stock: { decrement: 3 } },
+          where: { id, version: 1 },
+          data: expect.objectContaining({ name: 'Filtro Premium', reservedStock: 2 }),
         }),
       );
     });
 
-    it('should use set for ADJUSTMENT and return final stock value', async () => {
+    it('should throw ConcurrencyException when part supply was modified concurrently', async () => {
       const id = randomUUID();
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
-        await Promise.all(ops);
-        return [createMockPartSupply({ id, stock: 2 }), {}];
-      });
-      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id, stock: 2 }));
-      prisma.stockMovement.create.mockResolvedValue({});
-
-      const result = await repository.updateStock(id, {
-        type: StockMovementType.ADJUSTMENT,
-        quantity: 2,
-        reason: 'Inventário',
-      });
-
-      expect(prisma.partSupply.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { stock: { set: 2 } },
+      prisma.partSupply.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
         }),
       );
-      expect(result.stock).toBe(2);
+
+      await expect(repository.update(id, { stock: 5, version: 0 })).rejects.toThrow(
+        ConcurrencyException,
+      );
+    });
+
+    it('should rethrow unexpected errors from versioned update', async () => {
+      const id = randomUUID();
+      const unexpectedError = new Error('Database connection lost');
+      prisma.partSupply.update.mockRejectedValue(unexpectedError);
+
+      await expect(repository.update(id, { name: 'Test', version: 1 })).rejects.toThrow(
+        'Database connection lost',
+      );
     });
   });
 
@@ -374,58 +377,25 @@ describe('PrismaPartSupplyRepository', () => {
   describe('isPartSupplyInUse', () => {
     it('should return true if associated with work orders', async () => {
       const id = randomUUID();
-      prisma.workOrderPartSupply.count.mockResolvedValue(1);
-      prisma.quotePartSupply.count.mockResolvedValue(0);
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue({ createdAt: new Date() });
+      prisma.quotePartSupply.findFirst.mockResolvedValue(null);
       const result = await repository.isPartSupplyInUse(id);
       expect(result).toBe(true);
     });
 
     it('should return true if associated with quotes', async () => {
       const id = randomUUID();
-      prisma.workOrderPartSupply.count.mockResolvedValue(0);
-      prisma.quotePartSupply.count.mockResolvedValue(1);
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue(null);
+      prisma.quotePartSupply.findFirst.mockResolvedValue({ createdAt: new Date() });
       const result = await repository.isPartSupplyInUse(id);
       expect(result).toBe(true);
     });
 
     it('should return false if not associated with work orders or quotes', async () => {
-      prisma.workOrderPartSupply.count.mockResolvedValue(0);
-      prisma.quotePartSupply.count.mockResolvedValue(0);
+      prisma.workOrderPartSupply.findFirst.mockResolvedValue(null);
+      prisma.quotePartSupply.findFirst.mockResolvedValue(null);
       const result = await repository.isPartSupplyInUse(randomUUID());
       expect(result).toBe(false);
-    });
-  });
-
-  describe('incrementReservedStock', () => {
-    it('should increment reserved stock', async () => {
-      const id = randomUUID();
-      await repository.incrementReservedStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { reservedStock: { increment: 5 } },
-      });
-    });
-  });
-
-  describe('decrementReservedStock', () => {
-    it('should decrement reserved stock', async () => {
-      const id = randomUUID();
-      await repository.decrementReservedStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { reservedStock: { decrement: 5 } },
-      });
-    });
-  });
-
-  describe('decrementStock', () => {
-    it('should decrement stock', async () => {
-      const id = randomUUID();
-      await repository.decrementStock(id, 5);
-      expect(prisma.partSupply.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { stock: { decrement: 5 } },
-      });
     });
   });
 });

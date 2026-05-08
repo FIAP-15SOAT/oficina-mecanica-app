@@ -1,4 +1,6 @@
+import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 
 export interface CreateQuoteServiceProps {
   quoteId: string;
@@ -7,59 +9,102 @@ export interface CreateQuoteServiceProps {
   unitPrice: number;
 }
 
-export class QuoteService {
-  quoteId!: string;
-  serviceId!: string;
-  quantity!: number;
-  unitPrice!: number;
-  totalPrice!: number;
-  createdAt!: Date;
-  updatedAt!: Date;
+interface QuoteServiceProps {
+  quoteId: string;
+  serviceId: string;
+  lineItem: LineItemPrice;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<QuoteService>) {
-    Object.assign(this, partial);
+interface ReconstitueQuoteServiceProps {
+  quoteId: string;
+  serviceId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class QuoteService {
+  readonly quoteId: string;
+  readonly serviceId: string;
+  private _lineItem: LineItemPrice;
+  readonly createdAt: Date;
+  updatedAt: Date;
+
+  private constructor(props: QuoteServiceProps) {
+    this.quoteId = props.quoteId;
+    this.serviceId = props.serviceId;
+    this._lineItem = props.lineItem;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: ReconstitueQuoteServiceProps): QuoteService {
+    return new QuoteService({
+      quoteId: props.quoteId,
+      serviceId: props.serviceId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateQuoteServiceProps): QuoteService {
-    const entity = new QuoteService({
+    QuoteService.validateQuoteId(props.quoteId);
+    QuoteService.validateServiceId(props.serviceId);
+
+    const now = new Date();
+
+    return new QuoteService({
       quoteId: props.quoteId,
       serviceId: props.serviceId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      lineItem: LineItemPrice.create(props.quantity, props.unitPrice),
+      createdAt: now,
+      updatedAt: now,
     });
-
-    entity.validateQuantity(props.quantity);
-    entity.validateUnitPrice();
-
-    return entity;
   }
 
   updateQuantity(quantity: number): void {
-    this.quantity = quantity;
-    this.validateQuantity(this.quantity);
-    this.totalPrice = this.quantity * this.unitPrice;
+    this._lineItem = this._lineItem.withQuantity(quantity);
     this.updatedAt = new Date();
   }
 
-  private validateQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity)) {
-      throw new DomainValidationException('Quantidade deve ser um número inteiro');
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
+  }
+
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
+  }
+
+  private static validateQuoteId(quoteId: string): void {
+    if (!quoteId?.trim()) {
+      throw new DomainValidationException('ID do orçamento é obrigatório');
     }
-    if (quantity <= 0) {
-      throw new DomainValidationException('Quantidade deve ser maior que zero');
+
+    if (!isUuid(quoteId.trim())) {
+      throw new DomainValidationException('ID do orçamento deve ser um UUID válido');
     }
   }
 
-  private validateUnitPrice(): void {
-    if (!Number.isFinite(this.unitPrice)) {
-      throw new DomainValidationException('Preço unitário inválido');
+  private static validateServiceId(serviceId: string): void {
+    if (!serviceId?.trim()) {
+      throw new DomainValidationException('ID do serviço é obrigatório');
     }
 
-    if (this.unitPrice <= 0) {
-      throw new DomainValidationException('Preço unitário deve ser maior que zero');
+    if (!isUuid(serviceId.trim())) {
+      throw new DomainValidationException('ID do serviço deve ser um UUID válido');
     }
   }
 }

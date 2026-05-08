@@ -1,6 +1,7 @@
 import { Vehicle as PrismaVehicle, Customer as PrismaCustomer } from '@generated/client';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { CustomerMapper } from './customer.mapper';
+import { Plate } from '@domain/value-objects/plate.vo';
 
 type PrismaVehicleWithCustomer = PrismaVehicle & {
   customer?: PrismaCustomer | null;
@@ -8,10 +9,10 @@ type PrismaVehicleWithCustomer = PrismaVehicle & {
 
 export class VehicleMapper {
   static toDomain(prismaRecord: PrismaVehicleWithCustomer): Vehicle {
-    return new Vehicle({
+    return Vehicle.reconstitute({
       id: prismaRecord.id,
       customerId: prismaRecord.customerId,
-      plate: prismaRecord.plate,
+      plate: Plate.create(prismaRecord.plate),
       brand: prismaRecord.brand,
       model: prismaRecord.model,
       year: prismaRecord.year,

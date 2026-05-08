@@ -20,14 +20,12 @@ export class UpdateServiceUseCase {
       throw new ResourceConflictException('Outro serviço com o mesmo nome já existe');
     }
 
-    const updatedService = Service.create({
+    service.update({
       name: updateServiceDto.name,
       description: updateServiceDto.description,
       basePrice: updateServiceDto.basePrice,
       estimatedTimeMin: updateServiceDto.estimatedTimeMin,
     });
-
-    Object.assign(service, updatedService);
 
     return this.serviceRepository.update(id, service);
   }

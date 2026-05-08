@@ -1,7 +1,9 @@
-import { QuotePresenter } from '@presentation/quote/quote.presenter';
-import { Quote } from '@domain/entities/quote.entity';
-import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { randomUUID } from 'node:crypto';
+import { Quote } from '@domain/entities/quote.entity';
+import { QuoteService } from '@domain/entities/quote-service.entity';
+import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { QuotePresenter } from '@presentation/quote/quote.presenter';
 
 describe('QuotePresenter', () => {
   const quoteProps = {
@@ -10,6 +12,7 @@ describe('QuotePresenter', () => {
     servicesAmount: 150,
     partsAmount: 50,
     totalAmount: 200,
+    version: 0,
     status: QuoteStatus.PENDING,
     notes: 'test notes',
     sentAt: new Date(),
@@ -19,7 +22,7 @@ describe('QuotePresenter', () => {
     updatedAt: new Date(),
   };
 
-  const quote = new Quote(quoteProps);
+  const quote = Quote.reconstitute(quoteProps);
 
   describe('toResponse', () => {
     it('should format a quote correctly', () => {
@@ -38,10 +41,10 @@ describe('QuotePresenter', () => {
 
   describe('toWithItemsResponse', () => {
     it('should include services and parts', () => {
-      const quoteWithItems = new Quote({
+      const quoteWithItems = Quote.reconstitute({
         ...quoteProps,
-        services: [{ id: 's1' }] as unknown as Quote['services'],
-        partsSupplies: [{ id: 'p1' }] as unknown as Quote['partsSupplies'],
+        services: [{ id: 's1' }] as unknown as QuoteService[],
+        partsSupplies: [{ id: 'p1' }] as unknown as QuotePartSupply[],
       });
       const response = QuotePresenter.toWithItemsResponse(quoteWithItems);
       expect(response.data.services).toHaveLength(1);

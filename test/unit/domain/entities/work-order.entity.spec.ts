@@ -1,9 +1,19 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { User } from '@domain/entities/user.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { createMockWorkOrderService } from '../../../helpers/work-order-service-mock.factory';
+import {
+  createMockQuote,
+  createMockQuoteService,
+  createMockQuotePartSupply,
+} from '../../../helpers/quote-mock.factory';
+import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
+import { randomUUID } from 'node:crypto';
 
 describe('WorkOrder Entity', () => {
   const baseProps = {
@@ -114,10 +124,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw BusinessRuleViolationException when updating AWAITING_APPROVAL status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS);
-      // Simulate going to AWAITING_APPROVAL via internal update (bypass transitions)
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
 
       expect(() => wo.update({ problemDescription: 'test' })).toThrow(
         BusinessRuleViolationException,
@@ -168,6 +175,28 @@ describe('WorkOrder Entity', () => {
     it('should throw DomainValidationException for invalid fields on update', () => {
       const wo = WorkOrder.create(baseProps);
       expect(() => wo.update({ mileageAtService: -100 })).toThrow(DomainValidationException);
+    });
+
+    it('should set problemDescription to null when update receives null', () => {
+      const wo = WorkOrder.create({
+        ...baseProps,
+        problemDescription: 'Descrição inicial',
+      });
+
+      wo.update({ problemDescription: null });
+
+      expect(wo.problemDescription).toBeNull();
+    });
+
+    it('should set internalNotes to null when update receives null', () => {
+      const wo = WorkOrder.create({
+        ...baseProps,
+        internalNotes: 'Nota inicial',
+      });
+
+      wo.update({ internalNotes: null });
+
+      expect(wo.internalNotes).toBeNull();
     });
   });
 
@@ -223,8 +252,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw when transitioning from terminal status DELIVERED', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.COMPLETED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.COMPLETED });
       wo.changeStatus(WorkOrderStatus.DELIVERED);
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
@@ -240,48 +268,42 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should set rejectedAt when transitioning to REJECTED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
 
       expect(wo.rejectedAt).toBeInstanceOf(Date);
     });
 
     it('should set approvedAt when transitioning to APPROVED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.APPROVED);
 
       expect(wo.approvedAt).toBeInstanceOf(Date);
     });
 
     it('should set startedAt when transitioning to IN_PROGRESS (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.APPROVED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.APPROVED });
       wo.changeStatus(WorkOrderStatus.IN_PROGRESS);
 
       expect(wo.startedAt).toBeInstanceOf(Date);
     });
 
     it('should set finishedAt when transitioning to COMPLETED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.IN_PROGRESS;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.IN_PROGRESS });
       wo.changeStatus(WorkOrderStatus.COMPLETED);
 
       expect(wo.finishedAt).toBeInstanceOf(Date);
     });
 
     it('should set deliveredAt when transitioning to DELIVERED (updateTimestampsForStatus)', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.COMPLETED;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.COMPLETED });
       wo.changeStatus(WorkOrderStatus.DELIVERED);
 
       expect(wo.deliveredAt).toBeInstanceOf(Date);
     });
 
     it('REJECTED -> AWAITING_APPROVAL is allowed', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
       wo.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
 
@@ -289,8 +311,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('REJECTED -> IN_DIAGNOSIS should throw', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
       wo.changeStatus(WorkOrderStatus.REJECTED);
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
@@ -299,8 +320,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should fall back to empty transitions when current status is not in the map', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = 'UNKNOWN_STATUS' as unknown as WorkOrderStatus;
+      const wo = createMockWorkOrder({ status: 'UNKNOWN_STATUS' as unknown as WorkOrderStatus });
 
       expect(() => wo.changeStatus(WorkOrderStatus.IN_DIAGNOSIS)).toThrow(
         BusinessRuleViolationException,
@@ -308,28 +328,310 @@ describe('WorkOrder Entity', () => {
     });
   });
 
-  describe('canCreateQuote()', () => {
-    it('should return true for IN_DIAGNOSIS status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.IN_DIAGNOSIS;
-      expect(wo.canCreateQuote()).toBe(true);
+  describe('ensureCanCreateQuote()', () => {
+    it('should not throw for IN_DIAGNOSIS status', () => {
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.IN_DIAGNOSIS });
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return true for AWAITING_APPROVAL status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.AWAITING_APPROVAL;
-      expect(wo.canCreateQuote()).toBe(true);
+    it('should not throw for AWAITING_APPROVAL status', () => {
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.AWAITING_APPROVAL });
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return true for REJECTED status', () => {
-      const wo = WorkOrder.create(baseProps);
-      wo.status = WorkOrderStatus.REJECTED;
-      expect(wo.canCreateQuote()).toBe(true);
+    it('should not throw for REJECTED status', () => {
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.REJECTED });
+      expect(() => wo.ensureCanCreateQuote()).not.toThrow();
     });
 
-    it('should return false for RECEIVED status', () => {
+    it('should throw for RECEIVED status', () => {
       const wo = WorkOrder.create(baseProps);
-      expect(wo.canCreateQuote()).toBe(false);
+      expect(() => wo.ensureCanCreateQuote()).toThrow(BusinessRuleViolationException);
+    });
+  });
+
+  describe('startServiceItem()', () => {
+    it('should start service and transition WO to IN_PROGRESS', () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.PENDING,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.APPROVED,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [woService],
+      });
+
+      wo.startServiceItem(serviceId);
+
+      expect(woService.status).toBe(WorkOrderServiceStatus.IN_PROGRESS);
+      expect(wo.status).toBe(WorkOrderStatus.IN_PROGRESS);
+    });
+
+    it('should start service without changing WO status when already IN_PROGRESS', () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.PENDING,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [woService],
+      });
+
+      wo.startServiceItem(serviceId);
+
+      expect(woService.status).toBe(WorkOrderServiceStatus.IN_PROGRESS);
+      expect(wo.status).toBe(WorkOrderStatus.IN_PROGRESS);
+    });
+
+    it('should throw EntityNotFoundException when service not found', () => {
+      const wo = createMockWorkOrder({ services: [] });
+
+      expect(() => wo.startServiceItem(randomUUID())).toThrow(EntityNotFoundException);
+    });
+
+    it('should throw EntityNotFoundException when services is undefined', () => {
+      const wo = WorkOrder.create(baseProps);
+      // services is undefined by default after create
+
+      expect(() => wo.startServiceItem(randomUUID())).toThrow(EntityNotFoundException);
+    });
+
+    it('should throw BusinessRuleViolationException when service already IN_PROGRESS', () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+      const wo = createMockWorkOrder({
+        status: WorkOrderStatus.IN_PROGRESS,
+        services: [woService],
+      });
+
+      expect(() => wo.startServiceItem(serviceId)).toThrow(BusinessRuleViolationException);
+    });
+  });
+
+  describe('completeServiceItem()', () => {
+    it('should complete service and transition WO to COMPLETED when all services done', () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [woService],
+      });
+
+      wo.completeServiceItem(serviceId);
+
+      expect(woService.status).toBe(WorkOrderServiceStatus.COMPLETED);
+      expect(wo.status).toBe(WorkOrderStatus.COMPLETED);
+    });
+
+    it('should complete service and transition WO to COMPLETED when multiple services all done', () => {
+      const serviceId = randomUUID();
+      const woService1 = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+      const woService2 = createMockWorkOrderService({
+        serviceId: randomUUID(),
+        status: WorkOrderServiceStatus.COMPLETED,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [woService1, woService2],
+      });
+
+      wo.completeServiceItem(serviceId);
+
+      expect(woService1.status).toBe(WorkOrderServiceStatus.COMPLETED);
+      expect(wo.status).toBe(WorkOrderStatus.COMPLETED);
+    });
+
+    it('should complete service without changing WO status when other services remain', () => {
+      const serviceId = randomUUID();
+      const completingService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+      const pendingService = createMockWorkOrderService({
+        serviceId: randomUUID(),
+        status: WorkOrderServiceStatus.PENDING,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [completingService, pendingService],
+      });
+
+      wo.completeServiceItem(serviceId);
+
+      expect(completingService.status).toBe(WorkOrderServiceStatus.COMPLETED);
+      expect(wo.status).toBe(WorkOrderStatus.IN_PROGRESS);
+    });
+
+    it('should throw EntityNotFoundException when service not found', () => {
+      const wo = createMockWorkOrder({ services: [] });
+
+      expect(() => wo.completeServiceItem(randomUUID())).toThrow(EntityNotFoundException);
+    });
+
+    it('should throw EntityNotFoundException when services is undefined', () => {
+      const wo = WorkOrder.create(baseProps);
+      // services is undefined by default after create
+
+      expect(() => wo.completeServiceItem(randomUUID())).toThrow(EntityNotFoundException);
+    });
+
+    it('should throw BusinessRuleViolationException when service already COMPLETED', () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.COMPLETED,
+      });
+      const wo = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '000001',
+        customerId: randomUUID(),
+        vehicleId: randomUUID(),
+        assignedUserId: null,
+        status: WorkOrderStatus.IN_PROGRESS,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: new Date(),
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: [woService],
+      });
+
+      expect(() => wo.completeServiceItem(serviceId)).toThrow(BusinessRuleViolationException);
+    });
+  });
+
+  describe('applyQuoteItems()', () => {
+    it('should create WO service/part items and recalculate totalAmount from item prices', () => {
+      const qService = createMockQuoteService();
+      const qPart = createMockQuotePartSupply();
+      const quote = createMockQuote({ services: [qService], partsSupplies: [qPart] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(1);
+      expect(result.partSupplies).toHaveLength(1);
+      expect(result.services[0].serviceId).toBe(qService.serviceId);
+      expect(result.partSupplies[0].partSupplyId).toBe(qPart.partSupplyId);
+      expect(wo.totalAmount).toBe(
+        result.services[0].totalPrice + result.partSupplies[0].totalPrice,
+      );
+      expect(wo.services).toHaveLength(1);
+      expect(wo.partSupplies).toHaveLength(1);
+    });
+
+    it('should handle quote with no services or parts', () => {
+      const quote = createMockQuote({ services: [], partsSupplies: [] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(0);
+      expect(result.partSupplies).toHaveLength(0);
+      expect(wo.totalAmount).toBe(0);
     });
   });
 });

@@ -26,11 +26,8 @@ describe('RejectQuoteUseCase', () => {
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
     });
-    const updatedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.REJECTED });
 
-    (mockRepos.quote.findById as jest.Mock)
-      .mockResolvedValueOnce(quote)
-      .mockResolvedValueOnce(updatedQuote);
+    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
@@ -50,7 +47,7 @@ describe('RejectQuoteUseCase', () => {
         changedById: '550e8400-e29b-41d4-a716-446655440099',
       }),
     );
-    expect(result).toBe(updatedQuote);
+    expect(result.status).toBe(QuoteStatus.REJECTED);
   });
 
   it('should use default notes and null userId when not provided', async () => {
@@ -62,6 +59,8 @@ describe('RejectQuoteUseCase', () => {
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
 
     await useCase.execute(quote.id);
 

@@ -3,36 +3,29 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { CreateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/create-customer.dto';
 import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 export class CreateCustomerUseCase implements ICreateCustomerUseCase {
   constructor(private readonly customerRepository: ICustomerRepository) {}
 
   async execute(input: CreateCustomerDto): Promise<Customer> {
-    const sanitizedDocument = input.document.replace(/[.\-/]/g, '').trim();
-    const sanitizedPhone = input.phone.replace(/\D/g, '').trim();
-    const sanitizedZipCode = input.address.zipCode.replace(/\D/g, '').trim();
+    const document = Document.create(input.document, input.type);
+    const email = Email.create(input.email);
 
-    const existingByDocument = await this.customerRepository.findByDocument(sanitizedDocument);
+    const existingByDocument = await this.customerRepository.findByDocument(document.value);
 
     if (existingByDocument) {
-      throw new ResourceConflictException(`Documento '${sanitizedDocument}' já está cadastrado.`);
+      throw new ResourceConflictException(`Documento '${document.value}' já está cadastrado.`);
     }
 
-    const existingByEmail = await this.customerRepository.findByEmail(input.email);
+    const existingByEmail = await this.customerRepository.findByEmail(email.value);
 
     if (existingByEmail) {
-      throw new ResourceConflictException(`E-mail '${input.email}' já está cadastrado.`);
+      throw new ResourceConflictException(`E-mail '${email.value}' já está cadastrado.`);
     }
 
-    const customer = Customer.create({
-      ...input,
-      document: sanitizedDocument,
-      phone: sanitizedPhone,
-      address: {
-        ...input.address,
-        zipCode: sanitizedZipCode,
-      },
-    });
+    const customer = Customer.create(input);
 
     return this.customerRepository.create(customer);
   }

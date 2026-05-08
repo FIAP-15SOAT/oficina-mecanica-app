@@ -2,7 +2,6 @@ import { ITokenService } from '@domain/interfaces/services/token.service.interfa
 import { Quote } from '@domain/entities/quote.entity';
 import { Customer } from '@domain/entities/customer.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
-import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
@@ -12,7 +11,6 @@ import {
   SendEmailInput,
 } from '@domain/interfaces/services/email-sender.service.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 
 interface QuoteEmailDecisionTokenPayload extends Record<string, unknown> {
@@ -32,51 +30,26 @@ export class SubmitQuoteUseCase {
 
   async execute(quoteId: string): Promise<Quote> {
     return await this.unitOfWork.executeTransaction(async (repos) => {
-      const { quote, workOrder } = await this.validateQuoteAndWorkOrder(repos, quoteId);
+      const quote = await repos.quote.findByIdWithDetails(quoteId);
 
-      const updatedQuote = await this.updateQuoteStatus(repos, quote);
+      if (!quote) {
+        throw new ResourceNotFoundException('Orçamento', quoteId);
+      }
 
-      await this.updateWorkOrderStatus(repos, workOrder);
+      quote.submit();
 
+      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
       const customer = (await repos.customer.findById(workOrder.customerId))!;
 
-      await this.sendEmailNotification(updatedQuote, customer, workOrder.number);
+      const [updatedQuote] = await Promise.all([
+        repos.quote.update(quote),
+        this.updateWorkOrderStatus(repos, workOrder),
+      ]);
+
+      await this.sendEmailNotification(quote, customer, workOrder.number);
 
       return updatedQuote;
     });
-  }
-
-  private async validateQuoteAndWorkOrder(repos: IRepositories, quoteId: string) {
-    const quote = await repos.quote.findById(quoteId);
-    if (!quote) {
-      throw new ResourceNotFoundException('Orçamento', quoteId);
-    }
-
-    quote.ensureCanSubmit();
-
-    const [services, partsSupplies] = await Promise.all([
-      repos.quoteService.findByQuoteId(quoteId),
-      repos.quotePartSupply.findByQuoteId(quoteId),
-    ]);
-
-    if (services.length === 0 && partsSupplies.length === 0) {
-      throw new ResourceConflictException(
-        'O orçamento deve ter pelo menos um serviço ou peça/insumo antes de ser enviado.',
-      );
-    }
-
-    const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
-
-    return { quote, workOrder };
-  }
-
-  private async updateQuoteStatus(repos: IRepositories, quote: Quote): Promise<Quote> {
-    const now = new Date();
-    quote.status = QuoteStatus.SENT;
-    quote.sentAt = now;
-    quote.updatedAt = now;
-
-    return repos.quote.update(quote);
   }
 
   private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder): Promise<void> {
@@ -87,15 +60,16 @@ export class SubmitQuoteUseCase {
       const previousStatus = workOrder.status;
       workOrder.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
 
-      await repos.workOrder.update(workOrder);
-
-      await repos.statusHistory.create(
-        StatusHistory.create({
-          workOrderId: workOrder.id,
-          previousStatus,
-          newStatus: WorkOrderStatus.AWAITING_APPROVAL,
-        }),
-      );
+      await Promise.all([
+        repos.workOrder.update(workOrder),
+        repos.statusHistory.create(
+          StatusHistory.create({
+            workOrderId: workOrder.id,
+            previousStatus,
+            newStatus: WorkOrderStatus.AWAITING_APPROVAL,
+          }),
+        ),
+      ]);
     }
   }
 
@@ -137,7 +111,7 @@ export class SubmitQuoteUseCase {
     const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
 
     return {
-      toEmail: customer.email,
+      toEmail: customer.email.value,
       toName: customer.name,
       subject: `Orçamento para Ordem de Serviço ${workOrderNumber} - Aguardando sua aprovação`,
       message: {

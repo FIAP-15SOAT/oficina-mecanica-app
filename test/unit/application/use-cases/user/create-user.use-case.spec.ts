@@ -51,6 +51,7 @@ describe('CreateUserUseCase', () => {
         name: 'Duplicado',
         email: 'rafael@email.com',
         password: 'Senha@123',
+        role: UserRole.ATTENDANT,
       }),
     ).rejects.toThrow(ResourceConflictException);
 

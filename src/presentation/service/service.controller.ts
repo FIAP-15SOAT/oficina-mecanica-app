@@ -14,16 +14,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
+  ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -51,6 +53,8 @@ import { ServicePresenter } from './service.presenter';
 import { ServiceMetricsPresenter } from './service-metrics.presenter';
 
 @ApiTags('Gestão de Serviços')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('services')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -88,7 +92,7 @@ export class ServiceController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Criar novo serviço' })
   @ApiCreatedResponse({ type: ServiceDataResponseDto, description: 'Serviço criado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiConflictResponse({ description: 'Serviço já cadastrado' })
@@ -121,7 +125,7 @@ export class ServiceController {
   @ApiOperation({ summary: 'Buscar serviço por ID (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiOkResponse({ type: ServiceDataResponseDto, description: 'Serviço encontrado' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
@@ -135,7 +139,7 @@ export class ServiceController {
   @ApiOperation({ summary: 'Atualizar dados do serviço (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiOkResponse({ type: ServiceDataResponseDto, description: 'Serviço atualizado' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou ID com formato incorreto' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou ID com formato incorreto' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
@@ -155,7 +159,7 @@ export class ServiceController {
   @ApiOperation({ summary: 'Remover serviço (somente Admin)' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do serviço' })
   @ApiNoContentResponse({ description: 'Serviço removido' })
-  @ApiResponse({ status: 400, description: 'ID inválido (UUID esperado)' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Serviço não encontrado' })

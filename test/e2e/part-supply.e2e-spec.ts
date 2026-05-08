@@ -246,6 +246,15 @@ describe('PartSupply (E2E)', () => {
       });
     });
 
+    it('should return all items when lowStock=false (no low-stock filter applied)', async () => {
+      const res = await request(httpServer)
+        .get('/api/parts-supplies?lowStock=false&limit=20')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.pagination.totalRecords).toBe(12);
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer).get('/api/parts-supplies').expect(401);
     });
@@ -431,6 +440,112 @@ describe('PartSupply (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ type: 'INVALID', quantity: 1 })
         .expect(400);
+    });
+
+    it('should allow ENTRY without reason (optional field)', async () => {
+      const res = await request(httpServer)
+        .patch(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 2 })
+        .expect(200);
+
+      expect(res.body.data.stock).toBe(validPartSupply.stock + 2);
+    });
+  });
+
+  // ─── PATCH /api/parts-supplies/:id — Concorrência (Optimistic Locking) ──────
+
+  describe('PATCH /api/parts-supplies/:id — Concurrency (optimistic locking)', () => {
+    it('should maintain stock consistency under concurrent EXIT operations', async () => {
+      const initialStock = 100;
+      const exitQty = 10;
+      const concurrentCount = 5;
+
+      const createRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: `CONC-EXIT-${Date.now()}`, stock: initialStock })
+        .expect(201);
+
+      const partId = createRes.body.data.id as string;
+
+      const responses = await Promise.all(
+        Array.from({ length: concurrentCount }, () =>
+          request(httpServer)
+            .patch(`/api/parts-supplies/${partId}`)
+            .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+            .send({ type: 'EXIT', quantity: exitQty, reason: 'Saída concorrente' }),
+        ),
+      );
+
+      // No server error (500) allowed — only success (200) or conflict (409)
+      responses.forEach((r) => expect([200, 409]).toContain(r.status));
+
+      const successes = responses.filter((r) => r.status === 200);
+      expect(successes.length).toBeGreaterThanOrEqual(1);
+
+      // Final stock must equal initialStock minus exactly the quantity of successful exits
+      const finalRecord = await ctx.prisma.partSupply.findUnique({ where: { id: partId } });
+
+      expect(finalRecord!.stock).toBe(initialStock - exitQty * successes.length);
+    });
+
+    it('should maintain stock consistency under concurrent ENTRY operations', async () => {
+      const initialStock = 50;
+      const entryQty = 5;
+      const concurrentCount = 5;
+
+      const createRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: `CONC-ENTRY-${Date.now()}`, stock: initialStock })
+        .expect(201);
+
+      const partId = createRes.body.data.id as string;
+
+      const responses = await Promise.all(
+        Array.from({ length: concurrentCount }, () =>
+          request(httpServer)
+            .patch(`/api/parts-supplies/${partId}`)
+            .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+            .send({ type: 'ENTRY', quantity: entryQty, reason: 'Entrada concorrente' }),
+        ),
+      );
+
+      responses.forEach((r) => expect([200, 409]).toContain(r.status));
+
+      const successes = responses.filter((r) => r.status === 200);
+
+      expect(successes.length).toBeGreaterThanOrEqual(1);
+
+      const finalRecord = await ctx.prisma.partSupply.findUnique({ where: { id: partId } });
+
+      expect(finalRecord!.stock).toBe(initialStock + entryQty * successes.length);
+    });
+
+    it('should reject a stale-version update with P2025 (direct optimistic lock verification)', async () => {
+      const createRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: `STALE-${Date.now()}` })
+        .expect(201);
+
+      const partId = createRes.body.data.id as string;
+
+      // Advance version via HTTP (version 0 → 1)
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 1, reason: 'Primeira atualização' })
+        .expect(200);
+
+      // Simulate stale second transaction: try to commit using the now-obsolete version=0
+      await expect(
+        ctx.prisma.partSupply.update({
+          where: { id: partId, version: 0 }, // stale — version is now 1
+          data: { stock: { increment: 5 }, version: { increment: 1 } },
+        }),
+      ).rejects.toMatchObject({ code: 'P2025' });
     });
   });
 

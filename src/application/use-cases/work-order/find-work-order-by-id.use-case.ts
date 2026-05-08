@@ -6,7 +6,7 @@ export class FindWorkOrderByIdUseCase {
   constructor(private readonly workOrderRepository: IWorkOrderRepository) {}
 
   async execute(id: string): Promise<WorkOrder> {
-    const workOrder = await this.workOrderRepository.findById(id);
+    const workOrder = await this.workOrderRepository.findByIdWithDetails(id);
 
     if (!workOrder) {
       throw new ResourceNotFoundException('Ordem de serviço', id);

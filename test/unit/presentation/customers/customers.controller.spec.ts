@@ -9,6 +9,10 @@ import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/v
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Vehicle } from '@domain/entities/vehicle.entity';
+import { Email } from '@domain/value-objects/email.vo';
+import { Phone } from '@domain/value-objects/phone.vo';
+import { Document } from '@domain/value-objects/document.vo';
+import { CustomerPresenter } from '@presentation/customers/customer.presenter';
 
 describe('CustomersController', () => {
   let controller: CustomersController;
@@ -53,16 +57,16 @@ describe('CustomersController', () => {
       };
       const created = createMockCustomer({
         name: dto.name,
-        document: dto.document,
+        document: Document.create(dto.document, dto.type),
         type: dto.type,
-        email: dto.email,
-        phone: dto.phone,
+        email: Email.create(dto.email),
+        phone: Phone.create(dto.phone),
       });
       createUseCase.execute.mockResolvedValue(created);
 
       const result = await controller.create(dto);
 
-      expect(result).toEqual({ data: created });
+      expect(result).toEqual(CustomerPresenter.toDataResponse(created));
       expect(createUseCase.execute).toHaveBeenCalledWith(dto);
     });
   });
@@ -79,10 +83,12 @@ describe('CustomersController', () => {
       const query = { page: 1, limit: 10 };
       const result = await controller.findAll(query);
 
-      expect(result).toEqual({
-        data: customers,
-        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
-      });
+      expect(result).toEqual(
+        CustomerPresenter.toPaginatedDataResponse({
+          items: customers,
+          pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
+        }),
+      );
       expect(findAllUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, limit: 10 }),
       );
@@ -136,7 +142,7 @@ describe('CustomersController', () => {
 
       const result = await controller.findById(customer.id);
 
-      expect(result).toEqual({ data: customer });
+      expect(result).toEqual(CustomerPresenter.toDataResponse(customer));
       expect(findByIdUseCase.execute).toHaveBeenCalledWith(customer.id);
     });
   });
@@ -150,7 +156,7 @@ describe('CustomersController', () => {
         name: 'Novo Nome',
       } as unknown as Parameters<typeof controller.update>[1]);
 
-      expect(result).toEqual({ data: updated });
+      expect(result).toEqual(CustomerPresenter.toDataResponse(updated));
       expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { name: 'Novo Nome' });
     });
   });

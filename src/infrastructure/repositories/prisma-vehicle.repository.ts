@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import {
   IVehicleRepository,
@@ -19,21 +20,28 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(vehicle: Vehicle): Promise<Vehicle> {
-    const record = await this.prisma.vehicle.create({
-      data: {
-        id: vehicle.id,
-        customerId: vehicle.customerId,
-        plate: vehicle.plate,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        year: vehicle.year,
-        color: vehicle.color,
-        mileage: vehicle.mileage,
-      },
-      include: { customer: true },
-    });
+    try {
+      const record = await this.prisma.vehicle.create({
+        data: {
+          id: vehicle.id,
+          customerId: vehicle.customerId,
+          plate: vehicle.plate.value,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          mileage: vehicle.mileage,
+        },
+        include: { customer: true },
+      });
 
-    return VehicleMapper.toDomain(record);
+      return VehicleMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('Placa já cadastrada');
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Vehicle | null> {
@@ -86,21 +94,28 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   }
 
   async update(id: string, data: Partial<Vehicle>): Promise<Vehicle> {
-    const record = await this.prisma.vehicle.update({
-      where: { id },
-      data: {
-        ...(data.customerId !== undefined && { customerId: data.customerId }),
-        ...(data.plate !== undefined && { plate: data.plate }),
-        ...(data.brand !== undefined && { brand: data.brand }),
-        ...(data.model !== undefined && { model: data.model }),
-        ...(data.year !== undefined && { year: data.year }),
-        ...(data.color !== undefined && { color: data.color }),
-        ...(data.mileage !== undefined && { mileage: data.mileage }),
-      },
-      include: { customer: true },
-    });
+    try {
+      const record = await this.prisma.vehicle.update({
+        where: { id },
+        data: {
+          ...(data.customerId !== undefined && { customerId: data.customerId }),
+          ...(data.plate !== undefined && { plate: data.plate.value }),
+          ...(data.brand !== undefined && { brand: data.brand }),
+          ...(data.model !== undefined && { model: data.model }),
+          ...(data.year !== undefined && { year: data.year }),
+          ...(data.color !== undefined && { color: data.color }),
+          ...(data.mileage !== undefined && { mileage: data.mileage }),
+        },
+        include: { customer: true },
+      });
 
-    return VehicleMapper.toDomain(record);
+      return VehicleMapper.toDomain(record);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ResourceConflictException('Placa já cadastrada para outro veículo');
+      }
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<void> {

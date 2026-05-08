@@ -18,6 +18,7 @@ describe('QuoteMapper', () => {
         sentAt: now,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: now,
         updatedAt: now,
       };
@@ -52,6 +53,7 @@ describe('QuoteMapper', () => {
         sentAt: now,
         approvedAt: null,
         rejectedAt: null,
+        version: 0,
         createdAt: now,
         updatedAt: now,
         services: [
@@ -66,7 +68,7 @@ describe('QuoteMapper', () => {
             updatedAt: now,
           },
         ],
-        parts: [
+        partsSupplies: [
           {
             id: randomUUID(),
             quoteId,

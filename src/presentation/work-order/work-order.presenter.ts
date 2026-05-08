@@ -24,16 +24,12 @@ import {
 } from './dto/status-history-response.dto';
 
 export class WorkOrderPresenter {
-  static toResponse(this: void, workOrder: WorkOrder): WorkOrderResponseDto {
+  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
     return {
       id: workOrder.id,
       number: workOrder.number,
-      customer: workOrder.customer
-        ? WorkOrderPresenter.toCustomer(workOrder.customer)
-        : ({ id: workOrder.customerId } as WorkOrderCustomerResponseDto),
-      vehicle: workOrder.vehicle
-        ? WorkOrderPresenter.toVehicle(workOrder.vehicle)
-        : ({ id: workOrder.vehicleId } as WorkOrderVehicleResponseDto),
+      customer: WorkOrderPresenter.toCustomer(workOrder.customer!),
+      vehicle: WorkOrderPresenter.toVehicle(workOrder.vehicle!),
       assignedUser: workOrder.assignedUser
         ? WorkOrderPresenter.toUser(workOrder.assignedUser)
         : null,
@@ -48,12 +44,8 @@ export class WorkOrderPresenter {
       deliveredAt: workOrder.deliveredAt,
       createdAt: workOrder.createdAt,
       updatedAt: workOrder.updatedAt,
-      ...(workOrder.services !== undefined && {
-        services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
-      }),
-      ...(workOrder.partSupplies !== undefined && {
-        partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
-      }),
+      services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
+      partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
     };
   }
 
@@ -95,16 +87,16 @@ export class WorkOrderPresenter {
       id: customer.id,
       name: customer.name,
       type: customer.type,
-      document: customer.document,
-      email: customer.email,
-      phone: customer.phone,
+      document: customer.document.value,
+      email: customer.email.value,
+      phone: customer.phone.value,
     };
   }
 
   private static toVehicle(vehicle: Vehicle): WorkOrderVehicleResponseDto {
     return {
       id: vehicle.id,
-      plate: vehicle.plate,
+      plate: vehicle.plate.value,
       brand: vehicle.brand,
       model: vehicle.model,
       year: vehicle.year,
@@ -117,7 +109,7 @@ export class WorkOrderPresenter {
     return {
       id: user.id,
       name: user.name,
-      email: user.email,
+      email: user.email.value,
       role: user.role,
     };
   }

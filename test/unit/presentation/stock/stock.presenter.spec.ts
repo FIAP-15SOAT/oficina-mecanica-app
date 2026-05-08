@@ -14,7 +14,7 @@ describe('StockPresenter', () => {
 
   describe('toPaginatedStockMovementsResponse', () => {
     it('should format a stock movement without relations (fallback to id only)', () => {
-      const movement = new StockMovement({
+      const movement = StockMovement.reconstitute({
         id: randomUUID(),
         partSupplyId: randomUUID(),
         workOrderId: null,
@@ -42,7 +42,7 @@ describe('StockPresenter', () => {
       const workOrder = createMockWorkOrder({ customer, vehicle, assignedUser });
       const partSupply = createMockPartSupply();
 
-      const movement = new StockMovement({
+      const movement = StockMovement.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: workOrder.id,
@@ -74,7 +74,7 @@ describe('StockPresenter', () => {
       const workOrder = createMockWorkOrder();
       const partSupply = createMockPartSupply();
 
-      const movement = new StockMovement({
+      const movement = StockMovement.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: workOrder.id,
@@ -100,7 +100,7 @@ describe('StockPresenter', () => {
     it('should format partNumber as null when partSupply has no partNumber', () => {
       const partSupply = createMockPartSupply({ partNumber: undefined });
 
-      const movement = new StockMovement({
+      const movement = StockMovement.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: null,
@@ -122,7 +122,7 @@ describe('StockPresenter', () => {
 
   describe('toPaginatedStockReservationsResponse', () => {
     it('should format a stock reservation without relations (fallback to id only)', () => {
-      const reservation = new StockReservation({
+      const reservation = StockReservation.reconstitute({
         id: randomUUID(),
         partSupplyId: randomUUID(),
         workOrderId: randomUUID(),
@@ -147,7 +147,7 @@ describe('StockPresenter', () => {
       const workOrder = createMockWorkOrder({ customer, vehicle, assignedUser });
       const partSupply = createMockPartSupply();
 
-      const reservation = new StockReservation({
+      const reservation = StockReservation.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: workOrder.id,
@@ -175,7 +175,7 @@ describe('StockPresenter', () => {
       const workOrder = createMockWorkOrder();
       const partSupply = createMockPartSupply();
 
-      const reservation = new StockReservation({
+      const reservation = StockReservation.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: workOrder.id,
@@ -200,7 +200,7 @@ describe('StockPresenter', () => {
       const partSupply = createMockPartSupply({ partNumber: undefined });
       const workOrder = createMockWorkOrder();
 
-      const reservation = new StockReservation({
+      const reservation = StockReservation.reconstitute({
         id: randomUUID(),
         partSupplyId: partSupply.id,
         workOrderId: workOrder.id,

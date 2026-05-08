@@ -9,21 +9,18 @@ describe('CustomerMapper', () => {
       const prismaRecord = {
         id: randomUUID(),
         name: 'John Doe',
-        document: '12345678901',
+        document: '12345678909',
         type: CustomerType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
         createdAt: now,
         updatedAt: now,
         address: {
-          id: randomUUID(),
           customerId: randomUUID(),
           street: 'Main St',
           city: 'Sao Paulo',
           state: 'SP',
           zipCode: '01000-000',
-          createdAt: now,
-          updatedAt: now,
         },
       };
 
@@ -31,12 +28,11 @@ describe('CustomerMapper', () => {
 
       expect(domainCustomer.id).toBe(prismaRecord.id);
       expect(domainCustomer.name).toBe(prismaRecord.name);
-      expect(domainCustomer.document).toBe(prismaRecord.document);
+      expect(domainCustomer.document.value).toBe(prismaRecord.document);
       expect(domainCustomer.type).toBe(prismaRecord.type);
-      expect(domainCustomer.email).toBe(prismaRecord.email);
-      expect(domainCustomer.phone).toBe(prismaRecord.phone);
+      expect(domainCustomer.email.value).toBe(prismaRecord.email);
+      expect(domainCustomer.phone.value).toBe(prismaRecord.phone);
       expect(domainCustomer.address).toBeDefined();
-      expect(domainCustomer.address!.id).toBe(prismaRecord.address.id);
       expect(domainCustomer.address!.street).toBe(prismaRecord.address.street);
     });
 
@@ -45,7 +41,7 @@ describe('CustomerMapper', () => {
       const prismaRecord = {
         id: randomUUID(),
         name: 'Jane Doe',
-        document: '12345678901',
+        document: '12345678909',
         type: CustomerType.INDIVIDUAL,
         email: 'jane@example.com',
         phone: '11999999999',

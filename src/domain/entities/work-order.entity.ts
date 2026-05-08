@@ -1,18 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { validate as isUuid } from 'uuid';
+import { UserRole } from '../enums/user-role.enum';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
+import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
+import { EntityNotFoundException } from '../exceptions/entity-not-found.exception';
 import { Customer } from './customer.entity';
 import { Vehicle } from './vehicle.entity';
 import { User } from './user.entity';
 import { WorkOrderService } from './work-order-service.entity';
 import { WorkOrderPartSupply } from './work-order-part-supply.entity';
+import { Quote } from './quote.entity';
 
 const MAX_PROBLEM_DESCRIPTION_LENGTH = 2000;
 const MAX_INTERNAL_NOTES_LENGTH = 2000;
-
-import { UserRole } from '../enums/user-role.enum';
 
 export interface CreateWorkOrderProps {
   number: string;
@@ -31,36 +33,90 @@ export interface UpdateWorkOrderProps {
   assignedUser?: User | null;
 }
 
+export interface WorkOrderProps {
+  id: string;
+  number: string;
+  customerId: string;
+  vehicleId: string;
+  assignedUserId: string | null;
+  status: WorkOrderStatus;
+  problemDescription: string | null;
+  internalNotes: string | null;
+  mileageAtService: number | null;
+  totalAmount: number;
+  version: number;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  deliveredAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  services?: WorkOrderService[];
+  partSupplies?: WorkOrderPartSupply[];
+}
+
 export class WorkOrder {
-  id!: string;
-  number!: string;
-  customerId!: string;
-  vehicleId!: string;
-  assignedUserId!: string | null;
-  status!: WorkOrderStatus;
-  problemDescription!: string | null;
-  internalNotes!: string | null;
-  mileageAtService!: number | null;
-  totalAmount!: number;
-  approvedAt!: Date | null;
-  rejectedAt!: Date | null;
-  startedAt!: Date | null;
-  finishedAt!: Date | null;
-  deliveredAt!: Date | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  readonly id: string;
+  readonly number: string;
+  readonly customerId: string;
+  readonly vehicleId: string;
+  assignedUserId: string | null;
+  private _status: WorkOrderStatus;
+  problemDescription: string | null;
+  internalNotes: string | null;
+  mileageAtService: number | null;
+  private _totalAmount: number;
+  version: number;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  deliveredAt: Date | null;
+  readonly createdAt: Date;
+  updatedAt: Date;
 
   customer?: Customer;
   vehicle?: Vehicle;
   assignedUser?: User | null;
-  services?: WorkOrderService[];
-  partSupplies?: WorkOrderPartSupply[];
+  private _services: WorkOrderService[];
+  private _partSupplies: WorkOrderPartSupply[];
 
-  constructor(partial: Partial<WorkOrder>) {
-    Object.assign(this, partial);
+  private constructor(props: WorkOrderProps) {
+    this.id = props.id;
+    this.number = props.number;
+    this.customerId = props.customerId;
+    this.vehicleId = props.vehicleId;
+    this.assignedUserId = props.assignedUserId;
+    this._status = props.status;
+    this.problemDescription = props.problemDescription;
+    this.internalNotes = props.internalNotes;
+    this.mileageAtService = props.mileageAtService;
+    this._totalAmount = props.totalAmount;
+    this.version = props.version;
+    this.approvedAt = props.approvedAt;
+    this.rejectedAt = props.rejectedAt;
+    this.startedAt = props.startedAt;
+    this.finishedAt = props.finishedAt;
+    this.deliveredAt = props.deliveredAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+    this._services = props.services ?? [];
+    this._partSupplies = props.partSupplies ?? [];
+  }
+
+  static reconstitute(props: WorkOrderProps): WorkOrder {
+    return new WorkOrder(props);
   }
 
   static create(props: CreateWorkOrderProps): WorkOrder {
+    WorkOrder.validateCustomerId(props.customerId);
+    WorkOrder.validateVehicleId(props.vehicleId);
+    WorkOrder.validateMileage(props.mileageAtService ?? null);
+    WorkOrder.validateProblemDescription(props.problemDescription ?? null);
+    WorkOrder.validateInternalNotes(props.internalNotes ?? null);
+    WorkOrder.validateAssignedUser(props.assignedUser ?? null);
+
     const workOrder = new WorkOrder({
       id: randomUUID(),
       number: props.number,
@@ -71,8 +127,8 @@ export class WorkOrder {
       internalNotes: props.internalNotes?.trim() ?? null,
       mileageAtService: props.mileageAtService ?? null,
       totalAmount: 0,
+      version: 1,
       assignedUserId: props.assignedUser?.id ?? null,
-      assignedUser: props.assignedUser ?? null,
       approvedAt: null,
       rejectedAt: null,
       startedAt: null,
@@ -82,17 +138,79 @@ export class WorkOrder {
       updatedAt: new Date(),
     });
 
-    workOrder.validateCustomerId();
-    workOrder.validateVehicleId();
-    workOrder.validateMileage();
-    workOrder.validateProblemDescription();
-    workOrder.validateInternalNotes();
-    workOrder.validateAssignedUser();
+    workOrder.assignedUser = props.assignedUser ?? null;
 
     return workOrder;
   }
 
-  canCreateQuote(): boolean {
+  startServiceItem(serviceId: string): void {
+    const item = this._services.find((s) => s.serviceId === serviceId);
+
+    if (!item) {
+      throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
+    }
+
+    item.startService();
+
+    if (this.status !== WorkOrderStatus.IN_PROGRESS) {
+      this.changeStatus(WorkOrderStatus.IN_PROGRESS);
+    }
+  }
+
+  completeServiceItem(serviceId: string): void {
+    const item = this._services.find((s) => s.serviceId === serviceId);
+
+    if (!item) {
+      throw new EntityNotFoundException('Serviço da Ordem de Serviço', serviceId);
+    }
+
+    item.completeService();
+
+    const allCompleted = this._services.every((s) => s.status === WorkOrderServiceStatus.COMPLETED);
+
+    if (allCompleted) {
+      this.changeStatus(WorkOrderStatus.COMPLETED);
+    }
+  }
+
+  applyQuoteItems(quote: Quote): {
+    services: WorkOrderService[];
+    partSupplies: WorkOrderPartSupply[];
+  } {
+    const services = (quote.services ?? []).map((s) =>
+      WorkOrderService.create({
+        workOrderId: this.id,
+        serviceId: s.serviceId,
+        quantity: s.quantity,
+        unitPrice: s.unitPrice,
+      }),
+    );
+
+    const partSupplies = (quote.partsSupplies ?? []).map((p) =>
+      WorkOrderPartSupply.create({
+        workOrderId: this.id,
+        partSupplyId: p.partSupplyId,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+      }),
+    );
+
+    this._services = [...this._services, ...services];
+    this._partSupplies = [...this._partSupplies, ...partSupplies];
+    this.recalculateTotalAmount();
+    this.updatedAt = new Date();
+
+    return { services, partSupplies };
+  }
+
+  private recalculateTotalAmount(): void {
+    const servicesTotal = this._services.reduce((sum, s) => sum + s.totalPrice, 0);
+    const partsTotal = this._partSupplies.reduce((sum, p) => sum + p.totalPrice, 0);
+
+    this._totalAmount = servicesTotal + partsTotal;
+  }
+
+  private canCreateQuote(): boolean {
     return (
       this.status === WorkOrderStatus.IN_DIAGNOSIS ||
       this.status === WorkOrderStatus.AWAITING_APPROVAL ||
@@ -115,18 +233,31 @@ export class WorkOrder {
       );
     }
 
-    if (props.problemDescription !== undefined) this.problemDescription = props.problemDescription;
-    if (props.internalNotes !== undefined) this.internalNotes = props.internalNotes;
-    if (props.mileageAtService !== undefined) this.mileageAtService = props.mileageAtService;
-    if (props.assignedUser !== undefined) {
-      this.assignedUserId = props.assignedUser?.id ?? null;
-      this.assignedUser = props.assignedUser ?? null;
-    }
+    const nextProblemDescription =
+      props.problemDescription === undefined
+        ? this.problemDescription
+        : (props.problemDescription?.trim() ?? null);
+    const nextInternalNotes =
+      props.internalNotes === undefined
+        ? this.internalNotes
+        : (props.internalNotes?.trim() ?? null);
+    const nextMileageAtService =
+      props.mileageAtService === undefined ? this.mileageAtService : props.mileageAtService;
+    const nextAssignedUser =
+      props.assignedUser === undefined ? (this.assignedUser ?? null) : (props.assignedUser ?? null);
+    const nextAssignedUserId =
+      props.assignedUser === undefined ? this.assignedUserId : (props.assignedUser?.id ?? null);
 
-    this.validateMileage();
-    this.validateProblemDescription();
-    this.validateInternalNotes();
-    this.validateAssignedUser();
+    WorkOrder.validateMileage(nextMileageAtService);
+    WorkOrder.validateProblemDescription(nextProblemDescription);
+    WorkOrder.validateInternalNotes(nextInternalNotes);
+    WorkOrder.validateAssignedUser(nextAssignedUser);
+
+    this.problemDescription = nextProblemDescription;
+    this.internalNotes = nextInternalNotes;
+    this.mileageAtService = nextMileageAtService;
+    this.assignedUser = nextAssignedUser;
+    this.assignedUserId = nextAssignedUserId;
 
     this.updatedAt = new Date();
   }
@@ -134,8 +265,22 @@ export class WorkOrder {
   changeStatus(newStatus: WorkOrderStatus, notes?: string | null): void {
     this.validateStatusTransition(newStatus, notes);
     this.updateTimestampsForStatus(newStatus);
-    this.status = newStatus;
+    this._status = newStatus;
     this.updatedAt = new Date();
+  }
+
+  private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
+    WorkOrderStatus.IN_DIAGNOSIS,
+    WorkOrderStatus.CANCELLED,
+    WorkOrderStatus.DELIVERED,
+  ]);
+
+  static assertAllowedPatchStatus(status: WorkOrderStatus): void {
+    if (!WorkOrder.PATCH_STATUS_ALLOWED.has(status)) {
+      throw new BusinessRuleViolationException(
+        `O status "${status}" não é permitido nesta operação.`,
+      );
+    }
   }
 
   private static readonly STATUS_TRANSITION_MAP: Record<WorkOrderStatus, WorkOrderStatus[]> = {
@@ -192,62 +337,83 @@ export class WorkOrder {
     }
   }
 
-  private validateCustomerId(): void {
-    if (!this.customerId) {
+  private static validateCustomerId(customerId: string): void {
+    if (!customerId) {
       throw new DomainValidationException('ID do cliente é obrigatório.');
     }
 
-    if (!isUuid(this.customerId)) {
+    if (!isUuid(customerId)) {
       throw new DomainValidationException('ID do cliente deve ser um UUID válido.');
     }
   }
 
-  private validateVehicleId(): void {
-    if (!this.vehicleId) {
+  private static validateVehicleId(vehicleId: string): void {
+    if (!vehicleId) {
       throw new DomainValidationException('ID do veículo é obrigatório.');
     }
 
-    if (!isUuid(this.vehicleId)) {
+    if (!isUuid(vehicleId)) {
       throw new DomainValidationException('ID do veículo deve ser um UUID válido.');
     }
   }
 
-  private validateMileage(): void {
-    if (
-      this.mileageAtService !== undefined &&
-      this.mileageAtService !== null &&
-      this.mileageAtService < 0
-    ) {
+  private static validateMileage(mileageAtService: number | null): void {
+    if (mileageAtService !== undefined && mileageAtService !== null && mileageAtService < 0) {
       throw new DomainValidationException('Quilometragem não pode ser negativa.');
     }
   }
 
-  private validateProblemDescription(): void {
-    if (
-      this.problemDescription &&
-      this.problemDescription.length > MAX_PROBLEM_DESCRIPTION_LENGTH
-    ) {
+  private static validateProblemDescription(problemDescription: string | null): void {
+    if (!problemDescription) {
+      return;
+    }
+
+    const trimmed = problemDescription.trim();
+
+    if (trimmed.length > MAX_PROBLEM_DESCRIPTION_LENGTH) {
       throw new DomainValidationException(
         `Descrição do problema deve ter no máximo ${MAX_PROBLEM_DESCRIPTION_LENGTH} caracteres.`,
       );
     }
   }
 
-  private validateInternalNotes(): void {
-    if (this.internalNotes && this.internalNotes.length > MAX_INTERNAL_NOTES_LENGTH) {
+  private static validateInternalNotes(internalNotes: string | null): void {
+    if (!internalNotes) {
+      return;
+    }
+
+    const trimmed = internalNotes.trim();
+
+    if (trimmed.length > MAX_INTERNAL_NOTES_LENGTH) {
       throw new DomainValidationException(
         `Notas internas devem ter no máximo ${MAX_INTERNAL_NOTES_LENGTH} caracteres.`,
       );
     }
   }
 
-  private validateAssignedUser(): void {
-    if (this.assignedUser) {
-      if (this.assignedUser.role !== UserRole.MECHANIC || !this.assignedUser.isActive) {
+  private static validateAssignedUser(assignedUser: User | null): void {
+    if (assignedUser) {
+      if (assignedUser.role !== UserRole.MECHANIC || !assignedUser.isActive) {
         throw new BusinessRuleViolationException(
           'Apenas mecânicos ativos podem ser atribuídos a uma ordem de serviço',
         );
       }
     }
+  }
+
+  get status(): WorkOrderStatus {
+    return this._status;
+  }
+
+  get totalAmount(): number {
+    return this._totalAmount;
+  }
+
+  get services(): WorkOrderService[] {
+    return this._services;
+  }
+
+  get partSupplies(): WorkOrderPartSupply[] {
+    return this._partSupplies;
   }
 }

@@ -5,17 +5,44 @@ const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 500;
 
-export class Service {
-  id!: string;
-  name!: string;
-  description?: string | null;
-  basePrice!: number;
-  estimatedTimeMin!: number;
-  createdAt!: Date;
-  updatedAt!: Date;
+interface ServiceProps {
+  id: string;
+  name: string;
+  description: string | null;
+  basePrice: number;
+  estimatedTimeMin: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<Service>) {
-    Object.assign(this, partial);
+interface CreateServiceProps {
+  name: string;
+  description?: string | null;
+  basePrice: number;
+  estimatedTimeMin: number;
+}
+
+export class Service {
+  readonly id: string;
+  name: string;
+  description: string | null;
+  basePrice: number;
+  estimatedTimeMin: number;
+  readonly createdAt: Date;
+  updatedAt: Date;
+
+  private constructor(props: ServiceProps) {
+    this.id = props.id;
+    this.name = props.name;
+    this.description = props.description;
+    this.basePrice = props.basePrice;
+    this.estimatedTimeMin = props.estimatedTimeMin;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: ServiceProps): Service {
+    return new Service(props);
   }
 
   static create(props: {
@@ -24,9 +51,11 @@ export class Service {
     basePrice: number;
     estimatedTimeMin: number;
   }): Service {
+    Service.validateProps(props);
+
     const now = new Date();
 
-    const service = new Service({
+    return new Service({
       id: randomUUID(),
       name: props.name.trim(),
       description: props.description?.trim() ?? null,
@@ -35,57 +64,71 @@ export class Service {
       createdAt: now,
       updatedAt: now,
     });
-
-    service.validateName();
-    service.validateDescription();
-    service.validateBasePrice();
-    service.validateEstimatedTimeMin();
-
-    return service;
   }
 
-  private validateName(): void {
-    if (!this.name) {
+  update(props: CreateServiceProps): void {
+    Service.validateProps(props);
+
+    this.name = props.name.trim();
+    this.description = props.description?.trim() ?? null;
+    this.basePrice = props.basePrice;
+    this.estimatedTimeMin = props.estimatedTimeMin;
+    this.updatedAt = new Date();
+  }
+
+  private static validateProps(props: CreateServiceProps): void {
+    Service.validateName(props.name);
+    Service.validateDescription(props.description);
+    Service.validateBasePrice(props.basePrice);
+    Service.validateEstimatedTimeMin(props.estimatedTimeMin);
+  }
+
+  private static validateName(name: string): void {
+    const trimmed = name?.trim();
+
+    if (!trimmed) {
       throw new DomainValidationException('Nome é obrigatório');
     }
 
-    if (this.name.length < MIN_NAME_LENGTH) {
+    if (trimmed.length < MIN_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no mínimo ${MIN_NAME_LENGTH} caracteres`);
     }
 
-    if (this.name.length > MAX_NAME_LENGTH) {
+    if (trimmed.length > MAX_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres`);
     }
   }
 
-  private validateDescription(): void {
-    if (this.description === null || this.description === undefined) {
+  private static validateDescription(description?: string | null): void {
+    const trimmed = description?.trim();
+
+    if (!trimmed) {
       return;
     }
 
-    if (this.description.length > MAX_DESCRIPTION_LENGTH) {
+    if (trimmed.length > MAX_DESCRIPTION_LENGTH) {
       throw new DomainValidationException(
         `Descrição deve ter no máximo ${MAX_DESCRIPTION_LENGTH} caracteres`,
       );
     }
   }
 
-  private validateBasePrice(): void {
-    if (!Number.isFinite(this.basePrice)) {
+  private static validateBasePrice(basePrice: number): void {
+    if (!Number.isFinite(basePrice)) {
       throw new DomainValidationException('Preço base inválido');
     }
 
-    if (this.basePrice <= 0) {
+    if (basePrice <= 0) {
       throw new DomainValidationException('Preço base deve ser maior que zero');
     }
   }
 
-  private validateEstimatedTimeMin(): void {
-    if (!Number.isInteger(this.estimatedTimeMin)) {
+  private static validateEstimatedTimeMin(estimatedTimeMin: number): void {
+    if (!Number.isInteger(estimatedTimeMin)) {
       throw new DomainValidationException('Tempo estimado deve ser um número inteiro');
     }
 
-    if (this.estimatedTimeMin <= 0) {
+    if (estimatedTimeMin <= 0) {
       throw new DomainValidationException('Tempo estimado deve ser maior que zero');
     }
   }

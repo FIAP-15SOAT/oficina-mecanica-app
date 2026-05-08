@@ -7,6 +7,7 @@ import {
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
+import { Email } from '@domain/value-objects/email.vo';
 
 describe('UpdateUserUseCase', () => {
   let useCase: UpdateUserUseCase;
@@ -32,7 +33,7 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should update email checking uniqueness', async () => {
-    const user = createMockUser({ email: 'antigo@email.com' });
+    const user = createMockUser({ email: Email.create('antigo@email.com') });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(null);
     userRepository.update.mockImplementation((_id, data) =>
@@ -46,7 +47,7 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should allow keeping the same email', async () => {
-    const user = createMockUser({ email: 'rafael@email.com' });
+    const user = createMockUser({ email: Email.create('rafael@email.com') });
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(() => Promise.resolve(user));
 
@@ -56,7 +57,7 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should throw ResourceConflictException if new email already exists', async () => {
-    const user = createMockUser({ email: 'antigo@email.com' });
+    const user = createMockUser({ email: Email.create('antigo@email.com') });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(createMockUser({ id: 'outro-id' }));
 

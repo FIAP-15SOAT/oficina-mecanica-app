@@ -15,13 +15,16 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -65,6 +68,8 @@ import {
 import { QuotePresenter } from './quote.presenter';
 
 @ApiTags('Gestão de Orçamentos')
+@ApiProduces('application/json')
+@ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('quotes')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
@@ -286,6 +291,7 @@ export class QuoteController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
+  @ApiConflictResponse({ description: 'Modificação concorrente detectada. Tente novamente.' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,

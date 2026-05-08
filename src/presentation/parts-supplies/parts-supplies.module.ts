@@ -6,6 +6,7 @@ import { UpdatePartSupplyUseCase } from '@application/use-cases/part-supply/upda
 import { DeletePartSupplyUseCase } from '@application/use-cases/part-supply/delete-part-supply.use-case';
 import { UpdateStockUseCase } from '@application/use-cases/part-supply/update-stock.use-case';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { PartsSuppliesController } from './parts-supplies.controller';
 
 @Module({
@@ -38,8 +39,8 @@ import { PartsSuppliesController } from './parts-supplies.controller';
     },
     {
       provide: 'IUpdateStockUseCase',
-      useFactory: (repo: IPartSupplyRepository) => new UpdateStockUseCase(repo),
-      inject: ['IPartSupplyRepository'],
+      useFactory: (unitOfWork: IUnitOfWork) => new UpdateStockUseCase(unitOfWork),
+      inject: ['IUnitOfWork'],
     },
   ],
 })

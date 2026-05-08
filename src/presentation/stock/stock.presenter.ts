@@ -32,9 +32,7 @@ export class StockPresenter {
   private static toStockMovementResponse(item: StockMovement): StockMovementResponseDto {
     return {
       id: item.id,
-      partSupply: item.partSupply
-        ? StockPresenter.toMovementPartSupply(item)
-        : ({ id: item.partSupplyId } as StockMovementPartSupplyDto),
+      partSupply: StockPresenter.toMovementPartSupply(item),
       workOrder: item.workOrder ? StockPresenter.toMovementWorkOrder(item.workOrder) : null,
       type: item.type,
       quantity: item.quantity,
@@ -46,12 +44,8 @@ export class StockPresenter {
   private static toStockReservationResponse(item: StockReservation): StockReservationResponseDto {
     return {
       id: item.id,
-      partSupply: item.partSupply
-        ? StockPresenter.toReservationPartSupply(item)
-        : ({ id: item.partSupplyId } as StockReservationPartSupplyDto),
-      workOrder: item.workOrder
-        ? StockPresenter.toReservationWorkOrder(item.workOrder)
-        : ({ id: item.workOrderId } as StockReservationWorkOrderDto),
+      partSupply: StockPresenter.toReservationPartSupply(item),
+      workOrder: StockPresenter.toReservationWorkOrder(item.workOrder!),
       quantity: item.quantity,
       createdAt: item.createdAt,
     };
@@ -87,15 +81,15 @@ export class StockPresenter {
             id: wo.customer.id,
             name: wo.customer.name,
             type: wo.customer.type,
-            document: wo.customer.document,
-            phone: wo.customer.phone,
-            email: wo.customer.email,
+            document: wo.customer.document.value,
+            phone: wo.customer.phone.value,
+            email: wo.customer.email.value,
           }
         : null,
       vehicle: wo.vehicle
         ? {
             id: wo.vehicle.id,
-            plate: wo.vehicle.plate,
+            plate: wo.vehicle.plate.value,
             brand: wo.vehicle.brand,
             model: wo.vehicle.model,
             year: wo.vehicle.year,
@@ -106,7 +100,7 @@ export class StockPresenter {
         ? {
             id: wo.assignedUser.id,
             name: wo.assignedUser.name,
-            email: wo.assignedUser.email,
+            email: wo.assignedUser.email.value,
             role: wo.assignedUser.role,
           }
         : null,

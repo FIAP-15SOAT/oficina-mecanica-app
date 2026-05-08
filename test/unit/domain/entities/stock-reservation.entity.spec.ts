@@ -64,12 +64,15 @@ describe('StockReservation Entity', () => {
     });
   });
 
-  describe('constructor()', () => {
+  describe('reconstitute()', () => {
     it('should set props from partial', () => {
       const now = new Date();
       const id = randomUUID();
-      const reservation = new StockReservation({
+      const reservation = StockReservation.reconstitute({
         id,
+        partSupplyId: randomUUID(),
+        workOrderId: randomUUID(),
+        quantity: 1,
         createdAt: now,
       });
 

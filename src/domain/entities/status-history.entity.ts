@@ -14,64 +14,87 @@ export interface CreateStatusHistoryProps {
   notes?: string | null;
 }
 
+interface StatusHistoryProps {
+  id: string;
+  workOrderId: string;
+  changedById: string | null;
+  previousStatus: WorkOrderStatus | null;
+  newStatus: WorkOrderStatus;
+  notes: string | null;
+  createdAt: Date;
+}
+
 export class StatusHistory {
-  id!: string;
-  workOrderId!: string;
-  changedById!: string | null;
-  previousStatus!: WorkOrderStatus | null;
-  newStatus!: WorkOrderStatus;
-  notes!: string | null;
-  createdAt!: Date;
+  readonly id: string;
+  readonly workOrderId: string;
+  readonly changedById: string | null;
+  readonly previousStatus: WorkOrderStatus | null;
+  readonly newStatus: WorkOrderStatus;
+  readonly notes: string | null;
+  readonly createdAt: Date;
 
   changedBy?: User | null;
 
-  constructor(partial: Partial<StatusHistory>) {
-    Object.assign(this, partial);
+  private constructor(props: StatusHistoryProps) {
+    this.id = props.id;
+    this.workOrderId = props.workOrderId;
+    this.changedById = props.changedById;
+    this.previousStatus = props.previousStatus;
+    this.newStatus = props.newStatus;
+    this.notes = props.notes;
+    this.createdAt = props.createdAt;
+  }
+
+  static reconstitute(props: StatusHistoryProps): StatusHistory {
+    return new StatusHistory(props);
   }
 
   static create(props: CreateStatusHistoryProps): StatusHistory {
-    const entity = new StatusHistory({
+    const workOrderId = props.workOrderId;
+    const changedById = props.changedById ?? null;
+    const newStatus = props.newStatus;
+    const notes = props.notes ?? null;
+
+    StatusHistory.validateWorkOrderId(workOrderId);
+    StatusHistory.validateChangedById(changedById);
+    StatusHistory.validateNewStatus(newStatus);
+    StatusHistory.validateNotes(notes);
+
+    return new StatusHistory({
       id: randomUUID(),
-      workOrderId: props.workOrderId,
-      changedById: props.changedById ?? null,
+      workOrderId,
+      changedById,
       previousStatus: props.previousStatus ?? null,
-      newStatus: props.newStatus,
-      notes: props.notes ?? null,
+      newStatus,
+      notes,
       createdAt: new Date(),
     });
-
-    entity.validateWorkOrderId();
-    entity.validateChangedById();
-    entity.validateNewStatus();
-    entity.validateNotes();
-
-    return entity;
   }
 
-  private validateWorkOrderId(): void {
-    if (!this.workOrderId) {
+  private static validateWorkOrderId(workOrderId: string): void {
+    if (!workOrderId) {
       throw new DomainValidationException('ID da ordem de serviço é obrigatório.');
     }
 
-    if (!isUuid(this.workOrderId)) {
+    if (!isUuid(workOrderId)) {
       throw new DomainValidationException('ID da ordem de serviço deve ser um UUID válido.');
     }
   }
 
-  private validateChangedById(): void {
-    if (this.changedById !== null && this.changedById !== undefined && !isUuid(this.changedById)) {
+  private static validateChangedById(changedById: string | null): void {
+    if (changedById !== null && changedById !== undefined && !isUuid(changedById)) {
       throw new DomainValidationException('ID do usuário deve ser um UUID válido.');
     }
   }
 
-  private validateNewStatus(): void {
-    if (!this.newStatus) {
+  private static validateNewStatus(newStatus: WorkOrderStatus): void {
+    if (!newStatus) {
       throw new DomainValidationException('Novo status é obrigatório.');
     }
   }
 
-  private validateNotes(): void {
-    if (this.notes !== null && this.notes !== undefined && this.notes.length > MAX_NOTES_LENGTH) {
+  private static validateNotes(notes: string | null): void {
+    if (notes !== null && notes !== undefined && notes.length > MAX_NOTES_LENGTH) {
       throw new DomainValidationException(
         `Notas devem ter no máximo ${MAX_NOTES_LENGTH} caracteres.`,
       );

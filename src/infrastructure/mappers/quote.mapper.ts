@@ -10,17 +10,18 @@ import { QuotePartSupplyMapper } from './quote-part-supply.mapper';
 
 export type PrismaQuoteWithItems = PrismaQuote & {
   services?: PrismaQuoteService[];
-  parts?: PrismaQuotePartSupply[];
+  partsSupplies?: PrismaQuotePartSupply[];
 };
 
 export class QuoteMapper {
   static toDomain(record: PrismaQuoteWithItems): Quote {
-    const quote = new Quote({
+    return Quote.reconstitute({
       id: record.id,
       workOrderId: record.workOrderId,
       servicesAmount: Number(record.servicesAmount),
       partsAmount: Number(record.partsAmount),
       totalAmount: Number(record.totalAmount),
+      version: record.version,
       status: record.status as QuoteStatus,
       notes: record.notes ?? null,
       sentAt: record.sentAt ?? null,
@@ -28,17 +29,9 @@ export class QuoteMapper {
       rejectedAt: record.rejectedAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      services: record.services ? this.mapServicesToDomain(record.services) : undefined,
+      partsSupplies: record.partsSupplies ? this.mapPartsToDomain(record.partsSupplies) : undefined,
     });
-
-    if (record.services) {
-      quote.services = this.mapServicesToDomain(record.services);
-    }
-
-    if (record.parts) {
-      quote.partsSupplies = this.mapPartsToDomain(record.parts);
-    }
-
-    return quote;
   }
 
   private static mapServicesToDomain(services: PrismaQuoteService[]) {

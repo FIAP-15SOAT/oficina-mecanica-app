@@ -20,7 +20,7 @@ describe('VehicleMapper', () => {
         customer: {
           id: randomUUID(),
           name: 'John Doe',
-          document: '12345678901',
+          document: '12345678909',
           type: CustomerType.INDIVIDUAL,
           email: 'john@example.com',
           phone: '11999999999',
@@ -33,7 +33,7 @@ describe('VehicleMapper', () => {
 
       expect(domainEntity.id).toBe(prismaRecord.id);
       expect(domainEntity.customerId).toBe(prismaRecord.customerId);
-      expect(domainEntity.plate).toBe(prismaRecord.plate);
+      expect(domainEntity.plate.value).toBe('ABC1234');
       expect(domainEntity.brand).toBe(prismaRecord.brand);
       expect(domainEntity.model).toBe(prismaRecord.model);
       expect(domainEntity.year).toBe(prismaRecord.year);

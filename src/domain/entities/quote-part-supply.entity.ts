@@ -1,4 +1,6 @@
+import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { LineItemPrice } from '../value-objects/line-item-price.vo';
 
 export interface CreateQuotePartSupplyProps {
   quoteId: string;
@@ -7,60 +9,102 @@ export interface CreateQuotePartSupplyProps {
   unitPrice: number;
 }
 
-export class QuotePartSupply {
-  quoteId!: string;
-  partSupplyId!: string;
-  quantity!: number;
-  unitPrice!: number;
-  totalPrice!: number;
-  createdAt!: Date;
-  updatedAt!: Date;
+interface QuotePartSupplyProps {
+  quoteId: string;
+  partSupplyId: string;
+  lineItem: LineItemPrice;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<QuotePartSupply>) {
-    Object.assign(this, partial);
+interface ReconstitueQuotePartSupplyProps {
+  quoteId: string;
+  partSupplyId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class QuotePartSupply {
+  readonly quoteId: string;
+  readonly partSupplyId: string;
+  private _lineItem: LineItemPrice;
+  readonly createdAt: Date;
+  updatedAt: Date;
+
+  private constructor(props: QuotePartSupplyProps) {
+    this.quoteId = props.quoteId;
+    this.partSupplyId = props.partSupplyId;
+    this._lineItem = props.lineItem;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  static reconstitute(props: ReconstitueQuotePartSupplyProps): QuotePartSupply {
+    return new QuotePartSupply({
+      quoteId: props.quoteId,
+      partSupplyId: props.partSupplyId,
+      lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   static create(props: CreateQuotePartSupplyProps): QuotePartSupply {
-    const entity = new QuotePartSupply({
+    QuotePartSupply.validateQuoteId(props.quoteId);
+    QuotePartSupply.validatePartSupplyId(props.partSupplyId);
+
+    const now = new Date();
+
+    return new QuotePartSupply({
       quoteId: props.quoteId,
       partSupplyId: props.partSupplyId,
-      quantity: props.quantity,
-      unitPrice: props.unitPrice,
-      totalPrice: props.quantity * props.unitPrice,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      lineItem: LineItemPrice.create(props.quantity, props.unitPrice),
+      createdAt: now,
+      updatedAt: now,
     });
-
-    entity.validateQuantity();
-    entity.validateUnitPrice();
-
-    return entity;
   }
 
   updateQuantity(quantity: number): void {
-    this.quantity = quantity;
-    this.validateQuantity();
-    this.totalPrice = this.quantity * this.unitPrice;
+    this._lineItem = this._lineItem.withQuantity(quantity);
     this.updatedAt = new Date();
   }
 
-  private validateQuantity(): void {
-    if (!Number.isInteger(this.quantity)) {
-      throw new DomainValidationException('Quantidade deve ser um número inteiro');
+  get lineItem(): LineItemPrice {
+    return this._lineItem;
+  }
+
+  get quantity(): number {
+    return this._lineItem.quantity;
+  }
+
+  get unitPrice(): number {
+    return this._lineItem.unitPrice;
+  }
+
+  get totalPrice(): number {
+    return this._lineItem.totalPrice;
+  }
+
+  private static validateQuoteId(quoteId: string): void {
+    if (!quoteId?.trim()) {
+      throw new DomainValidationException('ID do orçamento é obrigatório');
     }
 
-    if (this.quantity <= 0) {
-      throw new DomainValidationException('Quantidade deve ser maior que zero');
+    if (!isUuid(quoteId.trim())) {
+      throw new DomainValidationException('ID do orçamento deve ser um UUID válido');
     }
   }
 
-  private validateUnitPrice(): void {
-    if (!Number.isFinite(this.unitPrice)) {
-      throw new DomainValidationException('Preço unitário inválido');
+  private static validatePartSupplyId(partSupplyId: string): void {
+    if (!partSupplyId?.trim()) {
+      throw new DomainValidationException('ID da peça/insumo é obrigatório');
     }
 
-    if (this.unitPrice <= 0) {
-      throw new DomainValidationException('Preço unitário deve ser maior que zero');
+    if (!isUuid(partSupplyId.trim())) {
+      throw new DomainValidationException('ID da peça/insumo deve ser um UUID válido');
     }
   }
 }

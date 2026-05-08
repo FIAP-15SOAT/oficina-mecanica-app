@@ -3,7 +3,7 @@ import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 
 export class QuotePartSupplyMapper {
   static toDomain(record: PrismaQuotePartSupply): QuotePartSupply {
-    return new QuotePartSupply({
+    return QuotePartSupply.reconstitute({
       quoteId: record.quoteId,
       partSupplyId: record.partSupplyId,
       quantity: record.quantity,
