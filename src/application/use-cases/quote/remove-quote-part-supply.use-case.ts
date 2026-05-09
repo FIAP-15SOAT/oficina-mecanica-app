@@ -1,21 +1,22 @@
 import { Quote } from '@domain/entities/quote.entity';
-import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class RemoveQuotePartSupplyUseCase {
-  constructor(private readonly quoteRepository: IQuoteRepository) {}
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(quoteId: string, partSupplyId: string): Promise<Quote> {
-    const quote = await this.quoteRepository.findByIdWithDetails(quoteId);
+    return this.unitOfWork.executeTransaction(async (repos) => {
+      const quote = await repos.quote.findByIdWithDetails(quoteId);
 
-    if (!quote) {
-      throw new ResourceNotFoundException('Orçamento', quoteId);
-    }
+      if (!quote) {
+        throw new ResourceNotFoundException('Orçamento', quoteId);
+      }
 
-    quote.removePartSupply(partSupplyId);
+      quote.removePartSupply(partSupplyId);
 
-    await this.quoteRepository.removePartSupplyItem(quote, partSupplyId);
-
-    return quote;
+      await repos.quote.removePartSupplyItem(quoteId, partSupplyId);
+      return repos.quote.update(quote);
+    });
   }
 }

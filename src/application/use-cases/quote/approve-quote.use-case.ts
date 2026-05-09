@@ -21,7 +21,7 @@ export class ApproveQuoteUseCase {
 
       const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
 
-      const partsSupplies = quote.partsSupplies ?? [];
+      const partsSupplies = quote.partsSupplies!;
 
       await this.reserveStock(repos, workOrder.id, partsSupplies);
 

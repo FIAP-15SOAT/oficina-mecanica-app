@@ -37,12 +37,19 @@ describe('PrismaQuoteRepository', () => {
         rejectedAt: quote.rejectedAt,
         createdAt: quote.createdAt,
         updatedAt: quote.updatedAt,
+        workOrder: null,
       });
 
       const result = await repository.create(quote);
 
       expect(result.id).toBe(quote.id);
-      expect(prisma.quote.create).toHaveBeenCalled();
+      expect(prisma.quote.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            workOrder: expect.any(Object),
+          }),
+        }),
+      );
     });
   });
 
@@ -74,7 +81,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('findByIdWithDetails', () => {
-    it('should return a quote with services and partsSupplies when found', async () => {
+    it('should return a quote with services, partsSupplies, and workOrder when found', async () => {
       const id = randomUUID();
       prisma.quote.findUnique.mockResolvedValue({
         id,
@@ -84,6 +91,7 @@ describe('PrismaQuoteRepository', () => {
         totalAmount: new Prisma.Decimal(0),
         services: [],
         partsSupplies: [],
+        workOrder: null,
       });
 
       const result = await repository.findByIdWithDetails(id);
@@ -93,7 +101,11 @@ describe('PrismaQuoteRepository', () => {
       expect(prisma.quote.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id },
-          include: { services: true, partsSupplies: true },
+          include: expect.objectContaining({
+            services: { include: { service: true } },
+            partsSupplies: { include: { partSupply: true } },
+            workOrder: expect.objectContaining({ include: expect.any(Object) }),
+          }),
         }),
       );
     });
@@ -139,13 +151,19 @@ describe('PrismaQuoteRepository', () => {
         version: 2,
         createdAt: quote.createdAt,
         updatedAt: quote.updatedAt,
+        workOrder: null,
       });
 
       const result = await repository.update(quote);
 
       expect(result.status).toBe(QuoteStatus.SENT);
       expect(prisma.quote.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: quote.id, version: 1 } }),
+        expect.objectContaining({
+          where: { id: quote.id, version: 1 },
+          include: expect.objectContaining({
+            workOrder: expect.any(Object),
+          }),
+        }),
       );
     });
 
@@ -200,7 +218,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('findByWorkOrderId', () => {
-    it('should return quotes for a work order', async () => {
+    it('should return quotes for a work order with workOrder included', async () => {
       prisma.quote.findMany.mockResolvedValue([
         {
           id: randomUUID(),
@@ -208,12 +226,20 @@ describe('PrismaQuoteRepository', () => {
           servicesAmount: new Prisma.Decimal(0),
           partsAmount: new Prisma.Decimal(0),
           totalAmount: new Prisma.Decimal(0),
+          workOrder: null,
         },
       ]);
 
-      const result = await repository.findByWorkOrderId(randomUUID());
+      const workOrderId = randomUUID();
+      const result = await repository.findByWorkOrderId(workOrderId);
 
       expect(result.length).toBe(1);
+      expect(prisma.quote.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workOrderId },
+          include: expect.objectContaining({ workOrder: expect.any(Object) }),
+        }),
+      );
     });
   });
 
@@ -256,10 +282,10 @@ describe('PrismaQuoteRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      await repository.addServiceItem(quote, item);
+
+      await repository.addServiceItem(item);
 
       expect(prisma.quoteService.create).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
@@ -284,10 +310,9 @@ describe('PrismaQuoteRepository', () => {
       prisma.quoteService.delete.mockResolvedValue({});
       prisma.quote.update.mockResolvedValue({});
 
-      await repository.removeServiceItem(quote, serviceId);
+      await repository.removeServiceItem(quote.id, serviceId);
 
       expect(prisma.quoteService.delete).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
@@ -320,10 +345,10 @@ describe('PrismaQuoteRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      await repository.updateServiceItemQuantity(quote, item);
+
+      await repository.updateServiceItemQuantity(item);
 
       expect(prisma.quoteService.update).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
@@ -356,10 +381,10 @@ describe('PrismaQuoteRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      await repository.addPartSupplyItem(quote, item);
+
+      await repository.addPartSupplyItem(item);
 
       expect(prisma.quotePartSupply.create).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
@@ -384,10 +409,9 @@ describe('PrismaQuoteRepository', () => {
       prisma.quotePartSupply.delete.mockResolvedValue({});
       prisma.quote.update.mockResolvedValue({});
 
-      await repository.removePartSupplyItem(quote, partSupplyId);
+      await repository.removePartSupplyItem(quote.id, partSupplyId);
 
       expect(prisma.quotePartSupply.delete).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
@@ -420,15 +444,15 @@ describe('PrismaQuoteRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      await repository.updatePartSupplyItemQuantity(quote, item);
+
+      await repository.updatePartSupplyItemQuantity(item);
 
       expect(prisma.quotePartSupply.update).toHaveBeenCalled();
-      expect(prisma.quote.update).toHaveBeenCalled();
     });
   });
 
   describe('findAllPaginated', () => {
-    it('should return paginated quotes', async () => {
+    it('should return paginated quotes with workOrder included', async () => {
       prisma.quote.findMany.mockResolvedValue([
         {
           id: randomUUID(),
@@ -436,6 +460,7 @@ describe('PrismaQuoteRepository', () => {
           servicesAmount: new Prisma.Decimal(0),
           partsAmount: new Prisma.Decimal(0),
           totalAmount: new Prisma.Decimal(0),
+          workOrder: null,
         },
       ]);
       prisma.quote.count.mockResolvedValue(1);
@@ -444,6 +469,11 @@ describe('PrismaQuoteRepository', () => {
 
       expect(result.total).toBe(1);
       expect(result.items.length).toBe(1);
+      expect(prisma.quote.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({ workOrder: expect.any(Object) }),
+        }),
+      );
     });
 
     it('should apply filters correctly', async () => {

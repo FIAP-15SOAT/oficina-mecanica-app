@@ -14,6 +14,19 @@ import { ISubmitQuoteUseCase } from '@domain/interfaces/use-cases/quote/submit-q
 import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@domain/interfaces/use-cases/quote/update-quote-status.use-case.interface';
 import { IFindAllQuotesPaginatedUseCase } from '@domain/interfaces/use-cases/quote/find-all-quotes-paginated.use-case.interface';
+import { createMockQuote } from '../../../helpers/quote-mock.factory';
+import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+
+function buildMockQuoteWithWorkOrder(): Quote {
+  const customer = createMockCustomer();
+  const vehicle = createMockVehicle({ customerId: customer.id });
+  const workOrder = createMockWorkOrder({ customer, vehicle });
+  const quote = createMockQuote({ services: [], partsSupplies: [] });
+  quote.workOrder = workOrder;
+  return quote;
+}
 
 describe('QuoteController', () => {
   let controller: QuoteController;
@@ -62,23 +75,23 @@ describe('QuoteController', () => {
 
   it('should create a quote', async () => {
     const dto = { workOrderId: randomUUID(), notes: 'test' };
-    const quote = { id: randomUUID(), ...dto };
-    createQuoteUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    createQuoteUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.create(dto);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(createQuoteUseCase.execute).toHaveBeenCalledWith(dto);
   });
 
   it('should find one quote', async () => {
     const id = randomUUID();
-    const quote = { id, services: [], partsSupplies: [] };
-    findQuoteByIdUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    findQuoteByIdUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.findOne(id);
 
-    expect(result).toEqual(QuotePresenter.toWithItemsResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toWithItemsResponse(quote));
     expect(findQuoteByIdUseCase.execute).toHaveBeenCalledWith(id);
   });
 
@@ -86,12 +99,12 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const serviceId = randomUUID();
     const dto = { quantity: 2 };
-    const quote = { id };
-    addQuoteServiceUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    addQuoteServiceUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.addService(id, serviceId, dto);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(addQuoteServiceUseCase.execute).toHaveBeenCalledWith({ quoteId: id, serviceId, ...dto });
   });
 
@@ -99,12 +112,12 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const serviceId = randomUUID();
     const dto = { quantity: 3 };
-    const quote = { id };
-    updateQuoteServiceQuantityUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    updateQuoteServiceQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updateService(id, serviceId, dto);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(updateQuoteServiceQuantityUseCase.execute).toHaveBeenCalledWith({
       quoteId: id,
       serviceId,
@@ -126,12 +139,12 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
     const dto = { quantity: 2 };
-    const quote = { id };
-    addQuotePartSupplyUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    addQuotePartSupplyUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.addPartSupply(id, partSupplyId, dto);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(addQuotePartSupplyUseCase.execute).toHaveBeenCalledWith({
       quoteId: id,
       partSupplyId,
@@ -143,12 +156,12 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
     const dto = { quantity: 3 };
-    const quote = { id };
-    updateQuotePartSupplyQuantityUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    updateQuotePartSupplyQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updatePartSupply(id, partSupplyId, dto);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(updateQuotePartSupplyQuantityUseCase.execute).toHaveBeenCalledWith({
       quoteId: id,
       partSupplyId,
@@ -168,12 +181,12 @@ describe('QuoteController', () => {
 
   it('should submit a quote', async () => {
     const id = randomUUID();
-    const quote = { id };
-    submitQuoteUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    submitQuoteUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.submit(id);
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(submitQuoteUseCase.execute).toHaveBeenCalledWith(id);
   });
 
@@ -181,8 +194,8 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const userId = randomUUID();
     const dto = { status: 'APPROVED' };
-    const quote = { id };
-    updateQuoteStatusUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    updateQuoteStatusUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updateStatus(
       id,
@@ -190,7 +203,7 @@ describe('QuoteController', () => {
       { sub: userId } as unknown as Parameters<typeof controller.updateStatus>[2],
     );
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(updateQuoteStatusUseCase.execute).toHaveBeenCalledWith(id, userId, dto);
   });
 
@@ -198,15 +211,15 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const action = 'approve';
     const token = 'token123';
-    const quote = { id };
-    emailDecisionQuoteUseCase.execute.mockResolvedValue(quote as unknown as Quote);
+    const quote = buildMockQuoteWithWorkOrder();
+    emailDecisionQuoteUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.emailDecision(id, {
       action: action as unknown as Parameters<typeof controller.emailDecision>[1]['action'],
       token,
     });
 
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote as unknown as Quote));
+    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, action, token);
   });
 

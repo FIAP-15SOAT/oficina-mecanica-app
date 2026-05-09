@@ -8,7 +8,6 @@ export function createMockWorkOrderService(
   const now = new Date();
 
   return WorkOrderService.reconstitute({
-    id: randomUUID(),
     workOrderId: randomUUID(),
     serviceId: randomUUID(),
     quantity: 1,

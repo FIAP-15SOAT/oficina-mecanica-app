@@ -1,9 +1,17 @@
-﻿import type { QuotePartSupply as PrismaQuotePartSupply } from '@generated/client';
+﻿import type {
+  QuotePartSupply as PrismaQuotePartSupply,
+  PartSupply as PrismaPartSupply,
+} from '@generated/client';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
+import { PartSupplyMapper } from './part-supply.mapper';
+
+type PrismaQuotePartSupplyWithRelation = PrismaQuotePartSupply & {
+  partSupply?: PrismaPartSupply | null;
+};
 
 export class QuotePartSupplyMapper {
-  static toDomain(record: PrismaQuotePartSupply): QuotePartSupply {
-    return QuotePartSupply.reconstitute({
+  static toDomain(record: PrismaQuotePartSupplyWithRelation): QuotePartSupply {
+    const item = QuotePartSupply.reconstitute({
       quoteId: record.quoteId,
       partSupplyId: record.partSupplyId,
       quantity: record.quantity,
@@ -12,5 +20,11 @@ export class QuotePartSupplyMapper {
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
+
+    if (record.partSupply) {
+      item.partSupply = PartSupplyMapper.toDomain(record.partSupply);
+    }
+
+    return item;
   }
 }

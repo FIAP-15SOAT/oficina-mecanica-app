@@ -156,7 +156,7 @@ describe('Quote (E2E)', () => {
       expect(res.body.data).toEqual(
         expect.objectContaining({
           id: expect.any(String),
-          workOrderId,
+          workOrder: expect.objectContaining({ id: workOrderId }),
           status: 'PENDING',
           totalAmount: 0,
         }),
@@ -191,7 +191,7 @@ describe('Quote (E2E)', () => {
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────
 
   describe('GET /api/quotes/:id', () => {
-    it('should return a quote by id', async () => {
+    it('should return a quote by id with workOrder object', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -207,6 +207,11 @@ describe('Quote (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.id).toBe(quoteId);
+      expect(res.body.data.workOrder).toBeDefined();
+      expect(res.body.data.workOrder.id).toBe(workOrderId);
+      expect(res.body.data.workOrder.services).toBeUndefined();
+      expect(res.body.data.workOrder.partSupplies).toBeUndefined();
+      expect((res.body.data as Record<string, unknown>)['workOrderId']).toBeUndefined();
     });
 
     it('should return 422 for non-existent quote', async () => {
@@ -247,9 +252,12 @@ describe('Quote (E2E)', () => {
 
       expect(res.body.data.services).toHaveLength(1);
       expect(res.body.data.partsSupplies).toHaveLength(1);
-      expect(res.body.data.services[0].serviceId).toBe(service.id);
+      expect(res.body.data.services[0].id).toBe(service.id);
+      expect(res.body.data.services[0].name).toBeDefined();
       expect(res.body.data.services[0].quantity).toBe(2);
-      expect(res.body.data.partsSupplies[0].partSupplyId).toBe(part.id);
+      expect(res.body.data.partsSupplies[0].id).toBe(part.id);
+      expect(res.body.data.partsSupplies[0].name).toBeDefined();
+      expect(res.body.data.partsSupplies[0].sku).toBeDefined();
       expect(res.body.data.partsSupplies[0].quantity).toBe(3);
     });
   });
@@ -795,7 +803,7 @@ describe('Quote (E2E)', () => {
     });
   });
   describe('GET /api/quotes/:id/decisions', () => {
-    it('should approve quote via email link', async () => {
+    it('should approve quote via email link and status history changedBy is null', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
       const createRes = await request(httpServer)
@@ -828,6 +836,17 @@ describe('Quote (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.status).toBe('APPROVED');
+
+      const historyRes = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}/status-history`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const approvalEntry = (
+        historyRes.body.data as Array<{ newStatus: string; changedBy: unknown }>
+      ).find((e) => e.newStatus === 'APPROVED');
+      expect(approvalEntry).toBeDefined();
+      expect(approvalEntry!.changedBy).toBeNull();
     });
 
     it('should reject quote via email link', async () => {
@@ -1333,8 +1352,11 @@ describe('Quote (E2E)', () => {
         expect(res.body.pagination.page).toBe(1);
         expect(res.body.pagination.limit).toBe(10);
         expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-        expect(res.body.data[0].services).toBeDefined();
-        expect(res.body.data[0].partsSupplies).toBeDefined();
+        expect(res.body.data[0].workOrder).toBeDefined();
+        expect(res.body.data[0].workOrder.id).toBeDefined();
+        expect((res.body.data[0] as Record<string, unknown>)['workOrderId']).toBeUndefined();
+        expect(res.body.data[0].services).toBeUndefined();
+        expect(res.body.data[0].partsSupplies).toBeUndefined();
       });
 
       it('should filter quotes by workOrderId (GET /api/quotes?workOrderId=...)', async () => {
@@ -1353,7 +1375,7 @@ describe('Quote (E2E)', () => {
           .expect(200);
 
         expect(res.body.data).toHaveLength(1);
-        expect(res.body.data[0].workOrderId).toBe(wo1.workOrderId);
+        expect(res.body.data[0].workOrder.id).toBe(wo1.workOrderId);
       });
 
       it('should filter quotes by status (GET /api/quotes?status=...)', async () => {
@@ -1410,9 +1432,11 @@ describe('Quote (E2E)', () => {
 
         expect(res.body.data).toBeInstanceOf(Array);
         expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-        expect(res.body.data[0].workOrderId).toBe(wo.workOrderId);
-        expect(res.body.data[0].services).toBeDefined();
-        expect(res.body.data[0].partsSupplies).toBeDefined();
+        expect(res.body.data[0].workOrder).toBeDefined();
+        expect(res.body.data[0].workOrder.id).toBe(wo.workOrderId);
+        expect((res.body.data[0] as Record<string, unknown>)['workOrderId']).toBeUndefined();
+        expect(res.body.data[0].services).toBeUndefined();
+        expect(res.body.data[0].partsSupplies).toBeUndefined();
       });
 
       it('should return 404 when listing quotes for non-existent work order', async () => {

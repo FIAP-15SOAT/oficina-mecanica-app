@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-reservations.use-case.interface';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 
 describe('StockReservationsController', () => {
   let controller: StockReservationsController;
@@ -18,7 +20,9 @@ describe('StockReservationsController', () => {
       const page = 1;
       const limit = 10;
       const partSupply = createMockPartSupply();
-      const workOrder = createMockWorkOrder();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id, customer });
+      const workOrder = createMockWorkOrder({ customer, vehicle });
       const resultUseCase = {
         items: [
           {

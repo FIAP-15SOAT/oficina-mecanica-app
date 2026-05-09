@@ -4,6 +4,7 @@ import { QuoteService } from './quote-service.entity';
 import { QuotePartSupply } from './quote-part-supply.entity';
 import { Service } from './service.entity';
 import { PartSupply } from './part-supply.entity';
+import { WorkOrder } from './work-order.entity';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { EntityNotFoundException } from '../exceptions/entity-not-found.exception';
@@ -49,6 +50,7 @@ export class Quote {
   readonly createdAt: Date;
   updatedAt: Date;
 
+  workOrder?: WorkOrder;
   private _services?: QuoteService[];
   private _partsSupplies?: QuotePartSupply[];
 

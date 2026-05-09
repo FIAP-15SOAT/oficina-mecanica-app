@@ -72,7 +72,8 @@ describe('ApproveQuoteUseCase', () => {
   });
 
   it('should handle null userId when not provided', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [], partsSupplies: [] });
+
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,
@@ -109,7 +110,8 @@ describe('ApproveQuoteUseCase', () => {
   });
 
   it('should propagate ConcurrencyException when workOrder is concurrently modified', async () => {
-    const quote = createMockQuote({ status: QuoteStatus.SENT });
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [], partsSupplies: [] });
+
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.AWAITING_APPROVAL,

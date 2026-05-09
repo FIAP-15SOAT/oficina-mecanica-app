@@ -4,6 +4,7 @@ import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 
 export function createMockQuote(overrides: Partial<Quote> = {}): Quote {
   const now = new Date();
@@ -69,5 +70,17 @@ export function createMockQuoteRepository(): jest.Mocked<IQuoteRepository> {
     addPartSupplyItem: jest.fn(),
     removePartSupplyItem: jest.fn(),
     updatePartSupplyItemQuantity: jest.fn(),
+  };
+}
+
+export function createMockUnitOfWork(
+  quoteRepo: jest.Mocked<IQuoteRepository>,
+): jest.Mocked<IUnitOfWork> {
+  return {
+    executeTransaction: jest
+      .fn()
+      .mockImplementation((work: (repos: IRepositories) => unknown) =>
+        work({ quote: quoteRepo } as unknown as IRepositories),
+      ),
   };
 }

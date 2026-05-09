@@ -22,7 +22,7 @@ export class RejectQuoteUseCase {
 
       workOrder.changeStatus(WorkOrderStatus.REJECTED);
 
-      await Promise.all([
+      const [updatedQuote] = await Promise.all([
         repos.quote.update(quote),
         repos.workOrder.update(workOrder),
         repos.statusHistory.create(
@@ -36,7 +36,7 @@ export class RejectQuoteUseCase {
         ),
       ]);
 
-      return quote;
+      return updatedQuote;
     });
   }
 }

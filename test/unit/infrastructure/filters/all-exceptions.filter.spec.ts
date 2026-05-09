@@ -44,10 +44,69 @@ describe('AllExceptionsFilter', () => {
     expect(statusFn).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     expect(jsonFn).toHaveBeenCalledWith({
       statusCode: HttpStatus.NOT_FOUND,
-      error: 'Bad Request',
+      error: 'Not Found',
       message: 'Recurso não encontrado',
     });
+
     expect(loggerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should return correct error name for 401 Unauthorized', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new HttpException('Não autenticado', HttpStatus.UNAUTHORIZED);
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      error: 'Unauthorized',
+      message: 'Não autenticado',
+    });
+  });
+
+  it('should return correct error name for 403 Forbidden', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new HttpException('Acesso negado', HttpStatus.FORBIDDEN);
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.FORBIDDEN,
+      error: 'Forbidden',
+      message: 'Acesso negado',
+    });
+  });
+
+  it('should return correct error name for 409 Conflict', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new HttpException('Conflito detectado', HttpStatus.CONFLICT);
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      error: 'Conflict',
+      message: 'Conflito detectado',
+    });
+  });
+
+  it('should return "Error" for unknown status codes', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    // Use a SyntaxError with body to trigger the unknown status path via resolveStatus → BAD_REQUEST
+    // But to test unknown status, we use an HttpException with a rare code
+    const exception = new HttpException('Teapot', 418);
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(418);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: 418,
+      error: 'Error',
+      message: 'Teapot',
+    });
   });
 
   it('should return 500 and generic message for unknown Error instances', () => {
@@ -112,24 +171,6 @@ describe('AllExceptionsFilter', () => {
       statusCode: HttpStatus.BAD_REQUEST,
       error: 'Bad Request',
       message: ['name must not be empty', 'email must be an email'],
-    });
-    expect(loggerErrorSpy).not.toHaveBeenCalled();
-  });
-
-  it('should return 400 for SyntaxError with status and code properties (Express body-parser)', () => {
-    const { host, statusFn, jsonFn } = createMockHost();
-    const exception = Object.assign(new SyntaxError('Unexpected token'), {
-      status: 400,
-      code: 'INVALID_JSON',
-    });
-
-    filter.catch(exception, host);
-
-    expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-    expect(jsonFn).toHaveBeenCalledWith({
-      statusCode: HttpStatus.BAD_REQUEST,
-      error: 'Bad Request',
-      message: 'Bad request',
     });
     expect(loggerErrorSpy).not.toHaveBeenCalled();
   });

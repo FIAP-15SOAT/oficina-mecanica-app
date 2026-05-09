@@ -633,5 +633,27 @@ describe('WorkOrder Entity', () => {
       expect(result.partSupplies).toHaveLength(0);
       expect(wo.totalAmount).toBe(0);
     });
+
+    it('should treat undefined services as empty array', () => {
+      const qPart = createMockQuotePartSupply();
+      const quote = createMockQuote({ partsSupplies: [qPart] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(0);
+      expect(result.partSupplies).toHaveLength(1);
+    });
+
+    it('should treat undefined partsSupplies as empty array', () => {
+      const qService = createMockQuoteService();
+      const quote = createMockQuote({ services: [qService] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(1);
+      expect(result.partSupplies).toHaveLength(0);
+    });
   });
 });

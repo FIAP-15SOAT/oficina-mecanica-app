@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
+import { Unit } from '@domain/enums/unit.enum';
 import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { WorkOrderResponseDto } from '../../work-order/dto/work-order-response.dto';
 
 export class QuoteServiceItemResponseDto {
   @ApiProperty({
@@ -8,7 +11,17 @@ export class QuoteServiceItemResponseDto {
     format: 'uuid',
     example: '4f7ce3e3-672d-472a-b2d4-a896809015e6',
   })
-  serviceId!: string;
+  id!: string;
+
+  @ApiProperty({ description: 'Nome do serviço', example: 'Troca de óleo' })
+  name!: string;
+
+  @ApiPropertyOptional({
+    description: 'Descrição do serviço',
+    nullable: true,
+    example: 'Troca de óleo com filtro',
+  })
+  description!: string | null;
 
   @ApiProperty({ description: 'Quantidade', example: 2 })
   quantity!: number;
@@ -35,7 +48,37 @@ export class QuotePartSupplyItemResponseDto {
     format: 'uuid',
     example: 'a2e1790b-fc57-4855-8749-268b6ce72d21',
   })
-  partSupplyId!: string;
+  id!: string;
+
+  @ApiProperty({ description: 'Nome da peça/insumo', example: 'Filtro de Óleo' })
+  name!: string;
+
+  @ApiPropertyOptional({
+    description: 'Descrição detalhada',
+    nullable: true,
+    example: 'Filtro para motor 1.0',
+  })
+  description!: string | null;
+
+  @ApiProperty({ description: 'SKU único no Estoque', example: 'FO-001' })
+  sku!: string;
+
+  @ApiPropertyOptional({
+    description: 'Número de referência do fabricante',
+    nullable: true,
+    example: 'MANN-W712',
+  })
+  partNumber!: string | null;
+
+  @ApiProperty({
+    enum: PartSupplyCategory,
+    description: 'Categoria: PART (Peça) ou SUPPLY (Insumo)',
+    example: PartSupplyCategory.PART,
+  })
+  category!: PartSupplyCategory;
+
+  @ApiProperty({ enum: Unit, description: 'Unidade de medida', example: Unit.UN })
+  unit!: Unit;
 
   @ApiProperty({ description: 'Quantidade', example: 1 })
   quantity!: number;
@@ -65,11 +108,10 @@ export class QuoteResponseDto {
   id!: string;
 
   @ApiProperty({
-    description: 'ID da Ordem de Serviço associada',
-    format: 'uuid',
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    description: 'Dados da Ordem de Serviço associada',
+    type: [WorkOrderResponseDto],
   })
-  workOrderId!: string;
+  workOrder!: WorkOrderResponseDto;
 
   @ApiProperty({
     description: 'Status do orçamento',
@@ -144,11 +186,11 @@ export class QuoteWithItemsDataResponseDto {
 }
 
 export class QuoteListResponseDto {
-  @ApiProperty({ type: [QuoteWithItemsResponseDto] })
-  data!: QuoteWithItemsResponseDto[];
+  @ApiProperty({ type: [QuoteResponseDto] })
+  data!: QuoteResponseDto[];
 }
 
-export class QuotePaginatedResponseDto extends PaginatedResponseDto<QuoteWithItemsResponseDto> {
-  @ApiProperty({ type: [QuoteWithItemsResponseDto] })
-  data!: QuoteWithItemsResponseDto[];
+export class QuotePaginatedResponseDto extends PaginatedResponseDto<QuoteResponseDto> {
+  @ApiProperty({ type: [QuoteResponseDto] })
+  data!: QuoteResponseDto[];
 }
