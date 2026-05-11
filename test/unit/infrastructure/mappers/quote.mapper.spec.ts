@@ -87,8 +87,8 @@ describe('QuoteMapper', () => {
 
       expect(domainEntity.services).toHaveLength(1);
       expect(domainEntity.partsSupplies).toHaveLength(1);
-      expect(domainEntity.services![0].unitPrice).toBe(100);
-      expect(domainEntity.partsSupplies![0].unitPrice).toBe(25);
+      expect(domainEntity.services[0].unitPrice).toBe(100);
+      expect(domainEntity.partsSupplies[0].unitPrice).toBe(25);
     });
 
     it('should enrich entity with workOrder relation when present', () => {

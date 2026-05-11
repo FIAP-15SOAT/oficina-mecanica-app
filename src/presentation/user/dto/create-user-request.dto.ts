@@ -1,7 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/user.constants';
+import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
+import {
+  MIN_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+} from '@domain/constants/validation/user.constants';
 
 export class CreateUserRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
@@ -20,9 +33,13 @@ export class CreateUserRequestDto {
   @IsNotEmpty({ message: 'O e-mail é obrigatório' })
   email!: string;
 
-  @ApiProperty({ example: 'Senha@123', description: 'Senha (mín. 6 caracteres)' })
+  @ApiProperty({
+    example: 'Senha@123',
+    description:
+      'Senha (mín. 8 caracteres, com ao menos uma letra maiúscula, uma minúscula, um número e um caractere especial)',
+  })
   @IsString({ message: 'A senha deve ser um texto.' })
-  @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
+  @Matches(PASSWORD_REGEX, { message: PASSWORD_REQUIREMENTS_MESSAGE })
   password!: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT, description: 'Role do usuário' })

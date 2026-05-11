@@ -13,7 +13,10 @@ import { WorkOrderService } from './work-order-service.entity';
 import { WorkOrderPartSupply } from './work-order-part-supply.entity';
 import { Quote } from './quote.entity';
 
-import { MAX_PROBLEM_DESCRIPTION_LENGTH, MAX_INTERNAL_NOTES_LENGTH } from '../constants/validation/work-order.constants';
+import {
+  MAX_PROBLEM_DESCRIPTION_LENGTH,
+  MAX_INTERNAL_NOTES_LENGTH,
+} from '../constants/validation/work-order.constants';
 
 export interface CreateWorkOrderProps {
   number: string;

@@ -89,6 +89,23 @@ describe('User (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when password does not meet the strength policy', async () => {
+      const res = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Senha Fraca',
+          email: 'fraca@e2e.test',
+          password: '12345678',
+          role: 'MECHANIC',
+        })
+        .expect(400);
+
+      expect(res.body.message).toEqual(
+        expect.arrayContaining([expect.stringContaining('caractere especial')]),
+      );
+    });
+
     it('should return 400 when name is shorter than the minimum length', async () => {
       await request(httpServer)
         .post('/api/users')
@@ -399,6 +416,18 @@ describe('User (E2E)', () => {
         .post('/api/auth/login')
         .send({ email: 'updateme@e2e.test', password: 'NewPassword@123' })
         .expect(200);
+    });
+
+    it('should return 400 when updating to a password that does not meet the strength policy', async () => {
+      const res = await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ password: 'fraquinha' })
+        .expect(400);
+
+      expect(res.body.message).toEqual(
+        expect.arrayContaining([expect.stringContaining('caractere especial')]),
+      );
     });
   });
 

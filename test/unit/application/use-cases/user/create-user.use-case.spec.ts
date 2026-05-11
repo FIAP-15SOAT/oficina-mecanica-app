@@ -1,4 +1,5 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
 import {
   createMockHashService,
@@ -41,6 +42,21 @@ describe('CreateUserUseCase', () => {
     expect(result.name).toBe('Lucas Almeida');
     expect(result.role).toBe(UserRole.MECHANIC);
     expect(hashService.hash).toHaveBeenCalledWith('Senha@123');
+  });
+
+  it('should throw DomainValidationException if password is weak', async () => {
+    await expect(
+      useCase.execute({
+        name: 'Lucas Almeida',
+        email: 'lucas@email.com',
+        password: '123456',
+        role: UserRole.MECHANIC,
+      }),
+    ).rejects.toThrow(DomainValidationException);
+
+    expect(userRepository.findByEmail).not.toHaveBeenCalled();
+    expect(hashService.hash).not.toHaveBeenCalled();
+    expect(userRepository.create).not.toHaveBeenCalled();
   });
 
   it('should throw ResourceConflictException if email already exists', async () => {

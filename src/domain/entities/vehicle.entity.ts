@@ -4,7 +4,14 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { Customer } from './customer.entity';
 import { Plate } from '../value-objects/plate.vo';
 
-import { MIN_BRAND_LENGTH, MAX_BRAND_LENGTH, MIN_MODEL_LENGTH, MAX_MODEL_LENGTH, MAX_COLOR_LENGTH, MIN_YEAR } from '../constants/validation/vehicle.constants';
+import {
+  MIN_BRAND_LENGTH,
+  MAX_BRAND_LENGTH,
+  MIN_MODEL_LENGTH,
+  MAX_MODEL_LENGTH,
+  MAX_COLOR_LENGTH,
+  MIN_YEAR,
+} from '../constants/validation/vehicle.constants';
 
 export interface CreateVehicleProps {
   customerId: string;

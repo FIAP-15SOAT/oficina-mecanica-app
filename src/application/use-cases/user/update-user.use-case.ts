@@ -1,5 +1,6 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { User } from '@domain/entities/user.entity';
 import { IHashService } from '@domain/interfaces/services/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import {
@@ -44,7 +45,10 @@ export class UpdateUserUseCase {
     }
 
     if (updateUserDto.password !== undefined) {
+      User.validatePasswordStrength(updateUserDto.password);
+
       const passwordHash = await this.hashService.hash(updateUserDto.password);
+
       user.changePassword(passwordHash);
     }
 

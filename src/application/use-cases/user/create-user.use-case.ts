@@ -14,6 +14,8 @@ export class CreateUserUseCase {
   ) {}
 
   async execute(createUserDto: CreateUserDto): Promise<CreateUserOutputDto> {
+    User.validatePasswordStrength(createUserDto.password);
+
     const existing = await this.userRepository.findByEmail(
       createUserDto.email.trim().toLowerCase(),
     );

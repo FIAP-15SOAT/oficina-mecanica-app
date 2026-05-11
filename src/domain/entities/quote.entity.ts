@@ -35,7 +35,6 @@ interface QuoteProps {
   partsSupplies?: QuotePartSupply[];
 }
 
-
 export class Quote {
   readonly id: string;
   readonly workOrderId: string;
