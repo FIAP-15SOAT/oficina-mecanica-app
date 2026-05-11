@@ -503,7 +503,7 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | DELETE | `/:id/parts-supplies/:partSupplyId` | Remover peça/insumo do orçamento | ADMIN, MECHANIC, ATTENDANT |
 | POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail com links assinados) | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id` | Aprovar (ou rejeitar com `reason`) orçamento manualmente | ADMIN, ATTENDANT |
-| GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?token=...` | Público |
+| GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?token=...` (a ação é derivada do payload do token) | Público |
 
 > Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais orçamentos pendentes da mesma OS. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
 
