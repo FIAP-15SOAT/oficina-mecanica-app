@@ -6,7 +6,7 @@ export class PaginationDto {
   @ApiPropertyOptional({ description: 'Número da página', minimum: 1, default: 1, example: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsInt({ message: 'A página deve ser um número inteiro.' })
   @Min(1, { message: 'A página deve ser no mínimo 1.' })
   page?: number;
 
@@ -19,7 +19,7 @@ export class PaginationDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsInt({ message: 'O limite deve ser um número inteiro.' })
   @Min(1, { message: 'O limite deve ser no mínimo 1.' })
   @Max(100, { message: 'O limite deve ser no máximo 100.' })
   limit?: number;

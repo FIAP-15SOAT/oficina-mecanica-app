@@ -1,5 +1,6 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
 import {
   createMockHashService,
@@ -86,6 +87,18 @@ describe('UpdateUserUseCase', () => {
     await useCase.execute('user-uuid-123', { password: 'NovaSenha@123' });
 
     expect(hashService.hash).toHaveBeenCalledWith('NovaSenha@123');
+  });
+
+  it('should throw DomainValidationException if new password is weak', async () => {
+    const user = createMockUser();
+    userRepository.findById.mockResolvedValue(user);
+
+    await expect(useCase.execute('user-uuid-123', { password: 'weak' })).rejects.toThrow(
+      DomainValidationException,
+    );
+
+    expect(hashService.hash).not.toHaveBeenCalled();
+    expect(userRepository.update).not.toHaveBeenCalled();
   });
 
   it('should throw ResourceNotFoundException if user does not exist', async () => {

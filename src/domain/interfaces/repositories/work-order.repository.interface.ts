@@ -22,7 +22,7 @@ export interface IWorkOrderRepository {
   ): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;
-  addServiceItems(workOrder: WorkOrder, items: WorkOrderService[]): Promise<void>;
+  addServiceItems(items: WorkOrderService[]): Promise<void>;
   updateServiceItemStatus(workOrder: WorkOrder, item: WorkOrderService): Promise<void>;
-  addPartSupplyItems(workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void>;
+  addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void>;
 }

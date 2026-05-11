@@ -10,7 +10,9 @@ export class FilterUsersDto {
     example: UserRole.MECHANIC,
   })
   @IsOptional()
-  @IsEnum(UserRole)
+  @IsEnum(UserRole, {
+    message: `role deve ser um dos seguintes: ${Object.values(UserRole).join(', ')}`,
+  })
   role?: UserRole;
 
   @ApiPropertyOptional({
@@ -18,7 +20,7 @@ export class FilterUsersDto {
     example: 'João Silva',
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'O nome deve ser um texto.' })
   name?: string;
 }
 

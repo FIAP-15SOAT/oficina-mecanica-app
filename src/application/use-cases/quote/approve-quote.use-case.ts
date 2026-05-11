@@ -19,7 +19,7 @@ export class ApproveQuoteUseCase {
 
       quote.approve();
 
-      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+      const workOrder = (await repos.workOrder.findByIdWithDetails(quote.workOrderId))!;
 
       const partsSupplies = quote.partsSupplies;
 
@@ -33,8 +33,8 @@ export class ApproveQuoteUseCase {
         workOrder.applyQuoteItems(quote);
 
       await Promise.all([
-        repos.workOrder.addServiceItems(workOrder, woServices),
-        repos.workOrder.addPartSupplyItems(workOrder, woPartSupplies),
+        repos.workOrder.addServiceItems(woServices),
+        repos.workOrder.addPartSupplyItems(woPartSupplies),
         repos.quote.update(quote),
         repos.quote.rejectPendingByWorkOrderId(workOrder.id),
         repos.workOrder.update(workOrder),

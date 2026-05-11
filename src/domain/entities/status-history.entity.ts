@@ -4,7 +4,7 @@ import { WorkOrderStatus } from '../enums/work-order-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { User } from './user.entity';
 
-const MAX_NOTES_LENGTH = 2000;
+import { MAX_STATUS_NOTES_LENGTH as MAX_NOTES_LENGTH } from '../constants/validation/work-order.constants';
 
 export interface CreateStatusHistoryProps {
   workOrderId: string;

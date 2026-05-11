@@ -1,6 +1,7 @@
 import { UserRole } from '@domain/enums/user-role.enum';
 import { User } from '@domain/entities/user.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/user.constants';
 import { Email } from '@domain/value-objects/email.vo';
 
 describe('User Entity', () => {
@@ -162,6 +163,46 @@ describe('User Entity', () => {
 
       expect(() => user.changePassword('')).toThrow(DomainValidationException);
       expect(() => user.changePassword('')).toThrow('Hash de senha não pode ser vazio');
+    });
+  });
+
+  describe('validatePasswordStrength', () => {
+    it('should accept a strong password', () => {
+      expect(() => User.validatePasswordStrength('Senha@123')).not.toThrow();
+      expect(() => User.validatePasswordStrength('Tech@2026')).not.toThrow();
+    });
+
+    it('should throw if password is shorter than 8 characters', () => {
+      expect(() => User.validatePasswordStrength('Ab@1cd')).toThrow(DomainValidationException);
+      expect(() => User.validatePasswordStrength('Ab@1cd')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+    });
+
+    it('should throw if password has no uppercase letter', () => {
+      expect(() => User.validatePasswordStrength('senha@123')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
+    });
+
+    it('should throw if password has no lowercase letter', () => {
+      expect(() => User.validatePasswordStrength('SENHA@123')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
+    });
+
+    it('should throw if password has no digit', () => {
+      expect(() => User.validatePasswordStrength('Senha@abc')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
+    });
+
+    it('should throw if password has no special character', () => {
+      expect(() => User.validatePasswordStrength('Senha1234')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
+    });
+
+    it('should throw if password is empty', () => {
+      expect(() => User.validatePasswordStrength('')).toThrow(DomainValidationException);
     });
   });
 

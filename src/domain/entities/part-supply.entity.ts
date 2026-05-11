@@ -5,11 +5,13 @@ import { PartSupplyCategory } from '../enums/part-supply-category.enum';
 import { Unit } from '../enums/unit.enum';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
-const MAX_SKU_LENGTH = 60;
-const MAX_PART_NUMBER_LENGTH = 60;
-const MAX_DESCRIPTION_LENGTH = 500;
+import {
+  MIN_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_SKU_LENGTH,
+  MAX_PART_NUMBER_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+} from '../constants/validation/part-supply.constants';
 
 export interface CreatePartSupplyProps {
   name: string;
@@ -21,6 +23,19 @@ export interface CreatePartSupplyProps {
   costPrice: number;
   salePrice: number;
   stock?: number;
+  minStock?: number;
+  expiresAt?: Date;
+}
+
+export interface UpdatePartSupplyProps {
+  name: string;
+  description?: string;
+  sku: string;
+  partNumber?: string;
+  category: PartSupplyCategory;
+  unit: Unit;
+  costPrice: number;
+  salePrice: number;
   minStock?: number;
   expiresAt?: Date;
 }
@@ -144,8 +159,8 @@ export class PartSupply {
     this.updatedAt = new Date();
   }
 
-  update(props: CreatePartSupplyProps): void {
-    PartSupply.validateProps(props);
+  update(props: UpdatePartSupplyProps): void {
+    PartSupply.validateUpdateProps(props);
 
     this.name = props.name.trim();
     this.description = props.description?.trim() ?? null;
@@ -168,6 +183,17 @@ export class PartSupply {
     PartSupply.validateCostPrice(props.costPrice);
     PartSupply.validateSalePrice(props.salePrice);
     PartSupply.validateStock(props.stock ?? 0);
+    PartSupply.validateMinStock(props.minStock ?? 0);
+    PartSupply.validateExpiresAt(props.expiresAt ?? null);
+  }
+
+  private static validateUpdateProps(props: UpdatePartSupplyProps): void {
+    PartSupply.validateName(props.name);
+    PartSupply.validateSku(props.sku);
+    PartSupply.validatePartNumber(props.partNumber ?? null);
+    PartSupply.validateDescription(props.description ?? null);
+    PartSupply.validateCostPrice(props.costPrice);
+    PartSupply.validateSalePrice(props.salePrice);
     PartSupply.validateMinStock(props.minStock ?? 0);
     PartSupply.validateExpiresAt(props.expiresAt ?? null);
   }

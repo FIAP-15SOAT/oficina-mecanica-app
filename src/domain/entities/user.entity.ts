@@ -3,8 +3,13 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
 
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
+import { PASSWORD_REGEX } from '../constants/regex/password.regex';
+import {
+  MIN_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+} from '../constants/validation/user.constants';
+
 const VALID_ROLES = Object.values(UserRole);
 
 export interface CreateUserProps {
@@ -67,6 +72,12 @@ export class User {
       createdAt: now,
       updatedAt: now,
     });
+  }
+
+  static validatePasswordStrength(password: string): void {
+    if (!PASSWORD_REGEX.test(password)) {
+      throw new DomainValidationException(PASSWORD_REQUIREMENTS_MESSAGE);
+    }
   }
 
   changeName(name: string): void {

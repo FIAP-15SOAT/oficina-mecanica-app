@@ -5,9 +5,7 @@ import { Address, AddressProps } from '../value-objects/address.vo';
 import { Email } from '../value-objects/email.vo';
 import { Phone } from '../value-objects/phone.vo';
 import { Document } from '../value-objects/document.vo';
-
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/customer.constants';
 
 export interface CreateCustomerProps {
   name: string;

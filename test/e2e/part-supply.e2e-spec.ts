@@ -124,6 +124,102 @@ describe('PartSupply (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when name is shorter than the minimum length', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, name: 'ab' })
+        .expect(400);
+    });
+
+    it('should return 400 when name exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
+    it('should return 400 when description exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, description: 'a'.repeat(501) })
+        .expect(400);
+    });
+
+    it('should return 400 when sku exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, sku: 'a'.repeat(61) })
+        .expect(400);
+    });
+
+    it('should return 400 when partNumber exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, partNumber: 'a'.repeat(61) })
+        .expect(400);
+    });
+
+    it('should return 400 when category is invalid', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, category: 'INVALID' })
+        .expect(400);
+    });
+
+    it('should return 400 when unit is invalid', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, unit: 'INVALID' })
+        .expect(400);
+    });
+
+    it('should return 400 when costPrice is negative', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, costPrice: -1 })
+        .expect(400);
+    });
+
+    it('should return 400 when salePrice is negative', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, salePrice: -1 })
+        .expect(400);
+    });
+
+    it('should return 400 when stock is negative', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, stock: -1 })
+        .expect(400);
+    });
+
+    it('should return 400 when minStock is negative', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, minStock: -1 })
+        .expect(400);
+    });
+
+    it('should return 400 when expiresAt is not a valid date string', async () => {
+      await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validPartSupply, expiresAt: 'not-a-date' })
+        .expect(400);
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer).post('/api/parts-supplies').send(validPartSupply).expect(401);
     });
@@ -372,6 +468,36 @@ describe('PartSupply (E2E)', () => {
         .send(updatePayload)
         .expect(404);
     });
+
+    it('should return 400 when updating with a name shorter than the minimum length', async () => {
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
+      await request(httpServer)
+        .put(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...updatePayload, name: 'ab' })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with a name that exceeds the maximum length', async () => {
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
+      await request(httpServer)
+        .put(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...updatePayload, name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with a description that exceeds the maximum length', async () => {
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
+      await request(httpServer)
+        .put(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...updatePayload, description: 'a'.repeat(501) })
+        .expect(400);
+    });
   });
 
   // ─── PATCH /api/parts-supplies/:id ───────────────────────────────────────
@@ -450,6 +576,22 @@ describe('PartSupply (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.stock).toBe(validPartSupply.stock + 2);
+    });
+
+    it('should return 400 when quantity is zero', async () => {
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'ENTRY', quantity: 0 })
+        .expect(400);
+    });
+
+    it('should return 400 when workOrderId is not a valid UUID', async () => {
+      await request(httpServer)
+        .patch(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ type: 'EXIT', quantity: 1, workOrderId: 'not-a-uuid' })
+        .expect(400);
     });
   });
 

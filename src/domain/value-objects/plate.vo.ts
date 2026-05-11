@@ -1,5 +1,5 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { PLATE_REGEX } from '../constants/plate.regex';
+import { PLATE_REGEX } from '../constants/regex/plate.regex';
 
 export class Plate {
   private constructor(public readonly value: string) {}

@@ -11,7 +11,9 @@ export class FilterQuotesDto {
 
   @ApiPropertyOptional({ description: 'Filtrar por status', enum: QuoteStatus })
   @IsOptional()
-  @IsEnum(QuoteStatus)
+  @IsEnum(QuoteStatus, {
+    message: `Status deve ser um dos seguintes: ${Object.values(QuoteStatus).join(', ')}`,
+  })
   status?: QuoteStatus;
 }
 

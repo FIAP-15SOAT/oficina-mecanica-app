@@ -138,7 +138,7 @@ export class QuoteController {
     return QuotePresenter.toWithItemsResponse(result);
   }
 
-  @Post(':id/services/:serviceId')
+  @Post(':id/services')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Adicionar serviço ao orçamento' })
@@ -148,13 +148,8 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento ou Serviço não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiParam({ name: 'serviceId', format: 'uuid', description: 'ID do serviço' })
-  async addService(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('serviceId', ParseUUIDPipe) serviceId: string,
-    @Body() dto: AddQuoteServiceRequestDto,
-  ) {
-    const quote = await this.addQuoteServiceUseCase.execute({ quoteId: id, serviceId, ...dto });
+  async addService(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddQuoteServiceRequestDto) {
+    const quote = await this.addQuoteServiceUseCase.execute({ quoteId: id, ...dto });
     return QuotePresenter.toDataResponse(quote);
   }
 
@@ -200,7 +195,7 @@ export class QuoteController {
     await this.removeQuoteServiceUseCase.execute(id, serviceId);
   }
 
-  @Post(':id/parts-supplies/:partSupplyId')
+  @Post(':id/parts-supplies')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Adicionar peça/insumo ao orçamento' })
@@ -210,17 +205,11 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento ou Peça não encontrada' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiParam({ name: 'partSupplyId', format: 'uuid', description: 'ID da peça/insumo' })
   async addPartSupply(
     @Param('id', ParseUUIDPipe) id: string,
-    @Param('partSupplyId', ParseUUIDPipe) partSupplyId: string,
     @Body() dto: AddQuotePartSupplyRequestDto,
   ) {
-    const quote = await this.addQuotePartSupplyUseCase.execute({
-      quoteId: id,
-      partSupplyId,
-      ...dto,
-    });
+    const quote = await this.addQuotePartSupplyUseCase.execute({ quoteId: id, ...dto });
     return QuotePresenter.toDataResponse(quote);
   }
 

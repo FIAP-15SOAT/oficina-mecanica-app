@@ -94,6 +94,46 @@ describe('Service (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when name is shorter than the minimum length', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, name: 'ab' })
+        .expect(400);
+    });
+
+    it('should return 400 when name exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
+    it('should return 400 when description exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, description: 'a'.repeat(501) })
+        .expect(400);
+    });
+
+    it('should return 400 when basePrice is negative', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, basePrice: -10 })
+        .expect(400);
+    });
+
+    it('should return 400 when estimatedTimeMin is zero', async () => {
+      await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, estimatedTimeMin: 0 })
+        .expect(400);
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer).post('/api/services').send(validService).expect(401);
     });
@@ -260,6 +300,38 @@ describe('Service (E2E)', () => {
           estimatedTimeMin: 30,
         })
         .expect(404);
+    });
+
+    it('should return 400 when updating with a name that exceeds the maximum length', async () => {
+      await request(httpServer)
+        .put(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with a description that exceeds the maximum length', async () => {
+      await request(httpServer)
+        .put(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, description: 'a'.repeat(501) })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with a negative basePrice', async () => {
+      await request(httpServer)
+        .put(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, basePrice: -5 })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with estimatedTimeMin of zero', async () => {
+      await request(httpServer)
+        .put(`/api/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validService, estimatedTimeMin: 0 })
+        .expect(400);
     });
 
     it('should return 409 when updating to duplicate name', async () => {

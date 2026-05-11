@@ -140,6 +140,78 @@ describe('Vehicle (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when brand is shorter than the minimum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, brand: 'A' })
+        .expect(400);
+    });
+
+    it('should return 400 when brand exceeds the maximum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, brand: 'a'.repeat(61) })
+        .expect(400);
+    });
+
+    it('should return 400 when model is shorter than the minimum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, model: 'A' })
+        .expect(400);
+    });
+
+    it('should return 400 when model exceeds the maximum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, model: 'a'.repeat(61) })
+        .expect(400);
+    });
+
+    it('should return 400 when color exceeds the maximum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, color: 'a'.repeat(41) })
+        .expect(400);
+    });
+
+    it('should return 400 when year is below the minimum allowed', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, year: 1949 })
+        .expect(400);
+    });
+
+    it('should return 400 when year is not an integer', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, year: 2020.5 })
+        .expect(400);
+    });
+
+    it('should return 400 when mileage is negative', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, mileage: -1 })
+        .expect(400);
+    });
+
     it('should return 401 when no token is provided', async () => {
       await request(httpServer).post('/api/vehicles').send(validVehicle).expect(401);
     });
@@ -318,6 +390,21 @@ describe('Vehicle (E2E)', () => {
 
       expect(res.body.data.color).toBe('Prata');
       expect(res.body.data.mileage).toBe(75000);
+    });
+
+    it('should return 400 when updating with a brand that exceeds the maximum length', async () => {
+      const customer = await createCustomer(adminAuth.accessToken);
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id })
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: customer.id, brand: 'a'.repeat(61) })
+        .expect(400);
     });
 
     it('should return 404 when vehicle does not exist', async () => {

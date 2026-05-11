@@ -268,6 +268,51 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-AUTH-07 — Login sem campos obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Retorna erros de validação', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.message).to.be.an('array').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -827,6 +872,86 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-USER-15 — Atualizar (PUT) com e-mail duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica e-mail em uso', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mecânico Conflito\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"Senha@123\",\n  \"role\": \"MECHANIC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{mechanicUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{mechanicUserId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-USER-16 — PATCH em ID inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"active\": false}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -966,8 +1091,8 @@
                   "pm.test('Retorna estrutura paginada', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res).to.have.property('data');",
-                  "    pm.expect(res).to.have.property('totalRecords');",
-                  "    pm.expect(res).to.have.property('totalPages');",
+                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
+                  "    pm.expect(res.pagination).to.have.property('totalPages');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});"
                 ],
@@ -1016,7 +1141,7 @@
                   "pm.test('Retorna serviços filtrados por nome', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res.totalRecords).to.be.a('number');",
+                  "    pm.expect(res.pagination.totalRecords).to.be.a('number');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1603,11 +1728,11 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Resposta paginada com estrutura correta', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res).to.have.all.keys('data', 'pagination');",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res.page).to.equal(1);",
-                  "    pm.expect(res.limit).to.equal(10);",
-                  "    pm.expect(res.totalRecords).to.be.a('number').and.at.least(0);",
+                  "    pm.expect(res.pagination.page).to.equal(1);",
+                  "    pm.expect(res.pagination.limit).to.equal(10);",
+                  "    pm.expect(res.pagination.totalRecords).to.be.a('number').and.at.least(0);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1695,7 +1820,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Retorna estrutura paginada', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res).to.have.all.keys('data', 'pagination');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});"
                 ],
@@ -1742,7 +1867,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Retorna estrutura paginada', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res).to.have.all.keys('data', 'totalRecords', 'totalPages', 'page', 'limit');",
+                  "    pm.expect(res).to.have.all.keys('data', 'pagination');",
                   "    pm.expect(res.data).to.be.an('array');",
                   "});",
                   "pm.test('Itens com estoque abaixo do mínimo', () => {",
@@ -1962,7 +2087,9 @@
                   "    pm.expect(res.data.stock).to.be.a('number').and.above(0);",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -1976,7 +2103,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"type\":\"ENTRY\",\"quantity\":5,\"reason\":\"Reposição de Estoque recebida do fornecedor\"}"
+              "raw": "{\r\n    \"type\": \"ENTRY\",\r\n    \"quantity\": 5,\r\n    \"reason\": \"Reposição de Estoque recebida do fornecedor\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
@@ -3031,7 +3158,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\"type\":\"ENTRY\",\"quantity\":0}"
+                  "raw": "{\"type\":\"ENTRY\",\"quantity\":-3}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
@@ -3074,7 +3201,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-06\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":-5}"
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-07\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":-5}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/parts-supplies",
@@ -3116,7 +3243,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\"name\":\"\",\"sku\":\"T-VAL-07\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
+                  "raw": "{\"name\":\"\",\"sku\":\"T-VAL-08\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/parts-supplies",
@@ -3200,7 +3327,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-09\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"stock\":-1}"
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-10\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"stock\":-1}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/parts-supplies",
@@ -3242,7 +3369,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-10\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"minStock\":-1}"
+                  "raw": "{\"name\":\"Teste\",\"sku\":\"T-VAL-11\",\"category\":\"PART\",\"unit\":\"UN\",\"costPrice\":10,\"salePrice\":20,\"minStock\":-1}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/parts-supplies",
@@ -3318,9 +3445,9 @@
                   "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
                   "    pm.environment.set('customerId', res.data.id);",
                   "    pm.expect(res.data.name).to.equal('João da Silva');",
-                  "    pm.expect(res.data.document).to.equal('123.456.789-09');",
+                  "    pm.expect(res.data.document).to.equal('929.362.770-19');",
                   "    pm.expect(res.data.type).to.equal('INDIVIDUAL');",
-                  "    pm.expect(res.data.email).to.equal('joao@oficina-test.com');",
+                  "    pm.expect(res.data.email).to.equal('joao3@oficina-test.com');",
                   "});"
                 ],
                 "type": "text/javascript",
@@ -3424,7 +3551,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Outro João\", \"document\": \"123.456.789-09\", \"type\": \"INDIVIDUAL\", \"email\": \"outro@oficina-test.com\", \"phone\": \"(11) 77777-7777\", \"address\": {\"street\": \"Rua Teste, 1\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
+              "raw": "{\"name\": \"Outro João\", \"document\": \"929.362.770-19\", \"type\": \"INDIVIDUAL\", \"email\": \"outro@oficina-test.com\", \"phone\": \"(11) 77777-7777\", \"address\": {\"street\": \"Rua Teste, 1\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
             },
             "url": {
               "raw": "{{baseUrl}}/customers",
@@ -3465,7 +3592,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Outro João\", \"document\": \"987.654.321-00\", \"type\": \"INDIVIDUAL\", \"email\": \"joao@oficina-test.com\", \"phone\": \"(11) 77777-7777\", \"address\": {\"street\": \"Rua Teste, 2\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
+              "raw": "{\"name\": \"Outro João\", \"document\": \"987.654.321-00\", \"type\": \"INDIVIDUAL\", \"email\": \"joao3@oficina-test.com\", \"phone\": \"(11) 77777-7777\", \"address\": {\"street\": \"Rua Teste, 2\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
             },
             "url": {
               "raw": "{{baseUrl}}/customers",
@@ -3613,10 +3740,10 @@
                   "pm.test('Retorna lista paginada', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res.totalRecords).to.be.a('number').and.at.least(2);",
-                  "    pm.expect(res.page).to.equal(1);",
-                  "    pm.expect(res.limit).to.equal(10);",
-                  "    pm.expect(res.totalPages).to.be.a('number');",
+                  "    pm.expect(res.pagination.totalRecords).to.be.a('number').and.at.least(2);",
+                  "    pm.expect(res.pagination.page).to.equal(1);",
+                  "    pm.expect(res.pagination.limit).to.equal(10);",
+                  "    pm.expect(res.pagination.totalPages).to.be.a('number');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3788,7 +3915,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"João da Silva Atualizado\", \"document\": \"123.456.789-09\", \"type\": \"INDIVIDUAL\", \"email\": \"joao@oficina-test.com\", \"phone\": \"(11) 99999-9999\", \"address\": {\"street\": \"Rua das Flores, 123\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
+              "raw": "{\"name\": \"João da Silva Atualizado\", \"document\": \"929.362.770-19\", \"type\": \"INDIVIDUAL\", \"email\": \"joao3@oficina-test.com\", \"phone\": \"(11) 99999-9999\", \"address\": {\"street\": \"Rua das Flores, 123\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-100\"}}"
             },
             "url": {
               "raw": "{{baseUrl}}/customers/{{customerId}}",
@@ -3830,7 +3957,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Empresa ABC Ltda\", \"document\": \"123.456.789-09\", \"type\": \"COMPANY\", \"email\": \"empresa@oficina-test.com\", \"phone\": \"(11) 88888-8888\", \"address\": {\"street\": \"Av. Paulista, 1000\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-200\"}}"
+              "raw": "{\"name\": \"Cliente Conflitante\", \"document\": \"929.362.770-19\", \"type\": \"INDIVIDUAL\", \"email\": \"empresa@oficina-test.com\", \"phone\": \"(11) 88888-8888\", \"address\": {\"street\": \"Av. Paulista, 1000\", \"city\": \"São Paulo\", \"state\": \"SP\", \"zipCode\": \"01310-200\"}}"
             },
             "url": {
               "raw": "{{baseUrl}}/customers/{{customerId2}}",
@@ -4010,6 +4137,90 @@
               "path": [
                 "customers",
                 "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-19 — Criar INDIVIDUAL com CNPJ (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica CPF obrigatório para pessoa física', () => {",
+                  "    const res = pm.response.json();",
+                  "    const msg = JSON.stringify(res.message);",
+                  "    pm.expect(msg.toLowerCase()).to.include('pessoa física');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Doc Tipo Errado PF\",\n  \"document\": \"12.345.678/0001-95\",\n  \"type\": \"INDIVIDUAL\",\n  \"email\": \"cust19@oficina-test.com\",\n  \"phone\": \"(11) 11111-1111\",\n  \"address\": {\n    \"street\": \"Rua Teste, 19\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"zipCode\": \"01310-100\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-20 — Criar COMPANY com CPF (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica CNPJ obrigatório para pessoa jurídica', () => {",
+                  "    const res = pm.response.json();",
+                  "    const msg = JSON.stringify(res.message);",
+                  "    pm.expect(msg.toLowerCase()).to.include('pessoa jurídica');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Doc Tipo Errado PJ\",\n  \"document\": \"929.362.770-19\",\n  \"type\": \"COMPANY\",\n  \"email\": \"cust20@oficina-test.com\",\n  \"phone\": \"(11) 22222-2222\",\n  \"address\": {\n    \"street\": \"Rua Teste, 20\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"zipCode\": \"01310-100\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
               ]
             }
           },
@@ -4311,9 +4522,9 @@
                   "pm.test('Retorna lista paginada com cliente aninhado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res.totalRecords).to.be.at.least(2);",
-                  "    pm.expect(res.page).to.equal(1);",
-                  "    pm.expect(res.limit).to.equal(10);",
+                  "    pm.expect(res.pagination.totalRecords).to.be.at.least(2);",
+                  "    pm.expect(res.pagination.page).to.equal(1);",
+                  "    pm.expect(res.pagination.limit).to.equal(10);",
                   "    pm.expect(res.data[0].customer).to.have.property('id');",
                   "});"
                 ],
@@ -4356,7 +4567,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Retorna apenas veículos Toyota', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.totalRecords).to.equal(1);",
+                  "    pm.expect(res.pagination.totalRecords).to.equal(1);",
                   "    pm.expect(res.data[0].brand).to.include('Toyota');",
                   "});"
                 ],
@@ -4395,7 +4606,7 @@
                   "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('Retorna apenas veículos do cliente', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.totalRecords).to.be.at.least(2);",
+                  "    pm.expect(res.pagination.totalRecords).to.be.at.least(2);",
                   "    res.data.forEach(v => pm.expect(v.customerId).to.equal(pm.environment.get('customerId')));",
                   "});"
                 ],
@@ -4665,6 +4876,131 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-VEH-18 — Criar com year anterior ao mínimo (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica ano fora do intervalo permitido', () => {",
+                  "    const res = pm.response.json();",
+                  "    const msg = JSON.stringify(res.message);",
+                  "    pm.expect(msg.toLowerCase()).to.include('ano');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"plate\": \"ABC-2018\",\n  \"brand\": \"Antigo\",\n  \"model\": \"Pré-50\",\n  \"year\": 1900\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-VEH-19 — Criar com year futuro (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensagem indica ano fora do intervalo permitido', () => {",
+                  "    const res = pm.response.json();",
+                  "    const msg = JSON.stringify(res.message);",
+                  "    pm.expect(msg.toLowerCase()).to.include('ano');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"plate\": \"ABC-2019\",\n  \"brand\": \"Futuro\",\n  \"model\": \"9999\",\n  \"year\": 9999\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-VEH-20 — Criar com placa Mercosul (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Placa Mercosul aceita e normalizada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.plate).to.equal('ABC1D23');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"plate\": \"ABC1D23\",\n  \"brand\": \"Volkswagen\",\n  \"model\": \"Polo\",\n  \"year\": 2022\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -4868,47 +5204,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-06 — Atualizar Status da OS (COMPLETED)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"status\": \"COMPLETED\",\r\n    \"notes\": \"Ordem de serviço finalizada com sucesso\"\r\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "work-orders",
-                "{{workOrderId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-WO-07 — Atualizar Status da OS (DELIVERED)",
+          "name": "TC-WO-06 — Atualizar Status da OS (DELIVERED)",
           "event": [
             {
               "listen": "test",
@@ -4948,7 +5244,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-08 — Atualizar Status de Serviço na OS (IN_PROGRESS)",
+          "name": "TC-WO-07 — Atualizar Status de Serviço na OS (IN_PROGRESS)",
           "event": [
             {
               "listen": "test",
@@ -4990,7 +5286,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-09 — Atualizar Status de Serviço na OS (COMPLETED)",
+          "name": "TC-WO-08 — Atualizar Status de Serviço na OS (COMPLETED)",
           "event": [
             {
               "listen": "test",
@@ -5032,7 +5328,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-10 — Histórico de Status da OS",
+          "name": "TC-WO-09 — Histórico de Status da OS",
           "event": [
             {
               "listen": "test",
@@ -5062,7 +5358,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-11 — Listar Orçamentos de uma OS (sucesso)",
+          "name": "TC-WO-10 — Listar Orçamentos de uma OS (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -5096,7 +5392,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-12 — Buscar OS inexistente (404)",
+          "name": "TC-WO-11 — Buscar OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5125,7 +5421,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-13 — Criar OS sem campos obrigatórios (400)",
+          "name": "TC-WO-12 — Criar OS sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
@@ -5166,7 +5462,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-14 — Criar OS com cliente inexistente (404)",
+          "name": "TC-WO-13 — Criar OS com cliente inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5203,7 +5499,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-15 — Criar OS sem autenticação (401)",
+          "name": "TC-WO-14 — Criar OS sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -5243,7 +5539,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-16 — Filtrar OSs por status IN_DIAGNOSIS (200)",
+          "name": "TC-WO-15 — Filtrar OSs por status IN_DIAGNOSIS (200)",
           "event": [
             {
               "listen": "test",
@@ -5283,7 +5579,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-17 — Filtrar OSs por customerId (200)",
+          "name": "TC-WO-16 — Filtrar OSs por customerId (200)",
           "event": [
             {
               "listen": "test",
@@ -5323,7 +5619,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-18 — Atualizar OS inexistente (404)",
+          "name": "TC-WO-17 — Atualizar OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5361,7 +5657,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-19 — Histórico de status para OS inexistente (404)",
+          "name": "TC-WO-18 — Histórico de status para OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5391,7 +5687,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-20 — Criar OS com veículo inexistente (404)",
+          "name": "TC-WO-19 — Criar OS com veículo inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5428,7 +5724,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-21 — Criar OS com veículo não pertencente ao cliente (409)",
+          "name": "TC-WO-20 — Criar OS com veículo não pertencente ao cliente (409)",
           "event": [
             {
               "listen": "test",
@@ -5469,7 +5765,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-22 — Tentar PATCH com status não permitido pela operação (400)",
+          "name": "TC-WO-21 — Tentar PATCH com status não permitido pela operação (400)",
           "event": [
             {
               "listen": "test",
@@ -5511,7 +5807,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-23 — Cancelar OS sem notas obrigatórias (409)",
+          "name": "TC-WO-22 — Cancelar OS sem notas obrigatórias (409)",
           "event": [
             {
               "listen": "test",
@@ -5553,7 +5849,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-24 — Listar orçamentos de OS inexistente (404)",
+          "name": "TC-WO-23 — Listar orçamentos de OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5583,7 +5879,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-25 — Filtrar OSs por vehicleId (200)",
+          "name": "TC-WO-24 — Filtrar OSs por vehicleId (200)",
           "event": [
             {
               "listen": "test",
@@ -5622,7 +5918,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-26 — PATCH com transição inválida (DELIVERED sem APPROVED) (409)",
+          "name": "TC-WO-25 — PATCH com transição inválida (DELIVERED sem APPROVED) (409)",
           "event": [
             {
               "listen": "test",
@@ -5664,7 +5960,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-27 — PUT em OS com status != RECEIVED (409)",
+          "name": "TC-WO-26 — PUT em OS com status != RECEIVED (409)",
           "event": [
             {
               "listen": "test",
@@ -5706,7 +6002,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-28 — PATCH status de serviço com serviceId inexistente (404)",
+          "name": "TC-WO-27 — PATCH status de serviço com serviceId inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5744,6 +6040,70 @@
                 "{{workOrderId}}",
                 "services",
                 "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-WO-28 — Transição RECEIVED → IN_PROGRESS inválida (409)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const authToken = pm.environment.get('authToken');",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const customerId = pm.environment.get('customerId');",
+                  "const vehicleId = pm.environment.get('vehicleId');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/work-orders',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ customerId, vehicleId, problemDescription: 'Transição inválida' }) }",
+                  "}, function (err, resp) {",
+                  "    if (resp && resp.json && resp.json().data) {",
+                  "        pm.environment.set('tempWorkOrderId', resp.json().data.id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem indica transição não permitida', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.equal('Conflict');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"IN_PROGRESS\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{tempWorkOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders",
+                "{{tempWorkOrderId}}"
               ]
             }
           },
@@ -5858,18 +6218,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"quantity\": 1\r\n}"
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"quantity\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "quotes",
                 "{{quoteId}}",
-                "services",
-                "{{serviceId}}"
+                "services"
               ]
             }
           },
@@ -5898,18 +6257,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"quantity\": 1}"
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"quantity\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "quotes",
                 "{{quoteId}}",
-                "services",
-                "{{serviceId}}"
+                "services"
               ]
             }
           },
@@ -6017,7 +6375,46 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"quantity\": 1}"
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "services"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-03d — Tentar atualizar qty de serviço em orçamento aprovado (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quantity\": 3}"
             },
             "url": {
               "raw": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
@@ -6064,58 +6461,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"quantity\": 1\r\n}"
+              "raw": "{\n  \"partSupplyId\": \"{{partSupplyId}}\",\n  \"quantity\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "quotes",
                 "{{quoteId}}",
-                "parts-supplies",
-                "{{partSupplyId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-QT-04d — Adicionar peça duplicada ao orçamento (409)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"quantity\": 1}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{quoteId}}",
-                "parts-supplies",
-                "{{partSupplyId}}"
+                "parts-supplies"
               ]
             }
           },
@@ -6181,7 +6537,92 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"quantity\": 1}"
+              "raw": "{\n  \"partSupplyId\": \"{{partSupplyId}}\",\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "parts-supplies"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-04d — Adicionar peça duplicada ao orçamento (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partSupplyId\": \"{{partSupplyId}}\",\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "parts-supplies"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-05 — Atualizar Quantidade de Peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna orçamento com peça adicionada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"quantity\": 2\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
@@ -6199,7 +6640,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-05 — Submeter Orçamento para Aprovação",
+          "name": "TC-QT-06 — Submeter Orçamento para Aprovação",
           "event": [
             {
               "listen": "test",
@@ -6229,7 +6670,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-05b — Rejeitar orçamento SENT sem justificativa (422)",
+          "name": "TC-QT-06b — Rejeitar orçamento SENT sem justificativa (422)",
           "event": [
             {
               "listen": "test",
@@ -6267,7 +6708,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-06 — Listar todos os Orçamentos paginado",
+          "name": "TC-QT-07 — Listar todos os Orçamentos paginado",
           "event": [
             {
               "listen": "test",
@@ -6310,7 +6751,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-07 — Buscar Orçamento por ID",
+          "name": "TC-QT-08 — Buscar Orçamento por ID",
           "event": [
             {
               "listen": "test",
@@ -6339,7 +6780,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-08 — Aprovar Orçamento manualmente (sucesso)",
+          "name": "TC-QT-09 — Aprovar Orçamento manualmente (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -6382,47 +6823,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-08b — Tentar atualizar qty de serviço em orçamento aprovado (422)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"quantity\": 3}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/services/{{serviceId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{quoteId}}",
-                "services",
-                "{{serviceId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-QT-09 — Tentar remover serviço de orçamento aprovado (422)",
+          "name": "TC-QT-11 — Tentar remover serviço de orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6453,7 +6854,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-10 — Tentar remover peça de orçamento aprovado (422)",
+          "name": "TC-QT-12 — Tentar remover peça de orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6484,7 +6885,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-11 — Tentar atualizar qty de peça em orçamento aprovado (422)",
+          "name": "TC-QT-13 — Tentar atualizar qty de peça em orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6524,7 +6925,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-12 — Buscar Orçamento inexistente (404)",
+          "name": "TC-QT-14 — Buscar Orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6553,7 +6954,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-13 — Filtrar orçamentos por OS (sucesso)",
+          "name": "TC-QT-15 — Filtrar orçamentos por OS (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -6593,7 +6994,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-14 — Criar Orçamento sem autenticação (401)",
+          "name": "TC-QT-16 — Criar Orçamento sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -6633,7 +7034,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-15 — Decisão por e-mail com token inválido (401)",
+          "name": "TC-QT-17 — Decisão por e-mail com token inválido (401)",
           "event": [
             {
               "listen": "test",
@@ -6676,7 +7077,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-16 — Criar orçamento para OS inexistente (404)",
+          "name": "TC-QT-18 — Criar orçamento para OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6713,7 +7114,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-17 — Adicionar serviço a orçamento inexistente (404)",
+          "name": "TC-QT-19 — Adicionar serviço a orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6735,25 +7136,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"quantity\": 1}"
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"quantity\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/quotes/00000000-0000-0000-0000-000000000000/services/{{serviceId}}",
+              "raw": "{{baseUrl}}/quotes/00000000-0000-0000-0000-000000000000/services",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "quotes",
                 "00000000-0000-0000-0000-000000000000",
-                "services",
-                "{{serviceId}}"
+                "services"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "TC-QT-18 — Adicionar peça a orçamento inexistente (404)",
+          "name": "TC-QT-20 — Adicionar peça a orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6775,25 +7175,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"quantity\": 1}"
+              "raw": "{\n  \"partSupplyId\": \"{{partSupplyId}}\",\n  \"quantity\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/quotes/00000000-0000-0000-0000-000000000000/parts-supplies/{{partSupplyId}}",
+              "raw": "{{baseUrl}}/quotes/00000000-0000-0000-0000-000000000000/parts-supplies",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "quotes",
                 "00000000-0000-0000-0000-000000000000",
-                "parts-supplies",
-                "{{partSupplyId}}"
+                "parts-supplies"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "TC-QT-19 — Filtrar orçamentos por status APPROVED (200)",
+          "name": "TC-QT-21 — Filtrar orçamentos por status APPROVED (200)",
           "event": [
             {
               "listen": "test",
@@ -6833,7 +7232,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-20 — Submeter orçamento inexistente (404)",
+          "name": "TC-QT-22 — Submeter orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6863,7 +7262,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-21 — Criar orçamento sem campo workOrderId (400)",
+          "name": "TC-QT-23 — Criar orçamento sem campo workOrderId (400)",
           "event": [
             {
               "listen": "test",
@@ -6904,7 +7303,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-22 — Rejeitar orçamento com justificativa (200)",
+          "name": "TC-QT-24 — Rejeitar orçamento com justificativa (200)",
           "event": [
             {
               "listen": "prerequest",
@@ -6997,6 +7396,115 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-QT-25 — Submeter orçamento já SENT (422)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const authToken = pm.environment.get('authToken');",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const customerId = pm.environment.get('customerId');",
+                  "const vehicleId = pm.environment.get('vehicleId');",
+                  "const serviceId = pm.environment.get('serviceId');",
+                  "const hdr = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken };",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/work-orders', method: 'POST', header: hdr,",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ customerId, vehicleId, problemDescription: 'Dupla submissão' }) }",
+                  "}, function (e1, r1) {",
+                  "    const woId = r1.json().data.id;",
+                  "    pm.sendRequest({",
+                  "        url: baseUrl + '/work-orders/' + woId, method: 'PATCH', header: hdr,",
+                  "        body: { mode: 'raw', raw: JSON.stringify({ status: 'IN_DIAGNOSIS' }) }",
+                  "    }, function () {",
+                  "        pm.sendRequest({",
+                  "            url: baseUrl + '/quotes', method: 'POST', header: hdr,",
+                  "            body: { mode: 'raw', raw: JSON.stringify({ workOrderId: woId }) }",
+                  "        }, function (e3, r3) {",
+                  "            const qId = r3.json().data.id;",
+                  "            pm.sendRequest({",
+                  "                url: baseUrl + '/quotes/' + qId + '/services', method: 'POST', header: hdr,",
+                  "                body: { mode: 'raw', raw: JSON.stringify({ serviceId, quantity: 1 }) }",
+                  "            }, function () {",
+                  "                pm.sendRequest({",
+                  "                    url: baseUrl + '/quotes/' + qId + '/submissions', method: 'POST', header: hdr",
+                  "                }, function () {",
+                  "                    pm.environment.set('tempSentQuoteId', qId);",
+                  "                });",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{tempSentQuoteId}}/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{tempSentQuoteId}}",
+                "submissions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-26 — Aprovar orçamento já APPROVED (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"APPROVED\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -7015,7 +7523,7 @@
                   "    const res = pm.response.json();",
                   "    pm.expect(res).to.have.property('data');",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -7059,7 +7567,7 @@
                   "    const res = pm.response.json();",
                   "    pm.expect(res).to.have.property('data');",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res).to.have.property('totalRecords');",
+                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -7312,6 +7820,58 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-ST-08 — Listar movimentações filtradas por intervalo de datas (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna estrutura paginada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res).to.have.property('data');",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "    pm.expect(res).to.have.property('pagination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock-movements?startDate=2020-01-01&endDate=2030-12-31&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stock-movements"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2030-12-31"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -7330,8 +7890,8 @@
                   "    const res = pm.response.json();",
                   "    pm.expect(res).to.have.property('data');",
                   "    pm.expect(res.data).to.be.an('array');",
-                  "    pm.expect(res).to.have.property('totalRecords');",
-                  "    pm.expect(res).to.have.property('totalPages');",
+                  "    pm.expect(res.pagination).to.have.property('totalRecords');",
+                  "    pm.expect(res.pagination).to.have.property('totalPages');",
                   "});",
                   "pm.test('Cada item tem campos de métricas', () => {",
                   "    const res = pm.response.json();",
