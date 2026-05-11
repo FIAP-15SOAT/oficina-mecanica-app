@@ -60,7 +60,6 @@ export class StockPresenter {
       partNumber: p.partNumber ?? null,
       category: p.category,
       unit: p.unit,
-      quantity: p.stock,
     };
   }
 

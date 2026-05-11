@@ -6159,13 +6159,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-01b — Submeter orçamento sem itens (422)",
+          "name": "TC-QT-01b — Submeter orçamento sem itens (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -6392,13 +6392,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-03d — Tentar atualizar qty de serviço em orçamento aprovado (422)",
+          "name": "TC-QT-03d — Tentar atualizar qty de serviço em orçamento aprovado (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -6670,13 +6670,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-06b — Rejeitar orçamento SENT sem justificativa (422)",
+          "name": "TC-QT-06b — Rejeitar orçamento SENT sem justificativa (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -6823,13 +6823,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-11 — Tentar remover serviço de orçamento aprovado (422)",
+          "name": "TC-QT-11 — Tentar remover serviço de orçamento aprovado (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -6854,13 +6854,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-12 — Tentar remover peça de orçamento aprovado (422)",
+          "name": "TC-QT-12 — Tentar remover peça de orçamento aprovado (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -6885,13 +6885,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-13 — Tentar atualizar qty de peça em orçamento aprovado (422)",
+          "name": "TC-QT-13 — Tentar atualizar qty de peça em orçamento aprovado (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -7398,7 +7398,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-25 — Submeter orçamento já SENT (422)",
+          "name": "TC-QT-25 — Submeter orçamento já SENT (409)",
           "event": [
             {
               "listen": "prerequest",
@@ -7445,7 +7445,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }
@@ -7469,13 +7469,13 @@
           "response": []
         },
         {
-          "name": "TC-QT-26 — Aprovar orçamento já APPROVED (422)",
+          "name": "TC-QT-26 — Aprovar orçamento já APPROVED (409)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
                 ],
                 "type": "text/javascript"
               }

@@ -163,7 +163,7 @@ describe('Quote (E2E)', () => {
       );
     });
 
-    it('should return 422 when work order is RECEIVED', async () => {
+    it('should return 409 when work order is RECEIVED', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
       const woRes = await request(httpServer)
@@ -232,7 +232,7 @@ describe('Quote (E2E)', () => {
       expect((res.body.data as Record<string, unknown>)['workOrderId']).toBeUndefined();
     });
 
-    it('should return 422 for non-existent quote', async () => {
+    it('should return 404 for non-existent quote', async () => {
       await request(httpServer)
         .get('/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -304,7 +304,7 @@ describe('Quote (E2E)', () => {
       expect(res.body.data.totalAmount).toBeGreaterThan(0);
     });
 
-    it('should return 422 when adding to a non-PENDING quote', async () => {
+    it('should return 409 when adding to a non-PENDING quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -438,6 +438,37 @@ describe('Quote (E2E)', () => {
 
       expect(res.body.data.partsAmount).toBeGreaterThan(0);
       expect(res.body.data.totalAmount).toBeGreaterThan(0);
+    });
+
+    it('should return 409 when adding to a non-PENDING quote', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      const quoteId = createRes.body.data.id as string;
+
+      const serviceForSubmit = await createService();
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: serviceForSubmit.id, quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      const part = await createPartSupply();
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ partSupplyId: part.id, quantity: 1 })
+        .expect(409);
     });
 
     it('should return 404 when adding non-existent part supply', async () => {
