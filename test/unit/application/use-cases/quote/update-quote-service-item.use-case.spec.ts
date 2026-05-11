@@ -4,19 +4,23 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import {
   createMockQuote,
   createMockQuoteRepository,
   createMockQuoteService,
+  createMockUnitOfWork,
 } from '../../../../helpers/quote-mock.factory';
 
 describe('UpdateQuoteServiceQuantityUseCase', () => {
   let useCase: UpdateQuoteServiceQuantityUseCase;
+  let unitOfWork: jest.Mocked<IUnitOfWork>;
   let quoteRepository: jest.Mocked<IQuoteRepository>;
 
   beforeEach(() => {
     quoteRepository = createMockQuoteRepository();
-    useCase = new UpdateQuoteServiceQuantityUseCase(quoteRepository);
+    unitOfWork = createMockUnitOfWork(quoteRepository);
+    useCase = new UpdateQuoteServiceQuantityUseCase(unitOfWork);
   });
 
   it('should update a service item and recalculate totals', async () => {
@@ -33,9 +37,11 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
       totalAmount: 100,
       services: [existing],
     });
+    const updatedQuote = createMockQuote({ status: QuoteStatus.PENDING, servicesAmount: 200 });
 
     quoteRepository.findByIdWithDetails.mockResolvedValue(quote);
-    (quoteRepository.updateServiceItemQuantity as jest.Mock).mockResolvedValue(undefined);
+    quoteRepository.updateServiceItemQuantity.mockResolvedValue(undefined);
+    quoteRepository.update.mockResolvedValue(updatedQuote);
 
     const result = await useCase.execute({
       quoteId: quote.id,
@@ -43,7 +49,9 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
       quantity: 2,
     });
 
+    expect(unitOfWork.executeTransaction).toHaveBeenCalledTimes(1);
     expect(quoteRepository.updateServiceItemQuantity).toHaveBeenCalledTimes(1);
+    expect(quoteRepository.update).toHaveBeenCalledTimes(1);
     expect(result.servicesAmount).toBe(200);
   });
 
@@ -53,6 +61,9 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
     await expect(
       useCase.execute({ quoteId: 'bad', serviceId: 'any', quantity: 1 }),
     ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(quoteRepository.updateServiceItemQuantity).not.toHaveBeenCalled();
+    expect(quoteRepository.update).not.toHaveBeenCalled();
   });
 
   it('should throw BusinessRuleViolationException when quote is not editable', async () => {
@@ -62,6 +73,9 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
     await expect(
       useCase.execute({ quoteId: quote.id, serviceId: 'any', quantity: 1 }),
     ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(quoteRepository.updateServiceItemQuantity).not.toHaveBeenCalled();
+    expect(quoteRepository.update).not.toHaveBeenCalled();
   });
 
   it('should throw EntityNotFoundException when service item not found in quote', async () => {
@@ -71,5 +85,8 @@ describe('UpdateQuoteServiceQuantityUseCase', () => {
     await expect(
       useCase.execute({ quoteId: quote.id, serviceId: 'bad', quantity: 1 }),
     ).rejects.toThrow(EntityNotFoundException);
+
+    expect(quoteRepository.updateServiceItemQuantity).not.toHaveBeenCalled();
+    expect(quoteRepository.update).not.toHaveBeenCalled();
   });
 });

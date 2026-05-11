@@ -21,11 +21,11 @@ export interface IQuoteRepository {
   update(quote: Quote): Promise<Quote>;
   rejectPendingByWorkOrderId(workOrderId: string): Promise<void>;
 
-  addServiceItem(quote: Quote, item: QuoteService): Promise<void>;
-  removeServiceItem(quote: Quote, serviceId: string): Promise<void>;
-  updateServiceItemQuantity(quote: Quote, item: QuoteService): Promise<void>;
+  addServiceItem(item: QuoteService): Promise<void>;
+  removeServiceItem(quoteId: string, serviceId: string): Promise<void>;
+  updateServiceItemQuantity(item: QuoteService): Promise<void>;
 
-  addPartSupplyItem(quote: Quote, item: QuotePartSupply): Promise<void>;
-  removePartSupplyItem(quote: Quote, partSupplyId: string): Promise<void>;
-  updatePartSupplyItemQuantity(quote: Quote, item: QuotePartSupply): Promise<void>;
+  addPartSupplyItem(item: QuotePartSupply): Promise<void>;
+  removePartSupplyItem(quoteId: string, partSupplyId: string): Promise<void>;
+  updatePartSupplyItemQuantity(item: QuotePartSupply): Promise<void>;
 }

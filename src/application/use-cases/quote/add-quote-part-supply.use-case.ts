@@ -1,32 +1,29 @@
 import { Quote } from '@domain/entities/quote.entity';
-import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
-import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { AddQuotePartSupplyDto } from '@domain/interfaces/use-cases/quote/dto/add-quote-part-supply.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class AddQuotePartSupplyUseCase {
-  constructor(
-    private readonly quoteRepository: IQuoteRepository,
-    private readonly partSupplyRepository: IPartSupplyRepository,
-  ) {}
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: AddQuotePartSupplyDto): Promise<Quote> {
-    const quote = await this.quoteRepository.findByIdWithDetails(dto.quoteId);
+    return this.unitOfWork.executeTransaction(async (repos) => {
+      const quote = await repos.quote.findByIdWithDetails(dto.quoteId);
 
-    if (!quote) {
-      throw new ResourceNotFoundException('Orçamento', dto.quoteId);
-    }
+      if (!quote) {
+        throw new ResourceNotFoundException('Orçamento', dto.quoteId);
+      }
 
-    const partSupply = await this.partSupplyRepository.findById(dto.partSupplyId);
+      const partSupply = await repos.partSupply.findById(dto.partSupplyId);
 
-    if (!partSupply) {
-      throw new ResourceNotFoundException('Peça/Insumo', dto.partSupplyId);
-    }
+      if (!partSupply) {
+        throw new ResourceNotFoundException('Peça/Insumo', dto.partSupplyId);
+      }
 
-    const item = quote.addPartSupply(partSupply, dto.quantity);
+      const item = quote.addPartSupply(partSupply, dto.quantity);
 
-    await this.quoteRepository.addPartSupplyItem(quote, item);
-
-    return quote;
+      await repos.quote.addPartSupplyItem(item);
+      return repos.quote.update(quote);
+    });
   }
 }

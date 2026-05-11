@@ -5,17 +5,23 @@ import { PrismaService } from '../database/prisma/prisma.service';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
+import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
 import {
   IQuoteRepository,
   QuoteFilters,
 } from '@domain/interfaces/repositories/quote.repository.interface';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
 import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+
+const QUOTE_WORK_ORDER_INCLUDE = {
+  customer: true,
+  vehicle: true,
+  assignedUser: true,
+} as const;
 
 @Injectable()
 export class PrismaQuoteRepository implements IQuoteRepository {
@@ -35,6 +41,7 @@ export class PrismaQuoteRepository implements IQuoteRepository {
         approvedAt: quote.approvedAt,
         rejectedAt: quote.rejectedAt,
       },
+      include: { workOrder: { include: QUOTE_WORK_ORDER_INCLUDE } },
     });
 
     return QuoteMapper.toDomain(record);
@@ -48,7 +55,11 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   async findByIdWithDetails(id: string): Promise<Quote | null> {
     const record = await this.prisma.quote.findUnique({
       where: { id },
-      include: { services: true, partsSupplies: true },
+      include: {
+        services: { include: { service: true } },
+        partsSupplies: { include: { partSupply: true } },
+        workOrder: { include: QUOTE_WORK_ORDER_INCLUDE },
+      },
     });
     return record ? QuoteMapper.toDomain(record) : null;
   }
@@ -56,8 +67,8 @@ export class PrismaQuoteRepository implements IQuoteRepository {
   async findByWorkOrderId(workOrderId: string): Promise<Quote[]> {
     const records = await this.prisma.quote.findMany({
       where: { workOrderId },
-      include: { services: true, partsSupplies: true },
       orderBy: { createdAt: 'desc' },
+      include: { workOrder: { include: QUOTE_WORK_ORDER_INCLUDE } },
     });
 
     return records.map((r) => QuoteMapper.toDomain(r));
@@ -78,8 +89,8 @@ export class PrismaQuoteRepository implements IQuoteRepository {
       this.prisma.quote,
       {
         where,
-        include: { services: true, partsSupplies: true },
         orderBy: { createdAt: 'desc' },
+        include: { workOrder: { include: QUOTE_WORK_ORDER_INCLUDE } },
       },
       pagination,
     );
@@ -106,7 +117,11 @@ export class PrismaQuoteRepository implements IQuoteRepository {
           updatedAt: quote.updatedAt,
           version: { increment: 1 },
         },
-        include: { services: true, partsSupplies: true },
+        include: {
+          services: true,
+          partsSupplies: true,
+          workOrder: { include: QUOTE_WORK_ORDER_INCLUDE },
+        },
       });
 
       return QuoteMapper.toDomain(record);
@@ -132,129 +147,63 @@ export class PrismaQuoteRepository implements IQuoteRepository {
     });
   }
 
-  async addServiceItem(quote: Quote, item: QuoteService): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quoteService.create({
-        data: {
-          quoteId: item.quoteId,
-          serviceId: item.serviceId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-        },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async addServiceItem(item: QuoteService): Promise<void> {
+    await this.prisma.quoteService.create({
+      data: {
+        quoteId: item.quoteId,
+        serviceId: item.serviceId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+      },
+    });
   }
 
-  async removeServiceItem(quote: Quote, serviceId: string): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quoteService.delete({
-        where: { quoteId_serviceId: { quoteId: quote.id, serviceId } },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async removeServiceItem(quoteId: string, serviceId: string): Promise<void> {
+    await this.prisma.quoteService.delete({
+      where: { quoteId_serviceId: { quoteId, serviceId } },
+    });
   }
 
-  async updateServiceItemQuantity(quote: Quote, item: QuoteService): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quoteService.update({
-        where: { quoteId_serviceId: { quoteId: item.quoteId, serviceId: item.serviceId } },
-        data: {
-          quantity: item.quantity,
-          totalPrice: item.totalPrice,
-          updatedAt: item.updatedAt,
-        },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async updateServiceItemQuantity(item: QuoteService): Promise<void> {
+    await this.prisma.quoteService.update({
+      where: { quoteId_serviceId: { quoteId: item.quoteId, serviceId: item.serviceId } },
+      data: {
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        updatedAt: item.updatedAt,
+      },
+    });
   }
 
-  async addPartSupplyItem(quote: Quote, item: QuotePartSupply): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quotePartSupply.create({
-        data: {
-          quoteId: item.quoteId,
-          partSupplyId: item.partSupplyId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-        },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async addPartSupplyItem(item: QuotePartSupply): Promise<void> {
+    await this.prisma.quotePartSupply.create({
+      data: {
+        quoteId: item.quoteId,
+        partSupplyId: item.partSupplyId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+      },
+    });
   }
 
-  async removePartSupplyItem(quote: Quote, partSupplyId: string): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quotePartSupply.delete({
-        where: { quoteId_partSupplyId: { quoteId: quote.id, partSupplyId } },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async removePartSupplyItem(quoteId: string, partSupplyId: string): Promise<void> {
+    await this.prisma.quotePartSupply.delete({
+      where: { quoteId_partSupplyId: { quoteId, partSupplyId } },
+    });
   }
 
-  async updatePartSupplyItemQuantity(quote: Quote, item: QuotePartSupply): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.quotePartSupply.update({
-        where: {
-          quoteId_partSupplyId: { quoteId: item.quoteId, partSupplyId: item.partSupplyId },
-        },
-        data: {
-          quantity: item.quantity,
-          totalPrice: item.totalPrice,
-          updatedAt: item.updatedAt,
-        },
-      }),
-      this.prisma.quote.update({
-        where: { id: quote.id },
-        data: {
-          servicesAmount: quote.servicesAmount,
-          partsAmount: quote.partsAmount,
-          totalAmount: quote.totalAmount,
-          updatedAt: quote.updatedAt,
-        },
-      }),
-    ]);
+  async updatePartSupplyItemQuantity(item: QuotePartSupply): Promise<void> {
+    await this.prisma.quotePartSupply.update({
+      where: {
+        quoteId_partSupplyId: { quoteId: item.quoteId, partSupplyId: item.partSupplyId },
+      },
+      data: {
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        updatedAt: item.updatedAt,
+      },
+    });
   }
 }

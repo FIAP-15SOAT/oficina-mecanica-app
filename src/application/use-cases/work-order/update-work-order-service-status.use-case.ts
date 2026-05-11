@@ -79,14 +79,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
         }),
       );
 
-      updates.push(
-        repos.partSupply.update(reservation.partSupplyId, {
-          stock: partSupply.stock,
-          reservedStock: partSupply.reservedStock,
-          version: partSupply.version,
-          updatedAt: partSupply.updatedAt,
-        }),
-      );
+      updates.push(repos.partSupply.update(partSupply));
     }
 
     await Promise.all([repos.stockMovement.createMany(movements), ...updates]);

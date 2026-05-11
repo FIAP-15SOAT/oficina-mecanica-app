@@ -131,6 +131,7 @@ model Vehicle {
   customer   Customer    @relation(fields: [customerId], references: [id])
   workOrders WorkOrder[]
 
+  @@index([customerId])
   @@map("vehicles")
 }
 
@@ -205,6 +206,11 @@ model WorkOrder {
   stockMovements    StockMovement[]
   stockReservations StockReservation[]
 
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([assignedUserId])
+  @@index([status])
+  @@index([status, createdAt])
   @@map("work_orders")
 }
 
@@ -224,6 +230,7 @@ model WorkOrderService {
   service   Service   @relation(fields: [serviceId], references: [id])
 
   @@id([workOrderId, serviceId])
+  @@index([serviceId])
   @@map("work_order_services")
 }
 
@@ -240,6 +247,7 @@ model WorkOrderPartSupply {
   partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
 
   @@id([workOrderId, partSupplyId])
+  @@index([partSupplyId])
   @@map("work_order_part_supplies")
 }
 
@@ -262,6 +270,8 @@ model Quote {
   services      QuoteService[]
   partsSupplies QuotePartSupply[]
 
+  @@index([workOrderId])
+  @@index([status])
   @@map("quotes")
 }
 
@@ -278,6 +288,7 @@ model QuoteService {
   service Service @relation(fields: [serviceId], references: [id])
 
   @@id([quoteId, serviceId])
+  @@index([serviceId])
   @@map("quote_services")
 }
 
@@ -294,6 +305,7 @@ model QuotePartSupply {
   partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
 
   @@id([quoteId, partSupplyId])
+  @@index([partSupplyId])
   @@map("quote_part_supplies")
 }
 
@@ -309,6 +321,8 @@ model StatusHistory {
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   changedBy User?     @relation(fields: [changedById], references: [id])
 
+  @@index([workOrderId])
+  @@index([changedById])
   @@map("status_history")
 }
 
@@ -324,6 +338,9 @@ model StockMovement {
   partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
   workOrder  WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
 
+  @@index([partSupplyId])
+  @@index([workOrderId])
+  @@index([type])
   @@map("stock_movements")
 }
 
@@ -337,5 +354,7 @@ model StockReservation {
   partSupply PartSupply @relation(fields: [partSupplyId], references: [id])
   workOrder  WorkOrder  @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
 
+  @@index([partSupplyId])
+  @@index([workOrderId])
   @@map("stock_reservations")
 }

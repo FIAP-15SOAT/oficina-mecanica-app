@@ -40,7 +40,7 @@ import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases
 import { IUpdateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order.use-case.interface';
 import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-status.use-case.interface';
 import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/reporting/find-work-order-status-history.use-case.interface';
+import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
 import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
 
 import { CreateWorkOrderRequestDto } from './dto/create-work-order-request.dto';

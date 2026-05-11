@@ -29,7 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     response.status(status).json({
       statusCode: status,
-      error: status === HttpStatus.INTERNAL_SERVER_ERROR ? 'Internal Server Error' : 'Bad Request',
+      error: this.resolveErrorName(status),
       message,
     });
   }
@@ -41,30 +41,47 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
+
       if (typeof response === 'object' && response !== null && 'message' in response) {
         return (response as Record<string, unknown>).message as string | string[];
       }
+
       return exception.message;
     }
 
     return 'Bad request';
   }
 
+  private resolveErrorName(status: HttpStatus): string {
+    // Map HTTP status codes to their standard reason phrases
+    const phrases: Partial<Record<number, string>> = {
+      [HttpStatus.BAD_REQUEST]: 'Bad Request',
+      [HttpStatus.UNAUTHORIZED]: 'Unauthorized',
+      [HttpStatus.FORBIDDEN]: 'Forbidden',
+      [HttpStatus.NOT_FOUND]: 'Not Found',
+      [HttpStatus.METHOD_NOT_ALLOWED]: 'Method Not Allowed',
+      [HttpStatus.CONFLICT]: 'Conflict',
+      [HttpStatus.GONE]: 'Gone',
+      [HttpStatus.UNPROCESSABLE_ENTITY]: 'Unprocessable Entity',
+      [HttpStatus.TOO_MANY_REQUESTS]: 'Too Many Requests',
+      [HttpStatus.INTERNAL_SERVER_ERROR]: 'Internal Server Error',
+      [HttpStatus.NOT_IMPLEMENTED]: 'Not Implemented',
+      [HttpStatus.BAD_GATEWAY]: 'Bad Gateway',
+      [HttpStatus.SERVICE_UNAVAILABLE]: 'Service Unavailable',
+    };
+
+    return phrases[status] ?? 'Error';
+  }
+
   private resolveStatus(exception: unknown): HttpStatus {
     if (exception instanceof HttpException) {
       return exception.getStatus();
     }
-    // Express body-parser attaches a numeric `status` to SyntaxError on malformed JSON
-    if (
-      exception instanceof SyntaxError &&
-      'status' in exception &&
-      (exception as NodeJS.ErrnoException).code !== undefined
-    ) {
-      return HttpStatus.BAD_REQUEST;
-    }
+
     if (exception instanceof SyntaxError && 'body' in exception) {
       return HttpStatus.BAD_REQUEST;
     }
+
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 }

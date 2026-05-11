@@ -156,7 +156,7 @@ describe('Quote (E2E)', () => {
       expect(res.body.data).toEqual(
         expect.objectContaining({
           id: expect.any(String),
-          workOrderId,
+          workOrder: expect.objectContaining({ id: workOrderId }),
           status: 'PENDING',
           totalAmount: 0,
         }),
@@ -191,7 +191,7 @@ describe('Quote (E2E)', () => {
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────
 
   describe('GET /api/quotes/:id', () => {
-    it('should return a quote by id', async () => {
+    it('should return a quote by id with workOrder object', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -207,6 +207,11 @@ describe('Quote (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.id).toBe(quoteId);
+      expect(res.body.data.workOrder).toBeDefined();
+      expect(res.body.data.workOrder.id).toBe(workOrderId);
+      expect(res.body.data.workOrder.services).toBeUndefined();
+      expect(res.body.data.workOrder.partSupplies).toBeUndefined();
+      expect((res.body.data as Record<string, unknown>)['workOrderId']).toBeUndefined();
     });
 
     it('should return 422 for non-existent quote', async () => {
@@ -247,9 +252,12 @@ describe('Quote (E2E)', () => {
 
       expect(res.body.data.services).toHaveLength(1);
       expect(res.body.data.partsSupplies).toHaveLength(1);
-      expect(res.body.data.services[0].serviceId).toBe(service.id);
+      expect(res.body.data.services[0].id).toBe(service.id);
+      expect(res.body.data.services[0].name).toBeDefined();
       expect(res.body.data.services[0].quantity).toBe(2);
-      expect(res.body.data.partsSupplies[0].partSupplyId).toBe(part.id);
+      expect(res.body.data.partsSupplies[0].id).toBe(part.id);
+      expect(res.body.data.partsSupplies[0].name).toBeDefined();
+      expect(res.body.data.partsSupplies[0].sku).toBeDefined();
       expect(res.body.data.partsSupplies[0].quantity).toBe(3);
     });
   });
@@ -795,7 +803,7 @@ describe('Quote (E2E)', () => {
     });
   });
   describe('GET /api/quotes/:id/decisions', () => {
-    it('should approve quote via email link', async () => {
+    it('should approve quote via email link and status history changedBy is null', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
       const createRes = await request(httpServer)
@@ -824,10 +832,21 @@ describe('Quote (E2E)', () => {
 
       const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'approve', token })
+        .query({ token })
         .expect(200);
 
       expect(res.body.data.status).toBe('APPROVED');
+
+      const historyRes = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}/status-history`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const approvalEntry = (
+        historyRes.body.data as Array<{ newStatus: string; changedBy: unknown }>
+      ).find((e) => e.newStatus === 'APPROVED');
+      expect(approvalEntry).toBeDefined();
+      expect(approvalEntry!.changedBy).toBeNull();
     });
 
     it('should reject quote via email link', async () => {
@@ -859,7 +878,7 @@ describe('Quote (E2E)', () => {
 
       const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'reject', token })
+        .query({ token })
         .expect(200);
 
       expect(res.body.data.status).toBe('REJECTED');
@@ -875,7 +894,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: 'invalid-token' })
+        .query({ token: 'invalid-token' })
         .expect(401);
     });
 
@@ -894,7 +913,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
+        .query({ token: invalidToken })
         .expect(401);
     });
 
@@ -914,11 +933,11 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
+        .query({ token: invalidToken })
         .expect(401);
     });
 
-    it('should return 401 when action in token is different from body', async () => {
+    it('should return 409 when attempting email decision on a non-submitted quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -926,15 +945,15 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId })
         .expect(201);
 
-      const invalidToken = jwtService.sign(
+      const token = jwtService.sign(
         { quoteId: createRes.body.data.id, action: 'reject', type: 'quote-email-decision' },
         { secret, expiresIn: '7d' },
       );
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
-        .expect(401);
+        .query({ token })
+        .expect(409);
     });
 
     it('should throw ResourceNotFoundException when quote does not exist (approve)', async () => {
@@ -944,10 +963,7 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
-        .get(`/api/quotes/${fakeId}/decisions`)
-        .query({ action: 'approve', token })
-        .expect(404);
+      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
     });
 
     it('should throw ResourceNotFoundException when quote does not exist (reject)', async () => {
@@ -957,13 +973,10 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
-        .get(`/api/quotes/${fakeId}/decisions`)
-        .query({ action: 'reject', token })
-        .expect(404);
+      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
     });
 
-    it('should throw BadRequestException when action is invalid', async () => {
+    it('should treat unrecognized action in token as reject on a submitted quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -989,10 +1002,12 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
+      const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'invalid-action', token })
-        .expect(400);
+        .query({ token })
+        .expect(200);
+
+      expect(res.body.data.status).toBe('REJECTED');
     });
   });
 
@@ -1214,7 +1229,7 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-    it('should return 400 for invalid action in email decision', async () => {
+    it('should return 409 when attempting email decision on a draft (non-submitted) quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -1223,17 +1238,17 @@ describe('Quote (E2E)', () => {
         .expect(201);
       const quoteId = createRes.body.data.id;
       const token = jwtService.sign(
-        { quoteId, action: 'invalid', type: 'quote-email-decision' },
+        { quoteId, action: 'reject', type: 'quote-email-decision' },
         { secret, expiresIn: '7d' },
       );
 
       await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'invalid', token })
-        .expect(400);
+        .query({ token })
+        .expect(409);
     });
 
-    it('should return 400 when action query param is completely missing or invalid', async () => {
+    it('should return 400 when token query param is missing', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -1242,10 +1257,7 @@ describe('Quote (E2E)', () => {
         .expect(201);
       const quoteId = createRes.body.data.id;
 
-      await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'WRONG', token: 'some-token' })
-        .expect(400);
+      await request(httpServer).get(`/api/quotes/${quoteId}/decisions`).expect(400);
     });
 
     it('should return 404 when updating service in non-existent quote', async () => {
@@ -1307,7 +1319,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'reject', token })
+        .query({ token })
         .expect(200);
 
       const updatedQuote = await ctx.prisma.quote.findUnique({ where: { id: quoteId } });
@@ -1333,8 +1345,11 @@ describe('Quote (E2E)', () => {
         expect(res.body.pagination.page).toBe(1);
         expect(res.body.pagination.limit).toBe(10);
         expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-        expect(res.body.data[0].services).toBeDefined();
-        expect(res.body.data[0].partsSupplies).toBeDefined();
+        expect(res.body.data[0].workOrder).toBeDefined();
+        expect(res.body.data[0].workOrder.id).toBeDefined();
+        expect((res.body.data[0] as Record<string, unknown>)['workOrderId']).toBeUndefined();
+        expect(res.body.data[0].services).toBeUndefined();
+        expect(res.body.data[0].partsSupplies).toBeUndefined();
       });
 
       it('should filter quotes by workOrderId (GET /api/quotes?workOrderId=...)', async () => {
@@ -1353,7 +1368,7 @@ describe('Quote (E2E)', () => {
           .expect(200);
 
         expect(res.body.data).toHaveLength(1);
-        expect(res.body.data[0].workOrderId).toBe(wo1.workOrderId);
+        expect(res.body.data[0].workOrder.id).toBe(wo1.workOrderId);
       });
 
       it('should filter quotes by status (GET /api/quotes?status=...)', async () => {
@@ -1410,9 +1425,11 @@ describe('Quote (E2E)', () => {
 
         expect(res.body.data).toBeInstanceOf(Array);
         expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-        expect(res.body.data[0].workOrderId).toBe(wo.workOrderId);
-        expect(res.body.data[0].services).toBeDefined();
-        expect(res.body.data[0].partsSupplies).toBeDefined();
+        expect(res.body.data[0].workOrder).toBeDefined();
+        expect(res.body.data[0].workOrder.id).toBe(wo.workOrderId);
+        expect((res.body.data[0] as Record<string, unknown>)['workOrderId']).toBeUndefined();
+        expect(res.body.data[0].services).toBeUndefined();
+        expect(res.body.data[0].partsSupplies).toBeUndefined();
       });
 
       it('should return 404 when listing quotes for non-existent work order', async () => {

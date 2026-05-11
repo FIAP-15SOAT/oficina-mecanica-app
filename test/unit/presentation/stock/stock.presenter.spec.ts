@@ -72,8 +72,10 @@ describe('StockPresenter', () => {
       expect(item.workOrder!.assignedUser!.id).toBe(assignedUser.id);
     });
 
-    it('should format a stock movement with workOrder but without nested customer/vehicle/assignedUser', () => {
-      const workOrder = createMockWorkOrder();
+    it('should format a stock movement with workOrder but without assignedUser', () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id, customer });
+      const workOrder = createMockWorkOrder({ customer, vehicle });
       const partSupply = createMockPartSupply();
 
       const movement = StockMovement.reconstitute({
@@ -94,8 +96,8 @@ describe('StockPresenter', () => {
       });
 
       const item = result.data[0];
-      expect(item.workOrder!.customer).toBeNull();
-      expect(item.workOrder!.vehicle).toBeNull();
+      expect(item.workOrder!.customer).toBeDefined();
+      expect(item.workOrder!.vehicle).toBeDefined();
       expect(item.workOrder!.assignedUser).toBeNull();
     });
 
@@ -125,7 +127,9 @@ describe('StockPresenter', () => {
   describe('toPaginatedStockReservationsResponse', () => {
     it('should format a stock reservation with partSupply and workOrder relations', () => {
       const partSupply = createMockPartSupply();
-      const workOrder = createMockWorkOrder();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id, customer });
+      const workOrder = createMockWorkOrder({ customer, vehicle });
 
       const reservation = StockReservation.reconstitute({
         id: randomUUID(),
@@ -178,8 +182,10 @@ describe('StockPresenter', () => {
       expect(item.workOrder.assignedUser!.id).toBe(assignedUser.id);
     });
 
-    it('should format a stock reservation with workOrder but without nested customer/vehicle/assignedUser', () => {
-      const workOrder = createMockWorkOrder();
+    it('should format a stock reservation with workOrder but without assignedUser', () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id, customer });
+      const workOrder = createMockWorkOrder({ customer, vehicle });
       const partSupply = createMockPartSupply();
 
       const reservation = StockReservation.reconstitute({
@@ -198,14 +204,16 @@ describe('StockPresenter', () => {
       });
 
       const item = result.data[0];
-      expect(item.workOrder.customer).toBeNull();
-      expect(item.workOrder.vehicle).toBeNull();
+      expect(item.workOrder.customer).toBeDefined();
+      expect(item.workOrder.vehicle).toBeDefined();
       expect(item.workOrder.assignedUser).toBeNull();
     });
 
     it('should format partNumber as null when partSupply has no partNumber', () => {
       const partSupply = createMockPartSupply({ partNumber: undefined });
-      const workOrder = createMockWorkOrder();
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id, customer });
+      const workOrder = createMockWorkOrder({ customer, vehicle });
 
       const reservation = StockReservation.reconstitute({
         id: randomUUID(),

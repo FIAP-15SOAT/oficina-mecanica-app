@@ -32,6 +32,30 @@ describe('WorkOrderPartSupply Entity', () => {
       expect(entity.lineItem.totalPrice).toBe(100);
     });
 
+    it('should throw when workOrderId is empty', () => {
+      expect(() => WorkOrderPartSupply.create({ ...validProps, workOrderId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when workOrderId is not a valid UUID', () => {
+      expect(() =>
+        WorkOrderPartSupply.create({ ...validProps, workOrderId: 'invalid-id' }),
+      ).toThrow(DomainValidationException);
+    });
+
+    it('should throw when partSupplyId is empty', () => {
+      expect(() => WorkOrderPartSupply.create({ ...validProps, partSupplyId: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw when partSupplyId is not a valid UUID', () => {
+      expect(() =>
+        WorkOrderPartSupply.create({ ...validProps, partSupplyId: 'invalid-id' }),
+      ).toThrow(DomainValidationException);
+    });
+
     it('should throw when quantity is zero', () => {
       expect(() => WorkOrderPartSupply.create({ ...validProps, quantity: 0 })).toThrow(
         DomainValidationException,

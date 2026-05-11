@@ -81,14 +81,14 @@ export class PrismaServiceRepository implements IServiceRepository {
     };
   }
 
-  async update(id: string, data: Partial<Service>): Promise<Service> {
+  async update(service: Service): Promise<Service> {
     const updatedService = await this.prisma.service.update({
-      where: { id },
+      where: { id: service.id },
       data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
-        ...(data.estimatedTimeMin !== undefined && { estimatedTimeMin: data.estimatedTimeMin }),
+        name: service.name,
+        description: service.description,
+        basePrice: service.basePrice,
+        estimatedTimeMin: service.estimatedTimeMin,
       },
     });
 

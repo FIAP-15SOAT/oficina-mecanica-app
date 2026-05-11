@@ -229,32 +229,39 @@ describe('PrismaServiceRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a service with all fields', async () => {
-      const id = randomUUID();
-      const updateData = {
+    it('should update a service and return domain entity', async () => {
+      const service = Service.reconstitute({
+        id: randomUUID(),
         name: 'Updated Service',
         description: 'New Description',
         basePrice: 149.99,
         estimatedTimeMin: 60,
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const updatedPrismaModel = createMockService({
-        id,
-        name: updateData.name,
-        description: updateData.description,
-        basePrice: updateData.basePrice,
-        estimatedTimeMin: updateData.estimatedTimeMin,
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        basePrice: service.basePrice,
+        estimatedTimeMin: service.estimatedTimeMin,
       });
 
       prisma.service.update.mockResolvedValue(updatedPrismaModel);
 
-      const result = await repository.update(id, updateData);
+      const result = await repository.update(service);
 
-      expect(result.name).toBe(updateData.name);
-      expect(result.description).toBe(updateData.description);
+      expect(result.name).toBe(service.name);
+      expect(result.description).toBe(service.description);
       expect(prisma.service.update).toHaveBeenCalledWith({
-        where: { id },
-        data: updateData,
+        where: { id: service.id },
+        data: {
+          name: service.name,
+          description: service.description,
+          basePrice: service.basePrice,
+          estimatedTimeMin: service.estimatedTimeMin,
+        },
       });
     });
   });

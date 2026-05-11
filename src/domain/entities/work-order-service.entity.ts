@@ -1,5 +1,4 @@
 import { validate as isUuid } from 'uuid';
-import { randomUUID } from 'node:crypto';
 import { WorkOrderServiceStatus } from '../enums/work-order-service-status.enum';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
@@ -14,7 +13,6 @@ export interface CreateWorkOrderServiceProps {
 }
 
 interface WorkOrderServiceProps {
-  id?: string;
   workOrderId: string;
   serviceId: string;
   lineItem: LineItemPrice;
@@ -26,7 +24,6 @@ interface WorkOrderServiceProps {
 }
 
 interface ReconstitueWorkOrderServiceProps {
-  id?: string;
   workOrderId: string;
   serviceId: string;
   quantity: number;
@@ -40,7 +37,6 @@ interface ReconstitueWorkOrderServiceProps {
 }
 
 export class WorkOrderService {
-  readonly id: string;
   readonly workOrderId: string;
   readonly serviceId: string;
   private readonly _lineItem: LineItemPrice;
@@ -53,7 +49,6 @@ export class WorkOrderService {
   service?: Service;
 
   private constructor(props: WorkOrderServiceProps) {
-    this.id = props.id ?? randomUUID();
     this.workOrderId = props.workOrderId;
     this.serviceId = props.serviceId;
     this._lineItem = props.lineItem;
@@ -66,7 +61,6 @@ export class WorkOrderService {
 
   static reconstitute(props: ReconstitueWorkOrderServiceProps): WorkOrderService {
     return new WorkOrderService({
-      id: props.id,
       workOrderId: props.workOrderId,
       serviceId: props.serviceId,
       lineItem: LineItemPrice.reconstitute(props.quantity, props.unitPrice, props.totalPrice),
@@ -87,7 +81,6 @@ export class WorkOrderService {
     const lineItem = LineItemPrice.create(props.quantity, props.unitPrice);
 
     return new WorkOrderService({
-      id: randomUUID(),
       workOrderId: props.workOrderId,
       serviceId: props.serviceId,
       lineItem,
@@ -100,8 +93,13 @@ export class WorkOrderService {
   }
 
   startService(): void {
-    if (this.status === WorkOrderServiceStatus.IN_PROGRESS) {
-      throw new BusinessRuleViolationException('O serviço já está em andamento.');
+    if (this.status !== WorkOrderServiceStatus.PENDING) {
+      const msg =
+        this.status === WorkOrderServiceStatus.IN_PROGRESS
+          ? 'O serviço já está em andamento.'
+          : 'Não é possível iniciar um serviço já concluído.';
+
+      throw new BusinessRuleViolationException(msg);
     }
 
     const now = new Date();
@@ -111,8 +109,13 @@ export class WorkOrderService {
   }
 
   completeService(): void {
-    if (this.status === WorkOrderServiceStatus.COMPLETED) {
-      throw new BusinessRuleViolationException('O serviço já está concluído.');
+    if (this.status !== WorkOrderServiceStatus.IN_PROGRESS) {
+      const msg =
+        this.status === WorkOrderServiceStatus.COMPLETED
+          ? 'O serviço já está concluído.'
+          : 'O serviço precisa estar em andamento para ser concluído.';
+
+      throw new BusinessRuleViolationException(msg);
     }
 
     const now = new Date();

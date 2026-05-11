@@ -20,7 +20,7 @@ export interface IServiceRepository {
     pagination: PaginationInput,
     filters: ServiceFilters,
   ): Promise<PaginatedRepositoryResult<Service>>;
-  update(id: string, data: Partial<Service>): Promise<Service>;
+  update(service: Service): Promise<Service>;
   delete(id: string): Promise<void>;
   isServiceInUse(serviceId: string): Promise<boolean>;
   findServiceMetrics(serviceId: string): Promise<ServiceMetrics>;

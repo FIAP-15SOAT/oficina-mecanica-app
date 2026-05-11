@@ -9,8 +9,8 @@ import { UnauthorizedAccessException } from '@application/exceptions/unauthorize
 
 interface QuoteEmailDecisionTokenPayload {
   quoteId: string;
-  action: string;
-  type: string;
+  action: QuoteDecisionAction;
+  type: TokenType;
 }
 
 export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
@@ -21,12 +21,12 @@ export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
     private readonly decisionSecret: string,
   ) {}
 
-  async execute(quoteId: string, action: QuoteDecisionAction, token: string): Promise<Quote> {
+  async execute(quoteId: string, token: string): Promise<Quote> {
     const payload = this.verifyToken(token);
 
-    this.validatePayload(payload, quoteId, action);
+    this.validatePayload(payload, quoteId);
 
-    if (action === QuoteDecisionAction.APPROVE) {
+    if (payload.action === QuoteDecisionAction.APPROVE) {
       return this.approveQuoteUseCase.execute(quoteId);
     }
 
@@ -44,16 +44,8 @@ export class EmailDecisionQuoteUseCase implements IEmailDecisionQuoteUseCase {
     }
   }
 
-  private validatePayload(
-    payload: QuoteEmailDecisionTokenPayload,
-    quoteId: string,
-    action: string,
-  ): void {
-    if (
-      payload.type !== (TokenType.QUOTE_EMAIL_DECISION as string) ||
-      payload.quoteId !== quoteId ||
-      payload.action !== action
-    ) {
+  private validatePayload(payload: QuoteEmailDecisionTokenPayload, quoteId: string): void {
+    if (payload.type !== TokenType.QUOTE_EMAIL_DECISION || payload.quoteId !== quoteId) {
       throw new UnauthorizedAccessException('Token inválido para esta ação.');
     }
   }

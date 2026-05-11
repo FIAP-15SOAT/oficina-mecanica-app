@@ -26,7 +26,7 @@ describe('UpdateUserStatusUseCase', () => {
     const result = await useCase.execute(user.id, true);
 
     expect(result).toEqual(activated.toPublicView());
-    expect(userRepository.update).toHaveBeenCalledWith(user.id, user);
+    expect(userRepository.update).toHaveBeenCalledWith(user);
   });
 
   it('should deactivate an active user', async () => {
@@ -43,7 +43,7 @@ describe('UpdateUserStatusUseCase', () => {
     const result = await useCase.execute(user.id, false);
 
     expect(result).toEqual(deactivated.toPublicView());
-    expect(userRepository.update).toHaveBeenCalledWith(user.id, user);
+    expect(userRepository.update).toHaveBeenCalledWith(user);
   });
 
   it('should throw ResourceNotFoundException when user does not exist', async () => {

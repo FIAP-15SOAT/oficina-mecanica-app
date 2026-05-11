@@ -24,7 +24,7 @@ import {
 } from './dto/status-history-response.dto';
 
 export class WorkOrderPresenter {
-  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
+  static toSummaryResponse(workOrder: WorkOrder): WorkOrderResponseDto {
     return {
       id: workOrder.id,
       number: workOrder.number,
@@ -44,6 +44,12 @@ export class WorkOrderPresenter {
       deliveredAt: workOrder.deliveredAt,
       createdAt: workOrder.createdAt,
       updatedAt: workOrder.updatedAt,
+    };
+  }
+
+  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
+    return {
+      ...WorkOrderPresenter.toSummaryResponse(workOrder),
       services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
       partSupplies: workOrder.partSupplies.map((p) => WorkOrderPresenter.toPartSupplyItem(p)),
     };
@@ -58,7 +64,7 @@ export class WorkOrderPresenter {
   ): WorkOrderPaginatedResponseDto {
     const { items, pagination } = paginatedResult;
     return {
-      data: items.map((wo) => WorkOrderPresenter.toResponse(wo)),
+      data: items.map((wo) => WorkOrderPresenter.toSummaryResponse(wo)),
       pagination,
     };
   }
@@ -121,8 +127,8 @@ export class WorkOrderPresenter {
   static toServiceItem(this: void, item: WorkOrderService): WorkOrderServiceItemResponseDto {
     return {
       id: item.serviceId,
-      name: item.service?.name ?? '',
-      description: item.service?.description ?? null,
+      name: item.service!.name,
+      description: item.service!.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       totalPrice: item.totalPrice,

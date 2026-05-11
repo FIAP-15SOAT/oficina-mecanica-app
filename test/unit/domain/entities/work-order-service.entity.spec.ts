@@ -17,7 +17,6 @@ describe('WorkOrderService Entity', () => {
     it('should create a WorkOrderService with valid props', () => {
       const wos = WorkOrderService.create(validProps);
 
-      expect(wos.id).toBeDefined();
       expect(wos.workOrderId).toBe(validProps.workOrderId);
       expect(wos.serviceId).toBe(validProps.serviceId);
       expect(wos.quantity).toBe(validProps.quantity);
@@ -104,6 +103,14 @@ describe('WorkOrderService Entity', () => {
 
       expect(() => wos.startService()).toThrow(BusinessRuleViolationException);
     });
+
+    it('should throw BusinessRuleViolationException when already COMPLETED (COMPLETED→IN_PROGRESS blocked)', () => {
+      const wos = WorkOrderService.create(validProps);
+      wos.startService();
+      wos.completeService();
+
+      expect(() => wos.startService()).toThrow(BusinessRuleViolationException);
+    });
   });
 
   describe('completeService()', () => {
@@ -121,6 +128,12 @@ describe('WorkOrderService Entity', () => {
       const wos = WorkOrderService.create(validProps);
       wos.startService();
       wos.completeService();
+
+      expect(() => wos.completeService()).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw BusinessRuleViolationException when still PENDING (PENDING→COMPLETED blocked)', () => {
+      const wos = WorkOrderService.create(validProps);
 
       expect(() => wos.completeService()).toThrow(BusinessRuleViolationException);
     });

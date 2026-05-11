@@ -37,7 +37,6 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { Public } from '@infrastructure/auth/public.decorator';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 
 import { ICreateQuoteUseCase } from '@domain/interfaces/use-cases/quote/create-quote.use-case.interface';
 import { IFindQuoteByIdUseCase } from '@domain/interfaces/use-cases/quote/find-quote-by-id.use-case.interface';
@@ -310,17 +309,13 @@ export class QuoteController {
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiQuery({
-    name: 'action',
-    enum: QuoteDecisionAction,
-    description: 'Ação a ser tomada (approve/reject)',
-  })
   @ApiQuery({ name: 'token', description: 'Token assinado para decisão do orçamento' })
   async emailDecision(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: QuoteEmailDecisionRequestDto,
   ) {
-    const quote = await this.emailDecisionQuoteUseCase.execute(id, query.action, query.token);
+    const quote = await this.emailDecisionQuoteUseCase.execute(id, query.token);
+
     return QuotePresenter.toDataResponse(quote);
   }
 }

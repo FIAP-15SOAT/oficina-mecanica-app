@@ -18,6 +18,6 @@ export interface IUserRepository {
     pagination: PaginationInput,
     filters?: UserFilters,
   ): Promise<PaginatedRepositoryResult<User>>;
-  update(id: string, data: Partial<User>): Promise<User>;
+  update(user: User): Promise<User>;
   delete(id: string): Promise<void>;
 }

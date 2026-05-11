@@ -53,7 +53,6 @@ describe('UpdateVehicleUseCase', () => {
 
     expect(result).toEqual(updated);
     expect(vehicleRepository.update).toHaveBeenCalledWith(
-      'veh-1',
       expect.objectContaining({ brand: 'Honda' }),
     );
   });
@@ -131,7 +130,6 @@ describe('UpdateVehicleUseCase', () => {
     expect(result).toEqual(updated);
     expect(customerRepository.findById).toHaveBeenCalledWith(customerId2);
     expect(vehicleRepository.update).toHaveBeenCalledWith(
-      'veh-1',
       expect.objectContaining({ customerId: customerId2 }),
     );
   });
@@ -152,7 +150,6 @@ describe('UpdateVehicleUseCase', () => {
 
     expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('XYZ9999');
     expect(vehicleRepository.update).toHaveBeenCalledWith(
-      'veh-1',
       expect.objectContaining({ plate: expect.objectContaining({ value: 'XYZ9999' }) }),
     );
   });

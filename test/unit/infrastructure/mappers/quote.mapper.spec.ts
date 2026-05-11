@@ -1,5 +1,6 @@
 import { QuoteMapper } from '@infrastructure/mappers/quote.mapper';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@generated/client';
 
@@ -88,6 +89,51 @@ describe('QuoteMapper', () => {
       expect(domainEntity.partsSupplies).toHaveLength(1);
       expect(domainEntity.services![0].unitPrice).toBe(100);
       expect(domainEntity.partsSupplies![0].unitPrice).toBe(25);
+    });
+
+    it('should enrich entity with workOrder relation when present', () => {
+      const now = new Date();
+
+      const prismaRecord = {
+        id: randomUUID(),
+        workOrderId: randomUUID(),
+        servicesAmount: new Prisma.Decimal(0),
+        partsAmount: new Prisma.Decimal(0),
+        totalAmount: new Prisma.Decimal(0),
+        status: QuoteStatus.PENDING,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        version: 0,
+        createdAt: now,
+        updatedAt: now,
+        workOrder: {
+          id: randomUUID(),
+          number: 'WO-001',
+          customerId: randomUUID(),
+          vehicleId: randomUUID(),
+          assignedUserId: null,
+          status: WorkOrderStatus.IN_DIAGNOSIS,
+          problemDescription: null,
+          internalNotes: null,
+          mileageAtService: null,
+          totalAmount: new Prisma.Decimal(0),
+          version: 0,
+          approvedAt: null,
+          rejectedAt: null,
+          startedAt: null,
+          finishedAt: null,
+          deliveredAt: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      };
+
+      const domainEntity = QuoteMapper.toDomain(prismaRecord);
+
+      expect(domainEntity.workOrder).toBeDefined();
+      expect(domainEntity.workOrder!.number).toBe('WO-001');
     });
   });
 });

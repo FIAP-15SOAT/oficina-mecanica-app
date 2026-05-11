@@ -157,9 +157,9 @@ describe('PrismaVehicleRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a vehicle', async () => {
-      const id = randomUUID();
-      const data: Partial<Vehicle> = {
+    it('should update a vehicle and return domain entity', async () => {
+      const vehicle = Vehicle.reconstitute({
+        id: randomUUID(),
         customerId: randomUUID(),
         plate: Plate.create('XYZ-9999'),
         brand: 'Honda',
@@ -167,50 +167,80 @@ describe('PrismaVehicleRepository', () => {
         year: 2022,
         color: 'Black',
         mileage: 10000,
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       prisma.vehicle.update.mockResolvedValue(
         createMockPrismaVehicle({
-          id,
-          customerId: data.customerId,
-          plate: 'XYZ9999',
-          brand: data.brand,
-          model: data.model,
-          year: data.year,
-          color: data.color,
-          mileage: data.mileage,
+          id: vehicle.id,
+          customerId: vehicle.customerId,
+          plate: vehicle.plate.value,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          mileage: vehicle.mileage,
         }),
       );
 
-      const result = await repository.update(id, data);
+      const result = await repository.update(vehicle);
 
       expect(result.brand).toBe('Honda');
-      expect(prisma.vehicle.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id } }),
-      );
+      expect(prisma.vehicle.update).toHaveBeenCalledWith({
+        where: { id: vehicle.id },
+        data: {
+          customerId: vehicle.customerId,
+          plate: vehicle.plate.value,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          mileage: vehicle.mileage,
+        },
+        include: { customer: true },
+      });
     });
 
     it('should throw ResourceConflictException on P2002', async () => {
-      const id = randomUUID();
+      const vehicle = Vehicle.reconstitute({
+        id: randomUUID(),
+        customerId: randomUUID(),
+        plate: Plate.create('XYZ-9999'),
+        brand: 'Honda',
+        model: 'Civic',
+        year: 2022,
+        color: null,
+        mileage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const error = new Prisma.PrismaClientKnownRequestError('Duplicate plate', {
         code: 'P2002',
         clientVersion: '5.0.0',
       });
       prisma.vehicle.update.mockRejectedValue(error);
 
-      await expect(repository.update(id, { plate: Plate.create('XYZ-9999') })).rejects.toThrow(
-        ResourceConflictException,
-      );
+      await expect(repository.update(vehicle)).rejects.toThrow(ResourceConflictException);
     });
 
     it('should rethrow unexpected errors from update', async () => {
-      const id = randomUUID();
+      const vehicle = Vehicle.reconstitute({
+        id: randomUUID(),
+        customerId: randomUUID(),
+        plate: Plate.create('ABC-1234'),
+        brand: 'Test',
+        model: 'Model',
+        year: 2020,
+        color: null,
+        mileage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const unexpectedError = new Error('Database connection lost');
       prisma.vehicle.update.mockRejectedValue(unexpectedError);
 
-      await expect(repository.update(id, { brand: 'Test' })).rejects.toThrow(
-        'Database connection lost',
-      );
+      await expect(repository.update(vehicle)).rejects.toThrow('Database connection lost');
     });
   });
 

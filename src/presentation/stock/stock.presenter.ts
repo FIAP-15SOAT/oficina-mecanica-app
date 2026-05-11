@@ -76,26 +76,22 @@ export class StockPresenter {
     return {
       id: wo.id,
       number: wo.number,
-      customer: wo.customer
-        ? {
-            id: wo.customer.id,
-            name: wo.customer.name,
-            type: wo.customer.type,
-            document: wo.customer.document.value,
-            phone: wo.customer.phone.value,
-            email: wo.customer.email.value,
-          }
-        : null,
-      vehicle: wo.vehicle
-        ? {
-            id: wo.vehicle.id,
-            plate: wo.vehicle.plate.value,
-            brand: wo.vehicle.brand,
-            model: wo.vehicle.model,
-            year: wo.vehicle.year,
-            color: wo.vehicle.color ?? null,
-          }
-        : null,
+      customer: {
+        id: wo.customer!.id,
+        name: wo.customer!.name,
+        type: wo.customer!.type,
+        document: wo.customer!.document.value,
+        phone: wo.customer!.phone.value,
+        email: wo.customer!.email.value,
+      },
+      vehicle: {
+        id: wo.vehicle!.id,
+        plate: wo.vehicle!.plate.value,
+        brand: wo.vehicle!.brand,
+        model: wo.vehicle!.model,
+        year: wo.vehicle!.year,
+        color: wo.vehicle!.color ?? null,
+      },
       assignedUser: wo.assignedUser
         ? {
             id: wo.assignedUser.id,

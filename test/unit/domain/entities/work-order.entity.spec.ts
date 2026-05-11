@@ -633,5 +633,51 @@ describe('WorkOrder Entity', () => {
       expect(result.partSupplies).toHaveLength(0);
       expect(wo.totalAmount).toBe(0);
     });
+
+    it('should treat undefined services as empty array', () => {
+      const qPart = createMockQuotePartSupply();
+      const quote = createMockQuote({ partsSupplies: [qPart] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(0);
+      expect(result.partSupplies).toHaveLength(1);
+    });
+
+    it('should treat undefined partsSupplies as empty array', () => {
+      const qService = createMockQuoteService();
+      const quote = createMockQuote({ services: [qService] });
+
+      const wo = WorkOrder.create(baseProps);
+      const result = wo.applyQuoteItems(quote);
+
+      expect(result.services).toHaveLength(1);
+      expect(result.partSupplies).toHaveLength(0);
+    });
+
+    it('should throw BusinessRuleViolationException when a service was already added', () => {
+      const serviceId = randomUUID();
+      const qService = createMockQuoteService({ serviceId });
+      const quote = createMockQuote({ services: [qService], partsSupplies: [] });
+
+      const wo = WorkOrder.create(baseProps);
+      wo.applyQuoteItems(quote);
+
+      const quote2 = createMockQuote({ services: [qService], partsSupplies: [] });
+      expect(() => wo.applyQuoteItems(quote2)).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw BusinessRuleViolationException when a part/supply was already added', () => {
+      const partSupplyId = randomUUID();
+      const qPart = createMockQuotePartSupply({ partSupplyId });
+      const quote = createMockQuote({ services: [], partsSupplies: [qPart] });
+
+      const wo = WorkOrder.create(baseProps);
+      wo.applyQuoteItems(quote);
+
+      const quote2 = createMockQuote({ services: [], partsSupplies: [qPart] });
+      expect(() => wo.applyQuoteItems(quote2)).toThrow(BusinessRuleViolationException);
+    });
   });
 });

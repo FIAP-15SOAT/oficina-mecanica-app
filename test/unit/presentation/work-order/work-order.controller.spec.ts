@@ -5,16 +5,17 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
-import { Quote } from '@domain/entities/quote.entity';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { createMockQuote } from '../../../helpers/quote-mock.factory';
+import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { ICreateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/create-work-order.use-case.interface';
 import { IFindWorkOrderByIdUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-by-id.use-case.interface';
 import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases/work-order/find-all-work-orders-paginated.use-case.interface';
 import { IUpdateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order.use-case.interface';
 import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-status.use-case.interface';
 import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/reporting/find-work-order-status-history.use-case.interface';
+import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
 import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
 
 describe('WorkOrderController', () => {
@@ -157,10 +158,13 @@ describe('WorkOrderController', () => {
     const dto = { status: 'COMPLETED' };
     const mockService = {
       serviceId,
+      service: { name: 'Test Service', description: null },
       quantity: 1,
       unitPrice: 100,
       totalPrice: 100,
       status: 'COMPLETED',
+      startedAt: null,
+      finishedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -230,8 +234,12 @@ describe('WorkOrderController', () => {
 
   it('should find quotes of a work order', async () => {
     const id = randomUUID();
-    const quotes = [{ id: randomUUID(), workOrderId: id }];
-    findWorkOrderQuotesUseCase.execute.mockResolvedValue(quotes as unknown as Quote[]);
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const workOrder = createMockWorkOrder({ customer, vehicle });
+    const quote = createMockQuote();
+    quote.workOrder = workOrder;
+    findWorkOrderQuotesUseCase.execute.mockResolvedValue([quote]);
 
     const result = await controller.findQuotes(id);
 

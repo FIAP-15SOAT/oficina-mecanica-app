@@ -23,7 +23,7 @@ describe('UpdateUserUseCase', () => {
   it('should update user name', async () => {
     const user = createMockUser();
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation((_id, data) =>
+    userRepository.update.mockImplementation((data) =>
       Promise.resolve(createMockUser({ name: data.name })),
     );
 
@@ -36,7 +36,7 @@ describe('UpdateUserUseCase', () => {
     const user = createMockUser({ email: Email.create('antigo@email.com') });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.update.mockImplementation((_id, data) =>
+    userRepository.update.mockImplementation((data) =>
       Promise.resolve(createMockUser({ email: data.email })),
     );
 
@@ -69,7 +69,7 @@ describe('UpdateUserUseCase', () => {
   it('should update role', async () => {
     const user = createMockUser({ role: UserRole.ATTENDANT });
     userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation((_id, data) =>
+    userRepository.update.mockImplementation((data) =>
       Promise.resolve(createMockUser({ role: data.role })),
     );
 

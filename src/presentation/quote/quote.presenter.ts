@@ -2,12 +2,14 @@ import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
+import { WorkOrderPresenter } from '@presentation/work-order/work-order.presenter';
 import {
   QuoteResponseDto,
   QuoteListResponseDto,
   QuotePaginatedResponseDto,
   QuoteDataResponseDto,
   QuoteWithItemsDataResponseDto,
+  QuoteWithItemsResponseDto,
   QuoteServiceItemResponseDto,
   QuotePartSupplyItemResponseDto,
 } from './dto/quote-response.dto';
@@ -16,7 +18,7 @@ export class QuotePresenter {
   static toResponse(quote: Quote): QuoteResponseDto {
     return {
       id: quote.id,
-      workOrderId: quote.workOrderId,
+      workOrder: WorkOrderPresenter.toSummaryResponse(quote.workOrder!),
       status: quote.status,
       notes: quote.notes,
       sentAt: quote.sentAt,
@@ -32,17 +34,23 @@ export class QuotePresenter {
 
   static toWithItemsResponse(quote: Quote): QuoteWithItemsDataResponseDto {
     return {
-      data: {
-        ...QuotePresenter.toResponse(quote),
-        services: (quote.services ?? []).map(QuotePresenter.toServiceItem),
-        partsSupplies: (quote.partsSupplies ?? []).map(QuotePresenter.toPartSupplyItem),
-      },
+      data: QuotePresenter.toWithItemsDto(quote),
+    };
+  }
+
+  private static toWithItemsDto(quote: Quote): QuoteWithItemsResponseDto {
+    return {
+      ...QuotePresenter.toResponse(quote),
+      services: quote.services.map(QuotePresenter.toServiceItem),
+      partsSupplies: quote.partsSupplies.map(QuotePresenter.toPartSupplyItem),
     };
   }
 
   private static toServiceItem(this: void, item: QuoteService): QuoteServiceItemResponseDto {
     return {
-      serviceId: item.serviceId,
+      id: item.serviceId,
+      name: item.service!.name,
+      description: item.service!.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       totalPrice: item.totalPrice,
@@ -56,7 +64,13 @@ export class QuotePresenter {
     item: QuotePartSupply,
   ): QuotePartSupplyItemResponseDto {
     return {
-      partSupplyId: item.partSupplyId,
+      id: item.partSupplyId,
+      name: item.partSupply!.name,
+      description: item.partSupply!.description,
+      sku: item.partSupply!.sku,
+      partNumber: item.partSupply!.partNumber ?? null,
+      category: item.partSupply!.category,
+      unit: item.partSupply!.unit,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       totalPrice: item.totalPrice,
@@ -71,14 +85,14 @@ export class QuotePresenter {
 
   static toListResponse(quotes: Quote[]): QuoteListResponseDto {
     return {
-      data: quotes.map((q) => QuotePresenter.toWithItemsResponse(q).data),
+      data: quotes.map((q) => QuotePresenter.toResponse(q)),
     };
   }
 
   static toPaginatedResponse(paginatedResult: PaginatedResult<Quote>): QuotePaginatedResponseDto {
     const { items, pagination } = paginatedResult;
     return {
-      data: items.map((q) => QuotePresenter.toWithItemsResponse(q).data),
+      data: items.map((q) => QuotePresenter.toResponse(q)),
       pagination,
     };
   }

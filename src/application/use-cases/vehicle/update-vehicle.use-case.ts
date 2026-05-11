@@ -40,6 +40,6 @@ export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {
 
     existing.update(input);
 
-    return this.vehicleRepository.update(id, existing);
+    return this.vehicleRepository.update(existing);
   }
 }

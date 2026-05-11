@@ -16,7 +16,7 @@ export interface IVehicleRepository {
     pagination: PaginationInput,
     filters: VehicleFilters,
   ): Promise<PaginatedRepositoryResult<Vehicle>>;
-  update(id: string, data: Partial<Vehicle>): Promise<Vehicle>;
+  update(vehicle: Vehicle): Promise<Vehicle>;
   delete(id: string): Promise<void>;
   isVehicleInUse(id: string): Promise<boolean>;
 }

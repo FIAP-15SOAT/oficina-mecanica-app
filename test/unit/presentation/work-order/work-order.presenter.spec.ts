@@ -157,6 +157,43 @@ describe('WorkOrderPresenter', () => {
 
       expect(response.data).toHaveLength(1);
       expect(response.pagination).toEqual(paginatedResult.pagination);
+      expect(response.data[0].services).toBeUndefined();
+      expect(response.data[0].partSupplies).toBeUndefined();
+    });
+  });
+
+  describe('toSummaryResponse', () => {
+    it('should format work order without services or partSupplies', () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
+      const workOrder = WorkOrder.reconstitute({
+        id: randomUUID(),
+        number: '001',
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        assignedUserId: null,
+        status: WorkOrderStatus.RECEIVED,
+        problemDescription: null,
+        internalNotes: null,
+        mileageAtService: null,
+        totalAmount: 0,
+        version: 0,
+        approvedAt: null,
+        rejectedAt: null,
+        startedAt: null,
+        finishedAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      workOrder.customer = customer;
+      workOrder.vehicle = vehicle;
+
+      const response = WorkOrderPresenter.toSummaryResponse(workOrder);
+
+      expect(response.id).toBe(workOrder.id);
+      expect(response.services).toBeUndefined();
+      expect(response.partSupplies).toBeUndefined();
     });
   });
 
@@ -211,56 +248,6 @@ describe('WorkOrderPresenter', () => {
       expect(response.services![0].id).toBe(service.id);
       expect(response.services![0].name).toBe(service.name);
       expect(response.services![0].description).toBe(service.description);
-    });
-
-    it('should include services with fallback when service relation is absent', () => {
-      const now = new Date();
-      const customer = createMockCustomer();
-      const vehicle = createMockVehicle({ customerId: customer.id });
-      const serviceId = randomUUID();
-
-      const wos = WorkOrderService.reconstitute({
-        workOrderId: randomUUID(),
-        serviceId,
-        quantity: 1,
-        unitPrice: 50,
-        totalPrice: 50,
-        status: WorkOrderServiceStatus.PENDING,
-        startedAt: null,
-        finishedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      const workOrder = WorkOrder.reconstitute({
-        id: randomUUID(),
-        number: '003',
-        customerId: customer.id,
-        vehicleId: vehicle.id,
-        assignedUserId: null,
-        status: WorkOrderStatus.RECEIVED,
-        problemDescription: null,
-        internalNotes: null,
-        mileageAtService: null,
-        totalAmount: 0,
-        version: 0,
-        approvedAt: null,
-        rejectedAt: null,
-        startedAt: null,
-        finishedAt: null,
-        deliveredAt: null,
-        createdAt: now,
-        updatedAt: now,
-        services: [wos],
-      });
-      workOrder.customer = customer;
-      workOrder.vehicle = vehicle;
-
-      const response = WorkOrderPresenter.toResponse(workOrder);
-
-      expect(response.services![0].id).toBe(serviceId);
-      expect(response.services![0].name).toBe('');
-      expect(response.services![0].description).toBeNull();
     });
 
     it('should include partSupplies with nested partSupply entity data', () => {

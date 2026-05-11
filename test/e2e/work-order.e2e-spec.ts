@@ -673,6 +673,60 @@ describe('WorkOrder (E2E)', () => {
       expect(stockRes.body.data.length).toBeGreaterThan(0);
     });
 
+    it('should return 409 when completing a service that is not IN_PROGRESS (still PENDING)', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: `Servico Pending Complete ${Date.now()}`,
+          basePrice: 100,
+          estimatedTimeMin: 30,
+        })
+        .expect(201);
+      const serviceId = serviceRes.body.data.id as string;
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      // Service is now PENDING — trying to complete it without starting it first
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(409);
+    });
+
     it('should return 409 when updating service to the same status', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
@@ -723,6 +777,135 @@ describe('WorkOrder (E2E)', () => {
         .expect(200);
 
       // Attempt same transition again — should conflict
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(409);
+    });
+
+    it('should return 409 when completing a service that is already COMPLETED', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: `Serviço Já Concluído ${Date.now()}`, basePrice: 100, estimatedTimeMin: 30 })
+        .expect(201);
+      const serviceId = serviceRes.body.data.id;
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(200);
+
+      // Service is now COMPLETED — trying to complete it again
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(409);
+    });
+
+    it('should return 409 when starting a service that is already COMPLETED', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: `Serviço Reiniciar Concluído ${Date.now()}`,
+          basePrice: 100,
+          estimatedTimeMin: 30,
+        })
+        .expect(201);
+
+      const serviceId = serviceRes.body.data.id;
+
+      const quoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: wo.id })
+        .expect(201);
+      const quoteId = quoteRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'COMPLETED' })
+        .expect(200);
+
+      // Service is now COMPLETED — trying to start it again
       await request(httpServer)
         .patch(`/api/work-orders/${wo.id}/services/${serviceId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)

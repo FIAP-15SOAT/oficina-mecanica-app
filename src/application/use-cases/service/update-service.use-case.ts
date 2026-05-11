@@ -27,6 +27,6 @@ export class UpdateServiceUseCase {
       estimatedTimeMin: updateServiceDto.estimatedTimeMin,
     });
 
-    return this.serviceRepository.update(id, service);
+    return this.serviceRepository.update(service);
   }
 }
