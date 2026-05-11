@@ -9,6 +9,7 @@ import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { Email } from '@domain/value-objects/email.vo';
+import { SendEmailInput } from '@domain/interfaces/services/email-sender.service.interface';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),
@@ -127,6 +128,9 @@ describe('SubmitQuoteUseCase', () => {
     await useCase.execute(quote.id);
 
     expect(mockEmailSender.send).toHaveBeenCalled();
+    const emailContent = mockEmailSender.send.mock.calls[0][0] as SendEmailInput;
+    expect(emailContent.message.text).toContain(`/decisions?token=`);
+    expect(emailContent.message.html).toContain(`/decisions?token=`);
   });
 
   it('should fail if email sending fails', async () => {
