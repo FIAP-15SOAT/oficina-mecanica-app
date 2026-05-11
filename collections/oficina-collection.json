@@ -1962,7 +1962,9 @@
                   "    pm.expect(res.data.stock).to.be.a('number').and.above(0);",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -1976,7 +1978,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"type\":\"ENTRY\",\"quantity\":5,\"reason\":\"Reposição de Estoque recebida do fornecedor\"}"
+              "raw": "{\r\n    \"type\": \"ENTRY\",\r\n    \"quantity\": 5,\r\n    \"reason\": \"Reposição de Estoque recebida do fornecedor\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/parts-supplies/{{partSupplyId}}",
@@ -4868,47 +4870,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-06 — Atualizar Status da OS (COMPLETED)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"status\": \"COMPLETED\",\r\n    \"notes\": \"Ordem de serviço finalizada com sucesso\"\r\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "work-orders",
-                "{{workOrderId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-WO-07 — Atualizar Status da OS (DELIVERED)",
+          "name": "TC-WO-06 — Atualizar Status da OS (DELIVERED)",
           "event": [
             {
               "listen": "test",
@@ -4948,7 +4910,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-08 — Atualizar Status de Serviço na OS (IN_PROGRESS)",
+          "name": "TC-WO-07 — Atualizar Status de Serviço na OS (IN_PROGRESS)",
           "event": [
             {
               "listen": "test",
@@ -4990,7 +4952,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-09 — Atualizar Status de Serviço na OS (COMPLETED)",
+          "name": "TC-WO-08 — Atualizar Status de Serviço na OS (COMPLETED)",
           "event": [
             {
               "listen": "test",
@@ -5032,7 +4994,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-10 — Histórico de Status da OS",
+          "name": "TC-WO-09 — Histórico de Status da OS",
           "event": [
             {
               "listen": "test",
@@ -5062,7 +5024,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-11 — Listar Orçamentos de uma OS (sucesso)",
+          "name": "TC-WO-10 — Listar Orçamentos de uma OS (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -5096,7 +5058,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-12 — Buscar OS inexistente (404)",
+          "name": "TC-WO-11 — Buscar OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5125,7 +5087,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-13 — Criar OS sem campos obrigatórios (400)",
+          "name": "TC-WO-12 — Criar OS sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
@@ -5166,7 +5128,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-14 — Criar OS com cliente inexistente (404)",
+          "name": "TC-WO-13 — Criar OS com cliente inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5203,7 +5165,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-15 — Criar OS sem autenticação (401)",
+          "name": "TC-WO-14— Criar OS sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -5243,7 +5205,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-16 — Filtrar OSs por status IN_DIAGNOSIS (200)",
+          "name": "TC-WO-15 — Filtrar OSs por status IN_DIAGNOSIS (200)",
           "event": [
             {
               "listen": "test",
@@ -5283,7 +5245,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-17 — Filtrar OSs por customerId (200)",
+          "name": "TC-WO-16 — Filtrar OSs por customerId (200)",
           "event": [
             {
               "listen": "test",
@@ -5323,7 +5285,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-18 — Atualizar OS inexistente (404)",
+          "name": "TC-WO-17 — Atualizar OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5361,7 +5323,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-19 — Histórico de status para OS inexistente (404)",
+          "name": "TC-WO-18 — Histórico de status para OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5391,7 +5353,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-20 — Criar OS com veículo inexistente (404)",
+          "name": "TC-WO-19 — Criar OS com veículo inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5428,7 +5390,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-21 — Criar OS com veículo não pertencente ao cliente (409)",
+          "name": "TC-WO-20 — Criar OS com veículo não pertencente ao cliente (409)",
           "event": [
             {
               "listen": "test",
@@ -5469,7 +5431,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-22 — Tentar PATCH com status não permitido pela operação (400)",
+          "name": "TC-WO-21 — Tentar PATCH com status não permitido pela operação (400)",
           "event": [
             {
               "listen": "test",
@@ -5511,7 +5473,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-23 — Cancelar OS sem notas obrigatórias (409)",
+          "name": "TC-WO-22 — Cancelar OS sem notas obrigatórias (409)",
           "event": [
             {
               "listen": "test",
@@ -5553,7 +5515,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-24 — Listar orçamentos de OS inexistente (404)",
+          "name": "TC-WO-23 — Listar orçamentos de OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5583,7 +5545,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-25 — Filtrar OSs por vehicleId (200)",
+          "name": "TC-WO-24 — Filtrar OSs por vehicleId (200)",
           "event": [
             {
               "listen": "test",
@@ -5622,7 +5584,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-26 — PATCH com transição inválida (DELIVERED sem APPROVED) (409)",
+          "name": "TC-WO-25 — PATCH com transição inválida (DELIVERED sem APPROVED) (409)",
           "event": [
             {
               "listen": "test",
@@ -5664,7 +5626,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-27 — PUT em OS com status != RECEIVED (409)",
+          "name": "TC-WO-26 — PUT em OS com status != RECEIVED (409)",
           "event": [
             {
               "listen": "test",
@@ -5706,7 +5668,7 @@
           "response": []
         },
         {
-          "name": "TC-WO-28 — PATCH status de serviço com serviceId inexistente (404)",
+          "name": "TC-WO-27 — PATCH status de serviço com serviceId inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -5799,7 +5761,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-01b — Submeter orçamento sem itens (422)",
+          "name": "TC-QT-01b — Submeter orçamento sem itens (409)",
           "event": [
             {
               "listen": "test",
@@ -6082,46 +6044,6 @@
           "response": []
         },
         {
-          "name": "TC-QT-04d — Adicionar peça duplicada ao orçamento (409)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"quantity\": 1}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{quoteId}}",
-                "parts-supplies",
-                "{{partSupplyId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "TC-QT-04b — Remover peça do orçamento pendente (204)",
           "event": [
             {
@@ -6199,7 +6121,94 @@
           "response": []
         },
         {
-          "name": "TC-QT-05 — Submeter Orçamento para Aprovação",
+          "name": "TC-QT-04d — Adicionar peça duplicada ao orçamento (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quantity\": 1}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "parts-supplies",
+                "{{partSupplyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-05 - Atualizar Quantidade de Peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna orçamento com peça adicionada', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"quantity\": 2\r\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/parts-supplies/{{partSupplyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "parts-supplies",
+                "{{partSupplyId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-06 — Submeter Orçamento para Aprovação",
           "event": [
             {
               "listen": "test",
@@ -6229,7 +6238,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-05b — Rejeitar orçamento SENT sem justificativa (422)",
+          "name": "TC-QT-06b — Rejeitar orçamento SENT sem justificativa (422)",
           "event": [
             {
               "listen": "test",
@@ -6267,7 +6276,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-06 — Listar todos os Orçamentos paginado",
+          "name": "TC-QT-07 — Listar todos os Orçamentos paginado",
           "event": [
             {
               "listen": "test",
@@ -6310,7 +6319,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-07 — Buscar Orçamento por ID",
+          "name": "TC-QT-08 — Buscar Orçamento por ID",
           "event": [
             {
               "listen": "test",
@@ -6339,7 +6348,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-08 — Aprovar Orçamento manualmente (sucesso)",
+          "name": "TC-QT-09 — Aprovar Orçamento manualmente (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -6382,7 +6391,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-08b — Tentar atualizar qty de serviço em orçamento aprovado (422)",
+          "name": "TC-QT-10b — Tentar atualizar qty de serviço em orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6422,7 +6431,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-09 — Tentar remover serviço de orçamento aprovado (422)",
+          "name": "TC-QT-11 — Tentar remover serviço de orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6453,7 +6462,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-10 — Tentar remover peça de orçamento aprovado (422)",
+          "name": "TC-QT-12 — Tentar remover peça de orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6484,7 +6493,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-11 — Tentar atualizar qty de peça em orçamento aprovado (422)",
+          "name": "TC-QT-13 — Tentar atualizar qty de peça em orçamento aprovado (422)",
           "event": [
             {
               "listen": "test",
@@ -6524,7 +6533,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-12 — Buscar Orçamento inexistente (404)",
+          "name": "TC-QT-14 — Buscar Orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6553,7 +6562,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-13 — Filtrar orçamentos por OS (sucesso)",
+          "name": "TC-QT-15 — Filtrar orçamentos por OS (sucesso)",
           "event": [
             {
               "listen": "test",
@@ -6593,7 +6602,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-14 — Criar Orçamento sem autenticação (401)",
+          "name": "TC-QT-16 — Criar Orçamento sem autenticação (401)",
           "event": [
             {
               "listen": "test",
@@ -6633,7 +6642,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-15 — Decisão por e-mail com token inválido (401)",
+          "name": "TC-QT-17 — Decisão por e-mail com token inválido (401)",
           "event": [
             {
               "listen": "test",
@@ -6676,7 +6685,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-16 — Criar orçamento para OS inexistente (404)",
+          "name": "TC-QT-18 — Criar orçamento para OS inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6713,7 +6722,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-17 — Adicionar serviço a orçamento inexistente (404)",
+          "name": "TC-QT-19 — Adicionar serviço a orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6753,7 +6762,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-18 — Adicionar peça a orçamento inexistente (404)",
+          "name": "TC-QT-20 — Adicionar peça a orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6793,7 +6802,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-19 — Filtrar orçamentos por status APPROVED (200)",
+          "name": "TC-QT-21 — Filtrar orçamentos por status APPROVED (200)",
           "event": [
             {
               "listen": "test",
@@ -6833,7 +6842,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-20 — Submeter orçamento inexistente (404)",
+          "name": "TC-QT-22 — Submeter orçamento inexistente (404)",
           "event": [
             {
               "listen": "test",
@@ -6863,7 +6872,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-21 — Criar orçamento sem campo workOrderId (400)",
+          "name": "TC-QT-23 — Criar orçamento sem campo workOrderId (400)",
           "event": [
             {
               "listen": "test",
@@ -6904,7 +6913,7 @@
           "response": []
         },
         {
-          "name": "TC-QT-22 — Rejeitar orçamento com justificativa (200)",
+          "name": "TC-QT-24 — Rejeitar orçamento com justificativa (200)",
           "event": [
             {
               "listen": "prerequest",
