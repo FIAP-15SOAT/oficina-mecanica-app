@@ -250,8 +250,8 @@ Ao chamar `POST /quotes/:id/submissions`:
 
 1. O agregado `Quote` transiciona para `SENT`. A OS, se ainda em `IN_DIAGNOSIS` ou `REJECTED`, avança para `AWAITING_APPROVAL` (com histórico de status registrado).
 2. Dois tokens JWT independentes (assinados com `QUOTE_DECISION_TOKEN_SECRET` e expiração de 7 dias) são gerados — um para `APPROVE` e outro para `REJECT`. O payload contém `{ quoteId, action, type: QUOTE_EMAIL_DECISION }`.
-3. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) com dois links absolutos: `GET /quotes/:id/decisions?action=approve|reject&token=...`. A base URL é configurada por `QUOTE_DECISION_BASE_URL` (default: `http://localhost:${PORT}/api`).
-4. O endpoint público `GET /quotes/:id/decisions` (decorator `@Public()`) verifica o token, valida `quoteId` + `action` + `type` e delega para `ApproveQuoteUseCase` ou `RejectQuoteUseCase`. Tokens inválidos ou para outro `quoteId` retornam **HTTP 401**.
+3. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) com dois links absolutos: `GET /quotes/:id/decisions?token=...`. A base URL é configurada por `QUOTE_DECISION_BASE_URL` (default: `http://localhost:${PORT}/api`).
+4. O endpoint público `GET /quotes/:id/decisions` (decorator `@Public()`) verifica o token, valida `quoteId` + `action` + `type` (do payload do JWT) e delega para `ApproveQuoteUseCase` ou `RejectQuoteUseCase`. Tokens inválidos ou para outro `quoteId` retornam **HTTP 401**.
 
 ### Exceções por Camada
 
@@ -505,7 +505,7 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | PATCH | `/:id` | Aprovar (ou rejeitar com `reason`) orçamento manualmente | ADMIN, ATTENDANT |
 | GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?token=...` (a ação é derivada do payload do token) | Público |
 
-> Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais quotes pendentes da mesma OS. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
+> Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais orçamentos pendentes da mesma OS. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
 
 ---
 

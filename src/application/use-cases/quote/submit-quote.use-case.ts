@@ -107,8 +107,8 @@ export class SubmitQuoteUseCase {
       '7d',
     );
 
-    const approveLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.APPROVE}&token=${encodeURIComponent(approveToken)}`;
-    const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?action=${QuoteDecisionAction.REJECT}&token=${encodeURIComponent(rejectToken)}`;
+    const approveLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?token=${encodeURIComponent(approveToken)}`;
+    const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?token=${encodeURIComponent(rejectToken)}`;
 
     return {
       toEmail: customer.email.value,
