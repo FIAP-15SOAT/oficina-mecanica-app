@@ -186,6 +186,22 @@ describe('Customer (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when name is shorter than the minimum length', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, name: 'ab' })
+        .expect(400);
+    });
+
+    it('should return 400 when name exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
     it('should return 400 for various invalid document formats (Validator coverage)', async () => {
       const invalidDocs = [
         '123', // too short
@@ -212,6 +228,46 @@ describe('Customer (E2E)', () => {
           })
           .expect(400);
       }
+    });
+
+    it('should return 400 when email is invalid', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, email: 'notanemail' })
+        .expect(400);
+    });
+
+    it('should return 400 when type is invalid', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, type: 'INVALID_TYPE' })
+        .expect(400);
+    });
+
+    it('should return 400 when phone format is invalid', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, phone: 'abc' })
+        .expect(400);
+    });
+
+    it('should return 400 when address.state is not exactly 2 characters', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, address: { ...validCustomer.address, state: 'SPA' } })
+        .expect(400);
+    });
+
+    it('should return 400 when address.zipCode is invalid', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, address: { ...validCustomer.address, zipCode: 'invalid' } })
+        .expect(400);
     });
 
     it('should return 401 when no token is provided', async () => {
@@ -380,6 +436,20 @@ describe('Customer (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send(validCustomer)
         .expect(404);
+    });
+
+    it('should return 400 when updating with a name that exceeds the maximum length', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validCustomer)
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/customers/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, name: 'a'.repeat(151) })
+        .expect(400);
     });
 
     it('should return 409 when updating to a document that belongs to another customer', async () => {

@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
-const MAX_DESCRIPTION_LENGTH = 500;
+import {
+  MIN_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+} from '../constants/validation/service.constants';
 
 interface ServiceProps {
   id: string;

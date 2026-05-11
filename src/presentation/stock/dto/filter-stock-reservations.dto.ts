@@ -5,12 +5,12 @@ import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 export class FilterStockReservationsDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: 'O ID da peça/insumo deve ser um UUID válido.' })
   partSupplyId?: string;
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: 'O ID da ordem de serviço deve ser um UUID válido.' })
   workOrderId?: string;
 }
 

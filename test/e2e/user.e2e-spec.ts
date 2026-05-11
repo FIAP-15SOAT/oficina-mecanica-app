@@ -89,6 +89,56 @@ describe('User (E2E)', () => {
         .expect(400);
     });
 
+    it('should return 400 when name is shorter than the minimum length', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'ab', email: 'shortname@e2e.test', password: 'Senha@123', role: 'MECHANIC' })
+        .expect(400);
+    });
+
+    it('should return 400 when name exceeds the maximum length', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'a'.repeat(151),
+          email: 'longname@e2e.test',
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when email is invalid', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Valid Name', email: 'notanemail', password: 'Senha@123', role: 'MECHANIC' })
+        .expect(400);
+    });
+
+    it('should return 400 when password is shorter than the minimum length', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Valid Name', email: 'valid@e2e.test', password: 'ab', role: 'MECHANIC' })
+        .expect(400);
+    });
+
+    it('should return 400 when role is invalid', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Valid Name',
+          email: 'valid@e2e.test',
+          password: 'Senha@123',
+          role: 'INVALID',
+        })
+        .expect(400);
+    });
+
     it('should return 401 without token', async () => {
       await request(httpServer)
         .post('/api/users')
@@ -293,6 +343,22 @@ describe('User (E2E)', () => {
         .expect(404);
     });
 
+    it('should return 400 when updating with a name shorter than the minimum length', async () => {
+      await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'ab' })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with a name that exceeds the maximum length', async () => {
+      await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'a'.repeat(151) })
+        .expect(400);
+    });
+
     it('should return 409 when updating to duplicate email', async () => {
       await request(httpServer)
         .post('/api/users')
@@ -409,6 +475,14 @@ describe('User (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ active: true })
         .expect(422);
+    });
+
+    it('should return 400 when active is not a boolean', async () => {
+      await request(httpServer)
+        .patch(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ active: 'yes' })
+        .expect(400);
     });
   });
 

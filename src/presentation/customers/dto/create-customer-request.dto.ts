@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsEmail,
   MaxLength,
+  MinLength,
   Matches,
   ValidateNested,
   Length,
@@ -12,7 +13,8 @@ import {
 import { Transform, Type } from 'class-transformer';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { IsValidCpfCnpj } from '@infrastructure/validators/document.validator';
-import { PHONE_REGEX } from '@domain/constants/phone.regex';
+import { PHONE_REGEX } from '@domain/constants/regex/phone.regex';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/customer.constants';
 
 export class AddressRequestDto {
   @ApiProperty({ description: 'Logradouro', example: 'Rua das Flores, 123' })
@@ -43,7 +45,12 @@ export class CreateCustomerRequestDto {
   @ApiProperty({ description: 'Nome completo do Cliente', example: 'João da Silva' })
   @IsString({ message: 'O nome deve ser um texto.' })
   @IsNotEmpty({ message: 'O nome é obrigatório.' })
-  @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
+  @MinLength(MIN_NAME_LENGTH, {
+    message: `O nome deve ter no mínimo ${MIN_NAME_LENGTH} caracteres.`,
+  })
+  @MaxLength(MAX_NAME_LENGTH, {
+    message: `O nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres.`,
+  })
   name!: string;
 
   @ApiProperty({

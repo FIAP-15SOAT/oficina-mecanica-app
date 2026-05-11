@@ -10,7 +10,7 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { EntityNotFoundException } from '../exceptions/entity-not-found.exception';
 import { validate as isUuid } from 'uuid';
 
-const MAX_NOTES_LENGTH = 2000;
+import { MAX_NOTES_LENGTH } from '../constants/validation/quote.constants';
 
 export interface CreateQuoteProps {
   workOrderId: string;

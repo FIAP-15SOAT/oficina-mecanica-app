@@ -5,11 +5,7 @@ import { PartSupplyCategory } from '../enums/part-supply-category.enum';
 import { Unit } from '../enums/unit.enum';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
-const MAX_SKU_LENGTH = 60;
-const MAX_PART_NUMBER_LENGTH = 60;
-const MAX_DESCRIPTION_LENGTH = 500;
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH, MAX_SKU_LENGTH, MAX_PART_NUMBER_LENGTH, MAX_DESCRIPTION_LENGTH } from '../constants/validation/part-supply.constants';
 
 export interface CreatePartSupplyProps {
   name: string;

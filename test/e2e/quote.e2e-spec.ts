@@ -186,6 +186,24 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
         .expect(404);
     });
+
+    it('should return 400 when notes exceed the maximum length', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId, notes: 'a'.repeat(2001) })
+        .expect(400);
+    });
+
+    it('should return 400 when workOrderId is not a valid UUID', async () => {
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: 'not-a-uuid' })
+        .expect(400);
+    });
   });
 
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────
@@ -343,6 +361,22 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
+    it('should return 400 when quantity is zero', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 0 })
+        .expect(400);
+    });
+
     it('should return 409 when service is already in the quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
@@ -415,6 +449,22 @@ describe('Quote (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ quantity: 1 })
         .expect(404);
+    });
+
+    it('should return 400 when quantity is zero', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const part = await createPartSupply();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 0 })
+        .expect(400);
     });
 
     it('should return 409 when part supply is already in the quote', async () => {
@@ -767,6 +817,52 @@ describe('Quote (E2E)', () => {
         .delete(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
+    });
+
+    it('should return 400 when updating service item with quantity zero', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const quoteId = createRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}/services/${service.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 0 })
+        .expect(400);
+    });
+
+    it('should return 400 when updating part supply item with quantity zero', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const part = await createPartSupply();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const quoteId = createRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ quantity: 0 })
+        .expect(400);
     });
 
     it('should return 404 when updating non-existent item', async () => {

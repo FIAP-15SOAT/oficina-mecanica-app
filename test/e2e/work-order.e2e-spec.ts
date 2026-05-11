@@ -141,6 +141,32 @@ describe('WorkOrder (E2E)', () => {
         .expect(404);
     });
 
+    it('should return 400 when problemDescription exceeds the maximum length', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          problemDescription: 'a'.repeat(2001),
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when internalNotes exceeds the maximum length', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id, internalNotes: 'a'.repeat(2001) })
+        .expect(400);
+    });
+
     it('should create a work order with mileageAtService specified', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
@@ -252,6 +278,43 @@ describe('WorkOrder (E2E)', () => {
           assignedUserId: inactiveMechanic.user.id,
         })
         .expect(409);
+    });
+
+    it('should return 400 when customerId is not a valid UUID', async () => {
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: 'not-a-uuid', vehicleId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' })
+        .expect(400);
+    });
+
+    it('should return 400 when vehicleId is not a valid UUID', async () => {
+      const customer = await createCustomer();
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: 'not-a-uuid' })
+        .expect(400);
+    });
+
+    it('should return 400 when assignedUserId is not a valid UUID', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id, assignedUserId: 'not-a-uuid' })
+        .expect(400);
+    });
+
+    it('should return 400 when mileageAtService is negative', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id, mileageAtService: -1 })
+        .expect(400);
     });
 
     it('should return 409 when vehicle does not belong to customer', async () => {
@@ -383,6 +446,18 @@ describe('WorkOrder (E2E)', () => {
         .expect(409);
     });
 
+    it('should return 400 when status update notes exceed the maximum length', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'CANCELLED', notes: 'a'.repeat(2001) })
+        .expect(400);
+    });
+
     it('should return 400 when setting APPROVED via PATCH (not allowed via status endpoint)', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
@@ -474,6 +549,30 @@ describe('WorkOrder (E2E)', () => {
         .expect(404);
     });
 
+    it('should return 400 when updating with a problemDescription that exceeds the maximum length', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .put(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ problemDescription: 'a'.repeat(2001) })
+        .expect(400);
+    });
+
+    it('should return 400 when updating with internalNotes that exceeds the maximum length', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .put(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ internalNotes: 'a'.repeat(2001) })
+        .expect(400);
+    });
+
     it('should return 404 when assigned user does not exist during update', async () => {
       const customer = await createCustomer();
       const vehicle = await createVehicle(customer.id);
@@ -561,6 +660,18 @@ describe('WorkOrder (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.status).toBe('COMPLETED');
+    });
+
+    it('should return 400 when service status is not IN_PROGRESS or COMPLETED', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${wo.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'PENDING' })
+        .expect(400);
     });
 
     it('should return 404 for status update of non-existent work order', async () => {

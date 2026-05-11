@@ -7,6 +7,8 @@ export class UpdateWorkOrderServiceStatusRequestDto {
     description: 'Novo status do serviço na Ordem de Serviço',
     enum: [WorkOrderServiceStatus.IN_PROGRESS, WorkOrderServiceStatus.COMPLETED],
   })
-  @IsEnum([WorkOrderServiceStatus.IN_PROGRESS, WorkOrderServiceStatus.COMPLETED])
+  @IsEnum([WorkOrderServiceStatus.IN_PROGRESS, WorkOrderServiceStatus.COMPLETED], {
+    message: `status deve ser um dos seguintes: ${WorkOrderServiceStatus.IN_PROGRESS}, ${WorkOrderServiceStatus.COMPLETED}`,
+  })
   status!: WorkOrderServiceStatus.IN_PROGRESS | WorkOrderServiceStatus.COMPLETED;
 }

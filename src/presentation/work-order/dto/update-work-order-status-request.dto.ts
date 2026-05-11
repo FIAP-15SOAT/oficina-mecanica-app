@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { MAX_STATUS_NOTES_LENGTH } from '@domain/constants/validation/work-order.constants';
 
 const PATCH_STATUS_ALLOWED = [
   WorkOrderStatus.IN_DIAGNOSIS,
@@ -16,7 +17,9 @@ export class UpdateWorkOrderStatusRequestDto {
     enum: PATCH_STATUS_ALLOWED,
     example: WorkOrderStatus.IN_DIAGNOSIS,
   })
-  @IsEnum(PATCH_STATUS_ALLOWED)
+  @IsEnum(PATCH_STATUS_ALLOWED, {
+    message: `Status deve ser um dos seguintes: ${PATCH_STATUS_ALLOWED.join(', ')}`,
+  })
   status!: PatchStatusAllowed;
 
   @ApiPropertyOptional({
@@ -24,6 +27,9 @@ export class UpdateWorkOrderStatusRequestDto {
     example: 'Cancelado a pedido do cliente',
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'As observações devem ser um texto.' })
+  @MaxLength(MAX_STATUS_NOTES_LENGTH, {
+    message: `As observações devem ter no máximo ${MAX_STATUS_NOTES_LENGTH} caracteres.`,
+  })
   notes?: string | null;
 }

@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUUID, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PLATE_REGEX } from '@domain/constants/plate.regex';
+import { PLATE_REGEX } from '@domain/constants/regex/plate.regex';
 import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 
 export class FilterVehiclesDto {

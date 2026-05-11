@@ -3,8 +3,8 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
 
-const MIN_NAME_LENGTH = 3;
-const MAX_NAME_LENGTH = 150;
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/user.constants';
+
 const VALID_ROLES = Object.values(UserRole);
 
 export interface CreateUserProps {

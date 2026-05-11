@@ -8,28 +8,38 @@ import {
   IsOptional,
   IsInt,
   Min,
+  MinLength,
   IsDateString,
   MaxLength,
 } from 'class-validator';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
+import {
+  MIN_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_SKU_LENGTH,
+  MAX_PART_NUMBER_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+} from '@domain/constants/validation/part-supply.constants';
 
 export class CreatePartSupplyRequestDto {
   @ApiProperty({ description: 'Nome da Peça ou Insumo', example: 'Correia de alternador' })
   @IsString({ message: 'O nome da Peça ou Insumo deve ser um texto.' })
   @IsNotEmpty({ message: 'O nome da Peça ou Insumo é obrigatório.' })
-  @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
+  @MinLength(MIN_NAME_LENGTH, { message: `O nome deve ter no mínimo ${MIN_NAME_LENGTH} caracteres.` })
+  @MaxLength(MAX_NAME_LENGTH, { message: `O nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres.` })
   name!: string;
 
   @ApiPropertyOptional({ description: 'Descrição detalhada', example: 'Filtro para motor 1.0' })
   @IsOptional()
   @IsString({ message: 'A descrição deve ser um texto.' })
+  @MaxLength(MAX_DESCRIPTION_LENGTH, { message: `A descrição deve ter no máximo ${MAX_DESCRIPTION_LENGTH} caracteres.` })
   description?: string;
 
   @ApiProperty({ description: 'SKU único da Peça ou Insumo no Estoque', example: 'CA-ALT-001' })
   @IsString({ message: 'O SKU deve ser um texto.' })
   @IsNotEmpty({ message: 'O SKU é obrigatório.' })
-  @MaxLength(60, { message: 'O SKU deve ter no máximo 60 caracteres.' })
+  @MaxLength(MAX_SKU_LENGTH, { message: `O SKU deve ter no máximo ${MAX_SKU_LENGTH} caracteres.` })
   sku!: string;
 
   @ApiPropertyOptional({
@@ -38,7 +48,7 @@ export class CreatePartSupplyRequestDto {
   })
   @IsOptional()
   @IsString({ message: 'O número de referência do fabricante deve ser um texto.' })
-  @MaxLength(60, { message: 'O número de referência deve ter no máximo 60 caracteres.' })
+  @MaxLength(MAX_PART_NUMBER_LENGTH, { message: `O número de referência deve ter no máximo ${MAX_PART_NUMBER_LENGTH} caracteres.` })
   partNumber?: string;
 
   @ApiProperty({

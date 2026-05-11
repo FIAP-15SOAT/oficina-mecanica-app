@@ -7,10 +7,19 @@ import {
   IsUUID,
   Matches,
   MaxLength,
+  MinLength,
   Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { PLATE_REGEX } from '@domain/constants/plate.regex';
+import { PLATE_REGEX } from '@domain/constants/regex/plate.regex';
+import {
+  MIN_BRAND_LENGTH,
+  MAX_BRAND_LENGTH,
+  MIN_MODEL_LENGTH,
+  MAX_MODEL_LENGTH,
+  MAX_COLOR_LENGTH,
+  MIN_YEAR,
+} from '@domain/constants/validation/vehicle.constants';
 
 export class CreateVehicleRequestDto {
   @ApiProperty({ description: 'ID do Cliente proprietário', format: 'uuid' })
@@ -33,25 +42,37 @@ export class CreateVehicleRequestDto {
   @ApiProperty({ description: 'Marca do veículo', example: 'Toyota' })
   @IsString({ message: 'A marca deve ser um texto.' })
   @IsNotEmpty({ message: 'A marca é obrigatória.' })
-  @MaxLength(60, { message: 'A marca deve ter no máximo 60 caracteres.' })
+  @MinLength(MIN_BRAND_LENGTH, {
+    message: `A marca deve ter no mínimo ${MIN_BRAND_LENGTH} caracteres.`,
+  })
+  @MaxLength(MAX_BRAND_LENGTH, {
+    message: `A marca deve ter no máximo ${MAX_BRAND_LENGTH} caracteres.`,
+  })
   brand!: string;
 
   @ApiProperty({ description: 'Modelo do veículo', example: 'Corolla' })
   @IsString({ message: 'O modelo deve ser um texto.' })
   @IsNotEmpty({ message: 'O modelo é obrigatório.' })
-  @MaxLength(60, { message: 'O modelo deve ter no máximo 60 caracteres.' })
+  @MinLength(MIN_MODEL_LENGTH, {
+    message: `O modelo deve ter no mínimo ${MIN_MODEL_LENGTH} caracteres.`,
+  })
+  @MaxLength(MAX_MODEL_LENGTH, {
+    message: `O modelo deve ter no máximo ${MAX_MODEL_LENGTH} caracteres.`,
+  })
   model!: string;
 
-  @ApiProperty({ description: 'Ano de fabricação (mínimo 1950)', example: 2020 })
+  @ApiProperty({ description: `Ano de fabricação (mínimo ${MIN_YEAR})`, example: 2020 })
   @Type(() => Number)
   @IsInt({ message: 'O ano deve ser um número inteiro.' })
-  @Min(1950, { message: 'O ano deve ser no mínimo 1950.' })
+  @Min(MIN_YEAR, { message: `O ano deve ser no mínimo ${MIN_YEAR}.` })
   year!: number;
 
   @ApiPropertyOptional({ description: 'Cor do veículo', example: 'Prata', nullable: true })
   @IsOptional()
   @IsString({ message: 'A cor deve ser um texto.' })
-  @MaxLength(40, { message: 'A cor deve ter no máximo 40 caracteres.' })
+  @MaxLength(MAX_COLOR_LENGTH, {
+    message: `A cor deve ter no máximo ${MAX_COLOR_LENGTH} caracteres.`,
+  })
   color?: string | null;
 
   @ApiPropertyOptional({ description: 'Quilometragem atual', example: 50000, nullable: true })

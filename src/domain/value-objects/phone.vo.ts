@@ -1,5 +1,5 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { PHONE_REGEX } from '../constants/phone.regex';
+import { PHONE_REGEX } from '../constants/regex/phone.regex';
 
 export class Phone {
   private constructor(public readonly value: string) {}

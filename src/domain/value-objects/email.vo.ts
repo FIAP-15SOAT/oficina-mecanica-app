@@ -1,5 +1,5 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { EMAIL_REGEX } from '../constants/email.regex';
+import { EMAIL_REGEX } from '../constants/regex/email.regex';
 
 const MAX_EMAIL_LENGTH = 150;
 
