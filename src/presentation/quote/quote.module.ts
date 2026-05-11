@@ -23,6 +23,8 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ITokenService } from '@domain/interfaces/services/token.service.interface';
 import { IEmailSenderService } from '@domain/interfaces/services/email-sender.service.interface';
+import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
+import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
 
 import { QuoteController } from './quote.controller';
 
@@ -101,7 +103,7 @@ import { QuoteController } from './quote.controller';
     },
     {
       provide: 'IUpdateQuoteStatusUseCase',
-      useFactory: (approveUseCase: ApproveQuoteUseCase, rejectUseCase: RejectQuoteUseCase) =>
+      useFactory: (approveUseCase: IApproveQuoteUseCase, rejectUseCase: IRejectQuoteUseCase) =>
         new UpdateQuoteStatusUseCase(approveUseCase, rejectUseCase),
       inject: ['IApproveQuoteUseCase', 'IRejectQuoteUseCase'],
     },
@@ -109,8 +111,8 @@ import { QuoteController } from './quote.controller';
       provide: 'IEmailDecisionQuoteUseCase',
       useFactory: (
         tokenService: ITokenService,
-        approveUseCase: ApproveQuoteUseCase,
-        rejectUseCase: RejectQuoteUseCase,
+        approveUseCase: IApproveQuoteUseCase,
+        rejectUseCase: IRejectQuoteUseCase,
         configService: ConfigService,
       ) =>
         new EmailDecisionQuoteUseCase(

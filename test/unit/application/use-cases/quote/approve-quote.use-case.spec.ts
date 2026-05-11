@@ -45,7 +45,7 @@ describe('ApproveQuoteUseCase', () => {
     });
 
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([partSupply]);
     (mockRepos.stockReservation.createMany as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.partSupply.update as jest.Mock).mockResolvedValue(undefined);
@@ -80,7 +80,7 @@ describe('ApproveQuoteUseCase', () => {
     });
 
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.quote.rejectPendingByWorkOrderId as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
@@ -118,7 +118,7 @@ describe('ApproveQuoteUseCase', () => {
     });
 
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.quote.rejectPendingByWorkOrderId as jest.Mock).mockResolvedValue(undefined);
     (mockRepos.workOrder.addServiceItems as jest.Mock).mockResolvedValue(undefined);
@@ -145,7 +145,7 @@ describe('ApproveQuoteUseCase', () => {
     });
 
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
-    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([partSupply]);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);

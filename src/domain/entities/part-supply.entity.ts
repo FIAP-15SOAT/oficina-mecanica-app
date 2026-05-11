@@ -27,6 +27,19 @@ export interface CreatePartSupplyProps {
   expiresAt?: Date;
 }
 
+export interface UpdatePartSupplyProps {
+  name: string;
+  description?: string;
+  sku: string;
+  partNumber?: string;
+  category: PartSupplyCategory;
+  unit: Unit;
+  costPrice: number;
+  salePrice: number;
+  minStock?: number;
+  expiresAt?: Date;
+}
+
 interface PartSupplyProps {
   id: string;
   name: string;
@@ -146,8 +159,8 @@ export class PartSupply {
     this.updatedAt = new Date();
   }
 
-  update(props: CreatePartSupplyProps): void {
-    PartSupply.validateProps(props);
+  update(props: UpdatePartSupplyProps): void {
+    PartSupply.validateUpdateProps(props);
 
     this.name = props.name.trim();
     this.description = props.description?.trim() ?? null;
@@ -170,6 +183,17 @@ export class PartSupply {
     PartSupply.validateCostPrice(props.costPrice);
     PartSupply.validateSalePrice(props.salePrice);
     PartSupply.validateStock(props.stock ?? 0);
+    PartSupply.validateMinStock(props.minStock ?? 0);
+    PartSupply.validateExpiresAt(props.expiresAt ?? null);
+  }
+
+  private static validateUpdateProps(props: UpdatePartSupplyProps): void {
+    PartSupply.validateName(props.name);
+    PartSupply.validateSku(props.sku);
+    PartSupply.validatePartNumber(props.partNumber ?? null);
+    PartSupply.validateDescription(props.description ?? null);
+    PartSupply.validateCostPrice(props.costPrice);
+    PartSupply.validateSalePrice(props.salePrice);
     PartSupply.validateMinStock(props.minStock ?? 0);
     PartSupply.validateExpiresAt(props.expiresAt ?? null);
   }

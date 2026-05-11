@@ -275,7 +275,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrderService.createMany.mockResolvedValue({ count: 1 });
 
-      await repository.addServiceItems(workOrder, [item]);
+      await repository.addServiceItems([item]);
 
       expect(prisma.workOrderService.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -304,9 +304,7 @@ describe('PrismaWorkOrderRepository', () => {
         }),
       );
 
-      await expect(repository.addServiceItems(workOrder, [item])).rejects.toThrow(
-        ResourceConflictException,
-      );
+      await expect(repository.addServiceItems([item])).rejects.toThrow(ResourceConflictException);
     });
 
     it('should rethrow unexpected errors from addServiceItems', async () => {
@@ -324,9 +322,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrderService.createMany.mockRejectedValue(new Error('Database connection lost'));
 
-      await expect(repository.addServiceItems(workOrder, [item])).rejects.toThrow(
-        'Database connection lost',
-      );
+      await expect(repository.addServiceItems([item])).rejects.toThrow('Database connection lost');
     });
   });
 
@@ -479,7 +475,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrderPartSupply.createMany.mockResolvedValue({ count: 1 });
 
-      await repository.addPartSupplyItems(workOrder, [item]);
+      await repository.addPartSupplyItems([item]);
 
       expect(prisma.workOrderPartSupply.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -508,7 +504,7 @@ describe('PrismaWorkOrderRepository', () => {
         }),
       );
 
-      await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
+      await expect(repository.addPartSupplyItems([item])).rejects.toThrow(
         ResourceConflictException,
       );
     });
@@ -530,7 +526,7 @@ describe('PrismaWorkOrderRepository', () => {
         new Error('Database connection lost'),
       );
 
-      await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
+      await expect(repository.addPartSupplyItems([item])).rejects.toThrow(
         'Database connection lost',
       );
     });

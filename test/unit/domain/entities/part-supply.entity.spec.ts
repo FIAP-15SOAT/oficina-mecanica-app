@@ -235,6 +235,70 @@ describe('PartSupply Entity', () => {
     });
   });
 
+  describe('update()', () => {
+    it('should update mutable fields', () => {
+      const partSupply = PartSupply.create({ ...validProps, stock: 5, minStock: 1 });
+      const expiresAt = new Date('2027-06-01');
+
+      partSupply.update({
+        name: 'Filtro de Ar',
+        sku: 'FA-002',
+        category: PartSupplyCategory.SUPPLY,
+        unit: Unit.UN,
+        costPrice: 15,
+        salePrice: 30,
+        description: 'Filtro para motor',
+        partNumber: 'BOSCH-123',
+        minStock: 3,
+        expiresAt,
+      });
+
+      expect(partSupply.name).toBe('Filtro de Ar');
+      expect(partSupply.sku).toBe('FA-002');
+      expect(partSupply.category).toBe(PartSupplyCategory.SUPPLY);
+      expect(partSupply.costPrice).toBe(15);
+      expect(partSupply.salePrice).toBe(30);
+      expect(partSupply.description).toBe('Filtro para motor');
+      expect(partSupply.partNumber).toBe('BOSCH-123');
+      expect(partSupply.minStock).toBe(3);
+      expect(partSupply.expiresAt).toBe(expiresAt);
+      expect(partSupply.stock).toBe(5);
+    });
+
+    it('should not change stock when updated', () => {
+      const partSupply = PartSupply.create({ ...validProps, stock: 7 });
+
+      partSupply.update({ ...validProps, name: 'Outro Nome' });
+
+      expect(partSupply.stock).toBe(7);
+    });
+
+    it('should trim name and sku on update', () => {
+      const partSupply = PartSupply.create(validProps);
+
+      partSupply.update({ ...validProps, name: '  Novo Nome  ', sku: '  NS-001  ' });
+
+      expect(partSupply.name).toBe('Novo Nome');
+      expect(partSupply.sku).toBe('NS-001');
+    });
+
+    it('should throw DomainValidationException when name is invalid on update', () => {
+      const partSupply = PartSupply.create(validProps);
+
+      expect(() => partSupply.update({ ...validProps, name: '' })).toThrow(
+        DomainValidationException,
+      );
+    });
+
+    it('should throw DomainValidationException when costPrice is invalid on update', () => {
+      const partSupply = PartSupply.create(validProps);
+
+      expect(() => partSupply.update({ ...validProps, costPrice: 0 })).toThrow(
+        DomainValidationException,
+      );
+    });
+  });
+
   describe('ensureHasSufficientStock()', () => {
     it('should not throw when sufficient stock is available', () => {
       const partSupply = PartSupply.reconstitute({

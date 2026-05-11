@@ -150,7 +150,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     return String(rows[0].next).padStart(6, '0');
   }
 
-  async addServiceItems(_workOrder: WorkOrder, items: WorkOrderService[]): Promise<void> {
+  async addServiceItems(items: WorkOrderService[]): Promise<void> {
     try {
       await this.prisma.workOrderService.createMany({
         data: items.map((item) => ({
@@ -211,7 +211,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     }
   }
 
-  async addPartSupplyItems(_workOrder: WorkOrder, items: WorkOrderPartSupply[]): Promise<void> {
+  async addPartSupplyItems(items: WorkOrderPartSupply[]): Promise<void> {
     try {
       await this.prisma.workOrderPartSupply.createMany({
         data: items.map((item) => ({
