@@ -252,15 +252,15 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 2 })
+        .send({ serviceId: service.id, quantity: 2 })
         .expect(200);
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 3 })
+        .send({ partSupplyId: part.id, quantity: 3 })
         .expect(200);
 
       const res = await request(httpServer)
@@ -295,9 +295,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       const res = await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       expect(res.body.data.servicesAmount).toBeGreaterThan(0);
@@ -317,9 +317,9 @@ describe('Quote (E2E)', () => {
       // Add a service first, then submit to move to SENT
       const serviceForSubmit = await createService();
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${serviceForSubmit.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: serviceForSubmit.id, quantity: 1 })
         .expect(200);
 
       // Submit to move to SENT
@@ -331,9 +331,9 @@ describe('Quote (E2E)', () => {
 
       const service = await createService();
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(409);
     });
 
@@ -346,18 +346,18 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .post(`/api/quotes/${createRes.body.data.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .post(`/api/quotes/${createRes.body.data.id}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 })
         .expect(404);
     });
 
     it('should return 404 when quote does not exist', async () => {
       const service = await createService();
       await request(httpServer)
-        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/${service.id}`)
+        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(404);
     });
 
@@ -371,9 +371,24 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .post(`/api/quotes/${createRes.body.data.id}/services/${service.id}`)
+        .post(`/api/quotes/${createRes.body.data.id}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 0 })
+        .send({ serviceId: service.id, quantity: 0 })
+        .expect(400);
+    });
+
+    it('should return 400 when serviceId is not a valid UUID', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: 'not-a-uuid', quantity: 1 })
         .expect(400);
     });
 
@@ -388,15 +403,15 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(409);
     });
   });
@@ -416,9 +431,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       const res = await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 2 })
+        .send({ partSupplyId: part.id, quantity: 2 })
         .expect(200);
 
       expect(res.body.data.partsAmount).toBeGreaterThan(0);
@@ -434,20 +449,18 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .post(
-          `/api/quotes/${createRes.body.data.id}/parts-supplies/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`,
-        )
+        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 })
         .expect(404);
     });
 
     it('should return 404 when quote does not exist', async () => {
       const part = await createPartSupply();
       await request(httpServer)
-        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/parts-supplies/${part.id}`)
+        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: part.id, quantity: 1 })
         .expect(404);
     });
 
@@ -461,9 +474,24 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 0 })
+        .send({ partSupplyId: part.id, quantity: 0 })
+        .expect(400);
+    });
+
+    it('should return 400 when partSupplyId is not a valid UUID', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/parts-supplies`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ partSupplyId: 'not-a-uuid', quantity: 1 })
         .expect(400);
     });
 
@@ -478,15 +506,15 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: part.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: part.id, quantity: 1 })
         .expect(409);
     });
   });
@@ -506,9 +534,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       const res = await request(httpServer)
@@ -546,9 +574,9 @@ describe('Quote (E2E)', () => {
       const firstQuoteId = firstQuoteRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${firstQuoteId}/services/${firstService.id}`)
+        .post(`/api/quotes/${firstQuoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: firstService.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -578,9 +606,9 @@ describe('Quote (E2E)', () => {
       const secondQuoteId = secondQuoteRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${secondQuoteId}/services/${secondService.id}`)
+        .post(`/api/quotes/${secondQuoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: secondService.id, quantity: 1 })
         .expect(200);
 
       const submissionRes = await request(httpServer)
@@ -613,9 +641,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -655,9 +683,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -687,9 +715,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -747,9 +775,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${partId}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 5 }) // Request more than available
+        .send({ partSupplyId: partId, quantity: 5 }) // Request more than available
         .expect(200);
 
       await request(httpServer)
@@ -783,15 +811,15 @@ describe('Quote (E2E)', () => {
 
       // Add
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: part.id, quantity: 1 })
         .expect(200);
 
       // Update
@@ -830,9 +858,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -853,9 +881,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/parts-supplies/${part.id}`)
+        .post(`/api/quotes/${quoteId}/parts-supplies`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ partSupplyId: part.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -911,9 +939,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -957,9 +985,9 @@ describe('Quote (E2E)', () => {
       const quoteId = createRes.body.data.id;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -1083,9 +1111,9 @@ describe('Quote (E2E)', () => {
       const service = await createService();
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -1122,9 +1150,9 @@ describe('Quote (E2E)', () => {
       const service = await createService();
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -1153,9 +1181,9 @@ describe('Quote (E2E)', () => {
       const service = await createService();
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)
@@ -1202,9 +1230,9 @@ describe('Quote (E2E)', () => {
     it('should return 404 when adding service to non-existent quote', async () => {
       const service = await createService();
       await request(httpServer)
-        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services/${service.id}`)
+        .post(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(404);
     });
 
@@ -1216,9 +1244,9 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId })
         .expect(201);
       await request(httpServer)
-        .post(`/api/quotes/${createRes.body.data.id}/services/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .post(`/api/quotes/${createRes.body.data.id}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 })
         .expect(404);
     });
 
@@ -1257,9 +1285,9 @@ describe('Quote (E2E)', () => {
         .expect(201);
       const quoteId = createRes.body.data.id;
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       // Submit first to move to SENT
@@ -1398,11 +1426,13 @@ describe('Quote (E2E)', () => {
 
       const quoteId = createRes.body.data.id;
       const service = await createService();
+
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
+
       await request(httpServer)
         .post(`/api/quotes/${quoteId}/submissions`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -1553,9 +1583,9 @@ describe('Quote (E2E)', () => {
       const quoteId = quoteRes.body.data.id as string;
 
       await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services/${service.id}`)
+        .post(`/api/quotes/${quoteId}/services`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ quantity: 1 })
+        .send({ serviceId: service.id, quantity: 1 })
         .expect(200);
 
       await request(httpServer)

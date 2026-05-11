@@ -98,14 +98,15 @@ describe('QuoteController', () => {
   it('should add a service', async () => {
     const id = randomUUID();
     const serviceId = randomUUID();
-    const dto = { quantity: 2 };
+    const dto = { serviceId, quantity: 2 };
     const quote = buildMockQuoteWithWorkOrder();
     addQuoteServiceUseCase.execute.mockResolvedValue(quote);
 
-    const result = await controller.addService(id, serviceId, dto);
+    const result = await controller.addService(id, dto);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
-    expect(addQuoteServiceUseCase.execute).toHaveBeenCalledWith({ quoteId: id, serviceId, ...dto });
+
+    expect(addQuoteServiceUseCase.execute).toHaveBeenCalledWith({ quoteId: id, ...dto });
   });
 
   it('should update a service', async () => {
@@ -138,18 +139,15 @@ describe('QuoteController', () => {
   it('should add a part supply', async () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
-    const dto = { quantity: 2 };
+    const dto = { partSupplyId, quantity: 2 };
     const quote = buildMockQuoteWithWorkOrder();
     addQuotePartSupplyUseCase.execute.mockResolvedValue(quote);
 
-    const result = await controller.addPartSupply(id, partSupplyId, dto);
+    const result = await controller.addPartSupply(id, dto);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
-    expect(addQuotePartSupplyUseCase.execute).toHaveBeenCalledWith({
-      quoteId: id,
-      partSupplyId,
-      ...dto,
-    });
+
+    expect(addQuotePartSupplyUseCase.execute).toHaveBeenCalledWith({ quoteId: id, ...dto });
   });
 
   it('should update a part supply', async () => {
