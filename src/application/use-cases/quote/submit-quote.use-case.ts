@@ -46,6 +46,8 @@ export class SubmitQuoteUseCase {
         this.updateWorkOrderStatus(repos, workOrder),
       ]);
 
+      updatedQuote.workOrder = workOrder;
+
       await this.sendEmailNotification(quote, customer, workOrder.number);
 
       return updatedQuote;
