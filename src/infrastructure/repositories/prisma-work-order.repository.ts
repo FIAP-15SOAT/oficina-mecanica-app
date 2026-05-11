@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { Prisma } from '@generated/client';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
@@ -167,8 +168,8 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConcurrencyException(
-          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        throw new ResourceConflictException(
+          'Itens duplicados detectados ao aplicar itens na ordem de serviço.',
         );
       }
       throw error;
@@ -225,8 +226,8 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConcurrencyException(
-          'Ordem de serviço foi modificada por outra operação. Tente novamente.',
+        throw new ResourceConflictException(
+          'Itens duplicados detectados ao aplicar itens na ordem de serviço.',
         );
       }
       throw error;

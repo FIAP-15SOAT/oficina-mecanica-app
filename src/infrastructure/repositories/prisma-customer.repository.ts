@@ -108,36 +108,36 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     };
   }
 
-  async update(id: string, data: Partial<Customer>): Promise<Customer> {
+  async update(customer: Customer): Promise<Customer> {
     try {
+      const addressData = customer.address
+        ? {
+            upsert: {
+              create: {
+                street: customer.address.street,
+                city: customer.address.city,
+                state: customer.address.state,
+                zipCode: customer.address.zipCode.value,
+              },
+              update: {
+                street: customer.address.street,
+                city: customer.address.city,
+                state: customer.address.state,
+                zipCode: customer.address.zipCode.value,
+              },
+            },
+          }
+        : { delete: true };
+
       const record = await this.prisma.customer.update({
-        where: { id },
+        where: { id: customer.id },
         data: {
-          ...(data.name !== undefined && { name: data.name }),
-          ...(data.document !== undefined && { document: data.document.value }),
-          ...(data.type !== undefined && { type: data.type }),
-          ...(data.email !== undefined && { email: data.email.value }),
-          ...(data.phone !== undefined && { phone: data.phone.value }),
-          ...(data.address !== undefined && {
-            address: data.address
-              ? {
-                  upsert: {
-                    create: {
-                      street: data.address.street,
-                      city: data.address.city,
-                      state: data.address.state,
-                      zipCode: data.address.zipCode.value,
-                    },
-                    update: {
-                      street: data.address.street,
-                      city: data.address.city,
-                      state: data.address.state,
-                      zipCode: data.address.zipCode.value,
-                    },
-                  },
-                }
-              : { delete: true },
-          }),
+          name: customer.name,
+          document: customer.document.value,
+          type: customer.type,
+          email: customer.email.value,
+          phone: customer.phone.value,
+          address: addressData,
         },
         include: ADDRESS_INCLUDE,
       });

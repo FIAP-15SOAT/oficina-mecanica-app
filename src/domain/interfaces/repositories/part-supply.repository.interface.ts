@@ -19,7 +19,7 @@ export interface IPartSupplyRepository {
     pagination: PaginationInput,
     filters: PartSupplyFilters,
   ): Promise<PaginatedRepositoryResult<PartSupply>>;
-  update(id: string, data: Partial<PartSupply>): Promise<PartSupply>;
+  update(partSupply: PartSupply): Promise<PartSupply>;
   isPartSupplyInUse(id: string): Promise<boolean>;
   delete(id: string): Promise<void>;
 }

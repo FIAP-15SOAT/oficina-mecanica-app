@@ -48,7 +48,7 @@ export class UpdateUserUseCase {
       user.changePassword(passwordHash);
     }
 
-    const updated = await this.userRepository.update(id, user);
+    const updated = await this.userRepository.update(user);
 
     return updated.toPublicView();
   }

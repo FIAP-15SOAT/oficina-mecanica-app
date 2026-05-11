@@ -39,6 +39,6 @@ export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
 
     existing.update(input);
 
-    return this.customerRepository.update(id, existing);
+    return this.customerRepository.update(existing);
   }
 }

@@ -177,7 +177,29 @@ export class WorkOrder {
     services: WorkOrderService[];
     partSupplies: WorkOrderPartSupply[];
   } {
-    const services = (quote.services ?? []).map((s) =>
+    const existingServiceIds = new Set(this._services.map((s) => s.serviceId));
+
+    const existingPartSupplyIds = new Set(this._partSupplies.map((p) => p.partSupplyId));
+
+    const duplicateService = quote.services.find((s) => existingServiceIds.has(s.serviceId));
+
+    const duplicatePart = quote.partsSupplies.find((p) =>
+      existingPartSupplyIds.has(p.partSupplyId),
+    );
+
+    if (duplicateService) {
+      throw new BusinessRuleViolationException(
+        `Serviço já adicionado à ordem de serviço: ${duplicateService.serviceId}.`,
+      );
+    }
+
+    if (duplicatePart) {
+      throw new BusinessRuleViolationException(
+        `Peça/insumo já adicionado à ordem de serviço: ${duplicatePart.partSupplyId}.`,
+      );
+    }
+
+    const services = quote.services.map((s) =>
       WorkOrderService.create({
         workOrderId: this.id,
         serviceId: s.serviceId,
@@ -186,7 +208,7 @@ export class WorkOrder {
       }),
     );
 
-    const partSupplies = (quote.partsSupplies ?? []).map((p) =>
+    const partSupplies = quote.partsSupplies.map((p) =>
       WorkOrderPartSupply.create({
         workOrderId: this.id,
         partSupplyId: p.partSupplyId,

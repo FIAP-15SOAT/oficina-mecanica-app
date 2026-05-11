@@ -832,7 +832,7 @@ describe('Quote (E2E)', () => {
 
       const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'approve', token })
+        .query({ token })
         .expect(200);
 
       expect(res.body.data.status).toBe('APPROVED');
@@ -878,7 +878,7 @@ describe('Quote (E2E)', () => {
 
       const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'reject', token })
+        .query({ token })
         .expect(200);
 
       expect(res.body.data.status).toBe('REJECTED');
@@ -894,7 +894,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: 'invalid-token' })
+        .query({ token: 'invalid-token' })
         .expect(401);
     });
 
@@ -913,7 +913,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
+        .query({ token: invalidToken })
         .expect(401);
     });
 
@@ -933,11 +933,11 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
+        .query({ token: invalidToken })
         .expect(401);
     });
 
-    it('should return 401 when action in token is different from body', async () => {
+    it('should return 409 when attempting email decision on a non-submitted quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -945,15 +945,15 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId })
         .expect(201);
 
-      const invalidToken = jwtService.sign(
+      const token = jwtService.sign(
         { quoteId: createRes.body.data.id, action: 'reject', type: 'quote-email-decision' },
         { secret, expiresIn: '7d' },
       );
 
       await request(httpServer)
         .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ action: 'approve', token: invalidToken })
-        .expect(401);
+        .query({ token })
+        .expect(409);
     });
 
     it('should throw ResourceNotFoundException when quote does not exist (approve)', async () => {
@@ -963,10 +963,7 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
-        .get(`/api/quotes/${fakeId}/decisions`)
-        .query({ action: 'approve', token })
-        .expect(404);
+      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
     });
 
     it('should throw ResourceNotFoundException when quote does not exist (reject)', async () => {
@@ -976,13 +973,10 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
-        .get(`/api/quotes/${fakeId}/decisions`)
-        .query({ action: 'reject', token })
-        .expect(404);
+      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
     });
 
-    it('should throw BadRequestException when action is invalid', async () => {
+    it('should treat unrecognized action in token as reject on a submitted quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -1008,10 +1002,12 @@ describe('Quote (E2E)', () => {
         { secret, expiresIn: '7d' },
       );
 
-      await request(httpServer)
+      const res = await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'invalid-action', token })
-        .expect(400);
+        .query({ token })
+        .expect(200);
+
+      expect(res.body.data.status).toBe('REJECTED');
     });
   });
 
@@ -1233,7 +1229,7 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-    it('should return 400 for invalid action in email decision', async () => {
+    it('should return 409 when attempting email decision on a draft (non-submitted) quote', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -1242,17 +1238,17 @@ describe('Quote (E2E)', () => {
         .expect(201);
       const quoteId = createRes.body.data.id;
       const token = jwtService.sign(
-        { quoteId, action: 'invalid', type: 'quote-email-decision' },
+        { quoteId, action: 'reject', type: 'quote-email-decision' },
         { secret, expiresIn: '7d' },
       );
 
       await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'invalid', token })
-        .expect(400);
+        .query({ token })
+        .expect(409);
     });
 
-    it('should return 400 when action query param is completely missing or invalid', async () => {
+    it('should return 400 when token query param is missing', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -1261,10 +1257,7 @@ describe('Quote (E2E)', () => {
         .expect(201);
       const quoteId = createRes.body.data.id;
 
-      await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'WRONG', token: 'some-token' })
-        .expect(400);
+      await request(httpServer).get(`/api/quotes/${quoteId}/decisions`).expect(400);
     });
 
     it('should return 404 when updating service in non-existent quote', async () => {
@@ -1326,7 +1319,7 @@ describe('Quote (E2E)', () => {
 
       await request(httpServer)
         .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ action: 'reject', token })
+        .query({ token })
         .expect(200);
 
       const updatedQuote = await ctx.prisma.quote.findUnique({ where: { id: quoteId } });

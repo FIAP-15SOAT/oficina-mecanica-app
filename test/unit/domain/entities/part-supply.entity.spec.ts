@@ -294,6 +294,55 @@ describe('PartSupply Entity', () => {
       expect(partSupply.stock).toBe(2);
     });
 
+    it('should throw when ADJUSTMENT quantity is below reservedStock', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-adj-01',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-ADJ',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 10,
+        minStock: 0,
+        reservedStock: 5,
+        version: 1,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.ADJUSTMENT, 4)).toThrow(
+        BusinessRuleViolationException,
+      );
+    });
+
+    it('should allow ADJUSTMENT to exactly the reservedStock value', () => {
+      const partSupply = PartSupply.reconstitute({
+        id: 'ps-adj-02',
+        name: 'Filtro',
+        description: null,
+        sku: 'SKU-ADJ2',
+        partNumber: null,
+        category: PartSupplyCategory.PART,
+        unit: Unit.UN,
+        costPrice: 10,
+        salePrice: 20,
+        stock: 10,
+        minStock: 0,
+        reservedStock: 3,
+        version: 1,
+        expiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => partSupply.applyStockMovement(StockMovementType.ADJUSTMENT, 3)).not.toThrow();
+      expect(partSupply.stock).toBe(3);
+    });
+
     it('should throw when quantity is invalid', () => {
       const partSupply = PartSupply.create({
         ...validProps,

@@ -235,109 +235,44 @@ describe('PrismaPartSupplyRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a part/supply with all fields', async () => {
-      const id = randomUUID();
-      const data: Partial<PartSupply> = {
-        name: 'Filtro Premium',
-        description: 'Nova descrição',
-        sku: 'FO-002',
-        partNumber: 'MANN-W713',
-        category: PartSupplyCategory.PART,
-        unit: Unit.UN,
-        costPrice: 30.0,
-        salePrice: 59.9,
-        minStock: 5,
-        expiresAt: new Date('2028-01-01'),
-      };
-
-      const prismaModel = createMockPartSupply({ id, ...data });
+    it('should update a part/supply entity and return domain entity', async () => {
+      const entity = createMockPartSupply({ name: 'Filtro Premium', sku: 'FO-002', version: 1 });
+      const prismaModel = createMockPartSupply({
+        id: entity.id,
+        name: entity.name,
+        sku: entity.sku,
+      });
       prisma.partSupply.update.mockResolvedValue(prismaModel);
 
-      const result = await repository.update(id, data);
+      const result = await repository.update(entity);
 
       expect(result).toBeInstanceOf(PartSupply);
-      expect(result.name).toBe(data.name);
-      expect(result.sku).toBe(data.sku);
+      expect(result.name).toBe(entity.name);
+      expect(result.sku).toBe(entity.sku);
       expect(prisma.partSupply.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id } }),
+        expect.objectContaining({
+          where: { id: entity.id, version: entity.version },
+          data: expect.objectContaining({ name: entity.name, version: { increment: 1 } }),
+        }),
       );
     });
 
-    it('should only include defined fields in update data', async () => {
-      const id = randomUUID();
-      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
+    it('should always send all entity fields in the update payload', async () => {
+      const entity = createMockPartSupply({ stock: 7, reservedStock: 1, version: 2 });
+      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id: entity.id }));
 
-      await repository.update(id, { name: 'Novo Nome' });
-
-      const callArg = prisma.partSupply.update.mock.calls[0][0];
-      expect(callArg.data).toEqual({ name: 'Novo Nome', version: { increment: 1 } });
-    });
-
-    it('should update stock and reservedStock when provided', async () => {
-      const id = randomUUID();
-      const updatedAt = new Date('2026-05-06T10:00:00Z');
-      prisma.partSupply.update.mockResolvedValue(
-        createMockPartSupply({ id, stock: 7, reservedStock: 1 }),
-      );
-
-      await repository.update(id, { stock: 7, reservedStock: 1, updatedAt });
+      await repository.update(entity);
 
       const callArg = prisma.partSupply.update.mock.calls[0][0];
-      expect(callArg.data).toEqual({
-        stock: 7,
-        reservedStock: 1,
-        updatedAt,
+      expect(callArg.data).toMatchObject({
+        stock: entity.stock,
+        reservedStock: entity.reservedStock,
         version: { increment: 1 },
       });
     });
 
-    it('should use update with version check when version is provided', async () => {
-      const id = randomUUID();
-      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
-
-      await repository.update(id, { name: 'Novo Nome', version: 0 });
-
-      expect(prisma.partSupply.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id, version: 0 },
-          data: expect.objectContaining({ version: { increment: 1 } }),
-        }),
-      );
-    });
-
-    it('should include all optional fields in versioned update when provided', async () => {
-      const id = randomUUID();
-      const expiresAt = new Date('2028-01-01');
-      const updatedAt = new Date();
-      prisma.partSupply.update.mockResolvedValue(createMockPartSupply({ id }));
-
-      await repository.update(id, {
-        name: 'Filtro Premium',
-        description: 'Nova descrição',
-        sku: 'FO-002',
-        partNumber: 'MANN-W713',
-        category: PartSupplyCategory.PART,
-        unit: Unit.UN,
-        costPrice: 30,
-        salePrice: 59.9,
-        minStock: 5,
-        stock: 10,
-        reservedStock: 2,
-        expiresAt,
-        updatedAt,
-        version: 1,
-      });
-
-      expect(prisma.partSupply.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id, version: 1 },
-          data: expect.objectContaining({ name: 'Filtro Premium', reservedStock: 2 }),
-        }),
-      );
-    });
-
     it('should throw ConcurrencyException when part supply was modified concurrently', async () => {
-      const id = randomUUID();
+      const entity = createMockPartSupply({ version: 0 });
       prisma.partSupply.update.mockRejectedValue(
         new Prisma.PrismaClientKnownRequestError('Record not found', {
           code: 'P2025',
@@ -345,19 +280,15 @@ describe('PrismaPartSupplyRepository', () => {
         }),
       );
 
-      await expect(repository.update(id, { stock: 5, version: 0 })).rejects.toThrow(
-        ConcurrencyException,
-      );
+      await expect(repository.update(entity)).rejects.toThrow(ConcurrencyException);
     });
 
-    it('should rethrow unexpected errors from versioned update', async () => {
-      const id = randomUUID();
+    it('should rethrow unexpected errors from update', async () => {
+      const entity = createMockPartSupply({ version: 1 });
       const unexpectedError = new Error('Database connection lost');
       prisma.partSupply.update.mockRejectedValue(unexpectedError);
 
-      await expect(repository.update(id, { name: 'Test', version: 1 })).rejects.toThrow(
-        'Database connection lost',
-      );
+      await expect(repository.update(entity)).rejects.toThrow('Database connection lost');
     });
   });
 

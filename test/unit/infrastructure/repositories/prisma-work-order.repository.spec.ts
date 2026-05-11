@@ -6,6 +6,7 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Prisma } from '@generated/client';
 
 describe('PrismaWorkOrderRepository', () => {
@@ -304,7 +305,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
 
       await expect(repository.addServiceItems(workOrder, [item])).rejects.toThrow(
-        ConcurrencyException,
+        ResourceConflictException,
       );
     });
 
@@ -508,7 +509,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
 
       await expect(repository.addPartSupplyItems(workOrder, [item])).rejects.toThrow(
-        ConcurrencyException,
+        ResourceConflictException,
       );
     });
 

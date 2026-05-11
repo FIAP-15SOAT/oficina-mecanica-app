@@ -132,6 +132,12 @@ export class PartSupply {
 
       this.stock -= quantity;
     } else {
+      if (quantity < this.reservedStock) {
+        throw new BusinessRuleViolationException(
+          `Não é possível ajustar o estoque abaixo do estoque reservado. Reservado: ${this.reservedStock}, Ajuste solicitado: ${quantity}.`,
+        );
+      }
+
       this.stock = quantity;
     }
 

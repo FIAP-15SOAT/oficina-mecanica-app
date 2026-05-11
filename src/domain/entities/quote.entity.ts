@@ -35,6 +35,7 @@ interface QuoteProps {
   partsSupplies?: QuotePartSupply[];
 }
 
+
 export class Quote {
   readonly id: string;
   readonly workOrderId: string;
@@ -51,8 +52,8 @@ export class Quote {
   updatedAt: Date;
 
   workOrder?: WorkOrder;
-  private _services?: QuoteService[];
-  private _partsSupplies?: QuotePartSupply[];
+  private _services: QuoteService[];
+  private _partsSupplies: QuotePartSupply[];
 
   private constructor(props: QuoteProps) {
     this.id = props.id;
@@ -68,8 +69,8 @@ export class Quote {
     this.rejectedAt = props.rejectedAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
-    this._services = props.services;
-    this._partsSupplies = props.partsSupplies;
+    this._services = props.services ?? [];
+    this._partsSupplies = props.partsSupplies ?? [];
   }
 
   static reconstitute(props: QuoteProps): Quote {
@@ -102,8 +103,7 @@ export class Quote {
   addService(service: Service, quantity: number): QuoteService {
     this.ensureCanChangeItems();
 
-    const services = this._services ?? [];
-    const alreadyAdded = services.some((s) => s.serviceId === service.id);
+    const alreadyAdded = this._services.some((s) => s.serviceId === service.id);
 
     if (alreadyAdded) {
       throw new BusinessRuleViolationException('Serviço já adicionado ao orçamento.');
@@ -116,7 +116,7 @@ export class Quote {
       unitPrice: service.basePrice,
     });
 
-    this._services = [...services, item];
+    this._services = [...this._services, item];
     this.recalculateTotals();
 
     return item;
@@ -125,21 +125,20 @@ export class Quote {
   removeService(serviceId: string): void {
     this.ensureCanChangeItems();
 
-    const services = this._services ?? [];
-    const existingService = services.some((s) => s.serviceId === serviceId);
+    const existingService = this._services.some((s) => s.serviceId === serviceId);
 
     if (!existingService) {
       throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
     }
 
-    this._services = services.filter((s) => s.serviceId !== serviceId);
+    this._services = this._services.filter((s) => s.serviceId !== serviceId);
     this.recalculateTotals();
   }
 
   updateServiceQuantity(serviceId: string, quantity: number): QuoteService {
     this.ensureCanChangeItems();
 
-    const item = (this._services ?? []).find((s) => s.serviceId === serviceId);
+    const item = this._services.find((s) => s.serviceId === serviceId);
 
     if (!item) {
       throw new EntityNotFoundException('Serviço do Orçamento', serviceId);
@@ -154,8 +153,7 @@ export class Quote {
   addPartSupply(partSupply: PartSupply, quantity: number): QuotePartSupply {
     this.ensureCanChangeItems();
 
-    const parts = this._partsSupplies ?? [];
-    const alreadyAdded = parts.some((p) => p.partSupplyId === partSupply.id);
+    const alreadyAdded = this._partsSupplies.some((p) => p.partSupplyId === partSupply.id);
 
     if (alreadyAdded) {
       throw new BusinessRuleViolationException('Peça/Insumo já adicionado ao orçamento.');
@@ -168,7 +166,7 @@ export class Quote {
       unitPrice: partSupply.salePrice,
     });
 
-    this._partsSupplies = [...parts, item];
+    this._partsSupplies = [...this._partsSupplies, item];
     this.recalculateTotals();
 
     return item;
@@ -177,15 +175,13 @@ export class Quote {
   removePartSupply(partSupplyId: string): void {
     this.ensureCanChangeItems();
 
-    const parts = this._partsSupplies ?? [];
-
-    const existingPart = parts.some((p) => p.partSupplyId === partSupplyId);
+    const existingPart = this._partsSupplies.some((p) => p.partSupplyId === partSupplyId);
 
     if (!existingPart) {
       throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
     }
 
-    this._partsSupplies = parts.filter((p) => p.partSupplyId !== partSupplyId);
+    this._partsSupplies = this._partsSupplies.filter((p) => p.partSupplyId !== partSupplyId);
 
     this.recalculateTotals();
   }
@@ -193,7 +189,7 @@ export class Quote {
   updatePartSupplyQuantity(partSupplyId: string, quantity: number): QuotePartSupply {
     this.ensureCanChangeItems();
 
-    const item = (this._partsSupplies ?? []).find((p) => p.partSupplyId === partSupplyId);
+    const item = this._partsSupplies.find((p) => p.partSupplyId === partSupplyId);
 
     if (!item) {
       throw new EntityNotFoundException('Peça/Insumo do Orçamento', partSupplyId);
@@ -236,9 +232,9 @@ export class Quote {
   }
 
   private recalculateTotals(): void {
-    const servicesAmount = (this._services ?? []).reduce((sum, s) => sum + s.totalPrice, 0);
+    const servicesAmount = this._services.reduce((sum, s) => sum + s.totalPrice, 0);
 
-    const partsAmount = (this._partsSupplies ?? []).reduce((sum, p) => sum + p.totalPrice, 0);
+    const partsAmount = this._partsSupplies.reduce((sum, p) => sum + p.totalPrice, 0);
 
     this._servicesAmount = servicesAmount;
     this._partsAmount = partsAmount;
@@ -271,7 +267,7 @@ export class Quote {
   }
 
   private ensureHasItems(): void {
-    const hasItems = (this._services ?? []).length > 0 || (this._partsSupplies ?? []).length > 0;
+    const hasItems = this._services.length > 0 || this._partsSupplies.length > 0;
 
     if (!hasItems) {
       throw new BusinessRuleViolationException(
@@ -344,11 +340,11 @@ export class Quote {
     return this._status;
   }
 
-  get services(): QuoteService[] | undefined {
+  get services(): QuoteService[] {
     return this._services;
   }
 
-  get partsSupplies(): QuotePartSupply[] | undefined {
+  get partsSupplies(): QuotePartSupply[] {
     return this._partsSupplies;
   }
 }

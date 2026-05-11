@@ -93,18 +93,18 @@ export class PrismaVehicleRepository implements IVehicleRepository {
     return { items: result.items.map((r) => VehicleMapper.toDomain(r)), total: result.total };
   }
 
-  async update(id: string, data: Partial<Vehicle>): Promise<Vehicle> {
+  async update(vehicle: Vehicle): Promise<Vehicle> {
     try {
       const record = await this.prisma.vehicle.update({
-        where: { id },
+        where: { id: vehicle.id },
         data: {
-          ...(data.customerId !== undefined && { customerId: data.customerId }),
-          ...(data.plate !== undefined && { plate: data.plate.value }),
-          ...(data.brand !== undefined && { brand: data.brand }),
-          ...(data.model !== undefined && { model: data.model }),
-          ...(data.year !== undefined && { year: data.year }),
-          ...(data.color !== undefined && { color: data.color }),
-          ...(data.mileage !== undefined && { mileage: data.mileage }),
+          customerId: vehicle.customerId,
+          plate: vehicle.plate.value,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          mileage: vehicle.mileage,
         },
         include: { customer: true },
       });

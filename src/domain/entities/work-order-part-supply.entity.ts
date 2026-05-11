@@ -1,3 +1,5 @@
+import { validate as isUuid } from 'uuid';
+import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { LineItemPrice } from '../value-objects/line-item-price.vo';
 import { PartSupply } from './part-supply.entity';
 
@@ -56,6 +58,9 @@ export class WorkOrderPartSupply {
   static create(props: CreateWorkOrderPartSupplyProps): WorkOrderPartSupply {
     const now = new Date();
 
+    WorkOrderPartSupply.validateWorkOrderId(props.workOrderId);
+    WorkOrderPartSupply.validatePartSupplyId(props.partSupplyId);
+
     return new WorkOrderPartSupply({
       workOrderId: props.workOrderId,
       partSupplyId: props.partSupplyId,
@@ -63,6 +68,26 @@ export class WorkOrderPartSupply {
       createdAt: now,
       updatedAt: now,
     });
+  }
+
+  private static validateWorkOrderId(workOrderId: string): void {
+    if (!workOrderId) {
+      throw new DomainValidationException('ID da ordem de serviço é obrigatório.');
+    }
+
+    if (!isUuid(workOrderId)) {
+      throw new DomainValidationException('ID da ordem de serviço deve ser um UUID válido.');
+    }
+  }
+
+  private static validatePartSupplyId(partSupplyId: string): void {
+    if (!partSupplyId) {
+      throw new DomainValidationException('ID da peça/insumo é obrigatório.');
+    }
+
+    if (!isUuid(partSupplyId)) {
+      throw new DomainValidationException('ID da peça/insumo deve ser um UUID válido.');
+    }
   }
 
   get lineItem(): LineItemPrice {

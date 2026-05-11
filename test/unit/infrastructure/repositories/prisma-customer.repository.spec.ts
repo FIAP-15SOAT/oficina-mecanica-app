@@ -148,9 +148,9 @@ describe('PrismaCustomerRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a customer with all fields', async () => {
-      const id = randomUUID();
-      const data: Partial<Customer> = {
+    it('should update a customer entity and return domain entity', async () => {
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
         name: 'Updated Name',
         document: Document.create('12345678000195', CustomerType.COMPANY),
         type: CustomerType.COMPANY,
@@ -162,59 +162,83 @@ describe('PrismaCustomerRepository', () => {
           state: 'ST',
           zipCode: '12345678',
         }),
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       prisma.customer.update.mockResolvedValue(
-        createMockPrismaCustomer({
-          id,
-          name: data.name,
-        }),
+        createMockPrismaCustomer({ id: customer.id, name: customer.name }),
       );
 
-      const result = await repository.update(id, data);
+      const result = await repository.update(customer);
 
-      expect(result.name).toBe(data.name);
-      expect(prisma.customer.update).toHaveBeenCalled();
+      expect(result.name).toBe(customer.name);
+      expect(prisma.customer.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: customer.id } }),
+      );
     });
 
-    it('should delete address when address is null', async () => {
-      const id = randomUUID();
-      const data: Partial<Customer> = { address: null };
+    it('should send delete for address when customer has no address', async () => {
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        type: CustomerType.INDIVIDUAL,
+        email: Email.create('test@example.com'),
+        phone: Phone.create('11999999999'),
+        address: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-      prisma.customer.update.mockResolvedValue(createMockPrismaCustomer({ id }));
+      prisma.customer.update.mockResolvedValue(createMockPrismaCustomer({ id: customer.id }));
 
-      await repository.update(id, data);
+      await repository.update(customer);
 
       expect(prisma.customer.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            address: { delete: true },
-          }),
+          data: expect.objectContaining({ address: { delete: true } }),
         }),
       );
     });
 
     it('should throw ResourceConflictException on P2002', async () => {
-      const id = randomUUID();
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        type: CustomerType.INDIVIDUAL,
+        email: Email.create('dup@example.com'),
+        phone: Phone.create('11999999999'),
+        address: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const error = new Prisma.PrismaClientKnownRequestError('Duplicate', {
         code: 'P2002',
         clientVersion: '5.0.0',
       });
       prisma.customer.update.mockRejectedValue(error);
 
-      await expect(
-        repository.update(id, { email: Email.create('dup@example.com') }),
-      ).rejects.toThrow(ResourceConflictException);
+      await expect(repository.update(customer)).rejects.toThrow(ResourceConflictException);
     });
 
     it('should rethrow unexpected errors from update', async () => {
-      const id = randomUUID();
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        type: CustomerType.INDIVIDUAL,
+        email: Email.create('test@example.com'),
+        phone: Phone.create('11999999999'),
+        address: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const unexpectedError = new Error('Database connection lost');
       prisma.customer.update.mockRejectedValue(unexpectedError);
 
-      await expect(repository.update(id, { name: 'Test' })).rejects.toThrow(
-        'Database connection lost',
-      );
+      await expect(repository.update(customer)).rejects.toThrow('Database connection lost');
     });
   });
 

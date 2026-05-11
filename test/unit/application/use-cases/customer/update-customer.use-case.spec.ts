@@ -39,7 +39,6 @@ describe('UpdateCustomerUseCase', () => {
 
     expect(result).toEqual(updated);
     expect(customerRepository.update).toHaveBeenCalledWith(
-      'cust-1',
       expect.objectContaining({ name: 'João Atualizado' }),
     );
   });

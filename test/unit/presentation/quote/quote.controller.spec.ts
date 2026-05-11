@@ -209,18 +209,14 @@ describe('QuoteController', () => {
 
   it('should handle email decision', async () => {
     const id = randomUUID();
-    const action = 'approve';
     const token = 'token123';
     const quote = buildMockQuoteWithWorkOrder();
     emailDecisionQuoteUseCase.execute.mockResolvedValue(quote);
 
-    const result = await controller.emailDecision(id, {
-      action: action as unknown as Parameters<typeof controller.emailDecision>[1]['action'],
-      token,
-    });
+    const result = await controller.emailDecision(id, { token });
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
-    expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, action, token);
+    expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, token);
   });
 
   it('should list all quotes paginated', async () => {

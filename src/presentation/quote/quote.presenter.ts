@@ -41,8 +41,8 @@ export class QuotePresenter {
   private static toWithItemsDto(quote: Quote): QuoteWithItemsResponseDto {
     return {
       ...QuotePresenter.toResponse(quote),
-      services: quote.services!.map(QuotePresenter.toServiceItem),
-      partsSupplies: quote.partsSupplies!.map(QuotePresenter.toPartSupplyItem),
+      services: quote.services.map(QuotePresenter.toServiceItem),
+      partsSupplies: quote.partsSupplies.map(QuotePresenter.toPartSupplyItem),
     };
   }
 

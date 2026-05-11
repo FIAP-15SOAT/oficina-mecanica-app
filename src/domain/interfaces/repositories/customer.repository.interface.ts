@@ -17,7 +17,7 @@ export interface ICustomerRepository {
     pagination: PaginationInput,
     filters: CustomerFilters,
   ): Promise<PaginatedRepositoryResult<Customer>>;
-  update(id: string, data: Partial<Customer>): Promise<Customer>;
+  update(customer: Customer): Promise<Customer>;
   delete(id: string): Promise<void>;
   isCustomerInUse(id: string): Promise<boolean>;
 }

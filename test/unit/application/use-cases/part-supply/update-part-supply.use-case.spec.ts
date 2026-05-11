@@ -38,7 +38,6 @@ describe('UpdatePartSupplyUseCase', () => {
 
     expect(result).toEqual(updated);
     expect(partSupplyRepository.update).toHaveBeenCalledWith(
-      'uuid-1',
       expect.objectContaining({ salePrice: 50 }),
     );
   });
@@ -75,7 +74,6 @@ describe('UpdatePartSupplyUseCase', () => {
     expect(result).toEqual(updated);
     expect(partSupplyRepository.findBySku).toHaveBeenCalledWith('FO-NEW');
     expect(partSupplyRepository.update).toHaveBeenCalledWith(
-      'uuid-1',
       expect.objectContaining({ sku: 'FO-NEW' }),
     );
   });

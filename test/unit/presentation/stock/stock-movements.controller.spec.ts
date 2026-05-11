@@ -1,7 +1,7 @@
 import { StockMovementsController } from '@presentation/stock/stock-movements.controller';
 import { randomUUID } from 'node:crypto';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { IFindStockMovementsUseCase } from '@domain/interfaces/use-cases/reporting/find-stock-movements.use-case.interface';
+import { IFindStockMovementsUseCase } from '@domain/interfaces/use-cases/stock/find-stock-movements.use-case.interface';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 
 describe('StockMovementsController', () => {

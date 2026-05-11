@@ -19,7 +19,7 @@ export class UpdateUserStatusUseCase implements IUpdateUserStatusUseCase {
       user.deactivate();
     }
 
-    const updated = await this.userRepository.update(id, user);
+    const updated = await this.userRepository.update(user);
 
     return updated.toPublicView();
   }

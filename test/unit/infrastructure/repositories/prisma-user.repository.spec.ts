@@ -229,82 +229,80 @@ describe('PrismaUserRepository', () => {
   });
 
   describe('update', () => {
-    it('should update a user with all fields', async () => {
-      const id = randomUUID();
-      const updateData = {
+    it('should update a user and return domain entity', async () => {
+      const user = User.reconstitute({
+        id: randomUUID(),
         name: 'Updated Name',
         email: Email.create('updated@example.com'),
         passwordHash: '$2b$10$newhash',
         role: UserRole.ADMIN,
         isActive: false,
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const updatedPrismaModel = createMockPrismaUser({
-        id,
-        name: updateData.name,
-        email: updateData.email.value,
-        passwordHash: updateData.passwordHash,
-        role: updateData.role,
-        isActive: updateData.isActive,
+        id: user.id,
+        name: user.name,
+        email: user.email.value,
+        passwordHash: user.passwordHash,
+        role: user.role,
+        isActive: user.isActive,
       });
 
       prisma.user.update.mockResolvedValue(updatedPrismaModel);
 
-      const result = await repository.update(id, updateData);
+      const result = await repository.update(user);
 
-      expect(result.name).toBe(updateData.name);
-      expect(result.role).toBe(updateData.role);
+      expect(result.name).toBe(user.name);
+      expect(result.role).toBe(user.role);
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id },
-        data: { ...updateData, email: updateData.email.value },
-      });
-    });
-
-    it('should update user status', async () => {
-      const id = randomUUID();
-      const updateData = {
-        isActive: false,
-      };
-
-      const updatedPrismaModel = createMockPrismaUser({
-        id,
-        isActive: false,
-      });
-
-      prisma.user.update.mockResolvedValue(updatedPrismaModel);
-
-      const result = await repository.update(id, updateData);
-
-      expect(result.isActive).toBe(false);
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id },
+        where: { id: user.id },
         data: {
-          isActive: false,
+          name: user.name,
+          email: user.email.value,
+          passwordHash: user.passwordHash,
+          role: user.role,
+          isActive: user.isActive,
         },
       });
     });
 
     it('should throw ResourceConflictException on P2002', async () => {
-      const id = randomUUID();
+      const user = User.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        email: Email.create('dup@example.com'),
+        passwordHash: '$2b$10$hash',
+        role: UserRole.MECHANIC,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const error = new Prisma.PrismaClientKnownRequestError('Duplicate email', {
         code: 'P2002',
         clientVersion: '5.0.0',
       });
       prisma.user.update.mockRejectedValue(error);
 
-      await expect(
-        repository.update(id, { email: Email.create('dup@example.com') }),
-      ).rejects.toThrow(ResourceConflictException);
+      await expect(repository.update(user)).rejects.toThrow(ResourceConflictException);
     });
 
     it('should rethrow unexpected errors from update', async () => {
-      const id = randomUUID();
+      const user = User.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        email: Email.create('test@example.com'),
+        passwordHash: '$2b$10$hash',
+        role: UserRole.MECHANIC,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       const unexpectedError = new Error('Database connection lost');
       prisma.user.update.mockRejectedValue(unexpectedError);
 
-      await expect(repository.update(id, { name: 'Test' })).rejects.toThrow(
-        'Database connection lost',
-      );
+      await expect(repository.update(user)).rejects.toThrow('Database connection lost');
     });
   });
 

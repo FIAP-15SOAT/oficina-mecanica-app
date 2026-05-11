@@ -33,7 +33,7 @@ describe('UpdateStockUseCase', () => {
       reason: 'Stock replenishment',
     });
 
-    expect(repos.partSupply.update).toHaveBeenCalledWith(id, partSupply);
+    expect(repos.partSupply.update).toHaveBeenCalledWith(partSupply);
     expect(repos.stockMovement.create).toHaveBeenCalled();
     expect(result).toEqual(partSupply);
   });
@@ -53,7 +53,7 @@ describe('UpdateStockUseCase', () => {
       workOrderId,
     });
 
-    expect(repos.partSupply.update).toHaveBeenCalledWith(id, partSupply);
+    expect(repos.partSupply.update).toHaveBeenCalledWith(partSupply);
     expect(repos.stockMovement.create).toHaveBeenCalled();
     expect(result).toEqual(partSupply);
   });

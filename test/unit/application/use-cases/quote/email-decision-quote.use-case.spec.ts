@@ -37,7 +37,7 @@ describe('EmailDecisionQuoteUseCase', () => {
   const quoteId = randomUUID();
   const token = 'valid-token';
 
-  it('should approve quote when action is APPROVE', async () => {
+  it('should approve quote when token action is APPROVE', async () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.APPROVE,
@@ -46,14 +46,14 @@ describe('EmailDecisionQuoteUseCase', () => {
     tokenService.verifyWithSecret.mockReturnValue(payload);
     approveUseCase.execute.mockResolvedValue({ id: quoteId } as unknown as Quote);
 
-    const result = await useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token);
+    const result = await useCase.execute(quoteId, token);
 
     expect(result.id).toBe(quoteId);
     expect(tokenService.verifyWithSecret).toHaveBeenCalledWith(token, decisionSecret);
     expect(approveUseCase.execute).toHaveBeenCalledWith(quoteId);
   });
 
-  it('should reject quote when action is REJECT', async () => {
+  it('should reject quote when token action is REJECT', async () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.REJECT,
@@ -62,7 +62,7 @@ describe('EmailDecisionQuoteUseCase', () => {
     tokenService.verifyWithSecret.mockReturnValue(payload);
     rejectUseCase.execute.mockResolvedValue({ id: quoteId } as unknown as Quote);
 
-    const result = await useCase.execute(quoteId, QuoteDecisionAction.REJECT, token);
+    const result = await useCase.execute(quoteId, token);
 
     expect(result.id).toBe(quoteId);
     expect(tokenService.verifyWithSecret).toHaveBeenCalledWith(token, decisionSecret);
@@ -74,28 +74,20 @@ describe('EmailDecisionQuoteUseCase', () => {
       throw new Error('Invalid token');
     });
 
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      UnauthorizedAccessException,
-    );
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      'Token inválido ou expirado.',
-    );
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow('Token inválido ou expirado.');
   });
 
   it('should throw UnauthorizedAccessException when payload type is invalid', async () => {
     const payload = {
       quoteId,
       action: QuoteDecisionAction.APPROVE,
-      type: 'invalid-type',
+      type: 'invalid-type' as never,
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
 
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      UnauthorizedAccessException,
-    );
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      'Token inválido para esta ação.',
-    );
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow('Token inválido para esta ação.');
   });
 
   it('should throw UnauthorizedAccessException when payload quoteId does not match', async () => {
@@ -106,21 +98,6 @@ describe('EmailDecisionQuoteUseCase', () => {
     };
     tokenService.verifyWithSecret.mockReturnValue(payload);
 
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      UnauthorizedAccessException,
-    );
-  });
-
-  it('should throw UnauthorizedAccessException when payload action does not match', async () => {
-    const payload = {
-      quoteId,
-      action: QuoteDecisionAction.REJECT,
-      type: TokenType.QUOTE_EMAIL_DECISION,
-    };
-    tokenService.verifyWithSecret.mockReturnValue(payload);
-
-    await expect(useCase.execute(quoteId, QuoteDecisionAction.APPROVE, token)).rejects.toThrow(
-      UnauthorizedAccessException,
-    );
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
   });
 });
