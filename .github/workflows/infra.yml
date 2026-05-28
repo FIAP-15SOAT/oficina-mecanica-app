@@ -1,0 +1,179 @@
+name: Infrastructure Terraform
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: true
+
+jobs:
+  terraform_plan_aws_base:
+    name: Terraform Plan (aws-base)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Fmt Check
+        run: terraform fmt -check -recursive
+        working-directory: infra/aws-base
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/aws-base
+
+  terraform_plan_k8s_workflows:
+    name: Terraform Plan (k8s-workflows)
+    runs-on: ubuntu-latest
+    needs: terraform_plan_aws_base
+    permissions:
+      contents: read
+    env:
+      TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Fmt Check
+        run: terraform fmt -check -recursive
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/k8s-workflows
+
+  terraform_apply_aws_base:
+    name: Terraform Apply (aws-base)
+    runs-on: ubuntu-latest
+    needs: terraform_plan_aws_base
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: infra/aws-base
+
+  terraform_apply_k8s_workflows:
+    name: Terraform Apply (k8s-workflows)
+    runs-on: ubuntu-latest
+    needs:
+      - terraform_plan_k8s_workflows
+      - terraform_apply_aws_base
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+    env:
+      TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/k8s-workflows
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: infra/k8s-workflows
