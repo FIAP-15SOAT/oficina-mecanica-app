@@ -59,10 +59,45 @@ jobs:
         run: terraform plan -no-color
         working-directory: infra/aws-base
 
+  check_aws_base_state:
+    name: Check aws-base Remote State
+    runs-on: ubuntu-latest
+    needs: terraform_plan_aws_base
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check if aws-base outputs are available
+        id: check
+        run: |
+          if aws s3 cp \
+            "s3://bkt-oficina-mecanica/infra/prod-simulated/aws-base/terraform.tfstate" \
+            /tmp/aws-base.tfstate --region us-east-1 2>/dev/null; then
+            CLUSTER=$(jq -r '.outputs.cluster_name.value // empty' /tmp/aws-base.tfstate 2>/dev/null)
+            if [[ -n "$CLUSTER" ]]; then
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
   terraform_plan_k8s_workflows:
     name: Terraform Plan (k8s-workflows)
     runs-on: ubuntu-latest
-    needs: terraform_plan_aws_base
+    needs: check_aws_base_state
+    if: needs.check_aws_base_state.outputs.exists == 'true'
     permissions:
       contents: read
     env:

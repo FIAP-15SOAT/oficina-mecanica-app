@@ -902,21 +902,25 @@ Escopo: apenas mudanças em `infra/**` e no próprio workflow.
 Fluxo:
 
 1. Plan `aws-base`
-2. Plan `k8s-workflows` (dependente de `aws-base`)
-3. Em push para `master`, Apply `aws-base`
-4. Em push para `master`, Apply `k8s-workflows` (após Apply de `aws-base`)
+2. Verificação de state remoto do `aws-base` (condicional para o próximo passo)
+3. Plan `k8s-workflows` (somente se o state do `aws-base` já tiver outputs disponíveis)
+4. Em push para `master`, Apply `aws-base`
+5. Em push para `master`, Apply `k8s-workflows` (após Apply de `aws-base` e Plan de `k8s-workflows`)
 
 Detalhamento por job:
 
 1. `terraform_plan_aws_base`
   - Executa checkout, configura Terraform e credenciais AWS.
   - Roda `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan` em `infra/aws-base`.
-2. `terraform_plan_k8s_workflows` (depende de `terraform_plan_aws_base`)
+2. `check_aws_base_state` (depende de `terraform_plan_aws_base`)
+  - Baixa o arquivo de state do S3 e verifica se o output `cluster_name` está presente.
+  - Se o `aws-base` nunca foi aplicado ou foi destruído, o output `exists=false` pula o plan do `k8s-workflows` sem gerar erro — evitando falha no primeiro push ao ambiente ou após um `terraform destroy`.
+3. `terraform_plan_k8s_workflows` (depende de `check_aws_base_state`, executado somente se `exists=true`)
   - Injeta `TF_VAR_k8s_postgres_password` a partir de `secrets.K8S_POSTGRES_PASSWORD`.
   - Roda `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan` em `infra/k8s-workflows`.
-3. `terraform_apply_aws_base` (somente `push` em `master`)
+4. `terraform_apply_aws_base` (somente `push` em `master`)
   - Reexecuta `init/validate/plan` e aplica `terraform apply -auto-approve` em `infra/aws-base`.
-4. `terraform_apply_k8s_workflows` (somente `push` em `master`, após plan de k8s e apply de aws-base)
+5. `terraform_apply_k8s_workflows` (somente `push` em `master`, após plan de k8s e apply de aws-base)
   - Reinjeta `TF_VAR_k8s_postgres_password`.
   - Reexecuta `init/validate/plan` e aplica `terraform apply -auto-approve` em `infra/k8s-workflows`.
 
