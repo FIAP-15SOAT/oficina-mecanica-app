@@ -19,3 +19,14 @@ coverage
 
 CLAUDE.md
 .claude
+
+# Rendered k8s manifests with real secrets (never commit)
+*.rendered.yaml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+crash.*.log
