@@ -620,18 +620,390 @@ Ou via linha de comando com a aplicação rodando:
 npx newman run collections/oficina-collection.json -e collections/oficina-environment.json
 ```
 
+## Terraform (IaC)
+
+A infraestrutura foi separada em dois stacks Terraform independentes para reduzir acoplamento e tornar o fluxo de provisionamento previsível:
+
+- `infra/aws-base`: recursos-base de cloud (rede + EKS + ECR)
+- `infra/k8s-workflows`: recursos Kubernetes compartilhados (namespace, banco PostgreSQL e metrics-server)
+
+Essa separação foi adotada para evitar bootstrap complexo do provider Kubernetes no mesmo stack de criação do EKS e para permitir evolução independente entre camada cloud e camada de workloads.
+
+### Estrutura e estados remotos
+
+- Stack cloud: `infra/aws-base`
+  - backend S3: `infra/prod-simulated/aws-base/terraform.tfstate`
+- Stack workloads: `infra/k8s-workflows`
+  - backend S3: `infra/prod-simulated/k8s-workflows/terraform.tfstate`
+  - consome `terraform_remote_state` do stack `aws-base` para obter endpoint, CA e nome do cluster
+
+### Recursos provisionados
+
+`infra/aws-base`:
+
+- VPC, subnets públicas/privadas, Internet Gateway e NAT Gateway
+- EKS cluster
+- Repositório ECR para imagens da aplicação
+
+`infra/k8s-workflows`:
+
+- Namespace compartilhado da solução (`oficina`)
+- Banco PostgreSQL no cluster via Secret + Service + StatefulSet (armazenamento efêmero `emptyDir`)
+- metrics-server via Helm (necessário para HPA por CPU/memória)
+
+### Entradas e saídas por stack
+
+`infra/aws-base`:
+
+- Entradas principais:
+  - `aws_region`, `project_name`, `environment`
+  - `kubernetes_version`
+  - `eks_cluster_role_name`, `eks_node_role_name`
+  - `vpc_cidr`, `public_subnet_cidrs`, `private_subnet_cidrs`
+  - `node_instance_type`, `node_desired_size`, `node_min_size`, `node_max_size`
+- Saídas principais:
+  - `cluster_name`
+  - `cluster_endpoint`
+  - `cluster_certificate_authority_data`
+  - `cluster_version`
+  - `vpc_id`, `private_subnet_ids`, `public_subnet_ids`
+
+`infra/k8s-workflows`:
+
+- Entradas principais:
+  - `aws_region`, `project_name`, `environment`
+  - `aws_base_state_bucket`, `aws_base_state_key`, `aws_base_state_region` (para leitura de remote state)
+  - `k8s_namespace`
+  - `k8s_postgres_db`, `k8s_postgres_user`, `k8s_postgres_password`, `k8s_postgres_image`
+  - `enable_metrics_server`, `metrics_server_chart_version`
+- Dependências de saída consumidas do `aws-base` (via `terraform_remote_state`):
+  - `cluster_name` (auth no EKS)
+  - `cluster_endpoint`
+  - `cluster_certificate_authority_data`
+- Saídas principais:
+  - `k8s_namespace`
+  - `postgres_service_dns`
+  - `postgres_service_port`
+
+### Como aplicar localmente
+
+Pré-requisitos:
+
+- Terraform >= 1.11
+- Credenciais AWS válidas no ambiente
+- Bucket de state remoto já acessível
+
+Ordem de execução (obrigatória):
+
+```bash
+# 1) Provisiona base cloud
+cd infra/aws-base
+terraform init
+terraform plan
+terraform apply
+
+# 2) Provisiona workloads Kubernetes compartilhados
+cd ../k8s-workflows
+terraform init
+terraform plan -var="k8s_postgres_password=<SENHA_FORTE>"
+terraform apply -var="k8s_postgres_password=<SENHA_FORTE>"
+```
+
+No CI, o secret do PostgreSQL é injetado via `TF_VAR_k8s_postgres_password`.
+
+## Kubernetes
+
+Os recursos em Kubernetes foram divididos por responsabilidade:
+
+- Base e dados críticos via Terraform (`infra/k8s-workflows`)
+  - namespace, PostgreSQL e metrics-server
+- Aplicação via manifests YAML (`k8s/`)
+  - Secret, ConfigMap, Deployment, Service e HPA
+
+### Motivo da divisão
+
+- Recursos de plataforma e dados (namespace, DB, observabilidade mínima) têm ciclo de vida mais estável e exigem rastreabilidade de estado: por isso ficam no Terraform.
+- Recursos da aplicação mudam com maior frequência (imagem, envs, escala): por isso ficam em manifests declarativos no diretório `k8s/` e são aplicados no deploy.
+
+### Ownership de recursos
+
+| Recurso | Ownership | Onde é definido/aplicado |
+|---|---|---|
+| Namespace `oficina` | Terraform | `infra/k8s-workflows/k8s_namespace.tf` |
+| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | `infra/k8s-workflows/k8s_postgres.tf` |
+| metrics-server | Terraform | `infra/k8s-workflows/k8s_metrics_server.tf` |
+| API Secret (`01-api-secret.yaml`) | Workflow de App + DB | Render + `kubectl apply` em `.github/workflows/app-db-ci-cd.yml` |
+| API ConfigMap (`02-api-configmap.yaml`) | Workflow de App + DB | `kubectl apply` em `.github/workflows/app-db-ci-cd.yml` |
+| API Deployment (`03-api-deployment.yaml`) | Workflow de App + DB | Render + `kubectl apply` em `.github/workflows/app-db-ci-cd.yml` |
+| API Service (`04-api-service.yaml`) | Workflow de App + DB | `kubectl apply` em `.github/workflows/app-db-ci-cd.yml` |
+| API HPA (`05-api-hpa.yaml`) | Workflow de App + DB | `kubectl apply` em `.github/workflows/app-db-ci-cd.yml` |
+
+### Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`
+
+#### O que foi tentado
+
+Foram exploradas duas abordagens com disco EBS antes de chegar ao `emptyDir`.
+
+**Tentativa 1 — StorageClass `gp2` (padrão do EKS)**
+
+A primeira abordagem utilizou a StorageClass `gp2` criada automaticamente pelo EKS, que usa o provisioner in-tree `kubernetes.io/aws-ebs`. O fluxo esperado era:
+
+1. Terraform cria um `PersistentVolumeClaim` com `storageClassName: gp2`
+2. O Kubernetes chama o provisioner para criar um volume EBS `gp2`
+3. O StatefulSet do PostgreSQL monta esse volume em `/var/lib/postgresql/data`
+
+Em clusters EKS 1.23+, porém, o recurso de **CSI Migration** está habilitado por padrão: chamadas ao provisioner in-tree `kubernetes.io/aws-ebs` são redirecionadas internamente para o EBS CSI Driver (`ebs.csi.aws.com`). Com o driver em crash (ver seção abaixo), o redirecionamento nunca se completa e o PVC fica `Pending`.
+
+**Tentativa 2 — StorageClass customizada `gp3`**
+
+A segunda abordagem criou explicitamente uma StorageClass com o provisioner `ebs.csi.aws.com` e o tipo de volume `gp3` (mais performático e mais barato que `gp2`):
+
+```hcl
+resource "kubernetes_storage_class_v1" "gp3" {
+  metadata { name = "gp3" }
+  storage_provisioner    = "ebs.csi.aws.com"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  reclaim_policy         = "Delete"
+  allow_volume_expansion = true
+  parameters = {
+    type      = "gp3"
+    encrypted = "true"
+  }
+}
+```
+
+Por chamar o CSI driver diretamente (sem o nível de indireção da CSI Migration), o problema ficou ainda mais explícito: o PVC nunca avançou de `Pending` porque não há nenhum controller funcional para atender a requisição de provisionamento.
+
+#### Por que não funcionou — diagnóstico técnico
+
+**O EBS CSI Driver está instalado, mas sem credenciais IAM.**
+
+O addon `aws-ebs-csi-driver` (v1.60.0) foi implantado no cluster, porém os pods `ebs-csi-controller` entram em `CrashLoopBackOff` imediatamente após o start. O log expõe a causa raiz com precisão:
+
+```
+Failed health check: dry-run EC2 API call failed:
+no EC2 IMDS role found — operation error ec2imds: GetMetadata, context deadline exceeded
+```
+
+O controller tenta obter credenciais AWS de dois lugares, em ordem:
+
+1. **IRSA** (IAM Roles for Service Accounts): uma IAM Role anotada no ServiceAccount `ebs-csi-controller-sa` via `eks.amazonaws.com/role-arn`. O ServiceAccount não possui essa anotação — `serviceAccountRoleArn: NOT SET`.
+2. **Instance Profile do node**: a role IAM do node group (`LabEksNodeRole`) não possui a policy `AmazonEBSCSIDriverPolicy`. Nenhuma das políticas atualmente anexadas (`AmazonEKSWorkerNodePolicy`, `AmazonEKS_CNI_Policy`, `AmazonEC2ContainerRegistryReadOnly`) concede permissão para operações de EBS (`ec2:CreateVolume`, `ec2:AttachVolume`, etc.).
+
+Sem credenciais válidas em nenhum dos dois caminhos, o controller falha no health check interno e reinicia indefinidamente.
+
+**Não foi possível corrigir via Terraform ou CLI** porque o ambiente de laboratório da FIAP (AWS Academy / Learner Lab) bloqueia as permissões IAM necessárias:
+
+| Ação tentada | Resultado |
+|---|---|
+| `iam:AttachRolePolicy` no node role | `AccessDenied` |
+| Definir `serviceAccountRoleArn` no addon via Terraform | Requer `iam:CreateRole` + `iam:CreateOpenIDConnectProvider` para configurar IRSA — também negados |
+
+**Impacto em cadeia no PVC**: ambas as StorageClasses testadas (`gp2` e a `gp3` customizada) usam `volumeBindingMode: WaitForFirstConsumer`, o que significa que o PVC só é vinculado a um volume EBS quando um pod consumidor é agendado. Com o CSI controller em crash, porém, essa distinção se torna irrelevante: nenhum controller está disponível para receber a requisição de provisionamento. O PVC fica em estado `Pending` indefinidamente. O `terraform apply` aguarda o StatefulSet atingir `Ready` e expira com `context deadline exceeded` após o timeout padrão do provider.
+
+#### Por que `emptyDir` foi escolhido
+
+`emptyDir` é um volume efêmero criado pelo próprio Kubernetes no node onde o pod roda. Não requer StorageClass, PVC, CSI driver, nem nenhuma permissão IAM. O pod sobe imediatamente.
+
+A troca — perda de dados ao reiniciar o pod — é aceitável neste contexto específico porque:
+
+1. **O pipeline já redefine o banco a cada deploy**: o job `db_deploy` executa `prisma migrate reset --force --skip-seed` seguido de `prisma db seed`, repopulando o banco com dados de referência independente de qualquer estado anterior.
+2. **Ambiente acadêmico**: não há dados de usuário reais nem requisito de durabilidade entre reinicializações. O objetivo do projeto é demonstrar a arquitetura e o pipeline, não operar um banco de dados de produção.
+3. **Sem alternativa viável no ambiente**: `hostPath` daria falsa sensação de persistência — nodes EKS gerenciados são substituídos pela AWS em atualizações de AMI ou eventos de scale, perdendo os dados da mesma forma, mas com risco de segurança adicional (acesso ao filesystem do host).
+
+#### O que seria necessário em produção
+
+Para um ambiente real, a solução correta seria uma das seguintes, em ordem de preferência:
+
+1. **IRSA para o EBS CSI Driver**: criar uma IAM Role com trust policy para o OIDC provider do cluster e a policy gerenciada `AmazonEBSCSIDriverPolicy`, anotando o ServiceAccount `ebs-csi-controller-sa`. Isso isola as credenciais do driver sem conceder permissões ao node inteiro.
+2. **`AmazonEBSCSIDriverPolicy` no node role**: solução mais simples, porém concede permissões de EBS a todos os processos rodando nos nodes — menos seguro que IRSA.
+3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. Não foi aplicado neste projeto devido ao budget limitado do laboratório (créditos AWS Academy de US$ 50), insuficiente para cobrir o custo de uma instância RDS durante o período de desenvolvimento e avaliação.
+
+### Manifestos da aplicação
+
+Arquivos em `k8s/`:
+
+- `01-api-secret.yaml`: string de conexão com placeholder de senha (`CHANGE_ME_STRONG_PASSWORD`), renderizado no pipeline com segredo do GitHub
+- `02-api-configmap.yaml`: variáveis não sensíveis (`NODE_ENV`, `PORT`)
+- `03-api-deployment.yaml`: deployment com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
+- `04-api-service.yaml`: Service `ClusterIP`
+- `05-api-hpa.yaml`: autoscaling por CPU e memória (HPA v2)
+
+### Health probes (readinessProbe e livenessProbe)
+
+O Deployment da API configura duas probes HTTP GET em `/api/docs` (porta 3000):
+
+| Probe | Finalidade | `initialDelaySeconds` | `periodSeconds` | `failureThreshold` |
+|---|---|---|---|---|
+| `readinessProbe` | Indica ao Kubernetes quando o pod está pronto para receber tráfego. Enquanto falhar, o pod é retirado do balanceamento sem ser reiniciado. | 10 | 10 | 3 |
+| `livenessProbe` | Detecta pods travados que continuam vivos mas não respondem. Ao falhar, o Kubernetes reinicia o container automaticamente. | 30 | 20 | 3 |
+
+O endpoint `/api/docs` (Swagger UI) foi escolhido por ser a única rota pública que retorna HTTP 200 sem autenticação, confirmando que o servidor HTTP está operacional.
+
+O `initialDelaySeconds` da liveness é propositalmente maior (30 s) do que o da readiness (10 s): a readiness remove o pod do tráfego logo cedo se a aplicação ainda não subiu, enquanto a liveness aguarda mais para não reiniciar um pod que está apenas demorando para inicializar.
+
+### Deploy em Kubernetes (manual)
+
+```bash
+# Renderiza segredo e imagem
+sed "s|CHANGE_ME_STRONG_PASSWORD|<SENHA_DB>|g" k8s/01-api-secret.yaml > k8s/01-api-secret.rendered.yaml
+sed "s|IMAGE_URI_PLACEHOLDER|<IMAGE_URI>|g" k8s/03-api-deployment.yaml > k8s/03-api-deployment.rendered.yaml
+
+# Aplica recursos da aplicação
+kubectl apply -f k8s/01-api-secret.rendered.yaml
+kubectl apply -f k8s/02-api-configmap.yaml
+kubectl apply -f k8s/03-api-deployment.rendered.yaml
+kubectl apply -f k8s/04-api-service.yaml
+kubectl apply -f k8s/05-api-hpa.yaml
+```
+
 ## CI/CD
 
-O workflow `.github/workflows/build.yml` é executado em push para `master` e em pull requests (`opened`, `synchronize`, `reopened`). As etapas:
+A automação foi separada em dois workflows principais:
 
-1. `actions/checkout` com `fetch-depth: 0` (necessário para o Sonar avaliar histórico)
-2. `actions/setup-node@v4` (Node 22)
-3. `npm ci` — instala dependências
-4. `npm run prisma:generate` — gera o Prisma Client (recebe `DATABASE_URL` placeholder, não conecta a banco real)
-5. `npm run test:cov` — executa os testes unitários e gera cobertura (`coverage/lcov.info`)
-6. **SonarQube Scan** — análise estática e publicação de cobertura via `SonarSource/sonarqube-scan-action` (usa o segredo `SONAR_TOKEN`)
+- `Infrastructure Terraform` em `.github/workflows/infra.yml`
+- `Build and Deploy` em `.github/workflows/app-db-ci-cd.yml`
+
+### Orquestração entre workflows (Infra -> App)
+
+Para evitar corrida entre provisionamento e deploy de aplicação, o workflow de App + DB também pode ser acionado por conclusão do workflow de Infra (`workflow_run`).
+
+Comportamento:
+
+1. Push com mudanças somente de aplicação:
+  - `app-db-ci-cd.yml` executa direto no evento `push`.
+2. Push com mudanças de infra + aplicação:
+  - no evento `push`, os jobs principais de app são bloqueados quando `infra_changed == true`;
+  - após o `infra.yml` concluir com sucesso em `master`, o `app-db-ci-cd.yml` é acionado por `workflow_run` e executa o deploy da aplicação.
+  - se o `infra.yml` falhar, o evento `workflow_run` ainda é disparado, mas o job `detect_changes` não executa (condição `conclusion == 'success'` não é satisfeita) — o deploy de aplicação fica bloqueado até o próximo push.
+3. Push com mudanças somente de infra:
+  - o `workflow_run` pode acionar o workflow de app, mas os jobs principais ficam `skipped` quando não há mudanças de aplicação (`app_changed == false`).
+
+Isso mantém a ordem infra -> app quando necessário, sem bloquear o fluxo rápido de app-only.
+
+### Controle de concorrência de runs
+
+Ambos os workflows possuem bloco `concurrency` para evitar execuções simultâneas sobre a mesma branch:
+
+| Workflow | `group` | `cancel-in-progress` |
+|---|---|---|
+| `app-db-ci-cd.yml` | `build-deploy-<ref>` | `true` |
+| `infra.yml` | `terraform-<ref>` | `false` |
+
+**Por que valores diferentes?**
+
+- `app-db-ci-cd.yml` usa `cancel-in-progress: true`: um push mais recente torna o anterior obsoleto. Continuar um build/deploy de código mais antigo seria desperdício e, principalmente, o run mais antigo poderia aplicar uma versão mais velha *depois* de uma mais nova já ter sido implantada — efetivamente um rollback involuntário.
+- `infra.yml` usa `cancel-in-progress: false`: interromper um `terraform apply` no meio pode deixar a infraestrutura em estado parcial. O run em andamento sempre termina antes de o próximo começar, garantindo integridade do state.
+
+### 1) Workflow de Infra (`infra.yml`)
+
+Escopo: apenas mudanças em `infra/**` e no próprio workflow.
+
+Fluxo:
+
+1. Plan `aws-base`
+2. Plan `k8s-workflows` (dependente de `aws-base`)
+3. Em push para `master`, Apply `aws-base`
+4. Em push para `master`, Apply `k8s-workflows` (após Apply de `aws-base`)
+
+Detalhamento por job:
+
+1. `terraform_plan_aws_base`
+  - Executa checkout, configura Terraform e credenciais AWS.
+  - Roda `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan` em `infra/aws-base`.
+2. `terraform_plan_k8s_workflows` (depende de `terraform_plan_aws_base`)
+  - Injeta `TF_VAR_k8s_postgres_password` a partir de `secrets.K8S_POSTGRES_PASSWORD`.
+  - Roda `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan` em `infra/k8s-workflows`.
+3. `terraform_apply_aws_base` (somente `push` em `master`)
+  - Reexecuta `init/validate/plan` e aplica `terraform apply -auto-approve` em `infra/aws-base`.
+4. `terraform_apply_k8s_workflows` (somente `push` em `master`, após plan de k8s e apply de aws-base)
+  - Reinjeta `TF_VAR_k8s_postgres_password`.
+  - Reexecuta `init/validate/plan` e aplica `terraform apply -auto-approve` em `infra/k8s-workflows`.
+
+Decisão importante: a camada `k8s-workflows` recebe o segredo do banco via `TF_VAR_k8s_postgres_password`, evitando senha hardcoded no Terraform.
+
+### 2) Workflow de App + DB (`app-db-ci-cd.yml`)
+
+Escopo: mudanças de aplicação/Prisma/workflow; além disso, pode ser acionado por `workflow_run` após o `infra.yml` quando há mudanças de infra.
+
+Fluxo:
+
+1. `detect_changes`: detecta escopo de mudança (`app_changed`, `infra_changed`, `prisma_changed`)
+2. `ci_quality`: lint, testes com cobertura e Sonar
+3. `db_ci_validation` (condicional): roda apenas se Prisma mudou
+4. `app_build_push`: só em `master`, depende de `ci_quality` e de `db_ci_validation`
+5. `db_deploy` (condicional): só em `master` e apenas quando Prisma mudou
+6. `app_deploy`: só em `master`, aguarda build de imagem e status do DB deploy
+
+Detalhamento por job:
+
+1. `detect_changes`
+  - Calcula três flags: `app_changed`, `infra_changed` e `prisma_changed` a partir do diff do evento.
+  - Publica essas flags como output para controlar execução condicional dos jobs seguintes.
+2. `ci_quality`
+  - Instala dependências (`npm ci`), gera Prisma Client, executa lint, testes com cobertura e SonarQube Scan.
+  - É pré-requisito para o build da imagem.
+3. `db_ci_validation` (condicional)
+  - Só executa quando `prisma_changed == true`.
+  - Sobe PostgreSQL efêmero no job, gera client, executa reset de migrations e seed para validar o pacote de banco.
+4. `app_build_push` (somente `push` em `master`)
+  - Depende de `detect_changes`, `ci_quality` e do resultado de `db_ci_validation` (`success` ou `skipped`).
+  - Faz login no ECR, monta `image_uri` com o SHA do commit HEAD (`github.sha` em `push`; `github.event.workflow_run.head_sha` em `workflow_run`) e publica imagem (tag imutável + `latest`).
+  - Em push para `master`, só executa quando `infra_changed == false`; em cenário infra+app, executa no disparo por `workflow_run` após sucesso do `infra.yml`.
+5. `db_deploy` (condicional, somente `push` em `master`)
+  - Só executa quando houve mudança de Prisma e `db_ci_validation` + `app_build_push` tiveram sucesso.
+  - Configura kubeconfig no EKS, renderiza/aplica um Kubernetes Job no cluster que executa `prisma migrate reset --force` (recria o banco do zero) + `prisma db seed` e aguarda a conclusão, com diagnóstico em caso de falha.
+6. `app_deploy` (condicional, somente `push` em `master`)
+  - Depende de `app_build_push` e de `db_deploy` (`success` ou `skipped`), além de `ENABLE_APP_DEPLOY == true`.
+  - Renderiza `k8s/01-api-secret.yaml` com `K8S_POSTGRES_PASSWORD` e `k8s/03-api-deployment.yaml` com a imagem imutável.
+  - Aplica manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida rollout do deployment.
+
+### Dependência App x DB (com comportamento de skip)
+
+O deploy da aplicação depende logicamente do fluxo de banco, mas de forma condicional:
+
+- Se houve mudança de Prisma:
+  - `db_ci_validation` e `db_deploy` executam
+  - `app_deploy` só roda após `db_deploy` concluir com sucesso
+- Se não houve mudança de Prisma:
+  - `db_ci_validation` e `db_deploy` ficam `skipped`
+  - `app_build_push` e `app_deploy` seguem normalmente
+
+Isso garante ordem correta quando há impacto de banco, sem bloquear deploy da aplicação em alterações que não tocam schema/migrations.
+
+### Build, imagem e deploy
+
+- A imagem Docker é publicada no ECR com tag imutável (`github.sha`) e também `latest`
+- O deploy usa a tag imutável para renderizar o Deployment Kubernetes
+- O Secret da API é renderizado em runtime com `secrets.K8S_POSTGRES_PASSWORD`
+- O DB deploy roda no cluster via Kubernetes Job com TTL de 2 semanas para auditoria e troubleshooting; o Job usa `migrate reset --force` + seed (comportamento intencional para o ambiente simulado desta fase)
 
 A configuração do Sonar (chave do projeto, organização, exclusões e caminho do `lcov.info`) está em `sonar-project.properties`.
+
+### Secrets e Variables
+
+Para que os workflows e o provisionamento funcionem corretamente, é necessário configurar os secrets e variables do repositório no GitHub. A tabela abaixo é a referência prática de configuração, incluindo onde cada item é usado.
+
+| Tipo | Nome | Usado em | Finalidade |
+|---|---|---|---|
+| Secret | `AWS_ACCESS_KEY_ID` | `infra.yml`, `app-db-ci-cd.yml` | Credencial AWS para autenticar nos jobs de Terraform e deploy |
+| Secret | `AWS_SECRET_ACCESS_KEY` | `infra.yml`, `app-db-ci-cd.yml` | Segredo complementar da credencial AWS |
+| Secret | `AWS_SESSION_TOKEN` | `infra.yml`, `app-db-ci-cd.yml` | Token temporário de sessão, quando aplicável |
+| Secret | `SONAR_TOKEN` | `app-db-ci-cd.yml` | Autenticação do SonarQube Scan |
+| Secret | `K8S_POSTGRES_PASSWORD` | `infra.yml`, `app-db-ci-cd.yml` | Senha do PostgreSQL injetada no Terraform e no Secret da aplicação |
+| Variable | `ECR_REPOSITORY` | `app-db-ci-cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
+| Variable | `EKS_CLUSTER_NAME` | `app-db-ci-cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
+| Variable | `K8S_DEPLOYMENT_NAME` | `app-db-ci-cd.yml` | Nome do Deployment usado no `kubectl rollout status` |
+| Variable | `K8S_NAMESPACE` | `app-db-ci-cd.yml` | Namespace onde a aplicação e o Job de banco são aplicados |
+| Variable | `ENABLE_APP_DEPLOY` | `app-db-ci-cd.yml` | Habilita ou desabilita o deploy da aplicação |
+
+#### Injeção da senha do banco (K8S_POSTGRES_PASSWORD)
+
+- O secret `K8S_POSTGRES_PASSWORD` deve ser forte e diferente dos valores de desenvolvimento local.
+- No workflow de infra (`infra.yml`), o CI lê `K8S_POSTGRES_PASSWORD` e repassa ao Terraform como `TF_VAR_k8s_postgres_password` (mesmo valor, nomes diferentes por contexto).
+- Esse valor preenche a variável `k8s_postgres_password` no stack `infra/k8s-workflows`, que cria/atualiza o Secret Kubernetes `postgres-secret`.
+- O `postgres-secret` é referenciado pelo StatefulSet do PostgreSQL (`env_from`), portanto essa senha é a credencial efetivamente usada na inicialização do banco no cluster.
+- No workflow de app (`app-db-ci-cd.yml`), o CI também lê `K8S_POSTGRES_PASSWORD` para renderizar o manifesto `k8s/01-api-secret.yaml`, preenchendo a `DATABASE_URL` consumida pela aplicação.
 
 ## Relatórios de Segurança, Qualidade e Cobertura
 
