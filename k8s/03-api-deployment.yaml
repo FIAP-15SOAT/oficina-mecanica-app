@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oficina-api
+  namespace: oficina
+  labels:
+    app.kubernetes.io/name: oficina-api
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oficina-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oficina-api
+        app.kubernetes.io/part-of: oficina-mecanica
+    spec:
+      containers:
+        - name: api
+          image: IMAGE_URI_PLACEHOLDER
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: NODE_ENV
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: PORT
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: DATABASE_URL
+          readinessProbe:
+            httpGet:
+              path: /api/docs
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/docs
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
