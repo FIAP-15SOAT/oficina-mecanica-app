@@ -204,6 +204,73 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId: 'not-a-uuid' })
         .expect(400);
     });
+
+    it('should create a quote with inline services and parts and return it with items', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const part = await createPartSupply();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 2 }],
+          partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBeGreaterThan(0);
+    });
+
+    it('should return 409 when parts-only payload (no service) is provided', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+        })
+        .expect(409);
+    });
+
+    it('should create an empty PENDING quote when no items are provided (unchanged behavior)', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBe(0);
+    });
+
+    it('should still enforce the work order status gate when inline items are provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      const woRes = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId: woRes.body.data.id,
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────

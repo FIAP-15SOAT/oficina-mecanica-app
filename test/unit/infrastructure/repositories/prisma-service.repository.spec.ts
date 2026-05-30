@@ -113,6 +113,31 @@ describe('PrismaServiceRepository', () => {
     });
   });
 
+  describe('findByIds', () => {
+    it('should return services for the given ids', async () => {
+      const svc1 = createMockService();
+      const svc2 = createMockService();
+
+      prisma.service.findMany.mockResolvedValue([svc1, svc2]);
+
+      const result = await repository.findByIds([svc1.id, svc2.id]);
+
+      expect(result).toHaveLength(2);
+      expect(prisma.service.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [svc1.id, svc2.id] } },
+      });
+    });
+
+    it('should return empty array when ids array is empty', async () => {
+      prisma.service.findMany.mockResolvedValue([]);
+      const result = await repository.findByIds([]);
+      expect(result).toEqual([]);
+      expect(prisma.service.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [] } },
+      });
+    });
+  });
+
   describe('findByName', () => {
     it('should find a service by name and return domain entity', async () => {
       const name = 'Oil Change';

@@ -93,6 +93,38 @@ describe('WorkOrder (E2E)', () => {
     return res.body.data as { id: string; number: string; status: string };
   }
 
+  async function createService() {
+    const res = await request(httpServer)
+      .post('/api/services')
+      .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+      .send({
+        name: `Troca de óleo ${Date.now()}`,
+        description: 'Troca de óleo do motor',
+        basePrice: 150,
+        estimatedTimeMin: 30,
+      })
+      .expect(201);
+    return res.body.data as { id: string };
+  }
+
+  async function createPartSupply() {
+    const res = await request(httpServer)
+      .post('/api/parts-supplies')
+      .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+      .send({
+        name: `Filtro de Óleo ${Date.now()}`,
+        sku: `FILT-OL-${Date.now()}`,
+        category: 'PART',
+        unit: 'UN',
+        costPrice: 25,
+        salePrice: 45,
+        stock: 50,
+        minStock: 5,
+      })
+      .expect(201);
+    return res.body.data as { id: string };
+  }
+
   // ─── POST /api/work-orders ──────────────────────────────────────────────────
 
   describe('POST /api/work-orders', () => {
@@ -326,6 +358,131 @@ describe('WorkOrder (E2E)', () => {
         .post('/api/work-orders')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ customerId: customer1.id, vehicleId: vehicleOfCustomer2.id })
+        .expect(409);
+    });
+
+    it('should create work order with services only and a PENDING quote', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      const res = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      const woId = res.body.data.id as string;
+      expect(res.body.data.status).toBe('RECEIVED');
+
+      const quotesRes = await request(httpServer)
+        .get(`/api/work-orders/${woId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(quotesRes.body.data).toHaveLength(1);
+      expect(quotesRes.body.data[0].status).toBe('PENDING');
+    });
+
+    it('should create work order with services + parts and a PENDING quote', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+      const part = await createPartSupply();
+
+      const res = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [{ serviceId: service.id, quantity: 2 }],
+          partsSupplies: [{ partSupplyId: part.id, quantity: 3 }],
+        })
+        .expect(201);
+
+      const woId = res.body.data.id as string;
+
+      const quotesRes = await request(httpServer)
+        .get(`/api/work-orders/${woId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(quotesRes.body.data).toHaveLength(1);
+      expect(quotesRes.body.data[0].status).toBe('PENDING');
+    });
+
+    it('should create work order without items and NO quote', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      const res = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id })
+        .expect(201);
+
+      const woId = res.body.data.id as string;
+
+      const quotesRes = await request(httpServer)
+        .get(`/api/work-orders/${woId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(quotesRes.body.data).toHaveLength(0);
+    });
+
+    it('should return 409 when parts-only are provided (no service)', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+        })
+        .expect(409);
+    });
+
+    it('should return 404 when unknown serviceId is provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [{ serviceId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 409 when duplicate serviceId is provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [
+            { serviceId: service.id, quantity: 1 },
+            { serviceId: service.id, quantity: 2 },
+          ],
+        })
         .expect(409);
     });
   });

@@ -12,9 +12,21 @@ import { validate as isUuid } from 'uuid';
 
 import { MAX_NOTES_LENGTH } from '../constants/validation/quote.constants';
 
+export interface CreateQuoteItemServiceProps {
+  service: Service;
+  quantity: number;
+}
+
+export interface CreateQuoteItemPartSupplyProps {
+  partSupply: PartSupply;
+  quantity: number;
+}
+
 export interface CreateQuoteProps {
   workOrderId: string;
   notes?: string | null;
+  services?: CreateQuoteItemServiceProps[];
+  partsSupplies?: CreateQuoteItemPartSupplyProps[];
 }
 
 interface QuoteProps {
@@ -81,8 +93,9 @@ export class Quote {
 
     Quote.validateWorkOrderId(props.workOrderId);
     Quote.validateNotes(props.notes ?? null);
+    Quote.validateItems(props);
 
-    return new Quote({
+    const quote = new Quote({
       id: randomUUID(),
       workOrderId: props.workOrderId,
       servicesAmount: 0,
@@ -97,6 +110,18 @@ export class Quote {
       createdAt: now,
       updatedAt: now,
     });
+
+    const hasServices = (props.services?.length ?? 0) > 0;
+    const hasParts = (props.partsSupplies?.length ?? 0) > 0;
+
+    if (hasServices || hasParts) {
+      quote.addItems({
+        services: props.services ?? [],
+        partsSupplies: props.partsSupplies ?? [],
+      });
+    }
+
+    return quote;
   }
 
   addService(service: Service, quantity: number): QuoteService {
@@ -201,13 +226,81 @@ export class Quote {
 
   submit(): void {
     this.ensureCanSubmit();
-    this.ensureHasItems();
+    this.ensureHasService();
 
     const now = new Date();
 
     this._status = QuoteStatus.SENT;
     this.sentAt = now;
     this.updatedAt = now;
+  }
+
+  private addItems(items: {
+    services: CreateQuoteItemServiceProps[];
+    partsSupplies: CreateQuoteItemPartSupplyProps[];
+  }): void {
+    this.ensureNoDuplicateServiceIds(items.services);
+    this.ensureNoDuplicatePartIds(items.partsSupplies);
+
+    const serviceItems = items.services.map((input) =>
+      QuoteService.create({
+        quoteId: this.id,
+        serviceId: input.service.id,
+        quantity: input.quantity,
+        unitPrice: input.service.basePrice,
+      }),
+    );
+
+    const partItems = items.partsSupplies.map((input) =>
+      QuotePartSupply.create({
+        quoteId: this.id,
+        partSupplyId: input.partSupply.id,
+        quantity: input.quantity,
+        unitPrice: input.partSupply.salePrice,
+      }),
+    );
+
+    this._services = [...this._services, ...serviceItems];
+    this._partsSupplies = [...this._partsSupplies, ...partItems];
+
+    this.recalculateTotals();
+  }
+
+  private ensureNoDuplicateServiceIds(newItems: CreateQuoteItemServiceProps[]): void {
+    const newIds = newItems.map((s) => s.service.id);
+
+    const hasBatchDuplicate = newIds.some((id, i) => newIds.indexOf(id) !== i);
+
+    if (hasBatchDuplicate) {
+      throw new BusinessRuleViolationException('O orçamento não pode conter serviços duplicados.');
+    }
+
+    const existingIds = new Set(this._services.map((s) => s.serviceId));
+    const hasConflict = newIds.some((id) => existingIds.has(id));
+
+    if (hasConflict) {
+      throw new BusinessRuleViolationException('O orçamento não pode conter serviços duplicados.');
+    }
+  }
+
+  private ensureNoDuplicatePartIds(newItems: CreateQuoteItemPartSupplyProps[]): void {
+    const newIds = newItems.map((p) => p.partSupply.id);
+    const hasBatchDuplicate = newIds.some((id, i) => newIds.indexOf(id) !== i);
+
+    if (hasBatchDuplicate) {
+      throw new BusinessRuleViolationException(
+        'O orçamento não pode conter peças/insumos duplicados.',
+      );
+    }
+
+    const existingIds = new Set(this._partsSupplies.map((p) => p.partSupplyId));
+    const hasConflict = newIds.some((id) => existingIds.has(id));
+
+    if (hasConflict) {
+      throw new BusinessRuleViolationException(
+        'O orçamento não pode conter peças/insumos duplicados.',
+      );
+    }
   }
 
   approve(): void {
@@ -265,12 +358,10 @@ export class Quote {
     }
   }
 
-  private ensureHasItems(): void {
-    const hasItems = this._services.length > 0 || this._partsSupplies.length > 0;
-
-    if (!hasItems) {
+  private ensureHasService(): void {
+    if (this._services.length === 0) {
       throw new BusinessRuleViolationException(
-        'O orçamento deve ter pelo menos um serviço ou peça/insumo antes de ser enviado.',
+        'O orçamento deve ter pelo menos um serviço antes de ser enviado.',
       );
     }
   }
@@ -295,6 +386,17 @@ export class Quote {
     if (!this.canReject()) {
       throw new BusinessRuleViolationException(
         `Orçamento só pode ser rejeitado se estiver no status SENT. Status atual: "${this.status}".`,
+      );
+    }
+  }
+
+  private static validateItems(props: CreateQuoteProps): void {
+    const hasServices = (props.services?.length ?? 0) > 0;
+    const hasParts = (props.partsSupplies?.length ?? 0) > 0;
+
+    if (hasParts && !hasServices) {
+      throw new BusinessRuleViolationException(
+        'O orçamento deve ter pelo menos um serviço quando contém peças/insumos.',
       );
     }
   }

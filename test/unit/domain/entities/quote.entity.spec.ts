@@ -44,6 +44,39 @@ function makeQuote(
 }
 
 describe('Quote Entity', () => {
+  function makeService(basePrice = 100): Service {
+    return Service.reconstitute({
+      id: randomUUID(),
+      name: 'Troca de óleo',
+      description: null,
+      basePrice,
+      estimatedTimeMin: 60,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  function makePartSupply(salePrice = 50): PartSupply {
+    return PartSupply.reconstitute({
+      id: randomUUID(),
+      name: 'Filtro de óleo',
+      description: null,
+      sku: 'SKU-001',
+      partNumber: null,
+      category: PartSupplyCategory.PART,
+      unit: Unit.UN,
+      costPrice: 30,
+      salePrice,
+      stock: 10,
+      minStock: 1,
+      reservedStock: 0,
+      version: 0,
+      expiresAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
   describe('create()', () => {
     it('should create a quote with PENDING status and zero amounts', () => {
       const quote = Quote.create({ workOrderId: '550e8400-e29b-41d4-a716-446655440111' });
@@ -93,6 +126,81 @@ describe('Quote Entity', () => {
 
       expect(quote.notes).toBe('');
     });
+
+    it('should create with services only and compute totals', () => {
+      const svc = makeService(200);
+      const quote = Quote.create({
+        workOrderId: '550e8400-e29b-41d4-a716-446655440111',
+        services: [{ service: svc, quantity: 2 }],
+      });
+
+      expect(quote.services).toHaveLength(1);
+      expect(quote.partsSupplies).toHaveLength(0);
+      expect(quote.servicesAmount).toBe(400);
+      expect(quote.partsAmount).toBe(0);
+      expect(quote.totalAmount).toBe(400);
+    });
+
+    it('should create with services and parts and compute totals once', () => {
+      const svc = makeService(100);
+      const part = makePartSupply(50);
+      const quote = Quote.create({
+        workOrderId: '550e8400-e29b-41d4-a716-446655440111',
+        services: [{ service: svc, quantity: 1 }],
+        partsSupplies: [{ partSupply: part, quantity: 3 }],
+      });
+
+      expect(quote.services).toHaveLength(1);
+      expect(quote.partsSupplies).toHaveLength(1);
+      expect(quote.servicesAmount).toBe(100);
+      expect(quote.partsAmount).toBe(150);
+      expect(quote.totalAmount).toBe(250);
+    });
+
+    it('should throw when parts are provided without a service', () => {
+      const part = makePartSupply();
+      expect(() =>
+        Quote.create({
+          workOrderId: '550e8400-e29b-41d4-a716-446655440111',
+          partsSupplies: [{ partSupply: part, quantity: 1 }],
+        }),
+      ).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw on duplicate serviceId in the batch', () => {
+      const svc = makeService();
+      expect(() =>
+        Quote.create({
+          workOrderId: '550e8400-e29b-41d4-a716-446655440111',
+          services: [
+            { service: svc, quantity: 1 },
+            { service: svc, quantity: 2 },
+          ],
+        }),
+      ).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw on duplicate partSupplyId in the batch', () => {
+      const svc = makeService();
+      const part = makePartSupply();
+      expect(() =>
+        Quote.create({
+          workOrderId: '550e8400-e29b-41d4-a716-446655440111',
+          services: [{ service: svc, quantity: 1 }],
+          partsSupplies: [
+            { partSupply: part, quantity: 1 },
+            { partSupply: part, quantity: 2 },
+          ],
+        }),
+      ).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should create empty quote when no items are provided', () => {
+      const quote = Quote.create({ workOrderId: '550e8400-e29b-41d4-a716-446655440111' });
+      expect(quote.services).toHaveLength(0);
+      expect(quote.partsSupplies).toHaveLength(0);
+      expect(quote.totalAmount).toBe(0);
+    });
   });
 
   describe('approve()', () => {
@@ -126,7 +234,7 @@ describe('Quote Entity', () => {
   });
 
   describe('submit()', () => {
-    it('should set status to SENT and set sentAt when PENDING with items', () => {
+    it('should set status to SENT and set sentAt when PENDING with a service', () => {
       const quote = makeQuote(QuoteStatus.PENDING, {
         services: [{ totalPrice: 100 } as QuoteService],
       });
@@ -146,25 +254,29 @@ describe('Quote Entity', () => {
       expect(() => quote.submit()).toThrow(BusinessRuleViolationException);
     });
 
-    it('should throw when quote has no items', () => {
+    it('should throw when quote has no items (empty)', () => {
       const quote = makeQuote(QuoteStatus.PENDING);
+      expect(() => quote.submit()).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw when quote has only parts and no service', () => {
+      const partSupplyId = randomUUID();
+      const quoteId = randomUUID();
+      const item = QuotePartSupply.reconstitute({
+        quoteId,
+        partSupplyId,
+        quantity: 1,
+        unitPrice: 50,
+        totalPrice: 50,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const quote = makeQuote(QuoteStatus.PENDING, { id: quoteId, partsSupplies: [item] });
       expect(() => quote.submit()).toThrow(BusinessRuleViolationException);
     });
   });
 
   describe('addService()', () => {
-    function makeService(basePrice = 100): Service {
-      return Service.reconstitute({
-        id: randomUUID(),
-        name: 'Troca de óleo',
-        description: null,
-        basePrice,
-        estimatedTimeMin: 60,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-
     it('should add a service and recalculate totals', () => {
       const quote = makeQuote(QuoteStatus.PENDING);
       const service = makeService(200);
@@ -204,18 +316,6 @@ describe('Quote Entity', () => {
   });
 
   describe('removeService()', () => {
-    function makeService(): Service {
-      return Service.reconstitute({
-        id: randomUUID(),
-        name: 'Alinhamento',
-        description: null,
-        basePrice: 150,
-        estimatedTimeMin: 30,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-
     it('should remove the service and recalculate totals', () => {
       const service = makeService();
       const quoteId = randomUUID();
@@ -285,27 +385,6 @@ describe('Quote Entity', () => {
   });
 
   describe('addPartSupply()', () => {
-    function makePartSupply(salePrice = 50): PartSupply {
-      return PartSupply.reconstitute({
-        id: randomUUID(),
-        name: 'Filtro de óleo',
-        description: null,
-        sku: 'SKU-001',
-        partNumber: null,
-        category: PartSupplyCategory.PART,
-        unit: Unit.UN,
-        costPrice: 30,
-        salePrice,
-        stock: 10,
-        minStock: 1,
-        reservedStock: 0,
-        version: 0,
-        expiresAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-
     it('should add a part supply and recalculate totals', () => {
       const quote = makeQuote(QuoteStatus.PENDING);
       const part = makePartSupply(50);

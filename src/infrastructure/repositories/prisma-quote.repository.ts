@@ -47,6 +47,46 @@ export class PrismaQuoteRepository implements IQuoteRepository {
     return QuoteMapper.toDomain(record);
   }
 
+  async createWithItems(quote: Quote): Promise<Quote> {
+    const record = await this.prisma.quote.create({
+      data: {
+        id: quote.id,
+        workOrderId: quote.workOrderId,
+        servicesAmount: quote.servicesAmount,
+        partsAmount: quote.partsAmount,
+        totalAmount: quote.totalAmount,
+        status: quote.status,
+        notes: quote.notes,
+        sentAt: quote.sentAt,
+        approvedAt: quote.approvedAt,
+        rejectedAt: quote.rejectedAt,
+        services: {
+          create: quote.services.map((s) => ({
+            serviceId: s.serviceId,
+            quantity: s.quantity,
+            unitPrice: s.unitPrice,
+            totalPrice: s.totalPrice,
+          })),
+        },
+        partsSupplies: {
+          create: quote.partsSupplies.map((p) => ({
+            partSupplyId: p.partSupplyId,
+            quantity: p.quantity,
+            unitPrice: p.unitPrice,
+            totalPrice: p.totalPrice,
+          })),
+        },
+      },
+      include: {
+        services: { include: { service: true } },
+        partsSupplies: { include: { partSupply: true } },
+        workOrder: { include: QUOTE_WORK_ORDER_INCLUDE },
+      },
+    });
+
+    return QuoteMapper.toDomain(record);
+  }
+
   async findById(id: string): Promise<Quote | null> {
     const record = await this.prisma.quote.findUnique({ where: { id } });
     return record ? QuoteMapper.toDomain(record) : null;

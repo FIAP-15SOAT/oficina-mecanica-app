@@ -15,6 +15,7 @@ export interface ServiceMetrics {
 export interface IServiceRepository {
   create(service: Service): Promise<Service>;
   findById(id: string): Promise<Service | null>;
+  findByIds(ids: string[]): Promise<Service[]>;
   findByName(name: string): Promise<Service | null>;
   findAllPaginated(
     pagination: PaginationInput,
