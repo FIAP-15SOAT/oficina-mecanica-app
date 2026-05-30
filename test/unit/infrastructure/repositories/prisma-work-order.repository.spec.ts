@@ -182,6 +182,17 @@ describe('PrismaWorkOrderRepository', () => {
       );
       expect(prisma.$queryRaw).toHaveBeenCalled();
     });
+
+    it('should pass customerId filter value into $queryRaw', async () => {
+      const customerId = randomUUID();
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
+
+      const rawCall = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
+      expect(rawCall.values).toContain(customerId);
+    });
   });
 
   describe('update', () => {

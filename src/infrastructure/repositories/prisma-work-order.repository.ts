@@ -93,6 +93,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
 
     // Condições SQL para a query de IDs ordenados
     const conditions: Prisma.Sql[] = [];
+    // "number" is double-quoted because it is a reserved word in SQL
     if (number) conditions.push(Prisma.sql`"number" ILIKE ${'%' + number.trim() + '%'}`);
     if (customerId) conditions.push(Prisma.sql`customer_id = ${customerId}::uuid`);
     if (vehicleId) conditions.push(Prisma.sql`vehicle_id = ${vehicleId}::uuid`);
