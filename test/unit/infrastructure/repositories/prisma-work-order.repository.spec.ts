@@ -90,34 +90,75 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('findAllPaginated', () => {
+    it('should return results ordered by status priority (IN_PROGRESS before AWAITING_APPROVAL)', async () => {
+      const idInProgress = randomUUID();
+      const idAwaiting = randomUUID();
+
+      prisma.$queryRaw.mockResolvedValue([{ id: idInProgress }, { id: idAwaiting }]);
+      prisma.workOrder.count.mockResolvedValue(2);
+      // findMany retorna fora de ordem — o repositório deve reordenar
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: idAwaiting, number: '000002', status: WorkOrderStatus.AWAITING_APPROVAL, createdAt: new Date() },
+        { id: idInProgress, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
+      ]);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      expect(result.total).toBe(2);
+      expect(result.items[0]).toMatchObject({ id: idInProgress });
+      expect(result.items[1]).toMatchObject({ id: idAwaiting });
+    });
+
+    it('should call $queryRaw for ordered IDs', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should return empty list when no results', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(prisma.workOrder.findMany).not.toHaveBeenCalled();
+    });
+
     it('should filter by customerId', async () => {
       const customerId = randomUUID();
-      prisma.workOrder.findMany.mockResolvedValue([{ id: randomUUID(), customerId }]);
-      prisma.workOrder.count.mockResolvedValue(1);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
 
       const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
 
-      expect(result.total).toBe(1);
-      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+      expect(result.total).toBe(0);
+      expect(prisma.workOrder.count).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ customerId }) }),
       );
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should filter by vehicleId', async () => {
       const vehicleId = randomUUID();
-      prisma.workOrder.findMany.mockResolvedValue([{ id: randomUUID(), vehicleId }]);
-      prisma.workOrder.count.mockResolvedValue(1);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
 
       const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
 
-      expect(result.total).toBe(1);
-      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+      expect(result.total).toBe(0);
+      expect(prisma.workOrder.count).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ vehicleId }) }),
       );
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should apply extra filters', async () => {
-      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
       const assignedUserId = randomUUID();
@@ -130,7 +171,7 @@ describe('PrismaWorkOrderRepository', () => {
         },
       );
 
-      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+      expect(prisma.workOrder.count).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             number: { contains: '001', mode: 'insensitive' },
@@ -139,6 +180,7 @@ describe('PrismaWorkOrderRepository', () => {
           }),
         }),
       );
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
   });
 
