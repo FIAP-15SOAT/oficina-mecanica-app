@@ -293,6 +293,12 @@ export class WorkOrder {
     this.updatedAt = new Date();
   }
 
+  static readonly DEFAULT_HIDDEN_STATUSES: WorkOrderStatus[] = [
+    WorkOrderStatus.COMPLETED,
+    WorkOrderStatus.DELIVERED,
+    WorkOrderStatus.CANCELLED,
+  ];
+
   private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
     WorkOrderStatus.IN_DIAGNOSIS,
     WorkOrderStatus.CANCELLED,

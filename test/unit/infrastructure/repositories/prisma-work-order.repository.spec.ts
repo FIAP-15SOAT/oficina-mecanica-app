@@ -140,6 +140,69 @@ describe('PrismaWorkOrderRepository', () => {
         }),
       );
     });
+
+    it('should apply statusNotIn as { notIn: [...] } when no explicit status', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        {
+          statusNotIn: [
+            WorkOrderStatus.COMPLETED,
+            WorkOrderStatus.DELIVERED,
+            WorkOrderStatus.CANCELLED,
+          ],
+        },
+      );
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: {
+              notIn: [
+                WorkOrderStatus.COMPLETED,
+                WorkOrderStatus.DELIVERED,
+                WorkOrderStatus.CANCELLED,
+              ],
+            },
+          }),
+        }),
+      );
+    });
+
+    it('should give precedence to explicit status over statusNotIn', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        {
+          status: WorkOrderStatus.DELIVERED,
+          statusNotIn: [WorkOrderStatus.COMPLETED, WorkOrderStatus.CANCELLED],
+        },
+      );
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: WorkOrderStatus.DELIVERED }),
+        }),
+      );
+      const [call] = prisma.workOrder.findMany.mock.calls;
+      expect((call[0] as { where: Record<string, unknown> }).where.status).toBe(
+        WorkOrderStatus.DELIVERED,
+      );
+    });
+
+    it('should leave where.status undefined when neither status nor statusNotIn are provided', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      const [call] = prisma.workOrder.findMany.mock.calls;
+      expect((call[0] as { where: Record<string, unknown> }).where.status).toBeUndefined();
+    });
   });
 
   describe('update', () => {

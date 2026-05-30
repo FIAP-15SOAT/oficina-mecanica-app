@@ -1,4 +1,5 @@
 import type { Server } from 'http';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
@@ -1609,6 +1610,123 @@ describe('WorkOrder (E2E)', () => {
       expect(partItem).toBeDefined();
       expect(partItem.description).toBe('Filtro de ar original');
       expect(partItem.partNumber).toBe('FA-9999');
+    });
+  });
+
+  describe('GET /api/work-orders — default status filter', () => {
+    it('should omit COMPLETED, DELIVERED and CANCELLED orders by default, keeping REJECTED and active ones', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      const activeWo = await createWorkOrder(customer.id, vehicle.id);
+
+      // Insert closed orders directly via prisma (hard to reach via API alone)
+      await ctx.prisma.workOrder.createMany({
+        data: [
+          {
+            id: randomUUID(),
+            number: `${Date.now()}01`,
+            customerId: customer.id,
+            vehicleId: vehicle.id,
+            status: 'COMPLETED',
+            totalAmount: 0,
+            version: 1,
+          },
+          {
+            id: randomUUID(),
+            number: `${Date.now()}02`,
+            customerId: customer.id,
+            vehicleId: vehicle.id,
+            status: 'DELIVERED',
+            totalAmount: 0,
+            version: 1,
+          },
+          {
+            id: randomUUID(),
+            number: `${Date.now()}03`,
+            customerId: customer.id,
+            vehicleId: vehicle.id,
+            status: 'CANCELLED',
+            totalAmount: 0,
+            version: 1,
+          },
+          {
+            id: randomUUID(),
+            number: `${Date.now()}04`,
+            customerId: customer.id,
+            vehicleId: vehicle.id,
+            status: 'REJECTED',
+            totalAmount: 0,
+            version: 1,
+          },
+        ],
+      });
+
+      const res = await request(httpServer)
+        .get('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const statuses: string[] = res.body.data.map((wo: { status: string }) => wo.status);
+      expect(statuses).not.toContain('COMPLETED');
+      expect(statuses).not.toContain('DELIVERED');
+      expect(statuses).not.toContain('CANCELLED');
+      expect(statuses).toContain('RECEIVED');
+      expect(statuses).toContain('REJECTED');
+
+      expect(res.body.pagination.totalRecords).toBe(2); // RECEIVED + REJECTED
+      expect(res.body.data.some((wo: { id: string }) => wo.id === activeWo.id)).toBe(true);
+    });
+
+    it('GET /api/work-orders?status=DELIVERED should return delivered orders (override default)', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      await ctx.prisma.workOrder.create({
+        data: {
+          id: randomUUID(),
+          number: `${Date.now()}05`,
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          status: 'DELIVERED',
+          totalAmount: 0,
+          version: 1,
+        },
+      });
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?status=DELIVERED')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data.every((wo: { status: string }) => wo.status === 'DELIVERED')).toBe(true);
+    });
+
+    it('GET /api/work-orders/:id of a closed order should return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+
+      const closedId = randomUUID();
+      await ctx.prisma.workOrder.create({
+        data: {
+          id: closedId,
+          number: `${Date.now()}06`,
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          status: 'DELIVERED',
+          totalAmount: 0,
+          version: 1,
+        },
+      });
+
+      const res = await request(httpServer)
+        .get(`/api/work-orders/${closedId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.id).toBe(closedId);
+      expect(res.body.data.status).toBe('DELIVERED');
     });
   });
 

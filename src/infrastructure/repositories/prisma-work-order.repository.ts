@@ -81,7 +81,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     pagination: PaginationInput,
     filters: WorkOrderFilters,
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status } = filters;
+    const { number, customerId, vehicleId, assignedUserId, status, statusNotIn } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
 
@@ -90,6 +90,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (vehicleId) where.vehicleId = vehicleId;
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;
+    else if (statusNotIn?.length) where.status = { notIn: statusNotIn };
 
     const result = await paginate(
       this.prisma.workOrder,

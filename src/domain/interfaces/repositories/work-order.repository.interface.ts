@@ -10,6 +10,7 @@ export interface WorkOrderFilters {
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;
+  statusNotIn?: WorkOrderStatus[];
 }
 
 export interface IWorkOrderRepository {
