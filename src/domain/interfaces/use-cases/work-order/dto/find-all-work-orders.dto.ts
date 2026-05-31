@@ -1,5 +1,6 @@
 import { PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 
 export interface FindAllWorkOrdersFilters extends PaginationInput {
   number?: string;
@@ -7,4 +8,5 @@ export interface FindAllWorkOrdersFilters extends PaginationInput {
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;
+  sortBy?: WorkOrderSortBy;
 }
