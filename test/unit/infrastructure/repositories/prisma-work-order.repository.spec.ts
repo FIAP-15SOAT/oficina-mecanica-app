@@ -379,7 +379,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should throw ConcurrencyException on P2002 (duplicate service item)', async () => {
+    it('should throw ResourceConflictException on P2002 (duplicate service item)', async () => {
       const workOrder = WorkOrder.create({
         number: '000001',
         customerId: randomUUID(),
@@ -579,7 +579,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should throw ConcurrencyException on P2002 (duplicate part supply item)', async () => {
+    it('should throw ResourceConflictException on P2002 (duplicate part supply item)', async () => {
       const workOrder = WorkOrder.create({
         number: '000001',
         customerId: randomUUID(),
