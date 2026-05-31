@@ -486,6 +486,44 @@ describe('WorkOrder (E2E)', () => {
         })
         .expect(409);
     });
+
+    it('should return 404 when unknown partSupplyId is provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [{ partSupplyId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 409 when duplicate partSupplyId is provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [
+            { partSupplyId: part.id, quantity: 1 },
+            { partSupplyId: part.id, quantity: 2 },
+          ],
+        })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/work-orders ──────────────────────────────────────────────────

@@ -271,6 +271,88 @@ describe('Quote (E2E)', () => {
         })
         .expect(409);
     });
+
+    it('should create a quote with services only (no parts) and return totalAmount > 0', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBeGreaterThan(0);
+      expect(res.body.data.partsAmount).toBe(0);
+    });
+
+    it('should return 404 when an inline serviceId does not exist', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 404 when an inline partSupplyId does not exist', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [{ partSupplyId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 409 when duplicate serviceId is provided in inline services', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [
+            { serviceId: service.id, quantity: 1 },
+            { serviceId: service.id, quantity: 2 },
+          ],
+        })
+        .expect(409);
+    });
+
+    it('should return 409 when duplicate partSupplyId is provided in inline partsSupplies', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [
+            { partSupplyId: part.id, quantity: 1 },
+            { partSupplyId: part.id, quantity: 2 },
+          ],
+        })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────
@@ -864,6 +946,7 @@ describe('Quote (E2E)', () => {
         })
         .expect(201);
       const partId = partRes.body.data.id;
+      const service = await createService();
 
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -871,6 +954,12 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId })
         .expect(201);
       const quoteId = createRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: service.id, quantity: 1 })
+        .expect(200);
 
       await request(httpServer)
         .post(`/api/quotes/${quoteId}/parts-supplies`)

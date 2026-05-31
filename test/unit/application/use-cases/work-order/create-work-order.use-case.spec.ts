@@ -292,6 +292,31 @@ describe('CreateWorkOrderUseCase', () => {
     ).rejects.toThrow(ResourceNotFoundException);
   });
 
+  it('should throw ResourceNotFoundException when inline part supply id is unknown', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const service = createMockService({ basePrice: 100 });
+    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+    (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
+    (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        services: [{ serviceId: service.id, quantity: 1 }],
+        partsSupplies: [{ partSupplyId: 'unknown-part-id', quantity: 1 }],
+      }),
+    ).rejects.toThrow(ResourceNotFoundException);
+  });
+
   it('should throw BusinessRuleViolationException when only parts are provided (no service)', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });

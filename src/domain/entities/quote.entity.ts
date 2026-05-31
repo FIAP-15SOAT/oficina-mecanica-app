@@ -111,14 +111,11 @@ export class Quote {
       updatedAt: now,
     });
 
-    const hasServices = (props.services?.length ?? 0) > 0;
-    const hasParts = (props.partsSupplies?.length ?? 0) > 0;
+    const services = props.services ?? [];
+    const partsSupplies = props.partsSupplies ?? [];
 
-    if (hasServices || hasParts) {
-      quote.addItems({
-        services: props.services ?? [],
-        partsSupplies: props.partsSupplies ?? [],
-      });
+    if (services.length > 0 || partsSupplies.length > 0) {
+      quote.addItems({ services, partsSupplies });
     }
 
     return quote;
@@ -274,13 +271,6 @@ export class Quote {
     if (hasBatchDuplicate) {
       throw new BusinessRuleViolationException('O orçamento não pode conter serviços duplicados.');
     }
-
-    const existingIds = new Set(this._services.map((s) => s.serviceId));
-    const hasConflict = newIds.some((id) => existingIds.has(id));
-
-    if (hasConflict) {
-      throw new BusinessRuleViolationException('O orçamento não pode conter serviços duplicados.');
-    }
   }
 
   private ensureNoDuplicatePartIds(newItems: CreateQuoteItemPartSupplyProps[]): void {
@@ -288,15 +278,6 @@ export class Quote {
     const hasBatchDuplicate = newIds.some((id, i) => newIds.indexOf(id) !== i);
 
     if (hasBatchDuplicate) {
-      throw new BusinessRuleViolationException(
-        'O orçamento não pode conter peças/insumos duplicados.',
-      );
-    }
-
-    const existingIds = new Set(this._partsSupplies.map((p) => p.partSupplyId));
-    const hasConflict = newIds.some((id) => existingIds.has(id));
-
-    if (hasConflict) {
       throw new BusinessRuleViolationException(
         'O orçamento não pode conter peças/insumos duplicados.',
       );
