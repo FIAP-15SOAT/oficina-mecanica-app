@@ -15,6 +15,8 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
+import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
+import { WORK_ORDER_STATUS_PRIORITY } from '@domain/constants/work-order-status-priority.constant';
 
 const WORK_ORDER_LIST_INCLUDE = {
   customer: true,
@@ -80,10 +82,9 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     pagination: PaginationInput,
     filters: WorkOrderFilters,
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status } = filters;
+    const { number, customerId, vehicleId, assignedUserId, status, sortBy } = filters;
     const { page, limit } = pagination;
 
-    // Prisma where para count (type-safe, filtros idênticos)
     const where: Prisma.WorkOrderWhereInput = {};
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };
     if (customerId) where.customerId = customerId;
@@ -91,7 +92,6 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;
 
-    // Condições SQL para a query de IDs ordenados
     const conditions: Prisma.Sql[] = [];
     // "number" is double-quoted because it is a reserved word in SQL
     if (number) conditions.push(Prisma.sql`"number" ILIKE ${'%' + number.trim() + '%'}`);
@@ -105,20 +105,22 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
         ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
         : Prisma.empty;
 
+    const orderByClause =
+      sortBy === WorkOrderSortBy.CREATED_AT
+        ? Prisma.sql`created_at ASC`
+        : Prisma.sql`CASE status::text ${Prisma.join(
+            Object.entries(WORK_ORDER_STATUS_PRIORITY).map(
+              ([s, p]) => Prisma.sql`WHEN ${s} THEN ${p}`,
+            ),
+            ' ',
+          )} END, created_at ASC`;
+
     const offset = (page - 1) * limit;
 
     const query = Prisma.sql`
       SELECT id FROM work_orders
       ${whereClause}
-      ORDER BY
-        CASE status::text
-          WHEN 'IN_PROGRESS'        THEN 1
-          WHEN 'AWAITING_APPROVAL'  THEN 2
-          WHEN 'IN_DIAGNOSIS'       THEN 3
-          WHEN 'RECEIVED'           THEN 4
-          ELSE 5
-        END,
-        created_at ASC
+      ORDER BY ${orderByClause}
       LIMIT ${limit} OFFSET ${offset}
     `;
 
@@ -138,7 +140,6 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       include: WORK_ORDER_LIST_INCLUDE,
     });
 
-    // Restaura a ordem do $queryRaw (IN clause não garante ordem)
     const idIndexMap = new Map(orderedIds.map((id, i) => [id, i]));
     records.sort((a, b) => (idIndexMap.get(a.id) ?? 0) - (idIndexMap.get(b.id) ?? 0));
 

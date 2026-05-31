@@ -3,6 +3,7 @@ import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
@@ -192,6 +193,47 @@ describe('PrismaWorkOrderRepository', () => {
 
       const rawCall = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
       expect(rawCall.values).toContain(customerId);
+    });
+
+    it('should sort by createdAt ASC when sortBy is CREATED_AT', async () => {
+      const id1 = randomUUID();
+      const id2 = randomUUID();
+
+      prisma.$queryRaw.mockResolvedValue([{ id: id1 }, { id: id2 }]);
+      prisma.workOrder.count.mockResolvedValue(2);
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: id1, number: '000001', status: WorkOrderStatus.RECEIVED, createdAt: new Date('2026-01-01') },
+        { id: id2, number: '000002', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date('2026-01-02') },
+      ]);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { sortBy: WorkOrderSortBy.CREATED_AT },
+      );
+
+      expect(result.items[0]).toMatchObject({ id: id1 });
+      expect(result.items[1]).toMatchObject({ id: id2 });
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should sort by STATUS_PRIORITY when sortBy is STATUS_PRIORITY', async () => {
+      const idInProgress = randomUUID();
+      const idReceived = randomUUID();
+
+      prisma.$queryRaw.mockResolvedValue([{ id: idInProgress }, { id: idReceived }]);
+      prisma.workOrder.count.mockResolvedValue(2);
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: idReceived, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
+        { id: idInProgress, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
+      ]);
+
+      const result = await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { sortBy: WorkOrderSortBy.STATUS_PRIORITY },
+      );
+
+      expect(result.items[0]).toMatchObject({ id: idInProgress });
+      expect(result.items[1]).toMatchObject({ id: idReceived });
     });
   });
 
