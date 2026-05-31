@@ -1,6 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class FilterWorkOrdersDto {
@@ -30,6 +31,17 @@ export class FilterWorkOrdersDto {
     message: `status deve ser um dos seguintes: ${Object.values(WorkOrderStatus).join(', ')}`,
   })
   status?: WorkOrderStatus;
+
+  @ApiPropertyOptional({
+    description: 'Critério de ordenação',
+    enum: WorkOrderSortBy,
+    default: WorkOrderSortBy.STATUS_PRIORITY,
+  })
+  @IsOptional()
+  @IsEnum(WorkOrderSortBy, {
+    message: `sortBy deve ser um dos seguintes: ${Object.values(WorkOrderSortBy).join(', ')}`,
+  })
+  sortBy?: WorkOrderSortBy;
 }
 
 export class FindAllWorkOrdersPaginatedQueryDto extends IntersectionType(
