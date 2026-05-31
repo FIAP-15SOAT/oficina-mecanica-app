@@ -497,6 +497,28 @@ describe('Customer (E2E)', () => {
         })
         .expect(409);
     });
+
+    it('should update document and email to new free values without conflict', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validCustomer)
+        .expect(201);
+
+      // Changing both document and email to brand-new values exercises the
+      // "no existing match" branch of the document/email uniqueness lookups.
+      const res = await request(httpServer)
+        .put(`/api/customers/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          document: '987.654.321-00',
+          email: 'novo.endereco@email.com',
+        })
+        .expect(200);
+
+      expect(res.body.data.email).toBe('novo.endereco@email.com');
+    });
   });
 
   // ─── DELETE /api/customers/:id ────────────────────────────────────────────

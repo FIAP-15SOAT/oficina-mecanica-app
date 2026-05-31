@@ -780,6 +780,31 @@ describe('WorkOrder (E2E)', () => {
         .send({ assignedUserId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
         .expect(404);
     });
+
+    it('should assign an existing mechanic during update', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const wo = await createWorkOrder(customer.id, vehicle.id);
+
+      const mechanic = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Mechanic Update',
+          email: `mechanic.update${Date.now()}@test.com`,
+          role: 'MECHANIC',
+        },
+        ctx.prisma,
+      );
+
+      // A valid existing user covers the "assignedUser found" branch.
+      const res = await request(httpServer)
+        .put(`/api/work-orders/${wo.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ assignedUserId: mechanic.user.id })
+        .expect(200);
+
+      expect(res.body.data.assignedUser.id).toBe(mechanic.user.id);
+    });
   });
 
   describe('GET /api/work-orders/:id/status-history', () => {

@@ -429,6 +429,19 @@ describe('User (E2E)', () => {
         expect.arrayContaining([expect.stringContaining('caractere especial')]),
       );
     });
+
+    it('should update with the same email, skipping the duplicate check', async () => {
+      // Sending the user's current e-mail means it equals the stored one, so the
+      // uniqueness lookup is skipped (the `!newEmail.equals(...)` false branch).
+      const res = await request(httpServer)
+        .put(`/api/users/${userId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ email: 'updateme@e2e.test', name: 'Same Email Name' })
+        .expect(200);
+
+      expect(res.body.data.name).toBe('Same Email Name');
+      expect(res.body.data.email).toBe('updateme@e2e.test');
+    });
   });
 
   // ─── PATCH /api/users/:id ─────────────────────────────────────────────────

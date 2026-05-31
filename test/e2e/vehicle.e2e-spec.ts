@@ -474,6 +474,52 @@ describe('Vehicle (E2E)', () => {
         })
         .expect(404);
     });
+
+    it('should reassign to another existing customer and a new free plate', async () => {
+      const firstCustomer = await createCustomer(adminAuth.accessToken);
+
+      // Second customer needs distinct document/email (createCustomer is fixed).
+      const secondCustomerRes = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Maria Souza',
+          document: '987.654.321-00',
+          type: 'INDIVIDUAL',
+          email: 'maria@e2e.test',
+          phone: '(11) 98888-8888',
+          address: {
+            street: 'Rua B, 1',
+            city: 'São Paulo',
+            state: 'SP',
+            zipCode: '01310-100',
+          },
+        })
+        .expect(201);
+      const secondCustomerId = secondCustomerRes.body.data.id as string;
+
+      const created = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validVehicle, customerId: firstCustomer.id })
+        .expect(201);
+
+      // Changing the owner to an existing customer covers the "customer found"
+      // branch; a brand-new plate covers the "plate is free" branch.
+      const res = await request(httpServer)
+        .put(`/api/vehicles/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: secondCustomerId,
+          plate: 'DEF5678',
+          brand: 'Honda',
+          model: 'Civic',
+          year: 2021,
+        })
+        .expect(200);
+
+      expect(res.body.data.plate).toBe('DEF5678');
+    });
   });
 
   // ─── DELETE /api/vehicles/:id ────────────────────────────────────────────
