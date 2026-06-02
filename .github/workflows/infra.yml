@@ -20,6 +20,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
+  AWS_BASE_TFSTATE_PATH: bkt-oficina-mecanica/infra/prod-simulated/aws-base/terraform.tfstate
   TF_IN_AUTOMATION: true
 
 jobs:
@@ -81,8 +82,8 @@ jobs:
         id: check
         run: |
           if aws s3 cp \
-            "s3://bkt-oficina-mecanica/infra/prod-simulated/aws-base/terraform.tfstate" \
-            /tmp/aws-base.tfstate --region us-east-1 2>/dev/null; then
+            "s3://${AWS_BASE_TFSTATE_PATH}" \
+            /tmp/aws-base.tfstate --region "${AWS_REGION}" 2>/dev/null; then
             CLUSTER=$(jq -r '.outputs.cluster_name.value // empty' /tmp/aws-base.tfstate 2>/dev/null)
             if [[ -n "$CLUSTER" ]]; then
               echo "exists=true" >> "$GITHUB_OUTPUT"
@@ -212,3 +213,4 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -no-color
         working-directory: infra/k8s-workflows
+
