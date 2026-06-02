@@ -78,11 +78,11 @@ jobs:
           infra_changed=false
           app_changed=false
 
-          if echo "${CHANGED_FILES}" | rg -q '^(prisma/|prisma\.config\.ts$)'; then
+          if echo "${CHANGED_FILES}" | grep -qE '^(prisma/|prisma\.config\.ts$)'; then
             prisma_changed=true
           fi
 
-          if echo "${CHANGED_FILES}" | rg -q '^(infra/|\.github/workflows/infra\.yml$)'; then
+          if echo "${CHANGED_FILES}" | grep -qE '^(infra/|\.github/workflows/infra\.yml$)'; then
             infra_changed=true
           fi
 
