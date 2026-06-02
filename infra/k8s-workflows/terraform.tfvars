@@ -12,4 +12,4 @@ k8s_postgres_db    = "techchallenge"
 k8s_postgres_image = "postgres:16-alpine"
 
 enable_metrics_server        = true
-metrics_server_chart_version = ""
+metrics_server_chart_version = "3.13.0"
