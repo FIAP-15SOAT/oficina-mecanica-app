@@ -369,8 +369,10 @@ jobs:
         env:
           K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
         run: |
-          sed "s|CHANGE_ME_STRONG_PASSWORD|${K8S_POSTGRES_PASSWORD}|g" \
-            k8s/01-api-secret.yaml > k8s/01-api-secret.rendered.yaml
+          CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
+            envsubst '${CHANGE_ME_STRONG_PASSWORD}' \
+            < k8s/01-api-secret.yaml \
+            > k8s/01-api-secret.rendered.yaml
 
       - name: Render deployment manifest with immutable image
         run: |
