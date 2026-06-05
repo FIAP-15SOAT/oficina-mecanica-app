@@ -359,6 +359,41 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.pagination.page).toBe(1);
       expect(res.body.pagination.limit).toBe(10);
     });
+
+    it('should accept sortBy=status and return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sortBy=status')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should accept sortBy=createdAt and return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sortBy=createdAt')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should return 400 for invalid sortBy value', async () => {
+      await request(httpServer)
+        .get('/api/work-orders?sortBy=invalid')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(400);
+    });
   });
 
   // ─── GET /api/work-orders/:id ──────────────────────────────────────────────

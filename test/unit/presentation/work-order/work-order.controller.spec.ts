@@ -17,6 +17,7 @@ import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work
 import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
 import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
 import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
+import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 
 describe('WorkOrderController', () => {
   let controller: WorkOrderController;
@@ -99,6 +100,19 @@ describe('WorkOrderController', () => {
     await controller.findAll({});
     expect(findAllPaginatedUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, limit: 10 }),
+    );
+  });
+
+  it('should forward sortBy to use case', async () => {
+    findAllPaginatedUseCase.execute.mockResolvedValue({
+      items: [],
+      pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+    });
+
+    await controller.findAll({ page: 1, limit: 10, sortBy: WorkOrderSortBy.CREATED_AT });
+
+    expect(findAllPaginatedUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: WorkOrderSortBy.CREATED_AT }),
     );
   });
 
