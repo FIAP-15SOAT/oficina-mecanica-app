@@ -27,7 +27,7 @@ export class WorkOrderPresenter {
   static toSummaryResponse(workOrder: WorkOrder): WorkOrderResponseDto {
     return {
       id: workOrder.id,
-      number: workOrder.number,
+      number: workOrder.number.toString(),
       customer: WorkOrderPresenter.toCustomer(workOrder.customer!),
       vehicle: WorkOrderPresenter.toVehicle(workOrder.vehicle!),
       assignedUser: workOrder.assignedUser

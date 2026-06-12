@@ -75,7 +75,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
           workOrderId: workOrder.id,
           quantity: reservation.quantity,
           type: StockMovementType.EXIT,
-          reason: `Saída por Ordem de Serviço ${workOrder.number}`,
+          reason: `Saída por Ordem de Serviço ${workOrder.number.toString()}`,
         }),
       );
 

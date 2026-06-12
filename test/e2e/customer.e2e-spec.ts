@@ -586,7 +586,7 @@ describe('Customer (E2E)', () => {
 
       await ctx.prisma.workOrder.create({
         data: {
-          number: 'WO-CUST-DEL-1',
+          number: '950001',
           customerId: created.body.data.id,
           vehicleId: vehicle.id,
         },

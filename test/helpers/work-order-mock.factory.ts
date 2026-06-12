@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderProps } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 
 export function createMockWorkOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
@@ -11,7 +12,7 @@ export function createMockWorkOrder(overrides: Partial<WorkOrder> = {}): WorkOrd
 
   const wo = WorkOrder.reconstitute({
     id: randomUUID(),
-    number: '000001',
+    number: WorkOrderNumber.create('000001'),
     customerId: randomUUID(),
     vehicleId: randomUUID(),
     assignedUserId: null,

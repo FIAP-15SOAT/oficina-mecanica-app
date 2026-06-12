@@ -39,7 +39,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     const record = await this.prisma.workOrder.create({
       data: {
         id: workOrder.id,
-        number: workOrder.number,
+        number: workOrder.number.toString(),
         customerId: workOrder.customerId,
         vehicleId: workOrder.vehicleId,
         assignedUserId: workOrder.assignedUserId,
@@ -148,7 +148,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       SELECT nextval('work_order_number_seq') AS next
     `;
 
-    return String(rows[0].next).padStart(6, '0');
+    return String(rows[0].next);
   }
 
   async addServiceItems(items: WorkOrderService[]): Promise<void> {

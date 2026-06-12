@@ -773,7 +773,7 @@ describe('PartSupply (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'LINKED',
+          number: '930001',
           status: 'RECEIVED',
         },
       });
