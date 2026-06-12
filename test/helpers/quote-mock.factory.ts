@@ -58,7 +58,6 @@ export function createMockQuotePartSupply(
 export function createMockQuoteRepository(): jest.Mocked<IQuoteRepository> {
   return {
     create: jest.fn(),
-    createWithItems: jest.fn(),
     findById: jest.fn(),
     findByIdWithDetails: jest.fn(),
     findByWorkOrderId: jest.fn(),

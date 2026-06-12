@@ -40,26 +40,6 @@ export class PrismaQuoteRepository implements IQuoteRepository {
         sentAt: quote.sentAt,
         approvedAt: quote.approvedAt,
         rejectedAt: quote.rejectedAt,
-      },
-      include: { workOrder: { include: QUOTE_WORK_ORDER_INCLUDE } },
-    });
-
-    return QuoteMapper.toDomain(record);
-  }
-
-  async createWithItems(quote: Quote): Promise<Quote> {
-    const record = await this.prisma.quote.create({
-      data: {
-        id: quote.id,
-        workOrderId: quote.workOrderId,
-        servicesAmount: quote.servicesAmount,
-        partsAmount: quote.partsAmount,
-        totalAmount: quote.totalAmount,
-        status: quote.status,
-        notes: quote.notes,
-        sentAt: quote.sentAt,
-        approvedAt: quote.approvedAt,
-        rejectedAt: quote.rejectedAt,
         services: {
           create: quote.services.map((s) => ({
             serviceId: s.serviceId,

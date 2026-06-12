@@ -31,7 +31,6 @@ describe('CreateQuoteUseCase', () => {
     const result = await useCase.execute({ workOrderId: workOrder.id });
     expect(result).toBe(quote);
     expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
-    expect(mockRepos.quote.createWithItems).not.toHaveBeenCalled();
   });
 
   it('should create a quote with items when services are provided', async () => {
@@ -41,7 +40,7 @@ describe('CreateQuoteUseCase', () => {
 
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quote.createWithItems as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.quote.create as jest.Mock).mockResolvedValue(quote);
 
     const result = await useCase.execute({
       workOrderId: workOrder.id,
@@ -49,8 +48,7 @@ describe('CreateQuoteUseCase', () => {
     });
 
     expect(result).toBe(quote);
-    expect(mockRepos.quote.createWithItems).toHaveBeenCalledTimes(1);
-    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
   });
 
   it('should reject parts-only payload (no service) with BusinessRuleViolationException', async () => {
@@ -58,7 +56,6 @@ describe('CreateQuoteUseCase', () => {
     const part = createMockPartSupply();
 
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
-    (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([part]);
 
     await expect(
       useCase.execute({
@@ -125,5 +122,24 @@ describe('CreateQuoteUseCase', () => {
 
     const result = await useCase.execute({ workOrderId: workOrder.id });
     expect(result).toBe(quote);
+  });
+
+  it('should throw BusinessRuleViolationException on duplicate service id — no resolution', async () => {
+    const workOrder = createMockWorkOrder({ status: WorkOrderStatus.IN_DIAGNOSIS });
+
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+
+    await expect(
+      useCase.execute({
+        workOrderId: workOrder.id,
+        services: [
+          { serviceId: 'duplicated-service-id', quantity: 1 },
+          { serviceId: 'duplicated-service-id', quantity: 2 },
+        ],
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.service.findByIds).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 });

@@ -18,7 +18,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('create', () => {
-    it('should create a quote', async () => {
+    it('should create a quote with no items (empty nested create arrays)', async () => {
       const quote = Quote.create({
         workOrderId: randomUUID(),
         notes: 'Test notes',
@@ -37,6 +37,8 @@ describe('PrismaQuoteRepository', () => {
         rejectedAt: quote.rejectedAt,
         createdAt: quote.createdAt,
         updatedAt: quote.updatedAt,
+        services: [],
+        partsSupplies: [],
         workOrder: null,
       });
 
@@ -45,15 +47,19 @@ describe('PrismaQuoteRepository', () => {
       expect(result.id).toBe(quote.id);
       expect(prisma.quote.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          data: expect.objectContaining({
+            services: { create: [] },
+            partsSupplies: { create: [] },
+          }),
           include: expect.objectContaining({
+            services: { include: { service: true } },
+            partsSupplies: { include: { partSupply: true } },
             workOrder: expect.any(Object),
           }),
         }),
       );
     });
-  });
 
-  describe('createWithItems', () => {
     it('should create quote with services and partsSupplies in a single nested create', async () => {
       const workOrderId = randomUUID();
       const serviceId = randomUUID();
@@ -131,7 +137,7 @@ describe('PrismaQuoteRepository', () => {
 
       prisma.quote.create.mockResolvedValue(mockRecord);
 
-      const result = await repository.createWithItems(quote);
+      const result = await repository.create(quote);
 
       expect(result.services).toHaveLength(1);
       expect(result.partsSupplies).toHaveLength(1);

@@ -201,7 +201,7 @@ describe('CreateWorkOrderUseCase', () => {
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
   });
 
-  it('should create work order with inline services and persist quote via createWithItems', async () => {
+  it('should create work order with inline services and persist quote via create', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const service = createMockService({ basePrice: 100 });
@@ -213,7 +213,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
     (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
     (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
-    (mockRepos.quote.createWithItems as jest.Mock).mockResolvedValue({});
+    (mockRepos.quote.create as jest.Mock).mockResolvedValue({});
 
     const result = await useCase.execute({
       customerId: customer.id,
@@ -223,10 +223,10 @@ describe('CreateWorkOrderUseCase', () => {
     });
 
     expect(result).toBe(createdWO);
-    expect(mockRepos.quote.createWithItems).toHaveBeenCalledTimes(1);
+    expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
   });
 
-  it('should create work order with services + parts via createWithItems', async () => {
+  it('should create work order with services + parts via create', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const service = createMockService({ basePrice: 100 });
@@ -240,7 +240,7 @@ describe('CreateWorkOrderUseCase', () => {
     (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
     (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([part]);
-    (mockRepos.quote.createWithItems as jest.Mock).mockResolvedValue({});
+    (mockRepos.quote.create as jest.Mock).mockResolvedValue({});
 
     await useCase.execute({
       customerId: customer.id,
@@ -250,7 +250,7 @@ describe('CreateWorkOrderUseCase', () => {
       partsSupplies: [{ partSupplyId: part.id, quantity: 2 }],
     });
 
-    expect(mockRepos.quote.createWithItems).toHaveBeenCalledTimes(1);
+    expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
   });
 
   it('should NOT create a quote when no items are provided', async () => {
@@ -266,20 +266,15 @@ describe('CreateWorkOrderUseCase', () => {
 
     await useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, userId: randomUUID() });
 
-    expect(mockRepos.quote.createWithItems).not.toHaveBeenCalled();
     expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceNotFoundException when inline service id is unknown', async () => {
+  it('should throw ResourceNotFoundException when inline service id is unknown — no write, no number consumed', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
-    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
 
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
-    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
-    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
-    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
     (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([]);
 
     await expect(
@@ -290,19 +285,19 @@ describe('CreateWorkOrderUseCase', () => {
         services: [{ serviceId: 'unknown-id', quantity: 1 }],
       }),
     ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 
-  it('should throw ResourceNotFoundException when inline part supply id is unknown', async () => {
+  it('should throw ResourceNotFoundException when inline part supply id is unknown — no write, no number consumed', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const service = createMockService({ basePrice: 100 });
-    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
 
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
-    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
-    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
-    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
     (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([]);
 
@@ -315,20 +310,19 @@ describe('CreateWorkOrderUseCase', () => {
         partsSupplies: [{ partSupplyId: 'unknown-part-id', quantity: 1 }],
       }),
     ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 
-  it('should throw BusinessRuleViolationException when only parts are provided (no service)', async () => {
+  it('should throw BusinessRuleViolationException when only parts are provided (no service) — no write, no number consumed', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const part = createMockPartSupply();
-    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
 
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
-    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
-    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
-    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
-    (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([part]);
 
     await expect(
       useCase.execute({
@@ -338,5 +332,34 @@ describe('CreateWorkOrderUseCase', () => {
         partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
       }),
     ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw BusinessRuleViolationException on duplicate service id — no resolution, no number consumed', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        services: [
+          { serviceId: 'duplicated-service-id', quantity: 1 },
+          { serviceId: 'duplicated-service-id', quantity: 2 },
+        ],
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.service.findByIds).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 });

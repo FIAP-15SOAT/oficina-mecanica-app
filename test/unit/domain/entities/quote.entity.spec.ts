@@ -203,6 +203,38 @@ describe('Quote Entity', () => {
     });
   });
 
+  describe('validateItems()', () => {
+    it('should not throw when there are services and no parts', () => {
+      expect(() => Quote.validateItems(['svc-1'], [])).not.toThrow();
+    });
+
+    it('should not throw when there are both services and parts', () => {
+      expect(() =>
+        Quote.validateItems(['svc-1', 'svc-2'], ['part-1', 'part-2', 'part-3']),
+      ).not.toThrow();
+    });
+
+    it('should not throw when there are no items at all', () => {
+      expect(() => Quote.validateItems([], [])).not.toThrow();
+    });
+
+    it('should throw BusinessRuleViolationException when there are parts but no services', () => {
+      expect(() => Quote.validateItems([], ['part-1'])).toThrow(BusinessRuleViolationException);
+    });
+
+    it('should throw BusinessRuleViolationException on duplicate service ids', () => {
+      expect(() => Quote.validateItems(['svc-1', 'svc-1'], [])).toThrow(
+        BusinessRuleViolationException,
+      );
+    });
+
+    it('should throw BusinessRuleViolationException on duplicate part supply ids', () => {
+      expect(() => Quote.validateItems(['svc-1'], ['part-1', 'part-1'])).toThrow(
+        BusinessRuleViolationException,
+      );
+    });
+  });
+
   describe('approve()', () => {
     it('should throw when status is not SENT', () => {
       const quote = makeQuote(QuoteStatus.PENDING);
