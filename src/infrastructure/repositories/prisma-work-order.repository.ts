@@ -17,6 +17,7 @@ import {
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
 import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 import { WORK_ORDER_STATUS_PRIORITY } from '@domain/constants/work-order-status-priority.constant';
+import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 
 const WORK_ORDER_LIST_INCLUDE = {
   customer: true,
@@ -92,62 +93,39 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;
 
-    const conditions: Prisma.Sql[] = [];
-    // "number" is double-quoted because it is a reserved word in SQL
-    if (number) conditions.push(Prisma.sql`"number" ILIKE ${'%' + number.trim() + '%'}`);
-    if (customerId) conditions.push(Prisma.sql`customer_id = ${customerId}::uuid`);
-    if (vehicleId) conditions.push(Prisma.sql`vehicle_id = ${vehicleId}::uuid`);
-    if (assignedUserId) conditions.push(Prisma.sql`assigned_user_id = ${assignedUserId}::uuid`);
-    if (status) conditions.push(Prisma.sql`status::text = ${status}`);
-
-    const whereClause =
-      conditions.length > 0
-        ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
-        : Prisma.empty;
-
-    const orderByClause =
-      sortBy === WorkOrderSortBy.CREATED_AT
-        ? Prisma.sql`created_at ASC`
-        : Prisma.sql`CASE status::text ${Prisma.join(
-            Object.entries(WORK_ORDER_STATUS_PRIORITY).map(
-              ([s, p]) => Prisma.sql`WHEN ${s} THEN ${p}`,
-            ),
-            ' ',
-          )} END, created_at ASC`;
-
-    const offset = (page - 1) * limit;
-
-    const query = Prisma.sql`
-      SELECT id FROM work_orders
-      ${whereClause}
-      ORDER BY ${orderByClause}
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    const [total, orderedRows] = await Promise.all([
-      this.prisma.workOrder.count({ where }),
-      this.prisma.$queryRaw<{ id: string }[]>(query),
-    ]);
-
-    if (orderedRows.length === 0) {
-      return { items: [], total };
+    if (sortBy === WorkOrderSortBy.CREATED_AT) {
+      const result = await paginate(
+        this.prisma.workOrder,
+        { where, orderBy: { createdAt: 'asc' }, include: WORK_ORDER_LIST_INCLUDE },
+        pagination,
+      );
+      return {
+        items: result.items.map((r) =>
+          WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
+        ),
+        total: result.total,
+      };
     }
 
-    const orderedIds = orderedRows.map((r) => r.id);
-
     const records = await this.prisma.workOrder.findMany({
-      where: { id: { in: orderedIds } },
+      where,
       include: WORK_ORDER_LIST_INCLUDE,
+      orderBy: { createdAt: 'asc' },
     });
 
-    const idIndexMap = new Map(orderedIds.map((id, i) => [id, i]));
-    records.sort((a, b) => (idIndexMap.get(a.id) ?? 0) - (idIndexMap.get(b.id) ?? 0));
+    records.sort(
+      (a, b) =>
+        (WORK_ORDER_STATUS_PRIORITY[a.status] ?? 99) -
+          (WORK_ORDER_STATUS_PRIORITY[b.status] ?? 99) ||
+        a.createdAt.getTime() - b.createdAt.getTime(),
+    );
 
+    const offset = (page - 1) * limit;
     return {
-      items: records.map((r) =>
-        WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
-      ),
-      total,
+      items: records
+        .slice(offset, offset + limit)
+        .map((r) => WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0])),
+      total: records.length,
     };
   }
 

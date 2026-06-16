@@ -95,9 +95,6 @@ describe('PrismaWorkOrderRepository', () => {
       const idInProgress = randomUUID();
       const idAwaiting = randomUUID();
 
-      prisma.$queryRaw.mockResolvedValue([{ id: idInProgress }, { id: idAwaiting }]);
-      prisma.workOrder.count.mockResolvedValue(2);
-      // findMany retorna fora de ordem — o repositório deve reordenar
       prisma.workOrder.findMany.mockResolvedValue([
         { id: idAwaiting, number: '000002', status: WorkOrderStatus.AWAITING_APPROVAL, createdAt: new Date() },
         { id: idInProgress, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
@@ -110,69 +107,47 @@ describe('PrismaWorkOrderRepository', () => {
       expect(result.items[1]).toMatchObject({ id: idAwaiting });
     });
 
-    it('should call $queryRaw for ordered IDs', async () => {
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
-
-      await repository.findAllPaginated({ page: 1, limit: 10 }, {});
-
-      expect(prisma.$queryRaw).toHaveBeenCalled();
-    });
-
     it('should return empty list when no results', async () => {
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
+      prisma.workOrder.findMany.mockResolvedValue([]);
 
       const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
 
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
-      expect(prisma.workOrder.findMany).not.toHaveBeenCalled();
     });
 
     it('should filter by customerId', async () => {
       const customerId = randomUUID();
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
+      prisma.workOrder.findMany.mockResolvedValue([]);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
 
-      expect(result.total).toBe(0);
-      expect(prisma.workOrder.count).toHaveBeenCalledWith(
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ customerId }) }),
       );
-      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should filter by vehicleId', async () => {
       const vehicleId = randomUUID();
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
+      prisma.workOrder.findMany.mockResolvedValue([]);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
 
-      expect(result.total).toBe(0);
-      expect(prisma.workOrder.count).toHaveBeenCalledWith(
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ vehicleId }) }),
       );
-      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
-    it('should apply extra filters', async () => {
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
-
+    it('should apply all filters to findMany', async () => {
       const assignedUserId = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([]);
+
       await repository.findAllPaginated(
         { page: 1, limit: 10 },
-        {
-          number: '001',
-          assignedUserId,
-          status: WorkOrderStatus.IN_PROGRESS,
-        },
+        { number: '001', assignedUserId, status: WorkOrderStatus.IN_PROGRESS },
       );
 
-      expect(prisma.workOrder.count).toHaveBeenCalledWith(
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             number: { contains: '001', mode: 'insensitive' },
@@ -181,30 +156,17 @@ describe('PrismaWorkOrderRepository', () => {
           }),
         }),
       );
-      expect(prisma.$queryRaw).toHaveBeenCalled();
-    });
-
-    it('should pass customerId filter value into $queryRaw', async () => {
-      const customerId = randomUUID();
-      prisma.$queryRaw.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
-
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
-
-      const rawCall = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
-      expect(rawCall.values).toContain(customerId);
     });
 
     it('should sort by createdAt ASC when sortBy is CREATED_AT', async () => {
       const id1 = randomUUID();
       const id2 = randomUUID();
 
-      prisma.$queryRaw.mockResolvedValue([{ id: id1 }, { id: id2 }]);
-      prisma.workOrder.count.mockResolvedValue(2);
       prisma.workOrder.findMany.mockResolvedValue([
         { id: id1, number: '000001', status: WorkOrderStatus.RECEIVED, createdAt: new Date('2026-01-01') },
         { id: id2, number: '000002', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date('2026-01-02') },
       ]);
+      prisma.workOrder.count.mockResolvedValue(2);
 
       const result = await repository.findAllPaginated(
         { page: 1, limit: 10 },
@@ -213,15 +175,13 @@ describe('PrismaWorkOrderRepository', () => {
 
       expect(result.items[0]).toMatchObject({ id: id1 });
       expect(result.items[1]).toMatchObject({ id: id2 });
-      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
 
     it('should sort by STATUS_PRIORITY when sortBy is STATUS_PRIORITY', async () => {
       const idInProgress = randomUUID();
       const idReceived = randomUUID();
 
-      prisma.$queryRaw.mockResolvedValue([{ id: idInProgress }, { id: idReceived }]);
-      prisma.workOrder.count.mockResolvedValue(2);
       prisma.workOrder.findMany.mockResolvedValue([
         { id: idReceived, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
         { id: idInProgress, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
@@ -234,6 +194,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       expect(result.items[0]).toMatchObject({ id: idInProgress });
       expect(result.items[1]).toMatchObject({ id: idReceived });
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
   });
 
