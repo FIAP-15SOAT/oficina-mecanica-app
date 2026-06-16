@@ -3,6 +3,7 @@ import { IQuoteRepository } from '@domain/interfaces/repositories/quote.reposito
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { Quote } from '@domain/entities/quote.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
@@ -27,7 +28,7 @@ describe('FindWorkOrderQuotesUseCase', () => {
 
     const workOrder = WorkOrder.reconstitute({
       id: 'wo-1',
-      number: '000001',
+      number: WorkOrderNumber.create('000001'),
       customerId: 'c1',
       vehicleId: 'v1',
       assignedUserId: null,

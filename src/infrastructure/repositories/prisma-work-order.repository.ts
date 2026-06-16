@@ -39,7 +39,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     const record = await this.prisma.workOrder.create({
       data: {
         id: workOrder.id,
-        number: workOrder.number,
+        number: workOrder.number.toString(),
         customerId: workOrder.customerId,
         vehicleId: workOrder.vehicleId,
         assignedUserId: workOrder.assignedUserId,
@@ -81,7 +81,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     pagination: PaginationInput,
     filters: WorkOrderFilters,
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status } = filters;
+    const { number, customerId, vehicleId, assignedUserId, status, statusNotIn } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
 
@@ -90,6 +90,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (vehicleId) where.vehicleId = vehicleId;
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;
+    else if (statusNotIn?.length) where.status = { notIn: statusNotIn };
 
     const result = await paginate(
       this.prisma.workOrder,
@@ -147,7 +148,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       SELECT nextval('work_order_number_seq') AS next
     `;
 
-    return String(rows[0].next).padStart(6, '0');
+    return String(rows[0].next);
   }
 
   async addServiceItems(items: WorkOrderService[]): Promise<void> {

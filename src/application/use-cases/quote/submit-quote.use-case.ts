@@ -48,7 +48,7 @@ export class SubmitQuoteUseCase {
 
       updatedQuote.workOrder = workOrder;
 
-      await this.sendEmailNotification(quote, customer, workOrder.number);
+      await this.sendEmailNotification(quote, customer, workOrder.number.toString());
 
       return updatedQuote;
     });

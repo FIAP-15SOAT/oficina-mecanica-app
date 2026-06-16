@@ -459,7 +459,7 @@ describe('Service (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'WO-MET-LST-001',
+          number: '910001',
           status: 'COMPLETED',
         },
       });
@@ -541,7 +541,7 @@ describe('Service (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'WO-MET-001',
+          number: '910002',
           status: 'COMPLETED',
         },
       });

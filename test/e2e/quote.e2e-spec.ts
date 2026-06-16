@@ -204,6 +204,155 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId: 'not-a-uuid' })
         .expect(400);
     });
+
+    it('should create a quote with inline services and parts and return it with items', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const part = await createPartSupply();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 2 }],
+          partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBeGreaterThan(0);
+    });
+
+    it('should return 409 when parts-only payload (no service) is provided', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+        })
+        .expect(409);
+    });
+
+    it('should create an empty PENDING quote when no items are provided (unchanged behavior)', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBe(0);
+    });
+
+    it('should still enforce the work order status gate when inline items are provided', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      const woRes = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ customerId: customer.id, vehicleId: vehicle.id })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId: woRes.body.data.id,
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(409);
+    });
+
+    it('should create a quote with services only (no parts) and return totalAmount > 0', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      const res = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      expect(res.body.data.status).toBe('PENDING');
+      expect(res.body.data.totalAmount).toBeGreaterThan(0);
+      expect(res.body.data.partsAmount).toBe(0);
+    });
+
+    it('should return 404 when an inline serviceId does not exist', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 404 when an inline partSupplyId does not exist', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [{ partSupplyId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', quantity: 1 }],
+        })
+        .expect(404);
+    });
+
+    it('should return 409 when duplicate serviceId is provided in inline services', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [
+            { serviceId: service.id, quantity: 1 },
+            { serviceId: service.id, quantity: 2 },
+          ],
+        })
+        .expect(409);
+    });
+
+    it('should return 409 when duplicate partSupplyId is provided in inline partsSupplies', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+      const service = await createService();
+      const part = await createPartSupply();
+
+      await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          workOrderId,
+          services: [{ serviceId: service.id, quantity: 1 }],
+          partsSupplies: [
+            { partSupplyId: part.id, quantity: 1 },
+            { partSupplyId: part.id, quantity: 2 },
+          ],
+        })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/quotes/:id ─────────────────────────────────────────────────────
@@ -655,6 +804,58 @@ describe('Quote (E2E)', () => {
         .expect(200);
       expect(woAfterResubmit.body.data.status).toBe('AWAITING_APPROVAL');
     });
+
+    it('should not transition the work order when submitting a second quote (already AWAITING_APPROVAL)', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      // First quote → submit → work order transitions to AWAITING_APPROVAL.
+      const firstService = await createService();
+      const firstQuoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const firstQuoteId = firstQuoteRes.body.data.id as string;
+      await request(httpServer)
+        .post(`/api/quotes/${firstQuoteId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: firstService.id, quantity: 1 })
+        .expect(200);
+      await request(httpServer)
+        .post(`/api/quotes/${firstQuoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      // A second quote can be created while the work order is AWAITING_APPROVAL.
+      // Submitting it exercises the branch where the work order status is NEITHER
+      // IN_DIAGNOSIS nor REJECTED, so no status transition is applied.
+      const secondService = await createService();
+      const secondQuoteRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+      const secondQuoteId = secondQuoteRes.body.data.id as string;
+      await request(httpServer)
+        .post(`/api/quotes/${secondQuoteId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: secondService.id, quantity: 1 })
+        .expect(200);
+
+      const submissionRes = await request(httpServer)
+        .post(`/api/quotes/${secondQuoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+      expect(submissionRes.body.data.status).toBe('SENT');
+
+      const wo = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+      expect(wo.body.data.status).toBe('AWAITING_APPROVAL');
+    });
   });
 
   // ─── PATCH /api/quotes/:id (Approve/Reject) ───────────────────────────────────
@@ -797,6 +998,7 @@ describe('Quote (E2E)', () => {
         })
         .expect(201);
       const partId = partRes.body.data.id;
+      const service = await createService();
 
       const createRes = await request(httpServer)
         .post('/api/quotes')
@@ -804,6 +1006,12 @@ describe('Quote (E2E)', () => {
         .send({ workOrderId })
         .expect(201);
       const quoteId = createRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: service.id, quantity: 1 })
+        .expect(200);
 
       await request(httpServer)
         .post(`/api/quotes/${quoteId}/parts-supplies`)

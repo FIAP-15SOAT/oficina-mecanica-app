@@ -110,7 +110,7 @@ describe('QuoteMapper', () => {
         updatedAt: now,
         workOrder: {
           id: randomUUID(),
-          number: 'WO-001',
+          number: '000001',
           customerId: randomUUID(),
           vehicleId: randomUUID(),
           assignedUserId: null,
@@ -133,7 +133,7 @@ describe('QuoteMapper', () => {
       const domainEntity = QuoteMapper.toDomain(prismaRecord);
 
       expect(domainEntity.workOrder).toBeDefined();
-      expect(domainEntity.workOrder!.number).toBe('WO-001');
+      expect(domainEntity.workOrder!.number.toString()).toBe('000001');
     });
   });
 });

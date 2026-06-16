@@ -36,7 +36,7 @@ describe('WorkOrderMapper', () => {
       const domainEntity = WorkOrderMapper.toDomain(prismaRecord);
 
       expect(domainEntity.id).toBe(prismaRecord.id);
-      expect(domainEntity.number).toBe(prismaRecord.number);
+      expect(domainEntity.number.toString()).toBe(prismaRecord.number);
       expect(domainEntity.customerId).toBe(prismaRecord.customerId);
       expect(domainEntity.vehicleId).toBe(prismaRecord.vehicleId);
       expect(domainEntity.assignedUserId).toBe(prismaRecord.assignedUserId);
