@@ -293,6 +293,18 @@ export class WorkOrder {
     this.updatedAt = new Date();
   }
 
+  private static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);
+
+  static validateAllowedSortFields(fields: string[]): void {
+    for (const field of fields) {
+      if (!WorkOrder.ALLOWED_SORT_FIELDS.has(field)) {
+        throw new DomainValidationException(
+          `Campo '${field}' não é permitido para ordenação. Campos permitidos: ${[...WorkOrder.ALLOWED_SORT_FIELDS].join(', ')}`,
+        );
+      }
+    }
+  }
+
   private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
     WorkOrderStatus.IN_DIAGNOSIS,
     WorkOrderStatus.CANCELLED,
