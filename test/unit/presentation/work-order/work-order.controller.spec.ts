@@ -17,7 +17,6 @@ import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work
 import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
 import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
 import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
-import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
 
 describe('WorkOrderController', () => {
   let controller: WorkOrderController;
@@ -103,16 +102,16 @@ describe('WorkOrderController', () => {
     );
   });
 
-  it('should forward sortBy to use case', async () => {
+  it('should forward sort to use case', async () => {
     findAllPaginatedUseCase.execute.mockResolvedValue({
       items: [],
-      pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      pagination: { page: 1, limit: 10, totalRecords: 0, totalPages: 0 },
     });
 
-    await controller.findAll({ page: 1, limit: 10, sortBy: WorkOrderSortBy.CREATED_AT });
+    await controller.findAll({ page: 1, limit: 10, sort: 'createdAt:asc' });
 
     expect(findAllPaginatedUseCase.execute).toHaveBeenCalledWith(
-      expect.objectContaining({ sortBy: WorkOrderSortBy.CREATED_AT }),
+      expect.objectContaining({ sort: 'createdAt:asc' }),
     );
   });
 
