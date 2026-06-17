@@ -8,6 +8,11 @@ describe('toPrismaOrderBy', () => {
     expect(toPrismaOrderBy(criteria)).toEqual([{ status: 'desc' }]);
   });
 
+  it('should convert single criterion with ASC direction', () => {
+    const criteria = [new SortCriterion('createdAt', SortDirection.ASC)];
+    expect(toPrismaOrderBy(criteria)).toEqual([{ createdAt: 'asc' }]);
+  });
+
   it('should convert multiple criteria', () => {
     const criteria = [
       new SortCriterion('status', SortDirection.DESC),
