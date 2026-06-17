@@ -1,6 +1,8 @@
 import { FindAllWorkOrdersPaginatedUseCase } from '@application/use-cases/work-order/find-all-work-orders-paginated.use-case';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
+import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
+import { SortDirection } from '@domain/enums/sort-direction.enum';
+import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import {
   createMockWorkOrder,
   createMockWorkOrderRepository,
@@ -10,6 +12,11 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
   let useCase: FindAllWorkOrdersPaginatedUseCase;
   let workOrderRepository: jest.Mocked<IWorkOrderRepository>;
 
+  const DEFAULT_SORT = [
+    new SortCriterion('status', SortDirection.DESC),
+    new SortCriterion('createdAt', SortDirection.ASC),
+  ];
+
   beforeEach(() => {
     workOrderRepository = createMockWorkOrderRepository();
     useCase = new FindAllWorkOrdersPaginatedUseCase(workOrderRepository);
@@ -17,51 +24,58 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
   it('should return paginated work orders', async () => {
     const wo = createMockWorkOrder();
-    const input = { page: 1, limit: 10 };
-
     workOrderRepository.findAllPaginated.mockResolvedValue({ items: [wo], total: 1 });
-
-    const result = await useCase.execute(input);
-
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]).toBe(wo);
-    expect(result.pagination.totalRecords).toBe(1);
-    expect(result.pagination.page).toBe(1);
-    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
-      { sortBy: WorkOrderSortBy.STATUS_PRIORITY },
-    );
-  });
-
-  it('should return empty when no work orders', async () => {
-    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
     const result = await useCase.execute({ page: 1, limit: 10 });
 
-    expect(result.items).toHaveLength(0);
-    expect(result.pagination.totalRecords).toBe(0);
-  });
-
-  it('should pass filters to repository with default sortBy', async () => {
-    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
-    const input = { page: 2, limit: 5, customerId: 'cust-1' };
-
-    await useCase.execute(input);
-
+    expect(result.items).toHaveLength(1);
+    expect(result.pagination.totalRecords).toBe(1);
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 2, limit: 5 },
-      { customerId: 'cust-1', sortBy: WorkOrderSortBy.STATUS_PRIORITY },
+      { page: 1, limit: 10 },
+      { sort: DEFAULT_SORT },
     );
   });
 
-  it('should forward explicit sortBy to repository', async () => {
+  it('should apply default sort when sort is not provided', async () => {
     workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    await useCase.execute({ page: 1, limit: 10, sortBy: WorkOrderSortBy.CREATED_AT });
+    await useCase.execute({ page: 1, limit: 10 });
+
+    const call = workOrderRepository.findAllPaginated.mock.calls[0][1];
+    expect(call.sort).toEqual(DEFAULT_SORT);
+  });
+
+  it('should parse and forward explicit sort param', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 1, limit: 10, sort: 'createdAt:asc' });
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { sortBy: WorkOrderSortBy.CREATED_AT },
+      { sort: [new SortCriterion('createdAt', SortDirection.ASC)] },
     );
+  });
+
+  it('should pass filters alongside sort', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 2, limit: 5, customerId: 'cust-1' });
+
+    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 2, limit: 5 },
+      { customerId: 'cust-1', sort: DEFAULT_SORT },
+    );
+  });
+
+  it('should throw DomainValidationException for disallowed sort field', async () => {
+    await expect(
+      useCase.execute({ page: 1, limit: 10, sort: 'number:asc' }),
+    ).rejects.toThrow(DomainValidationException);
+  });
+
+  it('should throw DomainValidationException for invalid sort format', async () => {
+    await expect(
+      useCase.execute({ page: 1, limit: 10, sort: 'status:invalid' }),
+    ).rejects.toThrow(DomainValidationException);
   });
 });

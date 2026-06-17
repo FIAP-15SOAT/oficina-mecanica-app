@@ -4,19 +4,30 @@ import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases
 import { FindAllWorkOrdersFilters } from '@domain/interfaces/use-cases/work-order/dto/find-all-work-orders.dto';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
-import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
+import { parseSort } from '@application/utils/parse-sort.util';
+import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
+import { SortDirection } from '@domain/enums/sort-direction.enum';
+
+const DEFAULT_SORT: SortCriterion[] = [
+  new SortCriterion('status', SortDirection.DESC),
+  new SortCriterion('createdAt', SortDirection.ASC),
+];
 
 export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPaginatedUseCase {
   constructor(private readonly workOrderRepository: IWorkOrderRepository) {}
 
   async execute(input: FindAllWorkOrdersFilters): Promise<PaginatedResult<WorkOrder>> {
-    const { page, limit, sortBy: sortByInput, ...filters } = input;
+    const { page, limit, sort: rawSort, ...filters } = input;
     const pagination: PaginationInput = { page, limit };
-    const sortBy = sortByInput ?? WorkOrderSortBy.STATUS_PRIORITY;
+
+    const criteria = parseSort(rawSort);
+    const sort = criteria.length > 0 ? criteria : DEFAULT_SORT;
+
+    WorkOrder.validateAllowedSortFields(sort.map((c) => c.field));
 
     const result = await this.workOrderRepository.findAllPaginated(pagination, {
       ...filters,
-      sortBy,
+      sort,
     });
 
     return buildPaginatedResult(result, pagination);
