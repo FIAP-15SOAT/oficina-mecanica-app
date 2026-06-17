@@ -2,7 +2,7 @@ import { WorkOrder } from '../../entities/work-order.entity';
 import { WorkOrderService } from '../../entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '../../entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '../../enums/work-order-status.enum';
-import { WorkOrderSortBy } from '../../enums/work-order-sort-by.enum';
+import { SortCriterion } from '../common/sort-criterion';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface WorkOrderFilters {
@@ -11,7 +11,7 @@ export interface WorkOrderFilters {
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;
-  sortBy?: WorkOrderSortBy;
+  sort?: SortCriterion[];
 }
 
 export interface IWorkOrderRepository {
