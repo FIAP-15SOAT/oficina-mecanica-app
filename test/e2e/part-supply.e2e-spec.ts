@@ -459,6 +459,20 @@ describe('PartSupply (E2E)', () => {
         .expect(409);
     });
 
+    it('should update to a new free SKU without conflict', async () => {
+      const { stock: _stock, ...updatePayload } = validPartSupply;
+
+      // A SKU that no other part uses exercises the "no duplicate found" branch
+      // of the SKU uniqueness lookup.
+      const res = await request(httpServer)
+        .put(`/api/parts-supplies/${partId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...updatePayload, sku: 'FO-NEW-999' })
+        .expect(200);
+
+      expect(res.body.data.sku).toBe('FO-NEW-999');
+    });
+
     it('should return 404 for non-existent part/supply', async () => {
       const { stock: _stock, ...updatePayload } = validPartSupply;
 
@@ -759,7 +773,7 @@ describe('PartSupply (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'LINKED',
+          number: '930001',
           status: 'RECEIVED',
         },
       });

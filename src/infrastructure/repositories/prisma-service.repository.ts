@@ -48,6 +48,14 @@ export class PrismaServiceRepository implements IServiceRepository {
     return serviceRecord ? ServiceMapper.toDomain(serviceRecord) : null;
   }
 
+  async findByIds(ids: string[]): Promise<Service[]> {
+    const records = await this.prisma.service.findMany({
+      where: { id: { in: ids } },
+    });
+
+    return records.map((r) => ServiceMapper.toDomain(r));
+  }
+
   async findByName(name: string): Promise<Service | null> {
     const serviceRecord = await this.prisma.service.findFirst({ where: { name } });
 

@@ -19,3 +19,8 @@ coverage
 
 CLAUDE.md
 .claude
+.codex
+.agent
+.github/*
+!.github/workflows/*
+openspec/

@@ -21,6 +21,7 @@ export function createMockServiceRepository(): jest.Mocked<IServiceRepository> {
   return {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIds: jest.fn(),
     findByName: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),

@@ -24,7 +24,11 @@ export class FilterWorkOrdersDto {
   @IsUUID(undefined, { message: 'O ID do mecânico deve ser um UUID válido.' })
   assignedUserId?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar por status da OS', enum: WorkOrderStatus })
+  @ApiPropertyOptional({
+    description:
+      'Filtrar por status da OS. Por padrão, a listagem omite ordens em COMPLETED, DELIVERED e CANCELLED; informe este filtro para recuperá-las (ex.: ?status=DELIVERED).',
+    enum: WorkOrderStatus,
+  })
   @IsOptional()
   @IsEnum(WorkOrderStatus, {
     message: `status deve ser um dos seguintes: ${Object.values(WorkOrderStatus).join(', ')}`,

@@ -1,3 +1,13 @@
+export interface CreateWorkOrderItemServiceDto {
+  serviceId: string;
+  quantity: number;
+}
+
+export interface CreateWorkOrderItemPartSupplyDto {
+  partSupplyId: string;
+  quantity: number;
+}
+
 export interface CreateWorkOrderDto {
   customerId: string;
   vehicleId: string;
@@ -6,4 +16,6 @@ export interface CreateWorkOrderDto {
   internalNotes?: string | null;
   mileageAtService?: number | null;
   userId: string;
+  services?: CreateWorkOrderItemServiceDto[];
+  partsSupplies?: CreateWorkOrderItemPartSupplyDto[];
 }

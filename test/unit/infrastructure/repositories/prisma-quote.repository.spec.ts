@@ -18,7 +18,7 @@ describe('PrismaQuoteRepository', () => {
   });
 
   describe('create', () => {
-    it('should create a quote', async () => {
+    it('should create a quote with no items (empty nested create arrays)', async () => {
       const quote = Quote.create({
         workOrderId: randomUUID(),
         notes: 'Test notes',
@@ -37,6 +37,8 @@ describe('PrismaQuoteRepository', () => {
         rejectedAt: quote.rejectedAt,
         createdAt: quote.createdAt,
         updatedAt: quote.updatedAt,
+        services: [],
+        partsSupplies: [],
         workOrder: null,
       });
 
@@ -45,8 +47,112 @@ describe('PrismaQuoteRepository', () => {
       expect(result.id).toBe(quote.id);
       expect(prisma.quote.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          data: expect.objectContaining({
+            services: { create: [] },
+            partsSupplies: { create: [] },
+          }),
           include: expect.objectContaining({
+            services: { include: { service: true } },
+            partsSupplies: { include: { partSupply: true } },
             workOrder: expect.any(Object),
+          }),
+        }),
+      );
+    });
+
+    it('should create quote with services and partsSupplies in a single nested create', async () => {
+      const workOrderId = randomUUID();
+      const serviceId = randomUUID();
+      const partSupplyId = randomUUID();
+
+      const quote = Quote.create({
+        workOrderId,
+        services: [
+          {
+            service: {
+              id: serviceId,
+              basePrice: 100,
+            } as never,
+            quantity: 1,
+          },
+        ],
+        partsSupplies: [
+          {
+            partSupply: {
+              id: partSupplyId,
+              salePrice: 50,
+            } as never,
+            quantity: 2,
+          },
+        ],
+      });
+
+      const mockRecord = {
+        id: quote.id,
+        workOrderId,
+        servicesAmount: new Prisma.Decimal(100),
+        partsAmount: new Prisma.Decimal(100),
+        totalAmount: new Prisma.Decimal(200),
+        status: quote.status,
+        notes: null,
+        sentAt: null,
+        approvedAt: null,
+        rejectedAt: null,
+        createdAt: quote.createdAt,
+        updatedAt: quote.updatedAt,
+        services: [
+          {
+            quoteId: quote.id,
+            serviceId,
+            quantity: 1,
+            unitPrice: new Prisma.Decimal(100),
+            totalPrice: new Prisma.Decimal(100),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            service: {
+              id: serviceId,
+              name: 'Test',
+              basePrice: new Prisma.Decimal(100),
+              estimatedTimeMin: 30,
+              description: null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          },
+        ],
+        partsSupplies: [
+          {
+            quoteId: quote.id,
+            partSupplyId,
+            quantity: 2,
+            unitPrice: new Prisma.Decimal(50),
+            totalPrice: new Prisma.Decimal(100),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            partSupply: null,
+          },
+        ],
+        workOrder: null,
+      };
+
+      prisma.quote.create.mockResolvedValue(mockRecord);
+
+      const result = await repository.create(quote);
+
+      expect(result.services).toHaveLength(1);
+      expect(result.partsSupplies).toHaveLength(1);
+      expect(result.servicesAmount).toBe(100);
+      expect(result.partsAmount).toBe(100);
+      expect(result.totalAmount).toBe(200);
+      expect(prisma.quote.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            services: { create: expect.any(Array) },
+            partsSupplies: { create: expect.any(Array) },
+          }),
+          include: expect.objectContaining({
+            services: { include: { service: true } },
+            partsSupplies: { include: { partSupply: true } },
           }),
         }),
       );

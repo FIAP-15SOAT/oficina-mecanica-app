@@ -10,6 +10,7 @@ import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { createMockUser } from '../../../helpers/user-mock.factory';
 import { Plate } from '@domain/value-objects/plate.vo';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderPresenter', () => {
@@ -21,7 +22,7 @@ describe('WorkOrderPresenter', () => {
 
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -45,7 +46,7 @@ describe('WorkOrderPresenter', () => {
       const response = WorkOrderPresenter.toResponse(workOrder);
 
       expect(response.id).toBe(workOrder.id);
-      expect(response.number).toBe(workOrder.number);
+      expect(response.number).toBe(workOrder.number.toString());
       expect(response.customer.id).toBe(customer.id);
       expect(response.vehicle.id).toBe(vehicle.id);
       expect(response.assignedUser).toBeNull();
@@ -62,7 +63,7 @@ describe('WorkOrderPresenter', () => {
         id: randomUUID(),
         customerId: customer.id,
         vehicleId: vehicle.id,
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         assignedUserId: user.id,
         status: WorkOrderStatus.RECEIVED,
         problemDescription: null,
@@ -96,7 +97,7 @@ describe('WorkOrderPresenter', () => {
       const vehicle = createMockVehicle({ customerId: customer.id });
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -128,7 +129,7 @@ describe('WorkOrderPresenter', () => {
       const vehicle = createMockVehicle({ customerId: customer.id });
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -168,7 +169,7 @@ describe('WorkOrderPresenter', () => {
       const vehicle = createMockVehicle({ customerId: customer.id });
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -220,7 +221,7 @@ describe('WorkOrderPresenter', () => {
 
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '002',
+        number: WorkOrderNumber.create('002'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -269,7 +270,7 @@ describe('WorkOrderPresenter', () => {
 
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '004',
+        number: WorkOrderNumber.create('004'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,
@@ -318,7 +319,7 @@ describe('WorkOrderPresenter', () => {
 
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '005',
+        number: WorkOrderNumber.create('005'),
         customerId: customer.id,
         vehicleId: vehicle.id,
         assignedUserId: null,

@@ -3,6 +3,8 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import {
   createMockWorkOrder,
   createMockWorkOrderRepository,
@@ -29,12 +31,23 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     const result = await useCase.execute({ page: 1, limit: 10 });
 
     expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toBe(wo);
     expect(result.pagination.totalRecords).toBe(1);
+    expect(result.pagination.page).toBe(1);
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      {},
+      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
       DEFAULT_SORT,
     );
+  });
+
+  it('should return empty when no work orders', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    const result = await useCase.execute({ page: 1, limit: 10 });
+
+    expect(result.items).toHaveLength(0);
+    expect(result.pagination.totalRecords).toBe(0);
   });
 
   it('should apply default sort when sort is not provided', async () => {
@@ -53,7 +66,7 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      {},
+      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
       [new SortCriterion('createdAt', SortDirection.ASC)],
     );
   });
@@ -65,7 +78,7 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 2, limit: 5 },
-      { customerId: 'cust-1' },
+      { customerId: 'cust-1', statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
       DEFAULT_SORT,
     );
   });
@@ -80,5 +93,27 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     await expect(
       useCase.execute({ page: 1, limit: 10, sort: 'status:invalid' }),
     ).rejects.toThrow(DomainValidationException);
+  });
+
+  it('should inject statusNotIn=DEFAULT_HIDDEN_STATUSES when status is not provided', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 1, limit: 10 });
+
+    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      DEFAULT_SORT,
+    );
+  });
+
+  it('should pass explicit status and NOT send statusNotIn', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 1, limit: 10, status: WorkOrderStatus.DELIVERED });
+
+    const [, filters] = workOrderRepository.findAllPaginated.mock.calls[0];
+    expect(filters.status).toBe(WorkOrderStatus.DELIVERED);
+    expect(filters.statusNotIn).toBeUndefined();
   });
 });

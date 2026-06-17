@@ -1,10 +1,49 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   MAX_PROBLEM_DESCRIPTION_LENGTH,
   MAX_INTERNAL_NOTES_LENGTH,
 } from '@domain/constants/validation/work-order.constants';
+
+export class CreateWorkOrderItemServiceRequestDto {
+  @ApiProperty({
+    description: 'ID do serviço a ser incluído no orçamento inicial',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: 'O ID do serviço deve ser um UUID válido.' })
+  serviceId!: string;
+
+  @ApiProperty({ description: 'Quantidade do serviço', example: 1 })
+  @Type(() => Number)
+  @IsInt({ message: 'A quantidade deve ser um número inteiro.' })
+  @Min(1, { message: 'A quantidade deve ser no mínimo 1.' })
+  quantity!: number;
+}
+
+export class CreateWorkOrderItemPartSupplyRequestDto {
+  @ApiProperty({
+    description: 'ID da peça/insumo a ser incluído no orçamento inicial',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: 'O ID da peça/insumo deve ser um UUID válido.' })
+  partSupplyId!: string;
+
+  @ApiProperty({ description: 'Quantidade da peça/insumo', example: 2 })
+  @Type(() => Number)
+  @IsInt({ message: 'A quantidade deve ser um número inteiro.' })
+  @Min(1, { message: 'A quantidade deve ser no mínimo 1.' })
+  quantity!: number;
+}
 
 export class CreateWorkOrderRequestDto {
   @ApiProperty({
@@ -60,4 +99,24 @@ export class CreateWorkOrderRequestDto {
   @IsInt({ message: 'A quilometragem deve ser um número inteiro.' })
   @Min(0, { message: 'A quilometragem não pode ser negativa.' })
   mileageAtService?: number | null;
+
+  @ApiPropertyOptional({
+    type: [CreateWorkOrderItemServiceRequestDto],
+    description: 'Serviços a serem incluídos no orçamento inicial da ordem de serviço',
+  })
+  @IsOptional()
+  @IsArray({ message: 'Os serviços devem ser uma lista.' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateWorkOrderItemServiceRequestDto)
+  services?: CreateWorkOrderItemServiceRequestDto[];
+
+  @ApiPropertyOptional({
+    type: [CreateWorkOrderItemPartSupplyRequestDto],
+    description: 'Peças/insumos a serem incluídos no orçamento inicial da ordem de serviço',
+  })
+  @IsOptional()
+  @IsArray({ message: 'As peças/insumos devem ser uma lista.' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateWorkOrderItemPartSupplyRequestDto)
+  partsSupplies?: CreateWorkOrderItemPartSupplyRequestDto[];
 }

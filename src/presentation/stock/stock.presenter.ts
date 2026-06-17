@@ -74,7 +74,7 @@ export class StockPresenter {
   private static mapWorkOrderData(wo: WorkOrder) {
     return {
       id: wo.id,
-      number: wo.number,
+      number: wo.number.toString(),
       customer: {
         id: wo.customer!.id,
         name: wo.customer!.name,

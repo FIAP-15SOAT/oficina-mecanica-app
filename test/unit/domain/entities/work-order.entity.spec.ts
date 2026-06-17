@@ -1,5 +1,6 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { User } from '@domain/entities/user.entity';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
@@ -29,7 +30,7 @@ describe('WorkOrder Entity', () => {
       expect(wo.id).toBeDefined();
       expect(wo.status).toBe(WorkOrderStatus.RECEIVED);
       expect(wo.totalAmount).toBe(0);
-      expect(wo.number).toBe('000001');
+      expect(wo.number.toString()).toBe('000001');
       expect(wo.customerId).toBe('550e8400-e29b-41d4-a716-446655440001');
       expect(wo.vehicleId).toBe('550e8400-e29b-41d4-a716-446655440002');
       expect(wo.approvedAt).toBeNull();
@@ -359,7 +360,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -393,7 +394,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -456,7 +457,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -494,7 +495,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -532,7 +533,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -579,7 +580,7 @@ describe('WorkOrder Entity', () => {
       });
       const wo = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,

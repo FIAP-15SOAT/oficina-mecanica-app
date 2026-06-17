@@ -104,6 +104,10 @@ export class WorkOrderController {
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Serviço ou peça/insumo não encontrado' })
+  @ApiConflictResponse({
+    description: 'Regra de negócio violada',
+  })
   async create(@Body() dto: CreateWorkOrderRequestDto, @CurrentUser() user: AuthenticatedUser) {
     const workOrder = await this.createWorkOrderUseCase.execute({
       ...dto,

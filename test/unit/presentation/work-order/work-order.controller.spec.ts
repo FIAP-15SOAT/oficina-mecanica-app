@@ -133,7 +133,16 @@ describe('WorkOrderController', () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const dto = { problemDescription: 'test' };
-    const workOrder = { id, ...dto, customer, vehicle, services: [], partSupplies: [] };
+    const workOrder = {
+      id,
+      number: '001',
+      ...dto,
+      customer,
+      vehicle,
+      services: [],
+      partSupplies: [],
+    };
+
     updateUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const userId = randomUUID();
@@ -151,7 +160,16 @@ describe('WorkOrderController', () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });
     const dto = { status: WorkOrderStatus.IN_PROGRESS, notes: 'starting' };
-    const workOrder = { id, ...dto, customer, vehicle, services: [], partSupplies: [] };
+    const workOrder = {
+      id,
+      number: '001',
+      ...dto,
+      customer,
+      vehicle,
+      services: [],
+      partSupplies: [],
+    };
+
     updateStatusUseCase.execute.mockResolvedValue(workOrder as unknown as WorkOrder);
 
     const result = await controller.updateStatus(

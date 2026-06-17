@@ -1,5 +1,6 @@
 import { PrismaWorkOrderRepository } from '@infrastructure/repositories/prisma-work-order.repository';
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
@@ -30,6 +31,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrder.create.mockResolvedValue({
         ...workOrder,
+        number: workOrder.number.toString(),
         status: workOrder.status,
         totalAmount: workOrder.totalAmount,
         createdAt: new Date(),
@@ -105,6 +107,38 @@ describe('PrismaWorkOrderRepository', () => {
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
 
+    it('should filter by customerId', async () => {
+      const customerId = randomUUID();
+
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: randomUUID(), number: '000001', customerId },
+      ]);
+
+      prisma.workOrder.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
+
+      expect(result.total).toBe(1);
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ customerId }) }),
+      );
+    });
+
+    it('should filter by vehicleId', async () => {
+      const vehicleId = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: randomUUID(), number: '000001', vehicleId },
+      ]);
+      prisma.workOrder.count.mockResolvedValue(1);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
+
+      expect(result.total).toBe(1);
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ vehicleId }) }),
+      );
+    });
+
     it('should pass where filters to findMany and count', async () => {
       const customerId = randomUUID();
       prisma.workOrder.findMany.mockResolvedValue([]);
@@ -169,13 +203,76 @@ describe('PrismaWorkOrderRepository', () => {
       expect(result.items[0]).toMatchObject({ id: id1 });
       expect(result.items[1]).toMatchObject({ id: id2 });
     });
+
+    it('should apply statusNotIn as { notIn: [...] } when no explicit status', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        {
+          statusNotIn: [
+            WorkOrderStatus.COMPLETED,
+            WorkOrderStatus.DELIVERED,
+            WorkOrderStatus.CANCELLED,
+          ],
+        },
+      );
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: {
+              notIn: [
+                WorkOrderStatus.COMPLETED,
+                WorkOrderStatus.DELIVERED,
+                WorkOrderStatus.CANCELLED,
+              ],
+            },
+          }),
+        }),
+      );
+    });
+
+    it('should give precedence to explicit status over statusNotIn', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        {
+          status: WorkOrderStatus.DELIVERED,
+          statusNotIn: [WorkOrderStatus.COMPLETED, WorkOrderStatus.CANCELLED],
+        },
+      );
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: WorkOrderStatus.DELIVERED }),
+        }),
+      );
+      const [call] = prisma.workOrder.findMany.mock.calls;
+      expect((call[0] as { where: Record<string, unknown> }).where.status).toBe(
+        WorkOrderStatus.DELIVERED,
+      );
+    });
+
+    it('should leave where.status undefined when neither status nor statusNotIn are provided', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      const [call] = prisma.workOrder.findMany.mock.calls;
+      expect((call[0] as { where: Record<string, unknown> }).where.status).toBeUndefined();
+    });
   });
 
   describe('update', () => {
     it('should update a work order using optimistic locking', async () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: randomUUID(),
@@ -196,6 +293,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       prisma.workOrder.update.mockResolvedValue({
         ...workOrder,
+        number: workOrder.number.toString(),
         status: workOrder.status,
         totalAmount: workOrder.totalAmount,
         version: 2,
@@ -212,7 +310,7 @@ describe('PrismaWorkOrderRepository', () => {
     it('should throw ConcurrencyException when work order was modified concurrently', async () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -244,7 +342,7 @@ describe('PrismaWorkOrderRepository', () => {
     it('should rethrow unexpected errors from update', async () => {
       const workOrder = WorkOrder.reconstitute({
         id: randomUUID(),
-        number: '001',
+        number: WorkOrderNumber.create('001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -270,21 +368,21 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('generateNextNumber', () => {
-    it('should return the next padded value from the sequence', async () => {
+    it('should return the raw sequence value (no padding — that is the VO concern)', async () => {
       prisma.$queryRaw.mockResolvedValue([{ next: 1n }]);
 
       const result = await repository.generateNextNumber();
 
-      expect(result).toBe('000001');
+      expect(result).toBe('1');
       expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
-    it('should pad larger sequence values to 6 digits', async () => {
+    it('should return larger sequence values unpadded', async () => {
       prisma.$queryRaw.mockResolvedValue([{ next: 42n }]);
 
       const result = await repository.generateNextNumber();
 
-      expect(result).toBe('000042');
+      expect(result).toBe('42');
     });
   });
 
@@ -361,7 +459,7 @@ describe('PrismaWorkOrderRepository', () => {
       const serviceId = randomUUID();
       const workOrder = WorkOrder.reconstitute({
         id: workOrderId,
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -412,7 +510,7 @@ describe('PrismaWorkOrderRepository', () => {
       const workOrderId = randomUUID();
       const workOrder = WorkOrder.reconstitute({
         id: workOrderId,
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
@@ -454,7 +552,7 @@ describe('PrismaWorkOrderRepository', () => {
       const workOrderId = randomUUID();
       const workOrder = WorkOrder.reconstitute({
         id: workOrderId,
-        number: '000001',
+        number: WorkOrderNumber.create('000001'),
         customerId: randomUUID(),
         vehicleId: randomUUID(),
         assignedUserId: null,
