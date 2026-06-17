@@ -32,7 +32,8 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     expect(result.pagination.totalRecords).toBe(1);
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { sort: DEFAULT_SORT },
+      {},
+      DEFAULT_SORT,
     );
   });
 
@@ -41,8 +42,8 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     await useCase.execute({ page: 1, limit: 10 });
 
-    const call = workOrderRepository.findAllPaginated.mock.calls[0][1];
-    expect(call.sort).toEqual(DEFAULT_SORT);
+    const call = workOrderRepository.findAllPaginated.mock.calls[0][2];
+    expect(call).toEqual(DEFAULT_SORT);
   });
 
   it('should parse and forward explicit sort param', async () => {
@@ -52,7 +53,8 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { sort: [new SortCriterion('createdAt', SortDirection.ASC)] },
+      {},
+      [new SortCriterion('createdAt', SortDirection.ASC)],
     );
   });
 
@@ -63,7 +65,8 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 2, limit: 5 },
-      { customerId: 'cust-1', sort: DEFAULT_SORT },
+      { customerId: 'cust-1' },
+      DEFAULT_SORT,
     );
   });
 

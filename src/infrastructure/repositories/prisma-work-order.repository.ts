@@ -14,6 +14,7 @@ import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
+import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
 import { toPrismaOrderBy } from '@infrastructure/database/prisma/helpers/prisma-sort.helper';
@@ -81,8 +82,9 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   async findAllPaginated(
     pagination: PaginationInput,
     filters: WorkOrderFilters,
+    sort?: SortCriterion[],
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status, sort } = filters;
+    const { number, customerId, vehicleId, assignedUserId, status } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };

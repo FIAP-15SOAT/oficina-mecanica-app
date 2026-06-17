@@ -11,7 +11,6 @@ export interface WorkOrderFilters {
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;
-  sort?: SortCriterion[];
 }
 
 export interface IWorkOrderRepository {
@@ -21,6 +20,7 @@ export interface IWorkOrderRepository {
   findAllPaginated(
     pagination: PaginationInput,
     filters: WorkOrderFilters,
+    sort?: SortCriterion[],
   ): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;

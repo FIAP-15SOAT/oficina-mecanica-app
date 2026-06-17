@@ -134,7 +134,7 @@ describe('PrismaWorkOrderRepository', () => {
         new SortCriterion('createdAt', SortDirection.ASC),
       ];
 
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { sort });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, sort);
 
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

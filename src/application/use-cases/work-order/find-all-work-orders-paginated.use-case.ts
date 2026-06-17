@@ -25,10 +25,7 @@ export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPagi
 
     WorkOrder.validateAllowedSortFields(sort.map((c) => c.field));
 
-    const result = await this.workOrderRepository.findAllPaginated(pagination, {
-      ...filters,
-      sort,
-    });
+    const result = await this.workOrderRepository.findAllPaginated(pagination, filters, sort);
 
     return buildPaginatedResult(result, pagination);
   }
