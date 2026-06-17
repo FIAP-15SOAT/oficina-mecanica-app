@@ -15,9 +15,8 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
-import { WorkOrderSortBy } from '@domain/enums/work-order-sort-by.enum';
-import { WORK_ORDER_STATUS_PRIORITY } from '@domain/constants/work-order-status-priority.constant';
 import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { toPrismaOrderBy } from '@infrastructure/database/prisma/helpers/prisma-sort.helper';
 
 const WORK_ORDER_LIST_INCLUDE = {
   customer: true,
@@ -83,8 +82,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     pagination: PaginationInput,
     filters: WorkOrderFilters,
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status, sortBy } = filters;
-    const { page, limit } = pagination;
+    const { number, customerId, vehicleId, assignedUserId, status, sort } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };
@@ -93,39 +91,19 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;
 
-    if (sortBy === WorkOrderSortBy.CREATED_AT) {
-      const result = await paginate(
-        this.prisma.workOrder,
-        { where, orderBy: { createdAt: 'asc' }, include: WORK_ORDER_LIST_INCLUDE },
-        pagination,
-      );
-      return {
-        items: result.items.map((r) =>
-          WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
-        ),
-        total: result.total,
-      };
-    }
+    const orderBy = sort?.length ? toPrismaOrderBy(sort) : undefined;
 
-    const records = await this.prisma.workOrder.findMany({
-      where,
-      include: WORK_ORDER_LIST_INCLUDE,
-      orderBy: { createdAt: 'asc' },
-    });
-
-    records.sort(
-      (a, b) =>
-        (WORK_ORDER_STATUS_PRIORITY[a.status] ?? 99) -
-          (WORK_ORDER_STATUS_PRIORITY[b.status] ?? 99) ||
-        a.createdAt.getTime() - b.createdAt.getTime(),
+    const result = await paginate(
+      this.prisma.workOrder,
+      { where, ...(orderBy && { orderBy }), include: WORK_ORDER_LIST_INCLUDE },
+      pagination,
     );
 
-    const offset = (page - 1) * limit;
     return {
-      items: records
-        .slice(offset, offset + limit)
-        .map((r) => WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0])),
-      total: records.length,
+      items: result.items.map((r) =>
+        WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
+      ),
+      total: result.total,
     };
   }
 
