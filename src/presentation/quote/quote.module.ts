@@ -21,6 +21,7 @@ import { InfrastructureServicesModule } from '@infrastructure/services/infrastru
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+
 import { ITokenService } from '@domain/interfaces/services/token.service.interface';
 import { IEmailSenderService } from '@domain/interfaces/services/email-sender.service.interface';
 import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
@@ -34,9 +35,8 @@ import { QuoteController } from './quote.controller';
   providers: [
     {
       provide: 'ICreateQuoteUseCase',
-      useFactory: (quoteRepo: IQuoteRepository, workOrderRepo: IWorkOrderRepository) =>
-        new CreateQuoteUseCase(quoteRepo, workOrderRepo),
-      inject: ['IQuoteRepository', 'IWorkOrderRepository'],
+      useFactory: (uow: IUnitOfWork) => new CreateQuoteUseCase(uow),
+      inject: ['IUnitOfWork'],
     },
     {
       provide: 'IFindQuoteByIdUseCase',

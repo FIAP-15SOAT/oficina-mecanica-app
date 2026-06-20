@@ -12,6 +12,7 @@ import { User } from './user.entity';
 import { WorkOrderService } from './work-order-service.entity';
 import { WorkOrderPartSupply } from './work-order-part-supply.entity';
 import { Quote } from './quote.entity';
+import { WorkOrderNumber } from '../value-objects/work-order-number.vo';
 
 import {
   MAX_PROBLEM_DESCRIPTION_LENGTH,
@@ -37,7 +38,7 @@ export interface UpdateWorkOrderProps {
 
 export interface WorkOrderProps {
   id: string;
-  number: string;
+  number: WorkOrderNumber;
   customerId: string;
   vehicleId: string;
   assignedUserId: string | null;
@@ -60,7 +61,7 @@ export interface WorkOrderProps {
 
 export class WorkOrder {
   readonly id: string;
-  readonly number: string;
+  readonly number: WorkOrderNumber;
   readonly customerId: string;
   readonly vehicleId: string;
   assignedUserId: string | null;
@@ -121,7 +122,7 @@ export class WorkOrder {
 
     const workOrder = new WorkOrder({
       id: randomUUID(),
-      number: props.number,
+      number: WorkOrderNumber.create(props.number),
       customerId: props.customerId,
       vehicleId: props.vehicleId,
       status: WorkOrderStatus.RECEIVED,
@@ -292,6 +293,12 @@ export class WorkOrder {
     this._status = newStatus;
     this.updatedAt = new Date();
   }
+
+  static readonly DEFAULT_HIDDEN_STATUSES: WorkOrderStatus[] = [
+    WorkOrderStatus.COMPLETED,
+    WorkOrderStatus.DELIVERED,
+    WorkOrderStatus.CANCELLED,
+  ];
 
   private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
     WorkOrderStatus.IN_DIAGNOSIS,

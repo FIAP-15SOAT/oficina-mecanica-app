@@ -30,3 +30,9 @@ CLAUDE.md
 *.tfplan
 crash.log
 crash.*.log
+
+.codex
+.agent
+.github/*
+!.github/workflows/*
+openspec/

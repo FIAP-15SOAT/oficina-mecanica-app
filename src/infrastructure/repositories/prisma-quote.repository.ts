@@ -40,8 +40,28 @@ export class PrismaQuoteRepository implements IQuoteRepository {
         sentAt: quote.sentAt,
         approvedAt: quote.approvedAt,
         rejectedAt: quote.rejectedAt,
+        services: {
+          create: quote.services.map((s) => ({
+            serviceId: s.serviceId,
+            quantity: s.quantity,
+            unitPrice: s.unitPrice,
+            totalPrice: s.totalPrice,
+          })),
+        },
+        partsSupplies: {
+          create: quote.partsSupplies.map((p) => ({
+            partSupplyId: p.partSupplyId,
+            quantity: p.quantity,
+            unitPrice: p.unitPrice,
+            totalPrice: p.totalPrice,
+          })),
+        },
       },
-      include: { workOrder: { include: QUOTE_WORK_ORDER_INCLUDE } },
+      include: {
+        services: { include: { service: true } },
+        partsSupplies: { include: { partSupply: true } },
+        workOrder: { include: QUOTE_WORK_ORDER_INCLUDE },
+      },
     });
 
     return QuoteMapper.toDomain(record);

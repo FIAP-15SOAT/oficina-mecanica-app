@@ -1,5 +1,7 @@
 import { FindAllWorkOrdersPaginatedUseCase } from '@application/use-cases/work-order/find-all-work-orders-paginated.use-case';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import {
   createMockWorkOrder,
   createMockWorkOrderRepository,
@@ -26,7 +28,6 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     expect(result.items[0]).toBe(wo);
     expect(result.pagination.totalRecords).toBe(1);
     expect(result.pagination.page).toBe(1);
-    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith({ page: 1, limit: 10 }, {});
   });
 
   it('should return empty when no work orders', async () => {
@@ -46,7 +47,28 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 2, limit: 5 },
-      { customerId: 'cust-1' },
+      { customerId: 'cust-1', statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
     );
+  });
+
+  it('should inject statusNotIn=DEFAULT_HIDDEN_STATUSES when status is not provided', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 1, limit: 10 });
+
+    expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+    );
+  });
+
+  it('should pass explicit status and NOT send statusNotIn', async () => {
+    workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
+
+    await useCase.execute({ page: 1, limit: 10, status: WorkOrderStatus.DELIVERED });
+
+    const [, filters] = workOrderRepository.findAllPaginated.mock.calls[0];
+    expect(filters.status).toBe(WorkOrderStatus.DELIVERED);
+    expect(filters.statusNotIn).toBeUndefined();
   });
 });

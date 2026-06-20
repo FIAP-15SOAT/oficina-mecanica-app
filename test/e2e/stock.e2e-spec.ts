@@ -147,7 +147,7 @@ describe('Stock (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'STOCK',
+          number: '940001',
           status: 'IN_PROGRESS',
         },
       });
@@ -205,7 +205,7 @@ describe('Stock (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'FILTER',
+          number: '940002',
           status: 'IN_PROGRESS',
         },
       });
@@ -290,7 +290,7 @@ describe('Stock (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'MOVE-1',
+          number: '940003',
           status: 'IN_PROGRESS',
         },
       });
@@ -373,7 +373,7 @@ describe('Stock (E2E)', () => {
         data: {
           customerId: customer.id,
           vehicleId: vehicle.id,
-          number: 'MECH-001',
+          number: '940004',
           status: 'IN_PROGRESS',
           assignedUserId: mechanic.user.id,
         },

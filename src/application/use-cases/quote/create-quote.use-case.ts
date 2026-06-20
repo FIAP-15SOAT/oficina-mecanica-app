@@ -1,29 +1,39 @@
 import { Quote } from '@domain/entities/quote.entity';
-import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
-import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { CreateQuoteDto } from '@domain/interfaces/use-cases/quote/dto/create-quote.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { QuoteItemValidator } from '@application/services/quote-item-validator';
 
 export class CreateQuoteUseCase {
-  constructor(
-    private readonly quoteRepository: IQuoteRepository,
-    private readonly workOrderRepository: IWorkOrderRepository,
-  ) {}
+  constructor(private readonly unitOfWork: IUnitOfWork) {}
 
   async execute(dto: CreateQuoteDto): Promise<Quote> {
-    const workOrder = await this.workOrderRepository.findById(dto.workOrderId);
+    return this.unitOfWork.executeTransaction(async (repos) => {
+      const workOrder = await repos.workOrder.findById(dto.workOrderId);
 
-    if (!workOrder) {
-      throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
-    }
+      if (!workOrder) {
+        throw new ResourceNotFoundException('Ordem de Serviço', dto.workOrderId);
+      }
 
-    workOrder.ensureCanCreateQuote();
+      workOrder.ensureCanCreateQuote();
 
-    const quote = Quote.create({
-      workOrderId: dto.workOrderId,
-      notes: dto.notes,
+      const serviceInputs = dto.services ?? [];
+      const partInputs = dto.partsSupplies ?? [];
+
+      const itemValidator = new QuoteItemValidator(repos.service, repos.partSupply);
+      const { services, partsSupplies } = await itemValidator.validateAndResolve(
+        serviceInputs,
+        partInputs,
+      );
+
+      const quote = Quote.create({
+        workOrderId: dto.workOrderId,
+        notes: dto.notes,
+        services,
+        partsSupplies,
+      });
+
+      return repos.quote.create(quote);
     });
-
-    return this.quoteRepository.create(quote);
   }
 }

@@ -9,6 +9,8 @@ import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { createMockService } from '../../../../helpers/service-mock.factory';
+import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
 
 describe('CreateWorkOrderUseCase', () => {
   let useCase: CreateWorkOrderUseCase;
@@ -197,5 +199,167 @@ describe('CreateWorkOrderUseCase', () => {
     ).rejects.toThrow();
 
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+  });
+
+  it('should create work order with inline services and persist quote via create', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const service = createMockService({ basePrice: 100 });
+    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+    (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
+    (mockRepos.quote.create as jest.Mock).mockResolvedValue({});
+
+    const result = await useCase.execute({
+      customerId: customer.id,
+      vehicleId: vehicle.id,
+      userId: randomUUID(),
+      services: [{ serviceId: service.id, quantity: 1 }],
+    });
+
+    expect(result).toBe(createdWO);
+    expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('should create work order with services + parts via create', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const service = createMockService({ basePrice: 100 });
+    const part = createMockPartSupply({ salePrice: 50 });
+    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+    (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
+    (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([part]);
+    (mockRepos.quote.create as jest.Mock).mockResolvedValue({});
+
+    await useCase.execute({
+      customerId: customer.id,
+      vehicleId: vehicle.id,
+      userId: randomUUID(),
+      services: [{ serviceId: service.id, quantity: 1 }],
+      partsSupplies: [{ partSupplyId: part.id, quantity: 2 }],
+    });
+
+    expect(mockRepos.quote.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('should NOT create a quote when no items are provided', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+    (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+
+    await useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, userId: randomUUID() });
+
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw ResourceNotFoundException when inline service id is unknown — no write, no number consumed', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        services: [{ serviceId: 'unknown-id', quantity: 1 }],
+      }),
+    ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw ResourceNotFoundException when inline part supply id is unknown — no write, no number consumed', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const service = createMockService({ basePrice: 100 });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+    (mockRepos.service.findByIds as jest.Mock).mockResolvedValue([service]);
+    (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        services: [{ serviceId: service.id, quantity: 1 }],
+        partsSupplies: [{ partSupplyId: 'unknown-part-id', quantity: 1 }],
+      }),
+    ).rejects.toThrow(ResourceNotFoundException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw BusinessRuleViolationException when only parts are provided (no service) — no write, no number consumed', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+    const part = createMockPartSupply();
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        partsSupplies: [{ partSupplyId: part.id, quantity: 1 }],
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw BusinessRuleViolationException on duplicate service id — no resolution, no number consumed', async () => {
+    const customer = createMockCustomer();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+
+    await expect(
+      useCase.execute({
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        userId: randomUUID(),
+        services: [
+          { serviceId: 'duplicated-service-id', quantity: 1 },
+          { serviceId: 'duplicated-service-id', quantity: 2 },
+        ],
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.service.findByIds).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+    expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 });

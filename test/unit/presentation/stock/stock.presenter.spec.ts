@@ -67,8 +67,8 @@ describe('StockPresenter', () => {
       expect(item.partSupply.sku).toBe(partSupply.sku);
       expect(item.workOrder).toBeDefined();
       expect(item.workOrder!.id).toBe(workOrder.id);
-      expect(item.workOrder!.customer!.id).toBe(customer.id);
-      expect(item.workOrder!.vehicle!.id).toBe(vehicle.id);
+      expect(item.workOrder!.customer.id).toBe(customer.id);
+      expect(item.workOrder!.vehicle.id).toBe(vehicle.id);
       expect(item.workOrder!.assignedUser!.id).toBe(assignedUser.id);
     });
 
@@ -177,8 +177,8 @@ describe('StockPresenter', () => {
       expect(item.partSupply.id).toBe(partSupply.id);
       expect(item.partSupply.name).toBe(partSupply.name);
       expect(item.workOrder.id).toBe(workOrder.id);
-      expect(item.workOrder.customer!.id).toBe(customer.id);
-      expect(item.workOrder.vehicle!.id).toBe(vehicle.id);
+      expect(item.workOrder.customer.id).toBe(customer.id);
+      expect(item.workOrder.vehicle.id).toBe(vehicle.id);
       expect(item.workOrder.assignedUser!.id).toBe(assignedUser.id);
     });
 

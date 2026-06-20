@@ -9,6 +9,7 @@ import type {
   PartSupply as PrismaPartSupply,
 } from '@generated/client';
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { CustomerMapper } from './customer.mapper';
 import { VehicleMapper } from './vehicle.mapper';
@@ -28,7 +29,7 @@ export class WorkOrderMapper {
   static toDomain(record: PrismaWorkOrderRecord): WorkOrder {
     const entity = WorkOrder.reconstitute({
       id: record.id,
-      number: record.number,
+      number: WorkOrderNumber.create(record.number),
       customerId: record.customerId,
       vehicleId: record.vehicleId,
       assignedUserId: record.assignedUserId ?? null,

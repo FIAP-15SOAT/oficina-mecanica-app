@@ -5052,6 +5052,50 @@
           "response": []
         },
         {
+          "name": "TC-WO-01b — Criar Ordem de Serviço com serviços e peças/insumos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna ID da OS criada com itens', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.environment.set('workOrderId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"problemDescription\": \"Revisão geral com troca de óleo e filtro\",\n  \"mileageAtService\": 55000,\n  \"services\": [\n    { \"serviceId\": \"{{serviceId}}\", \"quantity\": 1 }\n  ],\n  \"partsSupplies\": [\n    { \"partSupplyId\": \"{{partSupplyId}}\", \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/work-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "TC-WO-02 — Listar Ordens de Serviço paginado",
           "event": [
             {
@@ -6183,6 +6227,51 @@
                 "quotes",
                 "{{quoteId}}",
                 "submissions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-QT-01c — Criar Orçamento com serviços e peças/insumos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna orçamento criado com itens', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('status');",
+                  "    pm.environment.set('quoteId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workOrderId\": \"{{workOrderId}}\",\n  \"notes\": \"Orçamento inicial com serviços e peças\",\n  \"services\": [\n    { \"serviceId\": \"{{serviceId}}\", \"quantity\": 1 }\n  ],\n  \"partsSupplies\": [\n    { \"partSupplyId\": \"{{partSupplyId}}\", \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quotes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes"
               ]
             }
           },
