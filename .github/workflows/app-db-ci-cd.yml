@@ -1,0 +1,391 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "infra/**"
+      - ".github/workflows/infra.yml"
+  workflow_run:
+    workflows:
+      - Infrastructure Terraform
+    types:
+      - completed
+    branches:
+      - master
+
+concurrency:
+  group: build-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: "22"
+
+jobs:
+  detect_changes:
+    name: Detect Change Scope
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      prisma_changed: ${{ steps.detect.outputs.prisma_changed }}
+      infra_changed: ${{ steps.detect.outputs.infra_changed }}
+      app_changed: ${{ steps.detect.outputs.app_changed }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Detect changed paths
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVENT_NAME="${{ github.event_name }}"
+          BASE_SHA=""
+          HEAD_SHA=""
+
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          elif [[ "${EVENT_NAME}" == "workflow_run" ]]; then
+            HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+            BASE_SHA="$(git rev-parse "${HEAD_SHA}^1" 2>/dev/null || true)"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+            CHANGED_FILES="$(git show --pretty='' --name-only "${HEAD_SHA}")"
+          else
+            CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+          fi
+
+          prisma_changed=false
+          infra_changed=false
+          app_changed=false
+
+          if echo "${CHANGED_FILES}" | grep -qE '^(prisma/|prisma\.config\.ts$)'; then
+            prisma_changed=true
+          fi
+
+          if echo "${CHANGED_FILES}" | grep -qE '^(infra/|\.github/workflows/infra\.yml$)'; then
+            infra_changed=true
+          fi
+
+          if echo "${CHANGED_FILES}" | awk 'NF && $0 !~ /^infra\// && $0 != ".github/workflows/infra.yml" { found=1; exit } END { exit !found }'; then
+            app_changed=true
+          fi
+
+          echo "prisma_changed=${prisma_changed}" >> "$GITHUB_OUTPUT"
+          echo "infra_changed=${infra_changed}" >> "$GITHUB_OUTPUT"
+          echo "app_changed=${app_changed}" >> "$GITHUB_OUTPUT"
+
+          echo "Detected changes: prisma=${prisma_changed}, infra=${infra_changed}, app=${app_changed}"
+
+  ci_quality:
+    name: CI Quality
+    runs-on: ubuntu-latest
+    needs: detect_changes
+    if: needs.detect_changes.outputs.app_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+        env:
+          DATABASE_URL: postgresql://localhost:5432/techchallenge?schema=public
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm run test:cov
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  db_ci_validation:
+    name: DB Validation (Ephemeral)
+    runs-on: ubuntu-latest
+    needs: detect_changes
+    if: needs.detect_changes.outputs.app_changed == 'true' && needs.detect_changes.outputs.prisma_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: techchallenge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
+
+      - name: Reset database and apply migrations
+        run: npx prisma migrate reset --force --skip-seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
+
+      - name: Seed database
+        run: npx prisma db seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
+
+  app_build_push:
+    name: Build and Push App Image
+    runs-on: ubuntu-latest
+    needs:
+      - detect_changes
+      - ci_quality
+      - db_ci_validation
+    if: needs.detect_changes.outputs.app_changed == 'true' && (needs.db_ci_validation.result == 'success' || needs.db_ci_validation.result == 'skipped') && ((github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.detect_changes.outputs.infra_changed == 'false') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'))
+    permissions:
+      contents: read
+    outputs:
+      image_uri: ${{ steps.image_meta.outputs.image_uri }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login_ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image metadata
+        id: image_meta
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          COMMIT_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          IMAGE_URI="${{ steps.login_ecr.outputs.registry }}/${ECR_REPOSITORY}:${COMMIT_SHA}"
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image_meta.outputs.image_uri }}
+            ${{ steps.login_ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
+          build-args: |
+            DATABASE_URL=postgresql://prisma:prisma@localhost:5432/prisma?schema=public
+
+  db_deploy:
+    name: DB Deploy (Kubernetes Job)
+    runs-on: ubuntu-latest
+    needs:
+      - detect_changes
+      - db_ci_validation
+      - app_build_push
+    if: needs.detect_changes.outputs.app_changed == 'true' && needs.detect_changes.outputs.prisma_changed == 'true' && needs.db_ci_validation.result == 'success' && needs.app_build_push.result == 'success' && ((github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.detect_changes.outputs.infra_changed == 'false') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'))
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Create DB migration Job manifest
+        id: db_job
+        run: |
+          JOB_NAME="db-migrate-${{ github.run_id }}-${{ github.run_attempt }}"
+          IMAGE_URI="${{ needs.app_build_push.outputs.image_uri }}"
+
+          echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+          cat > k8s/db-migrate-job.rendered.yaml <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ${JOB_NAME}
+            namespace: ${{ vars.K8S_NAMESPACE }}
+            labels:
+              app.kubernetes.io/name: db-migrate-job
+              app.kubernetes.io/part-of: oficina-mecanica
+          spec:
+            ttlSecondsAfterFinished: 1209600
+            backoffLimit: 0
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: db-migrate-job
+                  app.kubernetes.io/part-of: oficina-mecanica
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: migrate
+                    image: ${IMAGE_URI}
+                    imagePullPolicy: Always
+                    env:
+                      - name: POSTGRES_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: postgres-secret
+                            key: POSTGRES_USER
+                      - name: POSTGRES_PASSWORD
+                        valueFrom:
+                          secretKeyRef:
+                            name: postgres-secret
+                            key: POSTGRES_PASSWORD
+                      - name: POSTGRES_DB
+                        valueFrom:
+                          secretKeyRef:
+                            name: postgres-secret
+                            key: POSTGRES_DB
+                    command:
+                      - sh
+                      - -c
+                      - |
+                        export DATABASE_URL="postgresql://\$POSTGRES_USER:\$POSTGRES_PASSWORD@postgres.${{ vars.K8S_NAMESPACE }}.svc.cluster.local:5432/\$POSTGRES_DB?schema=public"
+                        npx prisma migrate reset --force --skip-seed
+                        npx prisma db seed
+          EOF
+
+      - name: Apply DB migration Job
+        run: kubectl apply -f k8s/db-migrate-job.rendered.yaml
+
+      - name: Wait DB migration Job completion
+        run: |
+          JOB_NAME="${{ steps.db_job.outputs.job_name }}"
+          NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+
+          if ! kubectl wait --for=condition=Complete "job/${JOB_NAME}" -n "${NAMESPACE}" --timeout=900s; then
+            echo "Job ${JOB_NAME} did not complete successfully. Collecting diagnostics..."
+            kubectl describe job "${JOB_NAME}" -n "${NAMESPACE}" || true
+            POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
+            if [[ -n "${POD_NAME}" ]]; then
+              kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true || true
+            fi
+            exit 1
+          fi
+
+      - name: Show DB migration Job logs
+        run: |
+          JOB_NAME="${{ steps.db_job.outputs.job_name }}"
+          NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+          POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
+          if [[ -n "${POD_NAME}" ]]; then
+            kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true
+          fi
+
+  app_deploy:
+    name: App Deploy
+    runs-on: ubuntu-latest
+    needs:
+      - detect_changes
+      - app_build_push
+      - db_deploy
+    if: needs.detect_changes.outputs.app_changed == 'true' && vars.ENABLE_APP_DEPLOY == 'true' && needs.app_build_push.result == 'success' && (needs.db_deploy.result == 'success' || needs.db_deploy.result == 'skipped') && ((github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.detect_changes.outputs.infra_changed == 'false') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'))
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Render API secret manifest with database password
+        env:
+          K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+        run: |
+          CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
+            envsubst '${CHANGE_ME_STRONG_PASSWORD}' \
+            < k8s/01-api-secret.yaml \
+            > k8s/01-api-secret.rendered.yaml
+
+      - name: Render deployment manifest with immutable image
+        run: |
+          sed "s|IMAGE_URI_PLACEHOLDER|${{ needs.app_build_push.outputs.image_uri }}|g" \
+            k8s/03-api-deployment.yaml > k8s/03-api-deployment.rendered.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/01-api-secret.rendered.yaml
+          kubectl apply -f k8s/02-api-configmap.yaml
+          kubectl apply -f k8s/03-api-deployment.rendered.yaml
+          kubectl apply -f k8s/04-api-service.yaml
+          kubectl apply -f k8s/05-api-hpa.yaml
+
+      - name: Wait rollout
+        run: kubectl rollout status deployment/${{ vars.K8S_DEPLOYMENT_NAME }} --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s

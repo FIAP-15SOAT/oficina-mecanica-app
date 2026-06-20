@@ -1,0 +1,15 @@
+aws_region   = "us-east-1"
+project_name = "oficina-mecanica"
+environment  = "prod-simulated"
+
+aws_base_state_bucket = "bkt-oficina-mecanica"
+aws_base_state_key    = "infra/prod-simulated/aws-base/terraform.tfstate"
+aws_base_state_region = "us-east-1"
+
+k8s_namespace      = "oficina"
+k8s_postgres_user  = "postgres"
+k8s_postgres_db    = "techchallenge"
+k8s_postgres_image = "postgres:16-alpine"
+
+enable_metrics_server        = true
+metrics_server_chart_version = "3.13.0"
