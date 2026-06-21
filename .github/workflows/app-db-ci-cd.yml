@@ -362,9 +362,16 @@ jobs:
       - name: Render API secret manifest with database password
         env:
           K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
         run: |
           CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
-            envsubst '${CHANGE_ME_STRONG_PASSWORD}' \
+          JWT_SECRET="${JWT_SECRET}" \
+          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
+            envsubst \
+            '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
             < k8s/01-api-secret.yaml \
             > k8s/01-api-secret.rendered.yaml
 
