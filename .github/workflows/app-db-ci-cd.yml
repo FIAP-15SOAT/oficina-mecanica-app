@@ -170,12 +170,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
 
       - name: Reset database and apply migrations
-        run: npx prisma migrate reset --force --skip-seed
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
-
-      - name: Seed database
-        run: npx prisma db seed
+        run: npm run db:reset
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/techchallenge?schema=public
 
@@ -307,8 +302,7 @@ jobs:
                       - -c
                       - |
                         export DATABASE_URL="postgresql://\$POSTGRES_USER:\$POSTGRES_PASSWORD@postgres.${{ vars.K8S_NAMESPACE }}.svc.cluster.local:5432/\$POSTGRES_DB?schema=public"
-                        npx prisma migrate reset --force --skip-seed
-                        npx prisma db seed
+                        npm run db:reset
           EOF
 
       - name: Apply DB migration Job
