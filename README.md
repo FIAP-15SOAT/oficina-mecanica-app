@@ -829,6 +829,37 @@ Arquivos em `k8s/`:
 - `04-api-service.yaml`: Service `ClusterIP`
 - `05-api-hpa.yaml`: autoscaling por CPU e memória (HPA v2)
 
+### Acesso à aplicação em Kubernetes
+
+O Service da API é publicado como `ClusterIP`, portanto não é acessível diretamente fora do cluster. Para testes e validações manuais, utilize `kubectl port-forward` para criar um túnel entre a sua máquina e o Service da aplicação.
+
+```bash
+kubectl port-forward -n oficina svc/oficina-api 3000:3000
+```
+
+Após estabelecer o túnel, a aplicação poderá ser acessada localmente através dos seguintes endereços:
+
+- API: `http://localhost:3000`
+- Swagger: `http://localhost:3000/api/docs`
+
+Para interromper o túnel, pressione `Ctrl+C` no terminal onde o comando estiver em execução.
+
+Caso seja necessário validar se o Service possui endpoints disponíveis:
+
+```bash
+kubectl get endpoints oficina-api -n oficina
+```
+
+Para acessar a interface web do MailHog executando no cluster:
+
+```bash
+kubectl port-forward -n oficina svc/mailhog 8025:8025
+```
+
+A interface ficará disponível em:
+
+- MailHog: `http://localhost:8025`
+
 ### Health probes (readinessProbe e livenessProbe)
 
 O Deployment da API configura duas probes HTTP GET em `/api/docs` (porta 3000):
