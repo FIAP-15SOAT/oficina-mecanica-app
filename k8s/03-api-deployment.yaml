@@ -37,16 +37,72 @@ spec:
                 configMapKeyRef:
                   name: api-config
                   key: NODE_ENV
+
             - name: PORT
               valueFrom:
                 configMapKeyRef:
                   name: api-config
                   key: PORT
+
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: JWT_EXPIRATION
+ 
+            - name: JWT_REFRESH_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: JWT_REFRESH_EXPIRATION
+ 
+            - name: BCRYPT_SALT_ROUNDS
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: BCRYPT_SALT_ROUNDS
+ 
+            - name: MAIL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: MAIL_HOST
+ 
+            - name: MAIL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: MAIL_PORT
+ 
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: TZ
+
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: api-secret
                   key: DATABASE_URL
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: JWT_SECRET
+ 
+            - name: JWT_REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: JWT_REFRESH_SECRET
+ 
+            - name: QUOTE_DECISION_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: QUOTE_DECISION_TOKEN_SECRET
           readinessProbe:
             httpGet:
               path: /api/docs

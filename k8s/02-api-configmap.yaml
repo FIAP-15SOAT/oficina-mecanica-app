@@ -9,3 +9,9 @@ metadata:
 data:
   NODE_ENV: production
   PORT: "3000"
+  JWT_EXPIRATION: "15m"
+  JWT_REFRESH_EXPIRATION: "7d"
+  BCRYPT_SALT_ROUNDS: "12"
+  MAIL_HOST: "mailhog"
+  MAIL_PORT: "1025"
+  TZ: "America/Sao_Paulo"
