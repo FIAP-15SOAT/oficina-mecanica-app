@@ -823,8 +823,8 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 
 Arquivos em `k8s/`:
 
-- `01-api-secret.yaml`: string de conexão com placeholder de senha (`CHANGE_ME_STRONG_PASSWORD`), renderizado no pipeline com segredo do GitHub
-- `02-api-configmap.yaml`: variáveis não sensíveis (`NODE_ENV`, `PORT`)
+- `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets
+- `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT` e `TZ`)
 - `03-api-deployment.yaml`: deployment com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
 - `04-api-service.yaml`: Service `ClusterIP`
 - `05-api-hpa.yaml`: autoscaling por CPU e memória (HPA v2)
@@ -845,11 +845,24 @@ O `initialDelaySeconds` da liveness é propositalmente maior (30 s) do que o da 
 ### Deploy em Kubernetes (manual)
 
 ```bash
-# Renderiza segredo e imagem
-sed "s|CHANGE_ME_STRONG_PASSWORD|<SENHA_DB>|g" k8s/01-api-secret.yaml > k8s/01-api-secret.rendered.yaml
+# Renderiza segredo
+
+export CHANGE_ME_STRONG_PASSWORD=<SENHA_DB>
+export JWT_SECRET=<JWT_SECRET>
+export JWT_REFRESH_SECRET=<JWT_REFRESH_SECRET>
+export QUOTE_DECISION_TOKEN_SECRET=<QUOTE_DECISION_TOKEN_SECRET>
+
+envsubst \
+'${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
+< k8s/01-api-secret.yaml \
+> k8s/01-api-secret.rendered.yaml
+
+# Renderiza imagem
+
 sed "s|IMAGE_URI_PLACEHOLDER|<IMAGE_URI>|g" k8s/03-api-deployment.yaml > k8s/03-api-deployment.rendered.yaml
 
 # Aplica recursos da aplicação
+
 kubectl apply -f k8s/01-api-secret.rendered.yaml
 kubectl apply -f k8s/02-api-configmap.yaml
 kubectl apply -f k8s/03-api-deployment.rendered.yaml
@@ -926,6 +939,10 @@ Detalhamento por job:
 
 Decisão importante: a camada `k8s-workflows` recebe o segredo do banco via `TF_VAR_k8s_postgres_password`, evitando senha hardcoded no Terraform.
 
+**Comportamento do primeiro deploy**: o workflow foi projetado para realizar o provisionamento inicial em duas execuções. Na primeira execução, apenas a camada aws-base é planejada e aplicada, criando os recursos de infraestrutura base (incluindo o cluster Kubernetes e seus outputs no state remoto). Como esses outputs ainda não existem nesse momento, o job check_aws_base_state retorna exists=false e o terraform_plan_k8s_workflows é ignorado intencionalmente. Em uma execução subsequente, com o state remoto já contendo o output cluster_name, o workflow passa a executar normalmente o plan e o apply da camada k8s-workflows. Essa abordagem evita falhas durante o bootstrap inicial do ambiente ou após cenários de recriação da infraestrutura, como um terraform destroy seguido de novo provisionamento.
+
+**Decisão de design**: a validação do state remoto ocorre antes do terraform_apply_aws_base para que o terraform_plan_k8s_workflows possa ser executado também em Pull Requests. Dessa forma, após a infraestrutura base já existir, qualquer alteração na camada k8s-workflows continua sendo validada durante o processo de revisão de código, sem depender de uma execução de apply. Caso a verificação fosse realizada após o apply, o plan da camada k8s-workflows ficaria restrito a execuções em push para a branch principal, reduzindo a capacidade de detectar problemas antecipadamente durante a análise de Pull Requests.
+
 ### 2) Workflow de App + DB (`app-db-ci-cd.yml`)
 
 Escopo: mudanças de aplicação/Prisma/workflow; além disso, pode ser acionado por `workflow_run` após o `infra.yml` quando há mudanças de infra.
@@ -959,7 +976,7 @@ Detalhamento por job:
   - Configura kubeconfig no EKS, renderiza/aplica um Kubernetes Job no cluster que executa `prisma migrate reset --force` (recria o banco do zero) + `prisma db seed` e aguarda a conclusão, com diagnóstico em caso de falha.
 6. `app_deploy` (condicional, somente `push` em `master`)
   - Depende de `app_build_push` e de `db_deploy` (`success` ou `skipped`), além de `ENABLE_APP_DEPLOY == true`.
-  - Renderiza `k8s/01-api-secret.yaml` com `K8S_POSTGRES_PASSWORD` e `k8s/03-api-deployment.yaml` com a imagem imutável.
+  - Renderiza `k8s/01-api-secret.yaml` com os secrets da aplicação (`K8S_POSTGRES_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`) e `k8s/03-api-deployment.yaml` com a imagem imutável.
   - Aplica manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida rollout do deployment.
 
 ### Dependência App x DB (com comportamento de skip)
@@ -979,7 +996,7 @@ Isso garante ordem correta quando há impacto de banco, sem bloquear deploy da a
 
 - A imagem Docker é publicada no ECR com tag imutável (`github.sha`) e também `latest`
 - O deploy usa a tag imutável para renderizar o Deployment Kubernetes
-- O Secret da API é renderizado em runtime com `secrets.K8S_POSTGRES_PASSWORD`
+- O Secret da API é renderizado em runtime com os GitHub Secrets da aplicação (K8S_POSTGRES_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET e QUOTE_DECISION_TOKEN_SECRET).
 - O DB deploy roda no cluster via Kubernetes Job com TTL de 2 semanas para auditoria e troubleshooting; o Job usa `migrate reset --force` + seed (comportamento intencional para o ambiente simulado desta fase)
 
 A configuração do Sonar (chave do projeto, organização, exclusões e caminho do `lcov.info`) está em `sonar-project.properties`.
@@ -995,19 +1012,28 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `AWS_SESSION_TOKEN` | `infra.yml`, `app-db-ci-cd.yml` | Token temporário de sessão, quando aplicável |
 | Secret | `SONAR_TOKEN` | `app-db-ci-cd.yml` | Autenticação do SonarQube Scan |
 | Secret | `K8S_POSTGRES_PASSWORD` | `infra.yml`, `app-db-ci-cd.yml` | Senha do PostgreSQL injetada no Terraform e no Secret da aplicação |
+| Secret | `JWT_SECRET` | `app-db-ci-cd.yml` | Assinatura dos access tokens JWT |
+| Secret | `JWT_REFRESH_SECRET` | `app-db-ci-cd.yml`| Assinatura dos refresh tokens JWT |
+| Secret | `QUOTE_DECISION_TOKEN_SECRET` | `app-db-ci-cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
 | Variable | `ECR_REPOSITORY` | `app-db-ci-cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
 | Variable | `EKS_CLUSTER_NAME` | `app-db-ci-cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
 | Variable | `K8S_DEPLOYMENT_NAME` | `app-db-ci-cd.yml` | Nome do Deployment usado no `kubectl rollout status` |
 | Variable | `K8S_NAMESPACE` | `app-db-ci-cd.yml` | Namespace onde a aplicação e o Job de banco são aplicados |
 | Variable | `ENABLE_APP_DEPLOY` | `app-db-ci-cd.yml` | Habilita ou desabilita o deploy da aplicação |
 
-#### Injeção da senha do banco (K8S_POSTGRES_PASSWORD)
+#### Injeção de secrets da aplicação
 
 - O secret `K8S_POSTGRES_PASSWORD` deve ser forte e diferente dos valores de desenvolvimento local.
 - No workflow de infra (`infra.yml`), o CI lê `K8S_POSTGRES_PASSWORD` e repassa ao Terraform como `TF_VAR_k8s_postgres_password` (mesmo valor, nomes diferentes por contexto).
 - Esse valor preenche a variável `k8s_postgres_password` no stack `infra/k8s-workflows`, que cria/atualiza o Secret Kubernetes `postgres-secret`.
 - O `postgres-secret` é referenciado pelo StatefulSet do PostgreSQL (`env_from`), portanto essa senha é a credencial efetivamente usada na inicialização do banco no cluster.
 - No workflow de app (`app-db-ci-cd.yml`), o CI também lê `K8S_POSTGRES_PASSWORD` para renderizar o manifesto `k8s/01-api-secret.yaml`, preenchendo a `DATABASE_URL` consumida pela aplicação.
+
+Além da senha do PostgreSQL, o workflow também injeta os secrets:
+
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `QUOTE_DECISION_TOKEN_SECRET`
 
 ## Relatórios de Segurança, Qualidade e Cobertura
 
