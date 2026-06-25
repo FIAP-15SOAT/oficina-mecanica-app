@@ -20,7 +20,7 @@ export function parseSort(raw: string | undefined): SortCriterion[] {
         );
       }
 
-      if (direction !== 'asc' && direction !== 'desc') {
+      if (direction !== SortDirection.ASC && direction !== SortDirection.DESC) {
         throw new DomainValidationException(
           `Formato de ordenação inválido: direção '${rawDir}' não permitida. Use 'asc' ou 'desc'.`,
         );
@@ -28,7 +28,7 @@ export function parseSort(raw: string | undefined): SortCriterion[] {
 
       return new SortCriterion(
         field,
-        direction === 'asc' ? SortDirection.ASC : SortDirection.DESC,
+        direction === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC,
       );
     });
 }
