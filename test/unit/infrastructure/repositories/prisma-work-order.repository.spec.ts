@@ -164,8 +164,8 @@ describe('PrismaWorkOrderRepository', () => {
       prisma.workOrder.count.mockResolvedValue(0);
 
       const sort = [
-        new SortCriterion('status', SortDirection.DESC),
-        new SortCriterion('createdAt', SortDirection.ASC),
+        { field: 'status', direction: SortDirection.DESC },
+        { field: 'createdAt', direction: SortDirection.ASC },
       ];
 
       await repository.findAllPaginated({ page: 1, limit: 10 }, {}, sort);

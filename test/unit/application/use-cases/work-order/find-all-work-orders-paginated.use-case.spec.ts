@@ -15,8 +15,8 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
   let workOrderRepository: jest.Mocked<IWorkOrderRepository>;
 
   const DEFAULT_SORT = [
-    new SortCriterion('status', SortDirection.DESC),
-    new SortCriterion('createdAt', SortDirection.ASC),
+    { field: 'status', direction: SortDirection.DESC },
+    { field: 'createdAt', direction: SortDirection.ASC },
   ];
 
   beforeEach(() => {
@@ -67,7 +67,7 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
       { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
-      [new SortCriterion('createdAt', SortDirection.ASC)],
+      [{ field: 'createdAt', direction: SortDirection.ASC }],
     );
   });
 

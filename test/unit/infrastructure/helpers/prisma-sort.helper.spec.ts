@@ -4,19 +4,19 @@ import { SortDirection } from '@domain/enums/sort-direction.enum';
 
 describe('toPrismaOrderBy', () => {
   it('should convert single criterion to prisma orderBy', () => {
-    const criteria = [new SortCriterion('status', SortDirection.DESC)];
+    const criteria: SortCriterion[] = [{ field: 'status', direction: SortDirection.DESC }];
     expect(toPrismaOrderBy(criteria)).toEqual([{ status: 'desc' }]);
   });
 
   it('should convert single criterion with ASC direction', () => {
-    const criteria = [new SortCriterion('createdAt', SortDirection.ASC)];
+    const criteria: SortCriterion[] = [{ field: 'createdAt', direction: SortDirection.ASC }];
     expect(toPrismaOrderBy(criteria)).toEqual([{ createdAt: 'asc' }]);
   });
 
   it('should convert multiple criteria', () => {
-    const criteria = [
-      new SortCriterion('status', SortDirection.DESC),
-      new SortCriterion('createdAt', SortDirection.ASC),
+    const criteria: SortCriterion[] = [
+      { field: 'status', direction: SortDirection.DESC },
+      { field: 'createdAt', direction: SortDirection.ASC },
     ];
     expect(toPrismaOrderBy(criteria)).toEqual([{ status: 'desc' }, { createdAt: 'asc' }]);
   });

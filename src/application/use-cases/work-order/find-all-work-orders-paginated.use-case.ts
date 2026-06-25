@@ -12,8 +12,8 @@ import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 
 const DEFAULT_SORT: SortCriterion[] = [
-  new SortCriterion('status', SortDirection.DESC),
-  new SortCriterion('createdAt', SortDirection.ASC),
+  { field: 'status', direction: SortDirection.DESC },
+  { field: 'createdAt', direction: SortDirection.ASC },
 ];
 
 export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPaginatedUseCase {

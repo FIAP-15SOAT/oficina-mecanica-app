@@ -26,9 +26,9 @@ export function parseSort(raw: string | undefined): SortCriterion[] {
         );
       }
 
-      return new SortCriterion(
+      return {
         field,
-        direction === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC,
-      );
+        direction: direction === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC,
+      };
     });
 }
