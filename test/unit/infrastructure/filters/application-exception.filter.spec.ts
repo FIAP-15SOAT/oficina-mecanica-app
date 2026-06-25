@@ -2,6 +2,7 @@ import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { ApplicationException } from '@application/exceptions/application.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { ApplicationExceptionFilter } from '@infrastructure/filters/application-exception.filter';
 
@@ -37,6 +38,20 @@ describe('ApplicationExceptionFilter', () => {
 
   beforeEach(() => {
     filter = new ApplicationExceptionFilter();
+  });
+
+  it('should return 400 for BadRequestException', () => {
+    const { host, statusFn, jsonFn } = createMockHost();
+    const exception = new BadRequestException('Parâmetro inválido');
+
+    filter.catch(exception, host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(jsonFn).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      error: 'Bad Request',
+      message: 'Parâmetro inválido',
+    });
   });
 
   it('should return 404 for ResourceNotFoundException', () => {
