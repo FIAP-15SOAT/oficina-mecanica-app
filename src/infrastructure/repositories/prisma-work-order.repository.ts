@@ -16,7 +16,7 @@ import {
 } from '@domain/interfaces/common/pagination.interface';
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
-import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
 import { toPrismaOrderBy } from '@infrastructure/database/prisma/helpers/prisma-sort.helper';
 
 const WORK_ORDER_LIST_INCLUDE = {
