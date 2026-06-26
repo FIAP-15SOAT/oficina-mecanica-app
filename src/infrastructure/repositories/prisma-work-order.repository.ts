@@ -164,9 +164,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     records.sort((a, b) => (idIndexMap.get(a.id) ?? 0) - (idIndexMap.get(b.id) ?? 0));
 
     return {
-      items: records.map((r) =>
-        WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
-      ),
+      items: records.map((item) => WorkOrderMapper.toDomain(item)),
       total,
     };
   }
