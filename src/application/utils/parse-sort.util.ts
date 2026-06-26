@@ -1,6 +1,6 @@
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
-import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 export function parseSort(raw: string | undefined): SortCriterion[] {
   if (!raw?.trim()) return [];
@@ -15,13 +15,13 @@ export function parseSort(raw: string | undefined): SortCriterion[] {
       const field = rawField?.trim();
 
       if (!field) {
-        throw new DomainValidationException(
+        throw new BadRequestException(
           'Formato de ordenação inválido: campo não pode ser vazio.',
         );
       }
 
       if (direction !== SortDirection.ASC && direction !== SortDirection.DESC) {
-        throw new DomainValidationException(
+        throw new BadRequestException(
           `Formato de ordenação inválido: direção '${rawDir}' não permitida. Use 'asc' ou 'desc'.`,
         );
       }

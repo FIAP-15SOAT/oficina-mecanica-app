@@ -1,6 +1,6 @@
 import { parseSort } from '@application/utils/parse-sort.util';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
-import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 describe('parseSort', () => {
   it('should return empty array for undefined input', () => {
@@ -45,11 +45,11 @@ describe('parseSort', () => {
     expect(result[1].field).toBe('createdAt');
   });
 
-  it('should throw DomainValidationException for invalid direction', () => {
-    expect(() => parseSort('status:invalid')).toThrow(DomainValidationException);
+  it('should throw BadRequestException for invalid direction', () => {
+    expect(() => parseSort('status:invalid')).toThrow(BadRequestException);
   });
 
-  it('should throw DomainValidationException for empty field', () => {
-    expect(() => parseSort(':desc')).toThrow(DomainValidationException);
+  it('should throw BadRequestException for empty field', () => {
+    expect(() => parseSort(':desc')).toThrow(BadRequestException);
   });
 });
