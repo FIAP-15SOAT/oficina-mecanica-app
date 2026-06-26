@@ -176,6 +176,14 @@ model PartSupply {
   @@map("parts_supplies")
 }
 
+model WorkOrderStatusDef {
+  code       WorkOrderStatus @id
+  priority   Int             @unique
+  workOrders WorkOrder[]
+
+  @@map("work_order_status_defs")
+}
+
 model WorkOrder {
   id                 String          @id @default(uuid()) @db.Uuid
   number             String          @unique @db.VarChar(20)
@@ -199,6 +207,7 @@ model WorkOrder {
   customer          Customer              @relation(fields: [customerId], references: [id])
   vehicle           Vehicle               @relation(fields: [vehicleId], references: [id])
   assignedUser      User?                 @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  statusDef         WorkOrderStatusDef    @relation(fields: [status], references: [code])
   services          WorkOrderService[]
   partSupplies      WorkOrderPartSupply[]
   quotes            Quote[]

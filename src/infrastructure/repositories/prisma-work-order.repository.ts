@@ -16,8 +16,8 @@ import {
 } from '@domain/interfaces/common/pagination.interface';
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
-import { WORK_ORDER_STATUS_PRIORITY } from '@domain/constants/work-order-status-priority.constant';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
+import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
 
 const WORK_ORDER_LIST_INCLUDE = {
   customer: true,
@@ -86,7 +86,6 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
     const { number, customerId, vehicleId, assignedUserId, status, statusNotIn } = filters;
 
-    // Type-safe where for count()
     const where: Prisma.WorkOrderWhereInput = {};
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };
     if (customerId) where.customerId = customerId;
@@ -95,77 +94,25 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (status) where.status = status;
     else if (statusNotIn?.length) where.status = { notIn: statusNotIn };
 
-    // SQL conditions for $queryRaw
-    const conditions: Prisma.Sql[] = [];
-    if (number) conditions.push(Prisma.sql`"number" ILIKE ${'%' + number.trim() + '%'}`);
-    if (customerId) conditions.push(Prisma.sql`customer_id = ${customerId}::uuid`);
-    if (vehicleId) conditions.push(Prisma.sql`vehicle_id = ${vehicleId}::uuid`);
-    if (assignedUserId) conditions.push(Prisma.sql`assigned_user_id = ${assignedUserId}::uuid`);
-    if (status) {
-      conditions.push(Prisma.sql`status::text = ${status}`);
-    } else if (statusNotIn?.length) {
-      conditions.push(
-        Prisma.sql`status::text NOT IN (${Prisma.join(statusNotIn.map((s) => Prisma.sql`${s}`), ', ')})`,
-      );
-    }
-
-    const whereClause =
-      conditions.length > 0
-        ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
-        : Prisma.empty;
-
-    // ORDER BY: status uses CASE priority, other fields use column name
-    const COLUMN_MAP: Record<string, string> = { createdAt: 'created_at', updatedAt: 'updated_at' };
-
-    const orderByClauses = (sort ?? []).map((criterion) => {
+    // status:desc → most urgent first (IN_PROGRESS, priority 1) → ORDER BY priority ASC
+    // status:asc  → least urgent first (DELIVERED, priority 9) → ORDER BY priority DESC
+    const orderBy: Prisma.WorkOrderOrderByWithRelationInput[] = (sort ?? []).map((criterion) => {
       if (criterion.field === 'status') {
-        // desc = most urgent first (IN_PROGRESS) → CASE priority ASC
-        // asc  = least urgent first (DELIVERED)  → CASE priority DESC
-        const caseDir =
-          criterion.direction === SortDirection.DESC ? Prisma.sql`ASC` : Prisma.sql`DESC`;
-        return Prisma.sql`CASE status::text ${Prisma.join(
-          Object.entries(WORK_ORDER_STATUS_PRIORITY).map(([s, p]) => Prisma.sql`WHEN ${s} THEN ${p}`),
-          ' ',
-        )} END ${caseDir}`;
+        const dir = criterion.direction === SortDirection.DESC ? SortDirection.ASC : SortDirection.DESC;
+        return { statusDef: { priority: dir } };
       }
-      const column = COLUMN_MAP[criterion.field] ?? criterion.field;
-      const dir = criterion.direction === SortDirection.DESC ? Prisma.sql`DESC` : Prisma.sql`ASC`;
-      return Prisma.sql`${Prisma.raw(column)} ${dir}`;
+      return { [criterion.field]: criterion.direction };
     });
 
-    const orderByClause =
-      orderByClauses.length > 0
-        ? Prisma.sql`ORDER BY ${Prisma.join(orderByClauses, ', ')}`
-        : Prisma.empty;
-
-    const offset = (pagination.page - 1) * pagination.limit;
-
-    const [total, orderedRows] = await Promise.all([
-      this.prisma.workOrder.count({ where }),
-      this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
-        SELECT id FROM work_orders
-        ${whereClause}
-        ${orderByClause}
-        LIMIT ${pagination.limit} OFFSET ${offset}
-      `),
-    ]);
-
-    if (orderedRows.length === 0) return { items: [], total };
-
-    const orderedIds = orderedRows.map((r) => r.id);
-
-    const records = await this.prisma.workOrder.findMany({
-      where: { id: { in: orderedIds } },
-      include: WORK_ORDER_LIST_INCLUDE,
-    });
-
-    // Restore order from $queryRaw (IN clause does not guarantee order)
-    const idIndexMap = new Map(orderedIds.map((id, i) => [id, i]));
-    records.sort((a, b) => (idIndexMap.get(a.id) ?? 0) - (idIndexMap.get(b.id) ?? 0));
+    const result = await paginate(
+      this.prisma.workOrder,
+      { where, orderBy, include: WORK_ORDER_LIST_INCLUDE },
+      pagination,
+    );
 
     return {
-      items: records.map((item) => WorkOrderMapper.toDomain(item)),
-      total,
+      items: result.items.map((item) => WorkOrderMapper.toDomain(item)),
+      total: result.total,
     };
   }
 
