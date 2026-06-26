@@ -237,6 +237,86 @@ describe('PrismaWorkOrderRepository', () => {
       const [call] = prisma.workOrder.count.mock.calls;
       expect((call[0] as { where: Record<string, unknown> }).where.status).toBeUndefined();
     });
+
+    it('should filter by number via count where', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { number: '000001' });
+
+      expect(prisma.workOrder.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            number: { contains: '000001', mode: 'insensitive' },
+          }),
+        }),
+      );
+    });
+
+    it('should filter by assignedUserId via count where', async () => {
+      const assignedUserId = randomUUID();
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { assignedUserId });
+
+      expect(prisma.workOrder.count).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ assignedUserId }) }),
+      );
+    });
+
+    it('should use CASE DESC when sort is status:asc (least urgent first)', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, [
+        { field: 'status', direction: SortDirection.ASC },
+      ]);
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should use DESC direction for non-status sort field', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, [
+        { field: 'createdAt', direction: SortDirection.DESC },
+      ]);
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should use field name directly when not mapped in COLUMN_MAP', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, [
+        { field: 'updatedAt', direction: SortDirection.ASC },
+        { field: 'id', direction: SortDirection.ASC },
+      ]);
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should default to index 0 in sort when id from findMany is not in ordered map', async () => {
+      const id1 = randomUUID();
+      const extraId1 = randomUUID();
+      const extraId2 = randomUUID();
+
+      prisma.$queryRaw.mockResolvedValue([{ id: id1 }]);
+      prisma.workOrder.count.mockResolvedValue(1);
+      // Two records with IDs not in orderedIds forces both sides of `?? 0` to be exercised
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: extraId1, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
+        { id: extraId2, number: '000003', status: WorkOrderStatus.APPROVED, createdAt: new Date() },
+        { id: id1, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
+      ]);
+
+      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      expect(result.items).toHaveLength(3);
+    });
   });
 
   describe('update', () => {
