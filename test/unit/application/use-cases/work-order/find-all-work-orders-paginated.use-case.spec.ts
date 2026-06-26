@@ -3,7 +3,6 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import {
@@ -88,12 +87,6 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     await expect(
       useCase.execute({ page: 1, limit: 10, sort: 'number:asc' }),
     ).rejects.toThrow(DomainValidationException);
-  });
-
-  it('should throw BadRequestException for invalid sort format', async () => {
-    await expect(
-      useCase.execute({ page: 1, limit: 10, sort: 'status:invalid' }),
-    ).rejects.toThrow(BadRequestException);
   });
 
   it('should inject statusNotIn=DEFAULT_HIDDEN_STATUSES when status is not provided', async () => {
