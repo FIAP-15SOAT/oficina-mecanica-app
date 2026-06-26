@@ -52,4 +52,14 @@ describe('parseSort', () => {
   it('should throw BadRequestException for empty field', () => {
     expect(() => parseSort(':desc')).toThrow(BadRequestException);
   });
+
+  it('should throw BadRequestException for field not in allowedFields', () => {
+    const allowed = new Set(['status', 'createdAt']);
+    expect(() => parseSort('number:asc', allowed)).toThrow(BadRequestException);
+  });
+
+  it('should not throw when field is in allowedFields', () => {
+    const allowed = new Set(['status', 'createdAt']);
+    expect(() => parseSort('status:desc', allowed)).not.toThrow();
+  });
 });

@@ -23,10 +23,8 @@ export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPagi
     const { page, limit, sort: rawSort, ...inputFilters } = input;
     const pagination: PaginationInput = { page, limit };
 
-    const criteria = parseSort(rawSort);
+    const criteria = parseSort(rawSort, WorkOrder.ALLOWED_SORT_FIELDS);
     const sort = criteria.length > 0 ? criteria : DEFAULT_SORT;
-
-    WorkOrder.validateAllowedSortFields(sort.map((c) => c.field));
 
     const filters: WorkOrderFilters = { ...inputFilters };
 

@@ -300,7 +300,7 @@ export class WorkOrder {
     WorkOrderStatus.CANCELLED,
   ];
 
-  private static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);
+  static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);
 
   static validateAllowedSortFields(fields: string[]): void {
     for (const field of fields) {

@@ -2,7 +2,7 @@ import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
-export function parseSort(raw: string | undefined): SortCriterion[] {
+export function parseSort(raw: string | undefined, allowedFields?: Set<string>): SortCriterion[] {
   if (!raw?.trim()) return [];
 
   return raw
@@ -17,6 +17,12 @@ export function parseSort(raw: string | undefined): SortCriterion[] {
       if (!field) {
         throw new BadRequestException(
           'Formato de ordenação inválido: campo não pode ser vazio.',
+        );
+      }
+
+      if (allowedFields && !allowedFields.has(field)) {
+        throw new BadRequestException(
+          `Campo '${field}' não é permitido para ordenação. Campos permitidos: ${[...allowedFields].join(', ')}`,
         );
       }
 
