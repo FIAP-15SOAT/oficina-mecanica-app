@@ -94,7 +94,7 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('findAllPaginated', () => {
-    it('should use findMany and count via paginate helper', async () => {
+    it('should return paginated work orders without filters', async () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
