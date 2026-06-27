@@ -181,7 +181,7 @@ model WorkOrderStatusInfo {
   priority   Int             @unique
   workOrders WorkOrder[]
 
-  @@map("work_order_status_infos")
+  @@map("work_order_statuses")
 }
 
 model WorkOrder {
