@@ -73,13 +73,14 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
   });
 
   it('should pass filters alongside sort', async () => {
+    const input = { page: 2, limit: 5, customerId: 'cust-1' };
     workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
-    await useCase.execute({ page: 2, limit: 5, customerId: 'cust-1' });
+    await useCase.execute(input);
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 2, limit: 5 },
-      { customerId: 'cust-1', statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      { page: input.page, limit: input.limit },
+      { customerId: input.customerId, statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
       DEFAULT_SORT,
     );
   });
