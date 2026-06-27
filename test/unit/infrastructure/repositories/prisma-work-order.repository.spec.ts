@@ -133,14 +133,15 @@ describe('PrismaWorkOrderRepository', () => {
     });
 
     it('should filter by number', async () => {
+      const number = '000001';
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { number: '000001' });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { number });
 
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ number: { contains: '000001', mode: 'insensitive' } }),
+          where: expect.objectContaining({ number: { contains: number, mode: 'insensitive' } }),
         }),
       );
     });
