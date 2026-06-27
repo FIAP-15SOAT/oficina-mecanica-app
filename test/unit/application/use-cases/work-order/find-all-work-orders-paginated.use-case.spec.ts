@@ -1,6 +1,5 @@
 import { FindAllWorkOrdersPaginatedUseCase } from '@application/use-cases/work-order/find-all-work-orders-paginated.use-case';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { WorkOrder } from '@domain/entities/work-order.entity';
@@ -86,9 +85,9 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
   });
 
   it('should throw BadRequestException for disallowed sort field', async () => {
-    await expect(
-      useCase.execute({ page: 1, limit: 10, sort: 'number:asc' }),
-    ).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute({ page: 1, limit: 10, sort: 'number:asc' })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should inject statusNotIn=DEFAULT_HIDDEN_STATUSES when status is not provided', async () => {

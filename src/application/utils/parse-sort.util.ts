@@ -15,9 +15,7 @@ export function parseSort(raw: string | undefined, allowedFields?: Set<string>):
       const field = rawField?.trim();
 
       if (!field) {
-        throw new BadRequestException(
-          'Formato de ordenação inválido: campo não pode ser vazio.',
-        );
+        throw new BadRequestException('Formato de ordenação inválido: campo não pode ser vazio.');
       }
 
       if (allowedFields && !allowedFields.has(field)) {
@@ -26,7 +24,8 @@ export function parseSort(raw: string | undefined, allowedFields?: Set<string>):
         );
       }
 
-      if (direction !== SortDirection.ASC && direction !== SortDirection.DESC) {
+      const validDirections = Object.values(SortDirection) as string[];
+      if (!validDirections.includes(direction)) {
         throw new BadRequestException(
           `Formato de ordenação inválido: direção '${rawDir}' não permitida. Use 'asc' ou 'desc'.`,
         );
@@ -34,7 +33,7 @@ export function parseSort(raw: string | undefined, allowedFields?: Set<string>):
 
       return {
         field,
-        direction: direction === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC,
+        direction: direction as SortDirection,
       };
     });
 }
