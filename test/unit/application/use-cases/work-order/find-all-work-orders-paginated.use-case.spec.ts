@@ -25,17 +25,18 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
   });
 
   it('should return paginated work orders', async () => {
+    const input = { page: 1, limit: 10 };
     const wo = createMockWorkOrder();
     workOrderRepository.findAllPaginated.mockResolvedValue({ items: [wo], total: 1 });
 
-    const result = await useCase.execute({ page: 1, limit: 10 });
+    const result = await useCase.execute(input);
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toBe(wo);
     expect(result.pagination.totalRecords).toBe(1);
-    expect(result.pagination.page).toBe(1);
+    expect(result.pagination.page).toBe(input.page);
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
-      { page: 1, limit: 10 },
+      { page: input.page, limit: input.limit },
       { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
       DEFAULT_SORT,
     );
