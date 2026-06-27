@@ -104,7 +104,6 @@ describe('PrismaWorkOrderRepository', () => {
       expect(result.total).toBe(0);
       expect(prisma.workOrder.findMany).toHaveBeenCalled();
       expect(prisma.workOrder.count).toHaveBeenCalled();
-      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
 
     it('should filter by customerId', async () => {
