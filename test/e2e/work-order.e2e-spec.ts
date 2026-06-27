@@ -555,6 +555,62 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.pagination.page).toBe(1);
       expect(res.body.pagination.limit).toBe(10);
     });
+
+    it('should accept sort=status:desc and return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sort=status:desc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should accept sort=createdAt:asc and return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sort=createdAt:asc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should accept sort=status:desc,createdAt:asc and return 200', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sort=status:desc,createdAt:asc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should return 422 for disallowed sort field', async () => {
+      await request(httpServer)
+        .get('/api/work-orders?sort=number:asc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(422);
+    });
+
+    it('should return 422 for invalid sort direction', async () => {
+      await request(httpServer)
+        .get('/api/work-orders?sort=status:invalid')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(422);
+    });
   });
 
   // ─── GET /api/work-orders/:id ──────────────────────────────────────────────

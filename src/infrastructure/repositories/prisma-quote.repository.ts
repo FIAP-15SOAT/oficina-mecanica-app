@@ -15,7 +15,7 @@ import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
-import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
 
 const QUOTE_WORK_ORDER_INCLUDE = {
   customer: true,

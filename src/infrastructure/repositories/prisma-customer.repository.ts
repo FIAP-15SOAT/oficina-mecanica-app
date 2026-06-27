@@ -12,8 +12,8 @@ import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
-import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
-import { existsBy } from '@infrastructure/database/prisma/prisma-exists.helper';
+import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
+import { existsBy } from '@infrastructure/database/prisma/helpers/prisma-exists.helper';
 
 const ADDRESS_INCLUDE = { address: true } as const;
 

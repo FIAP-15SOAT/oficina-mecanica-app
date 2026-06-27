@@ -45,8 +45,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
-    "nodemailer": "^8.0.6",
     "helmet": "^8.1.0",
+    "nodemailer": "^8.0.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
@@ -114,7 +114,8 @@
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
       "!src/**/*.dto.ts",
-      "!src/infrastructure/database/prisma/prisma.service.ts"
+      "!src/infrastructure/database/prisma/prisma.service.ts",
+      "!src/domain/constants/**"
     ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node",

@@ -7,4 +7,5 @@ export interface FindAllWorkOrdersFilters extends PaginationInput {
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;
+  sort?: string;
 }

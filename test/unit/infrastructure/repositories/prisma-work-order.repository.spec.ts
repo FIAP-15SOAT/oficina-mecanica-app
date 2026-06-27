@@ -4,6 +4,7 @@ import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { createMockPrismaClient, MockPrismaService } from '../../../helpers/prisma-mock.factory';
 import { randomUUID } from 'node:crypto';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
@@ -92,18 +93,33 @@ describe('PrismaWorkOrderRepository', () => {
   });
 
   describe('findAllPaginated', () => {
+    it('should return paginated work orders without filters', async () => {
+      const id1 = randomUUID();
+      const id2 = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: id1, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
+        { id: id2, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
+      ]);
+      prisma.workOrder.count.mockResolvedValue(2);
+
+      const result = await repository.findAllPaginated({ page: 3, limit: 5 }, {});
+
+      expect(result.total).toBe(2);
+      expect(result.items[0]).toMatchObject({ id: id1 });
+      expect(result.items[1]).toMatchObject({ id: id2 });
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: 5 }),
+      );
+      expect(prisma.workOrder.count).toHaveBeenCalled();
+    });
+
     it('should filter by customerId', async () => {
       const customerId = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
 
-      prisma.workOrder.findMany.mockResolvedValue([
-        { id: randomUUID(), number: '000001', customerId },
-      ]);
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
 
-      prisma.workOrder.count.mockResolvedValue(1);
-
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
-
-      expect(result.total).toBe(1);
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ customerId }) }),
       );
@@ -111,45 +127,74 @@ describe('PrismaWorkOrderRepository', () => {
 
     it('should filter by vehicleId', async () => {
       const vehicleId = randomUUID();
-      prisma.workOrder.findMany.mockResolvedValue([
-        { id: randomUUID(), number: '000001', vehicleId },
-      ]);
-      prisma.workOrder.count.mockResolvedValue(1);
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { vehicleId });
 
-      expect(result.total).toBe(1);
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ vehicleId }) }),
       );
     });
 
-    it('should apply extra filters', async () => {
+    it('should filter by number', async () => {
+      const number = '000001';
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
-      const assignedUserId = randomUUID();
-      await repository.findAllPaginated(
-        { page: 1, limit: 10 },
-        {
-          number: '001',
-          assignedUserId,
-          status: WorkOrderStatus.IN_PROGRESS,
-        },
-      );
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { number });
 
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            number: { contains: '001', mode: 'insensitive' },
-            assignedUserId,
-            status: WorkOrderStatus.IN_PROGRESS,
-          }),
+          where: expect.objectContaining({ number: { contains: number, mode: 'insensitive' } }),
         }),
       );
     });
 
-    it('should apply statusNotIn as { notIn: [...] } when no explicit status', async () => {
+    it('should filter by assignedUserId', async () => {
+      const assignedUserId = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { assignedUserId });
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ assignedUserId }) }),
+      );
+    });
+
+    it('should pass orderBy status:desc as statusInfo.priority desc to findMany', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, [
+        { field: 'status', direction: SortDirection.DESC },
+        { field: 'createdAt', direction: SortDirection.ASC },
+      ]);
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ statusInfo: { priority: 'desc' } }, { createdAt: 'asc' }],
+        }),
+      );
+    });
+
+    it('should pass orderBy status:asc as statusInfo.priority asc to findMany', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {}, [
+        { field: 'status', direction: SortDirection.ASC },
+      ]);
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ statusInfo: { priority: 'asc' } }],
+        }),
+      );
+    });
+
+    it('should apply statusNotIn as { notIn: [...] }', async () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
@@ -202,7 +247,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should leave where.status undefined when neither status nor statusNotIn are provided', async () => {
+    it('should leave where.status undefined when neither status nor statusNotIn provided', async () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
@@ -356,7 +401,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should throw ConcurrencyException on P2002 (duplicate service item)', async () => {
+    it('should throw ResourceConflictException on P2002 (duplicate service item)', async () => {
       const workOrder = WorkOrder.create({
         number: '000001',
         customerId: randomUUID(),
@@ -556,7 +601,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should throw ConcurrencyException on P2002 (duplicate part supply item)', async () => {
+    it('should throw ResourceConflictException on P2002 (duplicate part supply item)', async () => {
       const workOrder = WorkOrder.create({
         number: '000001',
         customerId: randomUUID(),

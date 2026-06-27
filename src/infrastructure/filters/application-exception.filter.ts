@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { ApplicationException } from '@application/exceptions/application.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
@@ -21,6 +22,10 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
   }
 
   private resolveHttpStatus(exception: ApplicationException): { status: number; error: string } {
+    if (exception instanceof BadRequestException) {
+      return { status: HttpStatus.BAD_REQUEST, error: 'Bad Request' };
+    }
+
     if (exception instanceof ResourceNotFoundException) {
       return { status: HttpStatus.NOT_FOUND, error: 'Not Found' };
     }

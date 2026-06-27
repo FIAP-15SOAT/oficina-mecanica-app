@@ -2,6 +2,7 @@ import { WorkOrder } from '../../entities/work-order.entity';
 import { WorkOrderService } from '../../entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '../../entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '../../enums/work-order-status.enum';
+import { SortCriterion } from '../common/sort-criterion';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface WorkOrderFilters {
@@ -20,6 +21,7 @@ export interface IWorkOrderRepository {
   findAllPaginated(
     pagination: PaginationInput,
     filters: WorkOrderFilters,
+    sort?: SortCriterion[],
   ): Promise<PaginatedRepositoryResult<WorkOrder>>;
   update(workOrder: WorkOrder): Promise<WorkOrder>;
   generateNextNumber(): Promise<string>;

@@ -102,6 +102,19 @@ describe('WorkOrderController', () => {
     );
   });
 
+  it('should forward sort to use case', async () => {
+    findAllPaginatedUseCase.execute.mockResolvedValue({
+      items: [],
+      pagination: { page: 1, limit: 10, totalRecords: 0, totalPages: 0 },
+    });
+
+    await controller.findAll({ page: 1, limit: 10, sort: 'createdAt:asc' });
+
+    expect(findAllPaginatedUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: 'createdAt:asc' }),
+    );
+  });
+
   it('should find one work order', async () => {
     const id = randomUUID();
     const customer = createMockCustomer();

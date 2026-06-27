@@ -14,8 +14,9 @@ import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
+import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
-import { paginate } from '@infrastructure/database/prisma/prisma-paginate.helper';
+import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
 
 const WORK_ORDER_LIST_INCLUDE = {
   customer: true,
@@ -80,11 +81,11 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
   async findAllPaginated(
     pagination: PaginationInput,
     filters: WorkOrderFilters,
+    sort?: SortCriterion[],
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
     const { number, customerId, vehicleId, assignedUserId, status, statusNotIn } = filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
-
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };
     if (customerId) where.customerId = customerId;
     if (vehicleId) where.vehicleId = vehicleId;
@@ -92,20 +93,23 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (status) where.status = status;
     else if (statusNotIn?.length) where.status = { notIn: statusNotIn };
 
+    // status:desc → most urgent first (IN_PROGRESS, priority 1) → ORDER BY priority ASC
+    // status:asc  → least urgent first (DELIVERED, priority 9) → ORDER BY priority DESC
+    const orderBy: Prisma.WorkOrderOrderByWithRelationInput[] = (sort ?? []).map((criterion) => {
+      if (criterion.field === 'status') {
+        return { statusInfo: { priority: criterion.direction } };
+      }
+      return { [criterion.field]: criterion.direction };
+    });
+
     const result = await paginate(
       this.prisma.workOrder,
-      {
-        where,
-        orderBy: { createdAt: 'desc' },
-        include: WORK_ORDER_LIST_INCLUDE,
-      },
+      { where, orderBy, include: WORK_ORDER_LIST_INCLUDE },
       pagination,
     );
 
     return {
-      items: result.items.map((r) =>
-        WorkOrderMapper.toDomain(r as Parameters<typeof WorkOrderMapper.toDomain>[0]),
-      ),
+      items: result.items.map((item) => WorkOrderMapper.toDomain(item)),
       total: result.total,
     };
   }

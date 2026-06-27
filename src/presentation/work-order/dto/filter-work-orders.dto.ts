@@ -34,6 +34,14 @@ export class FilterWorkOrdersDto {
     message: `status deve ser um dos seguintes: ${Object.values(WorkOrderStatus).join(', ')}`,
   })
   status?: WorkOrderStatus;
+
+  @ApiPropertyOptional({
+    description: 'Critérios de ordenação no formato campo:direção separados por vírgula. Ex: status:desc,createdAt:asc. Campos permitidos: status, createdAt. Padrão: status:desc,createdAt:asc',
+    example: 'status:desc,createdAt:asc',
+  })
+  @IsOptional()
+  @IsString({ message: 'O parâmetro sort deve ser uma string.' })
+  sort?: string;
 }
 
 export class FindAllWorkOrdersPaginatedQueryDto extends IntersectionType(

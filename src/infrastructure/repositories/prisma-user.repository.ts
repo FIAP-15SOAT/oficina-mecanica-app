@@ -12,7 +12,7 @@ import {
 } from '@domain/interfaces/common/pagination.interface';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { UserMapper } from '../mappers/user.mapper';
-import { paginate } from '../database/prisma/prisma-paginate.helper';
+import { paginate } from '../database/prisma/helpers/prisma-paginate.helper';
 
 @Injectable()
 export class PrismaUserRepository implements IUserRepository {
