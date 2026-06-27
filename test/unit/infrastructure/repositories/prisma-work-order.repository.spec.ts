@@ -156,7 +156,7 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
-    it('should pass orderBy status:desc as statusDef.priority asc to findMany', async () => {
+    it('should pass orderBy status:desc as statusInfo.priority asc to findMany', async () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
@@ -167,12 +167,12 @@ describe('PrismaWorkOrderRepository', () => {
 
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          orderBy: [{ statusDef: { priority: 'asc' } }, { createdAt: 'asc' }],
+          orderBy: [{ statusInfo: { priority: 'asc' } }, { createdAt: 'asc' }],
         }),
       );
     });
 
-    it('should pass orderBy status:asc as statusDef.priority desc to findMany', async () => {
+    it('should pass orderBy status:asc as statusInfo.priority desc to findMany', async () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
@@ -182,7 +182,7 @@ describe('PrismaWorkOrderRepository', () => {
 
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          orderBy: [{ statusDef: { priority: 'desc' } }],
+          orderBy: [{ statusInfo: { priority: 'desc' } }],
         }),
       );
     });

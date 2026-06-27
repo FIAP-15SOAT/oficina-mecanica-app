@@ -99,7 +99,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     const orderBy: Prisma.WorkOrderOrderByWithRelationInput[] = (sort ?? []).map((criterion) => {
       if (criterion.field === 'status') {
         const dir = criterion.direction === SortDirection.DESC ? SortDirection.ASC : SortDirection.DESC;
-        return { statusDef: { priority: dir } };
+        return { statusInfo: { priority: dir } };
       }
       return { [criterion.field]: criterion.direction };
     });

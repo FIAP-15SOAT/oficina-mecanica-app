@@ -9,7 +9,7 @@ import { seedCustomers } from './seeds/customer.seed';
 import { seedVehicles } from './seeds/vehicle.seed';
 import { seedPartSupplies } from './seeds/part-supply.seed';
 import { seedWorkOrders } from './seeds/work-order.seed';
-import { seedWorkOrderStatusDefs } from './seeds/work-order-status-def.seed';
+import { seedWorkOrderStatusInfos } from './seeds/work-order-status-info.seed';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -17,7 +17,7 @@ const prisma = new PrismaClient({ adapter });
 async function main(): Promise<void> {
   console.log('🚀 Starting database seed...\n');
 
-  await seedWorkOrderStatusDefs(prisma);
+  await seedWorkOrderStatusInfos(prisma);
   await seedUsers(prisma);
   await seedPartSupplies(prisma);
   const serviceIds = await seedServices(prisma);
