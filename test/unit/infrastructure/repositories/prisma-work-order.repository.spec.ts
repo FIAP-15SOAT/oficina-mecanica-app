@@ -98,11 +98,13 @@ describe('PrismaWorkOrderRepository', () => {
       prisma.workOrder.findMany.mockResolvedValue([]);
       prisma.workOrder.count.mockResolvedValue(0);
 
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+      const result = await repository.findAllPaginated({ page: 3, limit: 5 }, {});
 
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
-      expect(prisma.workOrder.findMany).toHaveBeenCalled();
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: 5 }),
+      );
       expect(prisma.workOrder.count).toHaveBeenCalled();
     });
 
@@ -183,17 +185,6 @@ describe('PrismaWorkOrderRepository', () => {
         expect.objectContaining({
           orderBy: [{ statusInfo: { priority: 'asc' } }],
         }),
-      );
-    });
-
-    it('should apply pagination skip and take', async () => {
-      prisma.workOrder.findMany.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
-
-      await repository.findAllPaginated({ page: 3, limit: 5 }, {});
-
-      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 10, take: 5 }),
       );
     });
 
