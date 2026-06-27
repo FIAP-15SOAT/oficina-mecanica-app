@@ -95,13 +95,19 @@ describe('PrismaWorkOrderRepository', () => {
 
   describe('findAllPaginated', () => {
     it('should return paginated work orders without filters', async () => {
-      prisma.workOrder.findMany.mockResolvedValue([]);
-      prisma.workOrder.count.mockResolvedValue(0);
+      const id1 = randomUUID();
+      const id2 = randomUUID();
+      prisma.workOrder.findMany.mockResolvedValue([
+        { id: id1, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
+        { id: id2, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
+      ]);
+      prisma.workOrder.count.mockResolvedValue(2);
 
       const result = await repository.findAllPaginated({ page: 3, limit: 5 }, {});
 
-      expect(result.items).toEqual([]);
-      expect(result.total).toBe(0);
+      expect(result.total).toBe(2);
+      expect(result.items[0]).toMatchObject({ id: id1 });
+      expect(result.items[1]).toMatchObject({ id: id2 });
       expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 10, take: 5 }),
       );
@@ -187,22 +193,6 @@ describe('PrismaWorkOrderRepository', () => {
           orderBy: [{ statusInfo: { priority: 'asc' } }],
         }),
       );
-    });
-
-    it('should return mapped domain items', async () => {
-      const id1 = randomUUID();
-      const id2 = randomUUID();
-      prisma.workOrder.findMany.mockResolvedValue([
-        { id: id1, number: '000001', status: WorkOrderStatus.IN_PROGRESS, createdAt: new Date() },
-        { id: id2, number: '000002', status: WorkOrderStatus.RECEIVED, createdAt: new Date() },
-      ]);
-      prisma.workOrder.count.mockResolvedValue(2);
-
-      const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
-
-      expect(result.total).toBe(2);
-      expect(result.items[0]).toMatchObject({ id: id1 });
-      expect(result.items[1]).toMatchObject({ id: id2 });
     });
 
     it('should apply statusNotIn as { notIn: [...] }', async () => {
