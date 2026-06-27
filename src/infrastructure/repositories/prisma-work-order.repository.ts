@@ -15,7 +15,6 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
-import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { WorkOrderMapper } from '@infrastructure/mappers/work-order.mapper';
 import { paginate } from '@infrastructure/database/prisma/helpers/prisma-paginate.helper';
 
@@ -98,8 +97,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     // status:asc  → least urgent first (DELIVERED, priority 9) → ORDER BY priority DESC
     const orderBy: Prisma.WorkOrderOrderByWithRelationInput[] = (sort ?? []).map((criterion) => {
       if (criterion.field === 'status') {
-        const dir = criterion.direction === SortDirection.DESC ? SortDirection.ASC : SortDirection.DESC;
-        return { statusInfo: { priority: dir } };
+        return { statusInfo: { priority: criterion.direction } };
       }
       return { [criterion.field]: criterion.direction };
     });

@@ -114,7 +114,8 @@
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
       "!src/**/*.dto.ts",
-      "!src/infrastructure/database/prisma/prisma.service.ts"
+      "!src/infrastructure/database/prisma/prisma.service.ts",
+      "!src/domain/constants/**"
     ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node",
