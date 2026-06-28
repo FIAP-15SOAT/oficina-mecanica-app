@@ -825,9 +825,11 @@ Arquivos em `k8s/`:
 
 - `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT` e `TZ`)
-- `03-api-deployment.yaml`: deployment com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
-- `04-api-service.yaml`: Service `ClusterIP`
-- `05-api-hpa.yaml`: autoscaling por CPU e memória (HPA v2)
+- `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
+- `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
+- `04-api-service.yaml`: Service `ClusterIP` da API
+- `04-mailhog-service.yaml`: Service `ClusterIP` do MailHog, expondo as portas SMTP (`1025`) e Web UI (`8025`) para acesso interno ao cluster
+- `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2)
 
 ### Acesso à aplicação em Kubernetes
 
