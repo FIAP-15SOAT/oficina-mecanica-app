@@ -36,7 +36,8 @@ export class FilterWorkOrdersDto {
   status?: WorkOrderStatus;
 
   @ApiPropertyOptional({
-    description: 'Critérios de ordenação no formato campo:direção separados por vírgula. Ex: status:desc,createdAt:asc. Campos permitidos: status, createdAt. Padrão: status:desc,createdAt:asc',
+    description:
+      'Critérios de ordenação no formato campo:direção separados por vírgula. Ex: status:desc,createdAt:asc. Campos permitidos: status, createdAt. Padrão: status:desc,createdAt:asc',
     example: 'status:desc,createdAt:asc',
   })
   @IsOptional()

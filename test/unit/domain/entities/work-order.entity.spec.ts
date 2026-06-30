@@ -620,9 +620,7 @@ describe('WorkOrder Entity', () => {
     });
 
     it('should throw with the unknown field name in the message', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['number'])).toThrow(
-        /number/,
-      );
+      expect(() => WorkOrder.validateAllowedSortFields(['number'])).toThrow(/number/);
     });
 
     it('should throw on the first invalid field', () => {
