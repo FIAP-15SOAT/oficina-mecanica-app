@@ -63,4 +63,21 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
+  {
+    files: ['src/domain/**/*.ts', 'src/application/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@nestjs/*', '@nestjs/**', '@generated/*', '@generated/**'],
+              message:
+                'Camada interna (domain/application) deve ser livre de framework e ORM: não importe @nestjs/* nem @generated/* (Prisma).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
