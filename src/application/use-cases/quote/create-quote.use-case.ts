@@ -1,6 +1,6 @@
 import { Quote } from '@domain/entities/quote.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { CreateQuoteDto } from '@domain/interfaces/use-cases/quote/dto/create-quote.dto';
+import { CreateQuoteDto } from '@application/ports/input/quote/dto/create-quote.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { QuoteItemValidator } from '@application/services/quote-item-validator';
 

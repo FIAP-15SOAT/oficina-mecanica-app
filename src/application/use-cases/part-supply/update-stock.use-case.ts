@@ -2,8 +2,8 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { UpdateStockDto } from '@domain/interfaces/use-cases/part-supply/dto/update-stock.dto';
-import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/update-stock.use-case.interface';
+import { UpdateStockDto } from '@application/ports/input/part-supply/dto/update-stock.dto';
+import { IUpdateStockUseCase } from '@application/ports/input/part-supply/update-stock.use-case.interface';
 
 export class UpdateStockUseCase implements IUpdateStockUseCase {
   constructor(private readonly unitOfWork: IUnitOfWork) {}

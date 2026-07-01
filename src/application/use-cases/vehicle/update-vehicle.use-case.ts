@@ -3,8 +3,8 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { UpdateVehicleDto } from '@domain/interfaces/use-cases/vehicle/dto/update-vehicle.dto';
-import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
+import { UpdateVehicleDto } from '@application/ports/input/vehicle/dto/update-vehicle.dto';
+import { IUpdateVehicleUseCase } from '@application/ports/input/vehicle/update-vehicle.use-case.interface';
 import { Plate } from '@domain/value-objects/plate.vo';
 
 export class UpdateVehicleUseCase implements IUpdateVehicleUseCase {

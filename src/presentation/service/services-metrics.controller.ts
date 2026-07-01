@@ -13,7 +13,7 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
 import { UserRole } from '@domain/enums/user-role.enum';
-import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@application/ports/input/service/find-all-services-metrics.use-case.interface';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ServiceMetricsPaginatedResponseDto } from './dto/service-metrics-response.dto';
 import { ServiceMetricsPresenter } from './service-metrics.presenter';

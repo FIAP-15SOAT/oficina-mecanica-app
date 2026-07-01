@@ -6,7 +6,7 @@ import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id
 import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { IHashService } from '@application/ports/output/hash.service.interface';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 import { UserController } from './user.controller';
 

@@ -36,12 +36,12 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
 import { UserRole } from '@domain/enums/user-role.enum';
-import { ICreatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/create-part-supply.use-case.interface';
-import { IFindPartSupplyByIdUseCase } from '@domain/interfaces/use-cases/part-supply/find-part-supply-by-id.use-case.interface';
-import { IFindAllPartsSuppliesUseCase } from '@domain/interfaces/use-cases/part-supply/find-all-parts-supplies.use-case.interface';
-import { IUpdatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/update-part-supply.use-case.interface';
-import { IDeletePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/delete-part-supply.use-case.interface';
-import { IUpdateStockUseCase } from '@domain/interfaces/use-cases/part-supply/update-stock.use-case.interface';
+import { ICreatePartSupplyUseCase } from '@application/ports/input/part-supply/create-part-supply.use-case.interface';
+import { IFindPartSupplyByIdUseCase } from '@application/ports/input/part-supply/find-part-supply-by-id.use-case.interface';
+import { IFindAllPartsSuppliesUseCase } from '@application/ports/input/part-supply/find-all-parts-supplies.use-case.interface';
+import { IUpdatePartSupplyUseCase } from '@application/ports/input/part-supply/update-part-supply.use-case.interface';
+import { IDeletePartSupplyUseCase } from '@application/ports/input/part-supply/delete-part-supply.use-case.interface';
+import { IUpdateStockUseCase } from '@application/ports/input/part-supply/update-stock.use-case.interface';
 
 import { CreatePartSupplyRequestDto } from './dto/create-part-supply-request.dto';
 import { UpdatePartSupplyRequestDto } from './dto/update-part-supply-request.dto';

@@ -1,7 +1,7 @@
 import {
   UpdateUserDto,
   UpdateUserOutputDto,
-} from '@domain/interfaces/use-cases/user/dto/update-user.dto';
+} from '@application/ports/input/user/dto/update-user.dto';
 
 export interface IUpdateUserUseCase {
   execute(id: string, updateUserDto: UpdateUserDto): Promise<UpdateUserOutputDto>;

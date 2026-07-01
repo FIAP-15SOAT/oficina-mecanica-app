@@ -3,7 +3,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import {
   IEmailSenderService,
   SendEmailInput,
-} from '@domain/interfaces/services/email-sender.service.interface';
+} from '@application/ports/output/email-sender.service.interface';
 import { ServiceIntegrationException } from '@infrastructure/exceptions/service-integration.exception';
 
 @Injectable()

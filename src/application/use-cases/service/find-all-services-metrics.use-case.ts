@@ -2,7 +2,7 @@ import {
   ServiceMetrics,
   IServiceRepository,
 } from '@domain/interfaces/repositories/service.repository.interface';
-import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@application/ports/input/service/find-all-services-metrics.use-case.interface';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 

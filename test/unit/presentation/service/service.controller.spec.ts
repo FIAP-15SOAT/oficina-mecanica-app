@@ -3,16 +3,16 @@ import { ServiceController } from '@presentation/service/service.controller';
 import { createMockService } from '../../../helpers/service-mock.factory';
 import { CreateServiceRequestDto } from '@presentation/service/dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from '@presentation/service/dto/update-service-request.dto';
-import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
-import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
-import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
-import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
-import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
+import { ICreateServiceUseCase } from '@application/ports/input/service/create-service.use-case.interface';
+import { IFindServiceByIdUseCase } from '@application/ports/input/service/find-service-by-id.use-case.interface';
+import { IFindAllServicesPaginatedUseCase } from '@application/ports/input/service/find-all-services-paginated.use-case.interface';
+import { IUpdateServiceUseCase } from '@application/ports/input/service/update-service.use-case.interface';
+import { IDeleteServiceUseCase } from '@application/ports/input/service/delete-service.use-case.interface';
 import {
   IFindServiceMetricsUseCase,
   ServiceMetrics,
-} from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
-import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
+} from '@application/ports/input/service/find-service-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@application/ports/input/service/find-all-services-metrics.use-case.interface';
 
 describe('ServiceController', () => {
   let controller: ServiceController;

@@ -1,6 +1,6 @@
 import { StockReservationsController } from '@presentation/stock/stock-reservations.controller';
 import { randomUUID } from 'node:crypto';
-import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/stock/find-stock-reservations.use-case.interface';
+import { IFindStockReservationsUseCase } from '@application/ports/input/stock/find-stock-reservations.use-case.interface';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';

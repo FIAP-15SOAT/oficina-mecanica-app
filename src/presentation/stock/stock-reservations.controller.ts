@@ -14,7 +14,7 @@ import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { IFindStockReservationsUseCase } from '@domain/interfaces/use-cases/stock/find-stock-reservations.use-case.interface';
+import { IFindStockReservationsUseCase } from '@application/ports/input/stock/find-stock-reservations.use-case.interface';
 
 import { StockPresenter } from './stock.presenter';
 

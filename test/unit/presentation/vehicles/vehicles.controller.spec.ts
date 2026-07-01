@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { VehiclesController } from '@presentation/vehicles/vehicles.controller';
 import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
-import { ICreateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/create-vehicle.use-case.interface';
-import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/find-all-vehicles.use-case.interface';
-import { IFindVehicleByIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicle-by-id.use-case.interface';
-import { IUpdateVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/update-vehicle.use-case.interface';
-import { IDeleteVehicleUseCase } from '@domain/interfaces/use-cases/vehicle/delete-vehicle.use-case.interface';
+import { ICreateVehicleUseCase } from '@application/ports/input/vehicle/create-vehicle.use-case.interface';
+import { IFindAllVehiclesUseCase } from '@application/ports/input/vehicle/find-all-vehicles.use-case.interface';
+import { IFindVehicleByIdUseCase } from '@application/ports/input/vehicle/find-vehicle-by-id.use-case.interface';
+import { IUpdateVehicleUseCase } from '@application/ports/input/vehicle/update-vehicle.use-case.interface';
+import { IDeleteVehicleUseCase } from '@application/ports/input/vehicle/delete-vehicle.use-case.interface';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { Plate } from '@domain/value-objects/plate.vo';
 

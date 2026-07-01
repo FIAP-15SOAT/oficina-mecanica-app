@@ -2,8 +2,8 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { Customer } from '@domain/entities/customer.entity';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/update-customer.dto';
-import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
+import { UpdateCustomerDto } from '@application/ports/input/customer/dto/update-customer.dto';
+import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
 

@@ -9,14 +9,14 @@ import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { createMockQuote } from '../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
-import { ICreateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/create-work-order.use-case.interface';
-import { IFindWorkOrderByIdUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-by-id.use-case.interface';
-import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases/work-order/find-all-work-orders-paginated.use-case.interface';
-import { IUpdateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order.use-case.interface';
-import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-status.use-case.interface';
-import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
-import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
+import { ICreateWorkOrderUseCase } from '@application/ports/input/work-order/create-work-order.use-case.interface';
+import { IFindWorkOrderByIdUseCase } from '@application/ports/input/work-order/find-work-order-by-id.use-case.interface';
+import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
+import { IUpdateWorkOrderUseCase } from '@application/ports/input/work-order/update-work-order.use-case.interface';
+import { IUpdateWorkOrderStatusUseCase } from '@application/ports/input/work-order/update-work-order-status.use-case.interface';
+import { IUpdateWorkOrderServiceStatusUseCase } from '@application/ports/input/work-order/update-work-order-service-status.use-case.interface';
+import { IFindWorkOrderStatusHistoryUseCase } from '@application/ports/input/work-order/find-work-order-status-history.use-case.interface';
+import { IFindWorkOrderQuotesUseCase } from '@application/ports/input/quote/find-work-order-quotes.use-case.interface';
 
 describe('WorkOrderController', () => {
   let controller: WorkOrderController;

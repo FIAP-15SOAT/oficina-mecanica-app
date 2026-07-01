@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { TokenPayload } from '@domain/interfaces/services/token.service.interface';
+import { TokenPayload } from '@application/ports/output/token.service.interface';
 
 /**
  * Alias de conveniência para TokenPayload.

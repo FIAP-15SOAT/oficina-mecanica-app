@@ -1,6 +1,6 @@
 import { ServicesMetricsController } from '@presentation/service/services-metrics.controller';
-import { IFindAllServicesMetricsUseCase } from '@domain/interfaces/use-cases/service/find-all-services-metrics.use-case.interface';
-import { ServiceMetrics } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import { IFindAllServicesMetricsUseCase } from '@application/ports/input/service/find-all-services-metrics.use-case.interface';
+import { ServiceMetrics } from '@application/ports/input/service/find-service-metrics.use-case.interface';
 import { randomUUID } from 'node:crypto';
 
 describe('ServicesMetricsController', () => {

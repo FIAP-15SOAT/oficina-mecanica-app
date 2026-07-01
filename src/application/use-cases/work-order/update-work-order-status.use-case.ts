@@ -1,7 +1,7 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { UpdateWorkOrderStatusDto } from '@domain/interfaces/use-cases/work-order/dto/update-work-order-status.dto';
+import { UpdateWorkOrderStatusDto } from '@application/ports/input/work-order/dto/update-work-order-status.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateWorkOrderStatusUseCase {

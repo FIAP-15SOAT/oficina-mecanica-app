@@ -1,8 +1,8 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import { CreatePartSupplyDto } from '@domain/interfaces/use-cases/part-supply/dto/create-part-supply.dto';
-import { ICreatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/create-part-supply.use-case.interface';
+import { CreatePartSupplyDto } from '@application/ports/input/part-supply/dto/create-part-supply.dto';
+import { ICreatePartSupplyUseCase } from '@application/ports/input/part-supply/create-part-supply.use-case.interface';
 
 export class CreatePartSupplyUseCase implements ICreatePartSupplyUseCase {
   constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}

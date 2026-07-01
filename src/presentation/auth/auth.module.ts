@@ -6,8 +6,8 @@ import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.u
 import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
-import { ITokenService } from '@domain/interfaces/services/token.service.interface';
+import { IHashService } from '@application/ports/output/hash.service.interface';
+import { ITokenService } from '@application/ports/output/token.service.interface';
 import { AuthController } from './auth.controller';
 
 @Module({

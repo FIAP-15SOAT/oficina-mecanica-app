@@ -1,7 +1,7 @@
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import { IFindPartSupplyByIdUseCase } from '@domain/interfaces/use-cases/part-supply/find-part-supply-by-id.use-case.interface';
+import { IFindPartSupplyByIdUseCase } from '@application/ports/input/part-supply/find-part-supply-by-id.use-case.interface';
 
 export class FindPartSupplyByIdUseCase implements IFindPartSupplyByIdUseCase {
   constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}

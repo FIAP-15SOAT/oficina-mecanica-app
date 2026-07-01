@@ -5,7 +5,7 @@ import {
   CustomerDataResponse,
   CustomerPaginatedResponse,
 } from '@interface-adapters/customer/responses/customer.response';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@application/ports/input/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 
 describe('CustomersController', () => {

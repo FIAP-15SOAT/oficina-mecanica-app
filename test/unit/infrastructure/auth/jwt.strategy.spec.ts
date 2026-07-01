@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { TokenPayload } from '@domain/interfaces/services/token.service.interface';
+import { TokenPayload } from '@application/ports/output/token.service.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { createMockUser, createMockUserRepository } from '../../../helpers/user-mock.factory';
 import { Email } from '@domain/value-objects/email.vo';

@@ -3,12 +3,12 @@ import {
   ITokenService,
   TokenPair,
   TokenPayload,
-} from '@domain/interfaces/services/token.service.interface';
+} from '@application/ports/output/token.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import {
   RefreshTokenInputDto,
   RefreshTokenOutputDto,
-} from '@domain/interfaces/use-cases/auth/dto/refresh-token.dto';
+} from '@application/ports/input/auth/dto/refresh-token.dto';
 
 export class RefreshTokenUseCase {
   constructor(

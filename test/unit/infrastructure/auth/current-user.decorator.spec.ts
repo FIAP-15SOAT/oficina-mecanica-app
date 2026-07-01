@@ -1,6 +1,6 @@
 import { ExecutionContext } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
-import { TokenPayload } from '@domain/interfaces/services/token.service.interface';
+import { TokenPayload } from '@application/ports/output/token.service.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { CurrentUser } from '@infrastructure/auth/current-user.decorator';
 

@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { CustomerController } from '@interface-adapters/customer/customer.controller';
 import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
-import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
-import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
-import { IFindCustomerByIdUseCase } from '@domain/interfaces/use-cases/customer/find-customer-by-id.use-case.interface';
-import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
-import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
+import { ICreateCustomerUseCase } from '@application/ports/input/customer/create-customer.use-case.interface';
+import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find-all-customers.use-case.interface';
+import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
+import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
+import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Email } from '@domain/value-objects/email.vo';

@@ -1,6 +1,6 @@
 import { User } from '@domain/entities/user.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
-import { UpdateWorkOrderDto } from '@domain/interfaces/use-cases/work-order/dto/update-work-order.dto';
+import { UpdateWorkOrderDto } from '@application/ports/input/work-order/dto/update-work-order.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';

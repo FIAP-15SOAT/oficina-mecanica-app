@@ -9,7 +9,7 @@ import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { Email } from '@domain/value-objects/email.vo';
-import { SendEmailInput } from '@domain/interfaces/services/email-sender.service.interface';
+import { SendEmailInput } from '@application/ports/output/email-sender.service.interface';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),

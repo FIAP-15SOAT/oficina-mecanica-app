@@ -1,7 +1,7 @@
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { Vehicle } from '@domain/entities/vehicle.entity';
-import { FindAllVehiclesInputDto } from '@domain/interfaces/use-cases/vehicle/dto/find-all-vehicles.dto';
-import { IFindAllVehiclesUseCase } from '@domain/interfaces/use-cases/vehicle/find-all-vehicles.use-case.interface';
+import { FindAllVehiclesInputDto } from '@application/ports/input/vehicle/dto/find-all-vehicles.dto';
+import { IFindAllVehiclesUseCase } from '@application/ports/input/vehicle/find-all-vehicles.use-case.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 

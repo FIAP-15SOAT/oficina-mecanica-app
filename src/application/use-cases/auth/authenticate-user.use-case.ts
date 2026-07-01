@@ -1,11 +1,11 @@
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
-import { ITokenService } from '@domain/interfaces/services/token.service.interface';
+import { IHashService } from '@application/ports/output/hash.service.interface';
+import { ITokenService } from '@application/ports/output/token.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import {
   AuthenticateUserInputDto,
   AuthenticateUserOutputDto,
-} from '@domain/interfaces/use-cases/auth/dto/authenticate-user.dto';
+} from '@application/ports/input/auth/dto/authenticate-user.dto';
 
 export class AuthenticateUserUseCase {
   constructor(

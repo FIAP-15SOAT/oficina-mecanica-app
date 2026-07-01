@@ -1,6 +1,6 @@
 import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-quote-status.use-case';
-import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
-import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
+import { IApproveQuoteUseCase } from '@application/ports/input/quote/approve-quote.use-case.interface';
+import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';

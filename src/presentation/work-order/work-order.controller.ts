@@ -34,14 +34,14 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { ICreateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/create-work-order.use-case.interface';
-import { IFindWorkOrderByIdUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-by-id.use-case.interface';
-import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases/work-order/find-all-work-orders-paginated.use-case.interface';
-import { IUpdateWorkOrderUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order.use-case.interface';
-import { IUpdateWorkOrderStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-status.use-case.interface';
-import { IUpdateWorkOrderServiceStatusUseCase } from '@domain/interfaces/use-cases/work-order/update-work-order-service-status.use-case.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@domain/interfaces/use-cases/work-order/find-work-order-status-history.use-case.interface';
-import { IFindWorkOrderQuotesUseCase } from '@domain/interfaces/use-cases/quote/find-work-order-quotes.use-case.interface';
+import { ICreateWorkOrderUseCase } from '@application/ports/input/work-order/create-work-order.use-case.interface';
+import { IFindWorkOrderByIdUseCase } from '@application/ports/input/work-order/find-work-order-by-id.use-case.interface';
+import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
+import { IUpdateWorkOrderUseCase } from '@application/ports/input/work-order/update-work-order.use-case.interface';
+import { IUpdateWorkOrderStatusUseCase } from '@application/ports/input/work-order/update-work-order-status.use-case.interface';
+import { IUpdateWorkOrderServiceStatusUseCase } from '@application/ports/input/work-order/update-work-order-service-status.use-case.interface';
+import { IFindWorkOrderStatusHistoryUseCase } from '@application/ports/input/work-order/find-work-order-status-history.use-case.interface';
+import { IFindWorkOrderQuotesUseCase } from '@application/ports/input/quote/find-work-order-quotes.use-case.interface';
 
 import { CreateWorkOrderRequestDto } from './dto/create-work-order-request.dto';
 import { UpdateWorkOrderRequestDto } from './dto/update-work-order-request.dto';

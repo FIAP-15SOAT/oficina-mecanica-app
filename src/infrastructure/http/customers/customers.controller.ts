@@ -36,7 +36,7 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
 import { CustomerController } from '@interface-adapters/customer/customer.controller';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@application/ports/input/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
 import { UserRole } from '@domain/enums/user-role.enum';
 

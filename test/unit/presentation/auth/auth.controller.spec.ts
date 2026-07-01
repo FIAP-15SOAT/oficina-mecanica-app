@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { AuthController } from '@presentation/auth/auth.controller';
-import { IAuthenticateUserUseCase } from '@domain/interfaces/use-cases/auth/authenticate-user.use-case.interface';
-import { IGetCurrentUserUseCase } from '@domain/interfaces/use-cases/auth/get-current-user.use-case.interface';
-import { IRefreshTokenUseCase } from '@domain/interfaces/use-cases/auth/refresh-token.use-case.interface';
+import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
+import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
+import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
 import { LoginRequestDto } from '@presentation/auth/dto/login-request.dto';
 import { RefreshTokenRequestDto } from '@presentation/auth/dto/refresh-token-request.dto';
 import { UserRole } from '@domain/enums/user-role.enum';

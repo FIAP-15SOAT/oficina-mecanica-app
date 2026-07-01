@@ -1,8 +1,8 @@
 import { Quote } from '@domain/entities/quote.entity';
-import { ITokenService } from '@domain/interfaces/services/token.service.interface';
-import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
-import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
-import { IEmailDecisionQuoteUseCase } from '@domain/interfaces/use-cases/quote/email-decision-quote.use-case.interface';
+import { ITokenService } from '@application/ports/output/token.service.interface';
+import { IApproveQuoteUseCase } from '@application/ports/input/quote/approve-quote.use-case.interface';
+import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
+import { IEmailDecisionQuoteUseCase } from '@application/ports/input/quote/email-decision-quote.use-case.interface';
 import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 import { TokenType } from '@domain/enums/token-type.enum';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';

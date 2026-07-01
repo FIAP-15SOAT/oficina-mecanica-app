@@ -3,8 +3,8 @@ import {
   IWorkOrderRepository,
   WorkOrderFilters,
 } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { IFindAllWorkOrdersPaginatedUseCase } from '@domain/interfaces/use-cases/work-order/find-all-work-orders-paginated.use-case.interface';
-import { FindAllWorkOrdersFilters } from '@domain/interfaces/use-cases/work-order/dto/find-all-work-orders.dto';
+import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
+import { FindAllWorkOrdersFilters } from '@application/ports/input/work-order/dto/find-all-work-orders.dto';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 import { parseSort } from '@application/utils/parse-sort.util';

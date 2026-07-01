@@ -4,12 +4,12 @@ import { createMockUser } from '../../../helpers/user-mock.factory';
 import { CreateUserRequestDto } from '@presentation/user/dto/create-user-request.dto';
 import { UpdateUserRequestDto } from '@presentation/user/dto/update-user-request.dto';
 import { UpdateUserStatusRequestDto } from '@presentation/user/dto/update-user-status-request.dto';
-import { ICreateUserUseCase } from '@domain/interfaces/use-cases/user/create-user.use-case.interface';
-import { IFindUserByIdUseCase } from '@domain/interfaces/use-cases/user/find-user-by-id.use-case.interface';
-import { IFindAllUsersUseCase } from '@domain/interfaces/use-cases/user/find-all-users.use-case.interface';
-import { IUpdateUserUseCase } from '@domain/interfaces/use-cases/user/update-user.use-case.interface';
-import { IUpdateUserStatusUseCase } from '@domain/interfaces/use-cases/user/update-user-status.use-case.interface';
-import { IDeleteUserUseCase } from '@domain/interfaces/use-cases/user/delete-user.use-case.interface';
+import { ICreateUserUseCase } from '@application/ports/input/user/create-user.use-case.interface';
+import { IFindUserByIdUseCase } from '@application/ports/input/user/find-user-by-id.use-case.interface';
+import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-users.use-case.interface';
+import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
+import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
+import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
 

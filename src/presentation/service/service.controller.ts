@@ -36,13 +36,13 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 
 import { UserRole } from '@domain/enums/user-role.enum';
-import { ICreateServiceUseCase } from '@domain/interfaces/use-cases/service/create-service.use-case.interface';
-import { IDeleteServiceUseCase } from '@domain/interfaces/use-cases/service/delete-service.use-case.interface';
-import { IFindAllServicesPaginatedUseCase } from '@domain/interfaces/use-cases/service/find-all-services-paginated.use-case.interface';
-import { IFindServiceByIdUseCase } from '@domain/interfaces/use-cases/service/find-service-by-id.use-case.interface';
+import { ICreateServiceUseCase } from '@application/ports/input/service/create-service.use-case.interface';
+import { IDeleteServiceUseCase } from '@application/ports/input/service/delete-service.use-case.interface';
+import { IFindAllServicesPaginatedUseCase } from '@application/ports/input/service/find-all-services-paginated.use-case.interface';
+import { IFindServiceByIdUseCase } from '@application/ports/input/service/find-service-by-id.use-case.interface';
 
-import { IUpdateServiceUseCase } from '@domain/interfaces/use-cases/service/update-service.use-case.interface';
-import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import { IUpdateServiceUseCase } from '@application/ports/input/service/update-service.use-case.interface';
+import { IFindServiceMetricsUseCase } from '@application/ports/input/service/find-service-metrics.use-case.interface';
 import { ServicePaginatedResponseDto } from './dto/service-paginated-response.dto';
 import { ServiceDataResponseDto } from './dto/service-response.dto';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
