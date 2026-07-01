@@ -14,7 +14,7 @@ import { AuthModule } from './presentation/auth/auth.module';
 import { UserModule } from './presentation/user/user.module';
 import { ServiceModule } from './presentation/service/service.module';
 import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplies.module';
-import { CustomersModule } from './presentation/customers/customers.module';
+import { CustomersModule } from './infrastructure/http/customers/customers.module';
 import { VehiclesModule } from './presentation/vehicles/vehicles.module';
 import { WorkOrderModule } from './presentation/work-order/work-order.module';
 import { QuoteModule } from './presentation/quote/quote.module';

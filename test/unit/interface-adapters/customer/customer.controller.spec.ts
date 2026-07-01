@@ -1,27 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import { CustomersController } from '@presentation/customers/customers.controller';
+import { CustomerController } from '@interface-adapters/customer/customer.controller';
+import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
 import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
 import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
 import { IFindCustomerByIdUseCase } from '@domain/interfaces/use-cases/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { Vehicle } from '@domain/entities/vehicle.entity';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
-import { CustomerPresenter } from '@presentation/customers/customer.presenter';
 
-describe('CustomersController', () => {
-  let controller: CustomersController;
+describe('CustomerController', () => {
+  let controller: CustomerController;
   let createUseCase: jest.Mocked<ICreateCustomerUseCase>;
   let findAllUseCase: jest.Mocked<IFindAllCustomersUseCase>;
   let findByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateCustomerUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteCustomerUseCase>;
-  let findVehiclesUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -29,20 +26,18 @@ describe('CustomersController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
-    findVehiclesUseCase = { execute: jest.fn() };
-    controller = new CustomersController(
+    controller = new CustomerController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
-      findVehiclesUseCase,
     );
   });
 
   describe('create', () => {
     it('should return customer wrapped in data', async () => {
-      const dto = {
+      const input = {
         name: 'João da Silva',
         document: '123.456.789-09',
         type: CustomerType.INDIVIDUAL,
@@ -55,33 +50,34 @@ describe('CustomersController', () => {
           zipCode: '01310100',
         },
       };
+
       const created = createMockCustomer({
-        name: dto.name,
-        document: Document.create(dto.document, dto.type),
-        type: dto.type,
-        email: Email.create(dto.email),
-        phone: Phone.create(dto.phone),
+        name: input.name,
+        document: Document.create(input.document, input.type),
+        type: input.type,
+        email: Email.create(input.email),
+        phone: Phone.create(input.phone),
       });
+
       createUseCase.execute.mockResolvedValue(created);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(input);
 
       expect(result).toEqual(CustomerPresenter.toDataResponse(created));
-      expect(createUseCase.execute).toHaveBeenCalledWith(dto);
+      expect(createUseCase.execute).toHaveBeenCalledWith(input);
     });
   });
 
   describe('findAll', () => {
-    it('should return paginated response', async () => {
+    it('should default page and limit when missing and forward filters', async () => {
       const customers = [createMockCustomer(), createMockCustomer()];
-      const useCaseOutput = {
+
+      findAllUseCase.execute.mockResolvedValue({
         items: customers,
         pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
-      };
-      findAllUseCase.execute.mockResolvedValue(useCaseOutput);
+      });
 
-      const query = { page: 1, limit: 10 };
-      const result = await controller.findAll(query);
+      const result = await controller.findAll({ name: 'João' });
 
       expect(result).toEqual(
         CustomerPresenter.toPaginatedDataResponse({
@@ -89,49 +85,19 @@ describe('CustomersController', () => {
           pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
         }),
       );
-      expect(findAllUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 10 }),
-      );
+
+      expect(findAllUseCase.execute).toHaveBeenCalledWith({ page: 1, limit: 10, name: 'João' });
     });
 
-    it('should forward name, type and document filters', async () => {
+    it('should forward provided page and limit', async () => {
       findAllUseCase.execute.mockResolvedValue({
         items: [],
-        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+        pagination: { totalRecords: 0, totalPages: 0, page: 2, limit: 5 },
       });
 
-      const query = {
-        page: 1,
-        limit: 10,
-        name: 'João',
-        type: CustomerType.INDIVIDUAL,
-        document: '123.456.789-09',
-      };
-      await controller.findAll(query);
+      await controller.findAll({ page: 2, limit: 5 });
 
-      expect(findAllUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          page: 1,
-          limit: 10,
-          name: 'João',
-          type: CustomerType.INDIVIDUAL,
-          document: '123.456.789-09',
-        }),
-      );
-    });
-
-    it('should use default values when page and limit are missing', async () => {
-      findAllUseCase.execute.mockResolvedValue({
-        items: [],
-        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
-      });
-
-      const query = {};
-      await controller.findAll(query);
-
-      expect(findAllUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 10 }),
-      );
+      expect(findAllUseCase.execute).toHaveBeenCalledWith({ page: 2, limit: 5 });
     });
   });
 
@@ -152,36 +118,23 @@ describe('CustomersController', () => {
       const updated = createMockCustomer({ name: 'Novo Nome' });
       updateUseCase.execute.mockResolvedValue(updated);
 
-      const result = await controller.update(updated.id, {
-        name: 'Novo Nome',
-      } as unknown as Parameters<typeof controller.update>[1]);
+      const input = { name: 'Novo Nome' } as unknown as Parameters<typeof controller.update>[1];
+
+      const result = await controller.update(updated.id, input);
 
       expect(result).toEqual(CustomerPresenter.toDataResponse(updated));
-      expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, { name: 'Novo Nome' });
+      expect(updateUseCase.execute).toHaveBeenCalledWith(updated.id, input);
     });
   });
 
   describe('remove', () => {
-    it('should call delete use case with correct id', async () => {
+    it('should call the delete use case with the correct id', async () => {
       const id = randomUUID();
       deleteUseCase.execute.mockResolvedValue(undefined);
 
       await controller.remove(id);
 
       expect(deleteUseCase.execute).toHaveBeenCalledWith(id);
-    });
-  });
-
-  describe('findVehiclesByCustomerId', () => {
-    it('should return vehicles for customer', async () => {
-      const id = randomUUID();
-      const vehicles: Vehicle[] = [];
-      findVehiclesUseCase.execute.mockResolvedValue(vehicles);
-
-      const result = await controller.findVehiclesByCustomerId(id);
-
-      expect(result).toEqual({ data: [] });
-      expect(findVehiclesUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
 });

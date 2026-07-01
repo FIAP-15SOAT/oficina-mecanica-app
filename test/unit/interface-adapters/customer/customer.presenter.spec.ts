@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
+
 import { Customer } from '@domain/entities/customer.entity';
-import { Address } from '@domain/value-objects/address.vo';
-import { CustomerType } from '@domain/enums/customer-type.enum';
-import { CustomerPresenter } from '@presentation/customers/customer.presenter';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { Address } from '@domain/value-objects/address.vo';
+import { CustomerType } from '@domain/enums/customer-type.enum';
+
+import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
 
 describe('CustomerPresenter', () => {
   const customerId = randomUUID();
@@ -35,7 +37,7 @@ describe('CustomerPresenter', () => {
   }
 
   describe('toResponse', () => {
-    it('should map customer without address to response DTO', () => {
+    it('should map customer without address to a pure response', () => {
       const customer = makeCustomer(false);
       const result = CustomerPresenter.toResponse(customer);
 
@@ -48,7 +50,7 @@ describe('CustomerPresenter', () => {
       expect(result.address).toBeNull();
     });
 
-    it('should map customer with address to response DTO including address fields', () => {
+    it('should map customer with address including address fields', () => {
       const customer = makeCustomer(true);
       const result = CustomerPresenter.toResponse(customer);
 
@@ -71,7 +73,7 @@ describe('CustomerPresenter', () => {
   });
 
   describe('toPaginatedDataResponse', () => {
-    it('should map paginated result to paginated response DTO', () => {
+    it('should map paginated result to paginated response', () => {
       const customers = [makeCustomer(false), makeCustomer(true)];
       const result = CustomerPresenter.toPaginatedDataResponse({
         items: customers,

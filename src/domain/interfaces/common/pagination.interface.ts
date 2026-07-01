@@ -25,6 +25,14 @@ export interface PaginationInput {
 }
 
 /**
+ * Input de paginação opcional (query de listagem); os defaults são aplicados no controller.
+ */
+export interface PaginationQuery {
+  page?: number;
+  limit?: number;
+}
+
+/**
  * Resultado paginado retornado pelos repositories.
  */
 export interface PaginatedRepositoryResult<T> {

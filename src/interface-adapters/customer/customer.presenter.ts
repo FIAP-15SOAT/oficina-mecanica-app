@@ -1,14 +1,14 @@
 import { Customer } from '@domain/entities/customer.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import {
-  AddressResponseDto,
-  CustomerDataResponseDto,
-  CustomerResponseDto,
-} from './dto/customer-response.dto';
-import { CustomerPaginatedResponseDto } from './dto/customer-paginated-response.dto';
+  AddressResponse,
+  CustomerDataResponse,
+  CustomerPaginatedResponse,
+  CustomerResponse,
+} from './responses/customer.response';
 
 export class CustomerPresenter {
-  static toResponse(customer: Customer): CustomerResponseDto {
+  static toResponse(customer: Customer): CustomerResponse {
     return {
       id: customer.id,
       name: customer.name,
@@ -22,7 +22,7 @@ export class CustomerPresenter {
     };
   }
 
-  private static toAddress(address: NonNullable<Customer['address']>): AddressResponseDto {
+  private static toAddress(address: NonNullable<Customer['address']>): AddressResponse {
     return {
       street: address.street,
       city: address.city,
@@ -31,11 +31,11 @@ export class CustomerPresenter {
     };
   }
 
-  static toDataResponse(customer: Customer): CustomerDataResponseDto {
+  static toDataResponse(customer: Customer): CustomerDataResponse {
     return { data: CustomerPresenter.toResponse(customer) };
   }
 
-  static toPaginatedDataResponse(result: PaginatedResult<Customer>): CustomerPaginatedResponseDto {
+  static toPaginatedDataResponse(result: PaginatedResult<Customer>): CustomerPaginatedResponse {
     return {
       data: result.items.map((c) => CustomerPresenter.toResponse(c)),
       pagination: result.pagination,

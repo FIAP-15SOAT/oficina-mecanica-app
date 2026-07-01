@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 
 export class FilterCustomersDto {
   @ApiPropertyOptional({ description: 'Filtrar por nome (busca parcial)', example: 'João' })

@@ -36,6 +36,7 @@
     "^@domain/(.*)$": "<rootDir>/src/domain/$1",
     "^@generated/(.*)$": "<rootDir>/prisma/generated/$1",
     "^@infrastructure/(.*)$": "<rootDir>/src/infrastructure/$1",
+    "^@interface-adapters/(.*)$": "<rootDir>/src/interface-adapters/$1",
     "^@presentation/(.*)$": "<rootDir>/src/presentation/$1",
     "^(\\.\\.?/.+)\\.js$": "$1"
   }

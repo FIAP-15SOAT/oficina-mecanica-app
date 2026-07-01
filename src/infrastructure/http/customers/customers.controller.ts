@@ -30,24 +30,25 @@ import {
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
-import { UserRole } from '@domain/enums/user-role.enum';
-import { ICreateCustomerUseCase } from '@domain/interfaces/use-cases/customer/create-customer.use-case.interface';
-import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
-import { IFindCustomerByIdUseCase } from '@domain/interfaces/use-cases/customer/find-customer-by-id.use-case.interface';
-import { IUpdateCustomerUseCase } from '@domain/interfaces/use-cases/customer/update-customer.use-case.interface';
-import { IDeleteCustomerUseCase } from '@domain/interfaces/use-cases/customer/delete-customer.use-case.interface';
+
+import { CustomerController } from '@interface-adapters/customer/customer.controller';
 import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
-import { CreateCustomerRequestDto } from './dto/create-customer-request.dto';
-import { UpdateCustomerRequestDto } from './dto/update-customer-request.dto';
-import { VehicleDataResponseDto, VehicleResponseDto } from '../vehicles/dto/vehicle-response.dto';
-import { VehiclePresenter } from '../vehicles/vehicle.presenter';
-import { CustomerDataResponseDto } from './dto/customer-response.dto';
-import { CustomerPaginatedResponseDto } from './dto/customer-paginated-response.dto';
-import { CustomerPresenter } from './customer.presenter';
-import { FindAllCustomersQueryDto } from './dto/filter-customers.dto';
+import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
+import { UserRole } from '@domain/enums/user-role.enum';
+
+import {
+  VehicleDataResponseDto,
+  VehicleResponseDto,
+} from '@presentation/vehicles/dto/vehicle-response.dto';
+import { CreateCustomerRequestDto } from './dto/requests/create-customer-request.dto';
+import { UpdateCustomerRequestDto } from './dto/requests/update-customer-request.dto';
+import { FindAllCustomersQueryDto } from './dto/requests/filter-customers.dto';
+import { CustomerDataResponseDto } from './dto/responses/customer-response.dto';
+import { CustomerPaginatedResponseDto } from './dto/responses/customer-paginated-response.dto';
 
 @ApiTags('Gestão de Clientes')
 @ApiProduces('application/json')
@@ -57,16 +58,8 @@ import { FindAllCustomersQueryDto } from './dto/filter-customers.dto';
 @Controller('customers')
 export class CustomersController {
   constructor(
-    @Inject('ICreateCustomerUseCase')
-    private readonly createCustomerUseCase: ICreateCustomerUseCase,
-    @Inject('IFindAllCustomersUseCase')
-    private readonly findAllCustomersUseCase: IFindAllCustomersUseCase,
-    @Inject('IFindCustomerByIdUseCase')
-    private readonly findCustomerByIdUseCase: IFindCustomerByIdUseCase,
-    @Inject('IUpdateCustomerUseCase')
-    private readonly updateCustomerUseCase: IUpdateCustomerUseCase,
-    @Inject('IDeleteCustomerUseCase')
-    private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
+    @Inject('CustomerCleanController')
+    private readonly controller: CustomerController,
     @Inject('IFindVehiclesByCustomerIdUseCase')
     private readonly findVehiclesByCustomerIdUseCase: IFindVehiclesByCustomerIdUseCase,
   ) {}
@@ -85,9 +78,8 @@ export class CustomersController {
     description: 'Erro de validação de domínio (documento inválido)',
   })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
-  async create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
-    const result = await this.createCustomerUseCase.execute(dto);
-    return CustomerPresenter.toDataResponse(result);
+  create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
+    return this.controller.create(dto);
   }
 
   @Get()
@@ -96,15 +88,8 @@ export class CustomersController {
   @ApiOkResponse({ type: CustomerPaginatedResponseDto, description: 'Lista paginada de Clientes' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FindAllCustomersQueryDto): Promise<CustomerPaginatedResponseDto> {
-    const { page, limit, ...filters } = query;
-    const result = await this.findAllCustomersUseCase.execute({
-      page: page ?? 1,
-      limit: limit ?? 10,
-      ...filters,
-    });
-
-    return CustomerPresenter.toPaginatedDataResponse(result);
+  findAll(@Query() query: FindAllCustomersQueryDto): Promise<CustomerPaginatedResponseDto> {
+    return this.controller.findAll(query);
   }
 
   @Get(':id')
@@ -116,9 +101,8 @@ export class CustomersController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<CustomerDataResponseDto> {
-    const result = await this.findCustomerByIdUseCase.execute(id);
-    return CustomerPresenter.toDataResponse(result);
+  findById(@Param('id', ParseUUIDPipe) id: string): Promise<CustomerDataResponseDto> {
+    return this.controller.findById(id);
   }
 
   @Put(':id')
@@ -134,12 +118,11 @@ export class CustomersController {
   })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado para outro cliente' })
-  async update(
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCustomerRequestDto,
   ): Promise<CustomerDataResponseDto> {
-    const result = await this.updateCustomerUseCase.execute(id, dto);
-    return CustomerPresenter.toDataResponse(result);
+    return this.controller.update(id, dto);
   }
 
   @Get(':id/vehicles')
@@ -169,7 +152,7 @@ export class CustomersController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Cliente possui vínculos e não pode ser excluído' })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.deleteCustomerUseCase.execute(id);
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.controller.remove(id);
   }
 }

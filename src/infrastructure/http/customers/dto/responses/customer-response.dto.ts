@@ -1,7 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import {
+  AddressResponse,
+  CustomerDataResponse,
+  CustomerResponse,
+} from '@interface-adapters/customer/responses/customer.response';
 
-export class AddressResponseDto {
+export class AddressResponseDto implements AddressResponse {
   @ApiProperty({ description: 'Logradouro', example: 'Rua das Flores, 123' })
   street!: string;
 
@@ -15,7 +20,7 @@ export class AddressResponseDto {
   zipCode!: string;
 }
 
-export class CustomerResponseDto {
+export class CustomerResponseDto implements CustomerResponse {
   @ApiProperty({
     description: 'ID único do Cliente',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -48,10 +53,10 @@ export class CustomerResponseDto {
   updatedAt!: Date;
 
   @ApiPropertyOptional({ type: AddressResponseDto, nullable: true })
-  address?: AddressResponseDto | null;
+  address!: AddressResponseDto | null;
 }
 
-export class CustomerDataResponseDto {
+export class CustomerDataResponseDto implements CustomerDataResponse {
   @ApiProperty({ type: CustomerResponseDto })
   data!: CustomerResponseDto;
 }
