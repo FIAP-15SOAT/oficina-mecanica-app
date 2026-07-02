@@ -54,9 +54,9 @@ import {
   WorkOrderServiceItemDataResponseDto,
 } from './dto/work-order-response.dto';
 import { StatusHistoryListResponseDto } from './dto/status-history-response.dto';
-import { QuoteListResponseDto } from '../quote/dto/quote-response.dto';
+import { QuoteListResponseDto } from '@infrastructure/http/quotes/dto/responses/quote-response.dto';
 import { WorkOrderPresenter } from './work-order.presenter';
-import { QuotePresenter } from '../quote/quote.presenter';
+import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 
 @ApiTags('Gestão de Ordens de Serviço')
 @ApiProduces('application/json')

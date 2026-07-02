@@ -17,7 +17,7 @@ import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplie
 import { CustomersModule } from './infrastructure/http/customers/customers.module';
 import { VehiclesModule } from './presentation/vehicles/vehicles.module';
 import { WorkOrderModule } from './presentation/work-order/work-order.module';
-import { QuoteModule } from './presentation/quote/quote.module';
+import { QuotesModule } from './infrastructure/http/quotes/quotes.module';
 import { StockModule } from './presentation/stock/stock.module';
 
 @Module({
@@ -48,7 +48,7 @@ import { StockModule } from './presentation/stock/stock.module';
     CustomersModule,
     VehiclesModule,
     WorkOrderModule,
-    QuoteModule,
+    QuotesModule,
     StockModule,
   ],
   providers: [

@@ -1,11 +1,9 @@
-import { Injectable } from '@nestjs/common';
 import { Quote } from '@domain/entities/quote.entity';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IFindWorkOrderQuotesUseCase } from '@application/ports/input/quote/find-work-order-quotes.use-case.interface';
 
-@Injectable()
 export class FindWorkOrderQuotesUseCase implements IFindWorkOrderQuotesUseCase {
   constructor(
     private readonly quoteRepository: IQuoteRepository,

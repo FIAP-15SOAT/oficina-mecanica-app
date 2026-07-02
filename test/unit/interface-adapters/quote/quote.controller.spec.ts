@@ -1,7 +1,9 @@
-import { QuoteController } from '@presentation/quote/quote.controller';
+import { QuoteController } from '@interface-adapters/quote/quote.controller';
 import { randomUUID } from 'node:crypto';
-import { QuotePresenter } from '@presentation/quote/quote.presenter';
+import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 import { Quote } from '@domain/entities/quote.entity';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { UpdateQuoteStatusRequest } from '@interface-adapters/quote/requests/update-quote-status-request';
 import { ICreateQuoteUseCase } from '@application/ports/input/quote/create-quote.use-case.interface';
 import { IFindQuoteByIdUseCase } from '@application/ports/input/quote/find-quote-by-id.use-case.interface';
 import { IAddQuoteServiceUseCase } from '@application/ports/input/quote/add-quote-service.use-case.interface';
@@ -191,15 +193,11 @@ describe('QuoteController', () => {
   it('should update status', async () => {
     const id = randomUUID();
     const userId = randomUUID();
-    const dto = { status: 'APPROVED' };
+    const dto: UpdateQuoteStatusRequest = { status: QuoteStatus.APPROVED };
     const quote = buildMockQuoteWithWorkOrder();
     updateQuoteStatusUseCase.execute.mockResolvedValue(quote);
 
-    const result = await controller.updateStatus(
-      id,
-      dto as unknown as Parameters<typeof controller.updateStatus>[1],
-      { sub: userId } as unknown as Parameters<typeof controller.updateStatus>[2],
-    );
+    const result = await controller.updateStatus(id, userId, dto);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(updateQuoteStatusUseCase.execute).toHaveBeenCalledWith(id, userId, dto);
@@ -211,7 +209,7 @@ describe('QuoteController', () => {
     const quote = buildMockQuoteWithWorkOrder();
     emailDecisionQuoteUseCase.execute.mockResolvedValue(quote);
 
-    const result = await controller.emailDecision(id, { token });
+    const result = await controller.emailDecision(id, token);
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, token);

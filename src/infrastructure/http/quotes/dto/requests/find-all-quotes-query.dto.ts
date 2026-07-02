@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsUUID, IsEnum } from 'class-validator';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 
 export class FilterQuotesDto {
   @ApiPropertyOptional({ description: 'Filtrar por ID da Ordem de Serviço', format: 'uuid' })

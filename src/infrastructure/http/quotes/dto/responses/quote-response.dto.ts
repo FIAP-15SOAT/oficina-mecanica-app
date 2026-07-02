@@ -2,10 +2,20 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
-import { WorkOrderResponseDto } from '../../work-order/dto/work-order-response.dto';
+import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { WorkOrderResponseDto } from '@presentation/work-order/dto/work-order-response.dto';
+import {
+  QuoteServiceItemResponse,
+  QuotePartSupplyItemResponse,
+  QuoteResponse,
+  QuoteWithItemsResponse,
+  QuoteDataResponse,
+  QuoteWithItemsDataResponse,
+  QuoteListResponse,
+  QuotePaginatedResponse,
+} from '@interface-adapters/quote/responses/quote.response';
 
-export class QuoteServiceItemResponseDto {
+export class QuoteServiceItemResponseDto implements QuoteServiceItemResponse {
   @ApiProperty({
     description: 'ID do serviço',
     format: 'uuid',
@@ -42,7 +52,7 @@ export class QuoteServiceItemResponseDto {
   updatedAt!: Date;
 }
 
-export class QuotePartSupplyItemResponseDto {
+export class QuotePartSupplyItemResponseDto implements QuotePartSupplyItemResponse {
   @ApiProperty({
     description: 'ID da peça/insumo',
     format: 'uuid',
@@ -99,7 +109,7 @@ export class QuotePartSupplyItemResponseDto {
   updatedAt!: Date;
 }
 
-export class QuoteResponseDto {
+export class QuoteResponseDto implements QuoteResponse {
   @ApiProperty({
     description: 'ID do orçamento',
     format: 'uuid',
@@ -164,7 +174,7 @@ export class QuoteResponseDto {
   updatedAt!: Date;
 }
 
-export class QuoteWithItemsResponseDto extends QuoteResponseDto {
+export class QuoteWithItemsResponseDto extends QuoteResponseDto implements QuoteWithItemsResponse {
   @ApiProperty({ description: 'Lista de serviços incluídos', type: [QuoteServiceItemResponseDto] })
   services!: QuoteServiceItemResponseDto[];
 
@@ -175,22 +185,25 @@ export class QuoteWithItemsResponseDto extends QuoteResponseDto {
   partsSupplies!: QuotePartSupplyItemResponseDto[];
 }
 
-export class QuoteDataResponseDto {
+export class QuoteDataResponseDto implements QuoteDataResponse {
   @ApiProperty({ type: QuoteResponseDto })
   data!: QuoteResponseDto;
 }
 
-export class QuoteWithItemsDataResponseDto {
+export class QuoteWithItemsDataResponseDto implements QuoteWithItemsDataResponse {
   @ApiProperty({ type: QuoteWithItemsResponseDto })
   data!: QuoteWithItemsResponseDto;
 }
 
-export class QuoteListResponseDto {
+export class QuoteListResponseDto implements QuoteListResponse {
   @ApiProperty({ type: [QuoteResponseDto] })
   data!: QuoteResponseDto[];
 }
 
-export class QuotePaginatedResponseDto extends PaginatedResponseDto<QuoteResponseDto> {
+export class QuotePaginatedResponseDto
+  extends PaginatedResponseDto<QuoteResponseDto>
+  implements QuotePaginatedResponse
+{
   @ApiProperty({ type: [QuoteResponseDto] })
   data!: QuoteResponseDto[];
 }
