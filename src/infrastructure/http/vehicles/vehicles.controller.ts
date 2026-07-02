@@ -34,100 +34,101 @@ import {
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
-
-import { CustomerController } from '@interface-adapters/customer/customer.controller';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { CreateCustomerRequestDto } from './dto/requests/create-customer-request.dto';
-import { UpdateCustomerRequestDto } from './dto/requests/update-customer-request.dto';
-import { FindAllCustomersQueryDto } from './dto/requests/filter-customers.dto';
-import { CustomerDataResponseDto } from './dto/responses/customer-response.dto';
-import { CustomerPaginatedResponseDto } from './dto/responses/customer-paginated-response.dto';
+import { VehicleController } from '@interface-adapters/vehicle/vehicle.controller';
 
-@ApiTags('Gestão de Clientes')
+import { CreateVehicleRequestDto } from './dto/requests/create-vehicle-request.dto';
+import { UpdateVehicleRequestDto } from './dto/requests/update-vehicle-request.dto';
+import { FindAllVehiclesQueryDto } from './dto/requests/filter-vehicles.dto';
+import { VehicleDataResponseDto } from './dto/responses/vehicle-response.dto';
+import { VehiclePaginatedResponseDto } from './dto/responses/vehicle-paginated-response.dto';
+
+@ApiTags('Gestão de Veículos')
 @ApiProduces('application/json')
 @ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('customers')
-export class CustomersController {
+@Controller('vehicles')
+export class VehiclesController {
   constructor(
-    @Inject('CustomerCleanController')
-    private readonly controller: CustomerController,
+    @Inject('VehicleCleanController')
+    private readonly controller: VehicleController,
   ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
-  @ApiOperation({ summary: 'Cadastrar Cliente' })
+  @ApiOperation({ summary: 'Cadastrar Veículo' })
   @ApiCreatedResponse({
-    type: CustomerDataResponseDto,
-    description: 'Cliente cadastrado com sucesso',
+    type: VehicleDataResponseDto,
+    description: 'Veículo cadastrado com sucesso',
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnprocessableEntityResponse({
-    description: 'Erro de validação de domínio (documento inválido)',
+    description: 'Placa em formato inválido ou ano fora do intervalo permitido',
   })
-  @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
-  create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
+  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
+  @ApiConflictResponse({ description: 'Placa já cadastrada' })
+  create(@Body() dto: CreateVehicleRequestDto): Promise<VehicleDataResponseDto> {
     return this.controller.create(dto);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
-  @ApiOperation({ summary: 'Listar Clientes' })
-  @ApiOkResponse({ type: CustomerPaginatedResponseDto, description: 'Lista paginada de Clientes' })
+  @ApiOperation({ summary: 'Listar Veículos' })
+  @ApiOkResponse({ type: VehiclePaginatedResponseDto, description: 'Lista paginada de Veículos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  findAll(@Query() query: FindAllCustomersQueryDto): Promise<CustomerPaginatedResponseDto> {
+  findAll(@Query() query: FindAllVehiclesQueryDto): Promise<VehiclePaginatedResponseDto> {
     return this.controller.findAll(query);
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
-  @ApiOperation({ summary: 'Buscar Cliente por ID' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
-  @ApiOkResponse({ type: CustomerDataResponseDto, description: 'Cliente encontrado' })
+  @ApiOperation({ summary: 'Buscar Veículo por ID' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
+  @ApiOkResponse({ type: VehicleDataResponseDto, description: 'Veículo encontrado' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
-  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  findById(@Param('id', ParseUUIDPipe) id: string): Promise<CustomerDataResponseDto> {
+  @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
+  findById(@Param('id', ParseUUIDPipe) id: string): Promise<VehicleDataResponseDto> {
     return this.controller.findById(id);
   }
 
   @Put(':id')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
-  @ApiOperation({ summary: 'Atualizar Cliente' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
-  @ApiOkResponse({ type: CustomerDataResponseDto, description: 'Cliente atualizado com sucesso' })
+  @ApiOperation({ summary: 'Atualizar Veículo' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
+  @ApiOkResponse({ type: VehicleDataResponseDto, description: 'Veículo atualizado com sucesso' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
   @ApiUnprocessableEntityResponse({
-    description: 'Erro de validação de domínio (documento inválido)',
+    description: 'Placa em formato inválido ou ano fora do intervalo permitido',
   })
-  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado para outro cliente' })
+  @ApiNotFoundResponse({ description: 'Veículo ou cliente não encontrado' })
+  @ApiConflictResponse({ description: 'Placa já cadastrada para outro veículo' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateCustomerRequestDto,
-  ): Promise<CustomerDataResponseDto> {
+    @Body() dto: UpdateVehicleRequestDto,
+  ): Promise<VehicleDataResponseDto> {
     return this.controller.update(id, dto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Excluir Cliente' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
-  @ApiNoContentResponse({ description: 'Cliente excluído com sucesso' })
+  @ApiOperation({ summary: 'Excluir Veículo' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Veículo' })
+  @ApiNoContentResponse({ description: 'Veículo excluído com sucesso' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
-  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  @ApiConflictResponse({ description: 'Cliente possui vínculos e não pode ser excluído' })
+  @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
+  @ApiConflictResponse({ description: 'Veículo possui ordens de serviço e não pode ser excluído' })
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.controller.remove(id);
   }

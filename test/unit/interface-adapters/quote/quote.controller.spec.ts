@@ -1,9 +1,12 @@
-import { QuoteController } from '@interface-adapters/quote/quote.controller';
 import { randomUUID } from 'node:crypto';
+
+import { QuoteController } from '@interface-adapters/quote/quote.controller';
 import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
+import { UpdateQuoteStatusRequest } from '@interface-adapters/quote/requests/update-quote-status-request';
+
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
-import { UpdateQuoteStatusRequest } from '@interface-adapters/quote/requests/update-quote-status-request';
+
 import { ICreateQuoteUseCase } from '@application/ports/input/quote/create-quote.use-case.interface';
 import { IFindQuoteByIdUseCase } from '@application/ports/input/quote/find-quote-by-id.use-case.interface';
 import { IAddQuoteServiceUseCase } from '@application/ports/input/quote/add-quote-service.use-case.interface';
@@ -16,6 +19,7 @@ import { ISubmitQuoteUseCase } from '@application/ports/input/quote/submit-quote
 import { IEmailDecisionQuoteUseCase } from '@application/ports/input/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@application/ports/input/quote/update-quote-status.use-case.interface';
 import { IFindAllQuotesPaginatedUseCase } from '@application/ports/input/quote/find-all-quotes-paginated.use-case.interface';
+
 import { createMockQuote } from '../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';

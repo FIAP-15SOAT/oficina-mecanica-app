@@ -5,10 +5,8 @@ import { FindAllCustomersUseCase } from '@application/use-cases/customer/find-al
 import { FindCustomerByIdUseCase } from '@application/use-cases/customer/find-customer-by-id.use-case';
 import { UpdateCustomerUseCase } from '@application/use-cases/customer/update-customer.use-case';
 import { DeleteCustomerUseCase } from '@application/use-cases/customer/delete-customer.use-case';
-import { FindVehiclesByCustomerIdUseCase } from '@application/use-cases/vehicle/find-vehicles-by-customer-id.use-case';
 
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 
 import { CustomerController as CustomerCleanController } from '@interface-adapters/customer/customer.controller';
 import { CustomersController } from './customers.controller';
@@ -27,14 +25,6 @@ import { CustomersController } from './customers.controller';
           new DeleteCustomerUseCase(customerRepository),
         ),
       inject: ['ICustomerRepository'],
-    },
-    {
-      provide: 'IFindVehiclesByCustomerIdUseCase',
-      useFactory: (
-        vehicleRepository: IVehicleRepository,
-        customerRepository: ICustomerRepository,
-      ) => new FindVehiclesByCustomerIdUseCase(vehicleRepository, customerRepository),
-      inject: ['IVehicleRepository', 'ICustomerRepository'],
     },
   ],
 })

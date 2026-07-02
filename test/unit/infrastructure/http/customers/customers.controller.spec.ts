@@ -1,19 +1,19 @@
 import { randomUUID } from 'node:crypto';
+
 import { CustomersController } from '@infrastructure/http/customers/customers.controller';
 import { CustomerController } from '@interface-adapters/customer/customer.controller';
-import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
-import { VehiclePresenter } from '@presentation/vehicles/vehicle.presenter';
-import { IFindVehiclesByCustomerIdUseCase } from '@application/ports/input/vehicle/find-vehicles-by-customer-id.use-case.interface';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+
 import { CreateCustomerRequestDto } from '@infrastructure/http/customers/dto/requests/create-customer-request.dto';
 import { FindAllCustomersQueryDto } from '@infrastructure/http/customers/dto/requests/filter-customers.dto';
+
+import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
+import { CustomerType } from '@domain/enums/customer-type.enum';
+
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
-import { createMockVehicle } from '../../../../helpers/vehicle-mock.factory';
 
 describe('CustomersController', () => {
   let httpController: CustomersController;
   let cleanController: CustomerController;
-  let findVehiclesUseCase: jest.Mocked<IFindVehiclesByCustomerIdUseCase>;
 
   const customerRequestStub: CreateCustomerRequestDto = {
     name: 'João da Silva',
@@ -37,8 +37,7 @@ describe('CustomersController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
     );
-    findVehiclesUseCase = { execute: jest.fn() };
-    httpController = new CustomersController(cleanController, findVehiclesUseCase);
+    httpController = new CustomersController(cleanController);
   });
 
   describe('create', () => {
@@ -103,19 +102,6 @@ describe('CustomersController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
-    });
-  });
-
-  describe('findVehiclesByCustomerId', () => {
-    it('should return the vehicles of the customer wrapped in data', async () => {
-      const id = randomUUID();
-      const vehicles = [createMockVehicle({ customerId: id })];
-      findVehiclesUseCase.execute.mockResolvedValue(vehicles);
-
-      const result = await httpController.findVehiclesByCustomerId(id);
-
-      expect(result).toEqual(VehiclePresenter.toListDataResponse(vehicles));
-      expect(findVehiclesUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
 });

@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
+
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
+
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
