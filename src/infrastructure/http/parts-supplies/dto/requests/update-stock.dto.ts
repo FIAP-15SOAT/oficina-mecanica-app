@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 
-/** DTO para movimentação de Estoque de Peças e Insumos */
 export class UpdateStockDto {
   @ApiProperty({
     enum: StockMovementType,

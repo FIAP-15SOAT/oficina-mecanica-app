@@ -34,22 +34,16 @@ import {
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
-
 import { UserRole } from '@domain/enums/user-role.enum';
-import { ICreatePartSupplyUseCase } from '@application/ports/input/part-supply/create-part-supply.use-case.interface';
-import { IFindPartSupplyByIdUseCase } from '@application/ports/input/part-supply/find-part-supply-by-id.use-case.interface';
-import { IFindAllPartsSuppliesUseCase } from '@application/ports/input/part-supply/find-all-parts-supplies.use-case.interface';
-import { IUpdatePartSupplyUseCase } from '@application/ports/input/part-supply/update-part-supply.use-case.interface';
-import { IDeletePartSupplyUseCase } from '@application/ports/input/part-supply/delete-part-supply.use-case.interface';
-import { IUpdateStockUseCase } from '@application/ports/input/part-supply/update-stock.use-case.interface';
 
-import { CreatePartSupplyRequestDto } from './dto/create-part-supply-request.dto';
-import { UpdatePartSupplyRequestDto } from './dto/update-part-supply-request.dto';
-import { UpdateStockDto } from './dto/update-stock.dto';
-import { FindAllPartsSuppliesQueryDto } from './dto/filter-parts-supplies.dto';
-import { PartSupplyDataResponseDto } from './dto/part-supply-response.dto';
-import { PartSupplyPaginatedResponseDto } from './dto/part-supply-paginated-response.dto';
-import { PartSupplyPresenter } from './part-supply.presenter';
+import { PartSupplyController } from '@interface-adapters/part-supply/part-supply.controller';
+
+import { CreatePartSupplyRequestDto } from './dto/requests/create-part-supply-request.dto';
+import { UpdatePartSupplyRequestDto } from './dto/requests/update-part-supply-request.dto';
+import { UpdateStockDto } from './dto/requests/update-stock.dto';
+import { FindAllPartsSuppliesQueryDto } from './dto/requests/filter-parts-supplies.dto';
+import { PartSupplyDataResponseDto } from './dto/responses/part-supply-response.dto';
+import { PartSupplyPaginatedResponseDto } from './dto/responses/part-supply-paginated-response.dto';
 
 @ApiTags('Gestão de Peças e Insumos')
 @ApiProduces('application/json')
@@ -59,18 +53,8 @@ import { PartSupplyPresenter } from './part-supply.presenter';
 @Controller('parts-supplies')
 export class PartsSuppliesController {
   constructor(
-    @Inject('ICreatePartSupplyUseCase')
-    private readonly createPartSupplyUseCase: ICreatePartSupplyUseCase,
-    @Inject('IFindAllPartsSuppliesUseCase')
-    private readonly findAllPartsSuppliesUseCase: IFindAllPartsSuppliesUseCase,
-    @Inject('IFindPartSupplyByIdUseCase')
-    private readonly findPartSupplyByIdUseCase: IFindPartSupplyByIdUseCase,
-    @Inject('IUpdatePartSupplyUseCase')
-    private readonly updatePartSupplyUseCase: IUpdatePartSupplyUseCase,
-    @Inject('IDeletePartSupplyUseCase')
-    private readonly deletePartSupplyUseCase: IDeletePartSupplyUseCase,
-    @Inject('IUpdateStockUseCase')
-    private readonly updateStockUseCase: IUpdateStockUseCase,
+    @Inject('PartSupplyCleanController')
+    private readonly controller: PartSupplyController,
   ) {}
 
   @Post()
@@ -84,12 +68,8 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async create(@Body() dto: CreatePartSupplyRequestDto): Promise<PartSupplyDataResponseDto> {
-    const result = await this.createPartSupplyUseCase.execute({
-      ...dto,
-      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
-    });
-    return PartSupplyPresenter.toDataResponse(result);
+  create(@Body() dto: CreatePartSupplyRequestDto): Promise<PartSupplyDataResponseDto> {
+    return this.controller.create(dto);
   }
 
   @Get()
@@ -101,16 +81,8 @@ export class PartsSuppliesController {
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(
-    @Query() query: FindAllPartsSuppliesQueryDto,
-  ): Promise<PartSupplyPaginatedResponseDto> {
-    const { page, limit, ...filters } = query;
-    const result = await this.findAllPartsSuppliesUseCase.execute({
-      page: page ?? 1,
-      limit: limit ?? 10,
-      ...filters,
-    });
-    return PartSupplyPresenter.toPaginatedDataResponse(result);
+  findAll(@Query() query: FindAllPartsSuppliesQueryDto): Promise<PartSupplyPaginatedResponseDto> {
+    return this.controller.findAll(query);
   }
 
   @Get(':id')
@@ -122,9 +94,8 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<PartSupplyDataResponseDto> {
-    const result = await this.findPartSupplyByIdUseCase.execute(id);
-    return PartSupplyPresenter.toDataResponse(result);
+  findById(@Param('id', ParseUUIDPipe) id: string): Promise<PartSupplyDataResponseDto> {
+    return this.controller.findById(id);
   }
 
   @Put(':id')
@@ -140,15 +111,11 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'Dados inválidos ou ID inválido' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async update(
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePartSupplyRequestDto,
   ): Promise<PartSupplyDataResponseDto> {
-    const result = await this.updatePartSupplyUseCase.execute(id, {
-      ...dto,
-      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
-    });
-    return PartSupplyPresenter.toDataResponse(result);
+    return this.controller.update(id, dto);
   }
 
   @Delete(':id')
@@ -161,8 +128,8 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.deletePartSupplyUseCase.execute(id);
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.controller.remove(id);
   }
 
   @Patch(':id')
@@ -175,16 +142,10 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async updateStock(
+  updateStock(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStockDto,
   ): Promise<PartSupplyDataResponseDto> {
-    const result = await this.updateStockUseCase.execute(id, {
-      type: dto.type,
-      quantity: dto.quantity,
-      reason: dto.reason,
-      workOrderId: dto.workOrderId,
-    });
-    return PartSupplyPresenter.toDataResponse(result);
+    return this.controller.updateStock(id, dto);
   }
 }

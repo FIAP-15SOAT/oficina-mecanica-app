@@ -1,9 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
+import {
+  PartSupplyDataResponse,
+  PartSupplyResponse,
+} from '@interface-adapters/part-supply/responses/part-supply.response';
 
-/** Resposta da API para Peças e Insumos do Estoque */
-export class PartSupplyResponseDto {
+export class PartSupplyResponseDto implements PartSupplyResponse {
   @ApiProperty({
     description: 'ID único da Peça ou Insumo',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -18,7 +21,7 @@ export class PartSupplyResponseDto {
     example: 'Filtro para motor 1.0',
     nullable: true,
   })
-  description?: string | null;
+  description!: string | null;
 
   @ApiProperty({ description: 'SKU único no Estoque', example: 'FO-001' })
   sku!: string;
@@ -28,7 +31,7 @@ export class PartSupplyResponseDto {
     example: 'MANN-W712',
     nullable: true,
   })
-  partNumber?: string | null;
+  partNumber!: string | null;
 
   @ApiProperty({
     enum: PartSupplyCategory,
@@ -57,7 +60,7 @@ export class PartSupplyResponseDto {
     example: '2026-12-31T00:00:00.000Z',
     nullable: true,
   })
-  expiresAt?: Date | null;
+  expiresAt!: Date | null;
 
   @ApiProperty({ description: 'Data de cadastro', example: '2026-01-15T10:30:00.000Z' })
   createdAt!: Date;
@@ -66,7 +69,7 @@ export class PartSupplyResponseDto {
   updatedAt!: Date;
 }
 
-export class PartSupplyDataResponseDto {
+export class PartSupplyDataResponseDto implements PartSupplyDataResponse {
   @ApiProperty({ type: PartSupplyResponseDto })
   data!: PartSupplyResponseDto;
 }
