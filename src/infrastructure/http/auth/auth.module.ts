@@ -1,13 +1,18 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+
 import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
 import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
-import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
+
+import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
+
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService } from '@application/ports/output/token.service.interface';
+
+import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 import { AuthController } from './auth.controller';
 
 @Module({
@@ -15,24 +20,18 @@ import { AuthController } from './auth.controller';
   controllers: [AuthController],
   providers: [
     {
-      provide: 'IAuthenticateUserUseCase',
+      provide: 'AuthCleanController',
       useFactory: (
-        userRepo: IUserRepository,
+        userRepository: IUserRepository,
         hashService: IHashService,
         tokenService: ITokenService,
-      ) => new AuthenticateUserUseCase(userRepo, hashService, tokenService),
+      ) =>
+        new AuthCleanController(
+          new AuthenticateUserUseCase(userRepository, hashService, tokenService),
+          new GetCurrentUserUseCase(userRepository),
+          new RefreshTokenUseCase(userRepository, tokenService),
+        ),
       inject: ['IUserRepository', 'IHashService', 'ITokenService'],
-    },
-    {
-      provide: 'IGetCurrentUserUseCase',
-      useFactory: (userRepo: IUserRepository) => new GetCurrentUserUseCase(userRepo),
-      inject: ['IUserRepository'],
-    },
-    {
-      provide: 'IRefreshTokenUseCase',
-      useFactory: (userRepo: IUserRepository, tokenService: ITokenService) =>
-        new RefreshTokenUseCase(userRepo, tokenService),
-      inject: ['IUserRepository', 'ITokenService'],
     },
     JwtStrategy,
   ],

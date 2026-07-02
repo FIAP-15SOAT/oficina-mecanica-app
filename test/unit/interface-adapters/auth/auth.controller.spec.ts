@@ -1,12 +1,20 @@
 import { randomUUID } from 'node:crypto';
-import { AuthController } from '@presentation/auth/auth.controller';
+
+import { AuthController } from '@interface-adapters/auth/auth.controller';
+import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
+
+import { LoginRequest } from '@interface-adapters/auth/requests/login-request';
+import { RefreshTokenRequest } from '@interface-adapters/auth/requests/refresh-token-request';
+
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
 import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
-import { LoginRequestDto } from '@presentation/auth/dto/login-request.dto';
-import { RefreshTokenRequestDto } from '@presentation/auth/dto/refresh-token-request.dto';
+
+import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
+import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
+import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
+
 import { UserRole } from '@domain/enums/user-role.enum';
-import { AuthenticatedUser } from '@infrastructure/auth/current-user.decorator';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -27,20 +35,19 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should authenticate user and return tokens', async () => {
-      const request: LoginRequestDto = {
+    it('should authenticate the user and return tokens wrapped in data', async () => {
+      const request: LoginRequest = {
         email: 'john.doe@example.com',
         password: 'SecurePass123!',
       };
 
-      const userId = randomUUID();
-      const authResult = {
+      const authResult: AuthenticateUserOutputDto = {
         accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         refreshToken: 'refresh-token-uuid',
         user: {
-          id: userId,
+          id: randomUUID(),
           name: 'John Doe',
-          email: 'john.doe@example.com',
+          email: request.email,
           role: UserRole.ATTENDANT,
         },
       };
@@ -49,26 +56,20 @@ describe('AuthController', () => {
 
       const result = await controller.login(request);
 
-      expect(result).toEqual({ data: authResult });
-      expect(authenticateUseCase.execute).toHaveBeenCalledWith({
-        email: request.email,
-        password: request.password,
-      });
+      expect(result).toEqual(AuthPresenter.toAuthDataResponse(authResult));
+      expect(authenticateUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
 
   describe('refresh', () => {
-    it('should refresh tokens successfully', async () => {
-      const request: RefreshTokenRequestDto = {
-        refreshToken: 'valid-refresh-token',
-      };
+    it('should refresh tokens and return them wrapped in data', async () => {
+      const request: RefreshTokenRequest = { refreshToken: 'valid-refresh-token' };
 
-      const userId = randomUUID();
-      const refreshResult = {
+      const refreshResult: RefreshTokenOutputDto = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
         user: {
-          id: userId,
+          id: randomUUID(),
           name: 'John Doe',
           email: 'john.doe@example.com',
           role: UserRole.ATTENDANT,
@@ -79,23 +80,16 @@ describe('AuthController', () => {
 
       const result = await controller.refresh(request);
 
-      expect(result).toEqual({ data: refreshResult });
-      expect(refreshTokenUseCase.execute).toHaveBeenCalledWith({
-        refreshToken: request.refreshToken,
-      });
+      expect(result).toEqual(AuthPresenter.toAuthDataResponse(refreshResult));
+      expect(refreshTokenUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
 
   describe('me', () => {
-    it('should return current user data', async () => {
+    it('should return the current user data wrapped in data', async () => {
       const userId = randomUUID();
-      const authenticatedUser: AuthenticatedUser = {
-        sub: userId,
-        email: 'john.doe@example.com',
-        role: UserRole.ATTENDANT,
-      };
 
-      const currentUser = {
+      const currentUser: GetCurrentUserOutputDto = {
         id: userId,
         name: 'John Doe',
         email: 'john.doe@example.com',
@@ -107,9 +101,9 @@ describe('AuthController', () => {
 
       getCurrentUserUseCase.execute.mockResolvedValue(currentUser);
 
-      const result = await controller.me(authenticatedUser);
+      const result = await controller.me(userId);
 
-      expect(result).toEqual({ data: currentUser });
+      expect(result).toEqual(AuthPresenter.toMeDataResponse(currentUser));
       expect(getCurrentUserUseCase.execute).toHaveBeenCalledWith(userId);
     });
   });

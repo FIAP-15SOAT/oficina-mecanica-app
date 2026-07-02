@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { MeDataResponse, MeResponse } from '@interface-adapters/auth/responses/auth.response';
 
-export class MeResponseDto {
+export class MeResponseDto implements MeResponse {
   @ApiProperty({ example: 'uuid-here' })
   id!: string;
 
@@ -24,7 +25,7 @@ export class MeResponseDto {
   updatedAt!: Date;
 }
 
-export class MeDataResponseDto {
+export class MeDataResponseDto implements MeDataResponse {
   @ApiProperty({ type: MeResponseDto, description: 'Dados do usuário autenticado' })
   data!: MeResponseDto;
 }

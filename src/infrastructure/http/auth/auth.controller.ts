@@ -20,14 +20,13 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
-import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
-import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
-import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
-import { AuthDataResponseDto } from './dto/auth-response.dto';
-import { MeDataResponseDto } from './dto/me-response.dto';
-import { LoginRequestDto } from './dto/login-request.dto';
-import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
-import { AuthPresenter } from './auth.presenter';
+
+import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
+
+import { AuthDataResponseDto } from './dto/responses/auth-response.dto';
+import { MeDataResponseDto } from './dto/responses/me-response.dto';
+import { LoginRequestDto } from './dto/requests/login-request.dto';
+import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
 
 @ApiTags('Autenticação')
 @ApiProduces('application/json')
@@ -35,12 +34,8 @@ import { AuthPresenter } from './auth.presenter';
 @Controller('auth')
 export class AuthController {
   constructor(
-    @Inject('IAuthenticateUserUseCase')
-    private readonly authenticateUseCase: IAuthenticateUserUseCase,
-    @Inject('IGetCurrentUserUseCase')
-    private readonly getCurrentUserUseCase: IGetCurrentUserUseCase,
-    @Inject('IRefreshTokenUseCase')
-    private readonly refreshTokenUseCase: IRefreshTokenUseCase,
+    @Inject('AuthCleanController')
+    private readonly controller: AuthCleanController,
   ) {}
 
   @Post('login')
@@ -49,12 +44,8 @@ export class AuthController {
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Login realizado com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
-  async login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
-    const result = await this.authenticateUseCase.execute({
-      email: dto.email,
-      password: dto.password,
-    });
-    return AuthPresenter.toAuthDataResponse(result);
+  login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
+    return this.controller.login(dto);
   }
 
   @Post('refresh')
@@ -63,11 +54,8 @@ export class AuthController {
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Tokens renovados com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
-  async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
-    const result = await this.refreshTokenUseCase.execute({
-      refreshToken: dto.refreshToken,
-    });
-    return AuthPresenter.toAuthDataResponse(result);
+  refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
+    return this.controller.refresh(dto);
   }
 
   @Get('me')
@@ -76,8 +64,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Obter dados do usuário autenticado' })
   @ApiOkResponse({ type: MeDataResponseDto, description: 'Dados do usuário' })
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
-  async me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
-    const result = await this.getCurrentUserUseCase.execute(user.sub);
-    return AuthPresenter.toMeDataResponse(result);
+  me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
+    return this.controller.me(user.sub);
   }
 }

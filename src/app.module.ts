@@ -10,7 +10,7 @@ import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastr
 
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
-import { AuthModule } from './presentation/auth/auth.module';
+import { AuthModule } from './infrastructure/http/auth/auth.module';
 import { UserModule } from './infrastructure/http/user/user.module';
 import { ServiceModule } from './infrastructure/http/service/service.module';
 import { PartsSuppliesModule } from './infrastructure/http/parts-supplies/parts-supplies.module';

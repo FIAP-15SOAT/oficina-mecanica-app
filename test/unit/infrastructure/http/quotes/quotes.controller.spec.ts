@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
+
 import { QuotesController } from '@infrastructure/http/quotes/quotes.controller';
 import { QuoteController } from '@interface-adapters/quote/quote.controller';
 import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
+
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
+
 import { AuthenticatedUser } from '@infrastructure/auth/current-user.decorator';
 import { CreateQuoteRequestDto } from '@infrastructure/http/quotes/dto/requests/create-quote-request.dto';
 import { AddQuoteServiceRequestDto } from '@infrastructure/http/quotes/dto/requests/add-quote-service-request.dto';
@@ -14,6 +17,7 @@ import { UpdateQuotePartSupplyItemRequestDto } from '@infrastructure/http/quotes
 import { UpdateQuoteStatusRequestDto } from '@infrastructure/http/quotes/dto/requests/update-quote-status-request.dto';
 import { FindAllQuotesQueryDto } from '@infrastructure/http/quotes/dto/requests/find-all-quotes-query.dto';
 import { QuoteEmailDecisionRequestDto } from '@infrastructure/http/quotes/dto/requests/quote-email-decision-request.dto';
+
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';

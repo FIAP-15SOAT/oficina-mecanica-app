@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
+import {
+  AuthDataResponse,
+  AuthResponse,
+  AuthUserSummaryResponse,
+} from '@interface-adapters/auth/responses/auth.response';
 
-class UserResponseDto {
+class AuthUserSummaryResponseDto implements AuthUserSummaryResponse {
   @ApiProperty({ example: 'uuid-here' })
   id!: string;
 
@@ -15,18 +20,18 @@ class UserResponseDto {
   role!: UserRole;
 }
 
-export class AuthResponseDto {
+export class AuthResponseDto implements AuthResponse {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken!: string;
 
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   refreshToken!: string;
 
-  @ApiProperty({ type: UserResponseDto })
-  user!: UserResponseDto;
+  @ApiProperty({ type: AuthUserSummaryResponseDto })
+  user!: AuthUserSummaryResponseDto;
 }
 
-export class AuthDataResponseDto {
+export class AuthDataResponseDto implements AuthDataResponse {
   @ApiProperty({ type: AuthResponseDto, description: 'Dados de autenticação' })
   data!: AuthResponseDto;
 }
