@@ -1,13 +1,16 @@
-import { StockPresenter } from '@presentation/stock/stock.presenter';
+import { randomUUID } from 'node:crypto';
+
+import { StockPresenter } from '@interface-adapters/stock/stock.presenter';
+
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
+
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { createMockUser } from '../../../helpers/user-mock.factory';
-import { randomUUID } from 'node:crypto';
 
 describe('StockPresenter', () => {
   const now = new Date();
@@ -151,7 +154,7 @@ describe('StockPresenter', () => {
       expect(result.data[0].workOrder.id).toBe(workOrder.id);
     });
 
-    it('should format a stock reservation with partSupply and workOrder relations', () => {
+    it('should include customer, vehicle and assignedUser for the linked work order', () => {
       const customer = createMockCustomer();
       const vehicle = createMockVehicle({ customerId: customer.id, customer });
       const assignedUser = createMockUser();

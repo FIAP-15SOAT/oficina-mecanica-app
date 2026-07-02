@@ -6,6 +6,7 @@ import { FindStockReservationsUseCase } from '@application/use-cases/stock/find-
 import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
 import { IStockReservationRepository } from '@domain/interfaces/repositories/stock-reservation.repository.interface';
 
+import { StockController as StockCleanController } from '@interface-adapters/stock/stock.controller';
 import { StockMovementsController } from './stock-movements.controller';
 import { StockReservationsController } from './stock-reservations.controller';
 
@@ -13,16 +14,16 @@ import { StockReservationsController } from './stock-reservations.controller';
   controllers: [StockMovementsController, StockReservationsController],
   providers: [
     {
-      provide: 'IFindStockMovementsUseCase',
-      useFactory: (movementRepo: IStockMovementRepository) =>
-        new FindStockMovementsUseCase(movementRepo),
-      inject: ['IStockMovementRepository'],
-    },
-    {
-      provide: 'IFindStockReservationsUseCase',
-      useFactory: (reservationRepo: IStockReservationRepository) =>
-        new FindStockReservationsUseCase(reservationRepo),
-      inject: ['IStockReservationRepository'],
+      provide: 'StockCleanController',
+      useFactory: (
+        movementRepository: IStockMovementRepository,
+        reservationRepository: IStockReservationRepository,
+      ) =>
+        new StockCleanController(
+          new FindStockMovementsUseCase(movementRepository),
+          new FindStockReservationsUseCase(reservationRepository),
+        ),
+      inject: ['IStockMovementRepository', 'IStockReservationRepository'],
     },
   ],
 })

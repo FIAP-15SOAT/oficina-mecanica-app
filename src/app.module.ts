@@ -18,7 +18,7 @@ import { CustomersModule } from './infrastructure/http/customers/customers.modul
 import { VehiclesModule } from './infrastructure/http/vehicles/vehicles.module';
 import { WorkOrderModule } from './infrastructure/http/work-order/work-order.module';
 import { QuotesModule } from './infrastructure/http/quotes/quotes.module';
-import { StockModule } from './presentation/stock/stock.module';
+import { StockModule } from './infrastructure/http/stock/stock.module';
 
 @Module({
   imports: [

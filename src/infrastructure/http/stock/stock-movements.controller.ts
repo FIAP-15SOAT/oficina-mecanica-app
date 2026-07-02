@@ -14,12 +14,10 @@ import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { IFindStockMovementsUseCase } from '@application/ports/input/stock/find-stock-movements.use-case.interface';
+import { StockController } from '@interface-adapters/stock/stock.controller';
 
-import { StockPresenter } from './stock.presenter';
-
-import { StockMovementPaginatedResponseDto } from './dto/stock-movement-response.dto';
-import { FindStockMovementsQueryDto } from './dto/filter-stock-movements.dto';
+import { StockMovementPaginatedResponseDto } from './dto/responses/stock-movement-response.dto';
+import { FindStockMovementsQueryDto } from './dto/requests/filter-stock-movements.dto';
 
 @ApiTags('Estoque - Movimentações')
 @ApiProduces('application/json')
@@ -29,8 +27,8 @@ import { FindStockMovementsQueryDto } from './dto/filter-stock-movements.dto';
 @ApiBearerAuth('access-token')
 export class StockMovementsController {
   constructor(
-    @Inject('IFindStockMovementsUseCase')
-    private readonly findStockMovementsUseCase: IFindStockMovementsUseCase,
+    @Inject('StockCleanController')
+    private readonly controller: StockController,
   ) {}
 
   @Get()
@@ -41,15 +39,9 @@ export class StockMovementsController {
     description: 'Lista paginada de movimentações',
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  async getStockMovements(@Query() query: FindStockMovementsQueryDto) {
-    const { page, limit, ...filters } = query;
-
-    const result = await this.findStockMovementsUseCase.execute({
-      page: page ?? 1,
-      limit: limit ?? 10,
-      ...filters,
-    });
-
-    return StockPresenter.toPaginatedStockMovementsResponse(result);
+  getStockMovements(
+    @Query() query: FindStockMovementsQueryDto,
+  ): Promise<StockMovementPaginatedResponseDto> {
+    return this.controller.getStockMovements(query);
   }
 }

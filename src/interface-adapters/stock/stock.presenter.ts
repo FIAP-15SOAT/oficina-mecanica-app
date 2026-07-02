@@ -4,36 +4,38 @@ import { StockReservation } from '@domain/entities/stock-reservation.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import {
-  StockMovementResponseDto,
-  StockMovementPartSupplyDto,
-  StockMovementWorkOrderDto,
-} from './dto/stock-movement-response.dto';
-import {
-  StockReservationResponseDto,
-  StockReservationPartSupplyDto,
-  StockReservationWorkOrderDto,
-} from './dto/stock-reservation-response.dto';
+  StockMovementPaginatedResponse,
+  StockMovementResponse,
+  StockPartSupplyResponse,
+  StockReservationPaginatedResponse,
+  StockReservationResponse,
+  StockWorkOrderResponse,
+} from './responses/stock.response';
 
 export class StockPresenter {
-  static toPaginatedStockMovementsResponse(result: PaginatedResult<StockMovement>) {
+  static toPaginatedStockMovementsResponse(
+    result: PaginatedResult<StockMovement>,
+  ): StockMovementPaginatedResponse {
     return {
       data: result.items.map((item) => StockPresenter.toStockMovementResponse(item)),
       pagination: result.pagination,
     };
   }
 
-  static toPaginatedStockReservationsResponse(result: PaginatedResult<StockReservation>) {
+  static toPaginatedStockReservationsResponse(
+    result: PaginatedResult<StockReservation>,
+  ): StockReservationPaginatedResponse {
     return {
       data: result.items.map((item) => StockPresenter.toStockReservationResponse(item)),
       pagination: result.pagination,
     };
   }
 
-  private static toStockMovementResponse(item: StockMovement): StockMovementResponseDto {
+  private static toStockMovementResponse(item: StockMovement): StockMovementResponse {
     return {
       id: item.id,
-      partSupply: StockPresenter.toMovementPartSupply(item),
-      workOrder: item.workOrder ? StockPresenter.toMovementWorkOrder(item.workOrder) : null,
+      partSupply: StockPresenter.mapPartSupplyData(item.partSupply!),
+      workOrder: item.workOrder ? StockPresenter.mapWorkOrderData(item.workOrder) : null,
       type: item.type,
       quantity: item.quantity,
       reason: item.reason ?? null,
@@ -41,17 +43,17 @@ export class StockPresenter {
     };
   }
 
-  private static toStockReservationResponse(item: StockReservation): StockReservationResponseDto {
+  private static toStockReservationResponse(item: StockReservation): StockReservationResponse {
     return {
       id: item.id,
-      partSupply: StockPresenter.toReservationPartSupply(item),
-      workOrder: StockPresenter.toReservationWorkOrder(item.workOrder!),
+      partSupply: StockPresenter.mapPartSupplyData(item.partSupply!),
+      workOrder: StockPresenter.mapWorkOrderData(item.workOrder!),
       quantity: item.quantity,
       createdAt: item.createdAt,
     };
   }
 
-  private static mapPartSupplyData(p: PartSupply) {
+  private static mapPartSupplyData(p: PartSupply): StockPartSupplyResponse {
     return {
       id: p.id,
       name: p.name,
@@ -63,15 +65,7 @@ export class StockPresenter {
     };
   }
 
-  private static toMovementPartSupply(item: StockMovement): StockMovementPartSupplyDto {
-    return StockPresenter.mapPartSupplyData(item.partSupply!);
-  }
-
-  private static toReservationPartSupply(item: StockReservation): StockReservationPartSupplyDto {
-    return StockPresenter.mapPartSupplyData(item.partSupply!);
-  }
-
-  private static mapWorkOrderData(wo: WorkOrder) {
+  private static mapWorkOrderData(wo: WorkOrder): StockWorkOrderResponse {
     return {
       id: wo.id,
       number: wo.number.toString(),
@@ -100,13 +94,5 @@ export class StockPresenter {
           }
         : null,
     };
-  }
-
-  private static toMovementWorkOrder(wo: WorkOrder): StockMovementWorkOrderDto {
-    return StockPresenter.mapWorkOrderData(wo);
-  }
-
-  private static toReservationWorkOrder(wo: WorkOrder): StockReservationWorkOrderDto {
-    return StockPresenter.mapWorkOrderData(wo);
   }
 }

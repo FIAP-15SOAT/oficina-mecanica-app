@@ -14,12 +14,10 @@ import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { IFindStockReservationsUseCase } from '@application/ports/input/stock/find-stock-reservations.use-case.interface';
+import { StockController } from '@interface-adapters/stock/stock.controller';
 
-import { StockPresenter } from './stock.presenter';
-
-import { StockReservationPaginatedResponseDto } from './dto/stock-reservation-response.dto';
-import { FindStockReservationsQueryDto } from './dto/filter-stock-reservations.dto';
+import { StockReservationPaginatedResponseDto } from './dto/responses/stock-reservation-response.dto';
+import { FindStockReservationsQueryDto } from './dto/requests/filter-stock-reservations.dto';
 
 @ApiTags('Estoque - Reservas')
 @ApiProduces('application/json')
@@ -29,8 +27,8 @@ import { FindStockReservationsQueryDto } from './dto/filter-stock-reservations.d
 @ApiBearerAuth('access-token')
 export class StockReservationsController {
   constructor(
-    @Inject('IFindStockReservationsUseCase')
-    private readonly findStockReservationsUseCase: IFindStockReservationsUseCase,
+    @Inject('StockCleanController')
+    private readonly controller: StockController,
   ) {}
 
   @Get()
@@ -41,15 +39,9 @@ export class StockReservationsController {
     description: 'Lista paginada de reservas',
   })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
-  async getStockReservations(@Query() query: FindStockReservationsQueryDto) {
-    const { page, limit, ...filters } = query;
-
-    const result = await this.findStockReservationsUseCase.execute({
-      page: page ?? 1,
-      limit: limit ?? 10,
-      ...filters,
-    });
-
-    return StockPresenter.toPaginatedStockReservationsResponse(result);
+  getStockReservations(
+    @Query() query: FindStockReservationsQueryDto,
+  ): Promise<StockReservationPaginatedResponseDto> {
+    return this.controller.getStockReservations(query);
   }
 }
