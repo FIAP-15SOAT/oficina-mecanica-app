@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, Matches, IsUUID, IsDateString } from 'class-validator';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 
 const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 

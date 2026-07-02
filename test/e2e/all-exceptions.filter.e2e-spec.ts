@@ -3,7 +3,7 @@ import { INestApplication, Controller, Get, HttpException, HttpStatus } from '@n
 import { Test } from '@nestjs/testing';
 import { APP_FILTER } from '@nestjs/core';
 import request from 'supertest';
-import { AllExceptionsFilter } from '../../src/infrastructure/filters/all-exceptions.filter';
+import { AllExceptionsFilter } from '../../src/infrastructure/http/filters/all-exceptions.filter';
 
 @Controller('_test-exceptions')
 class TestExceptionController {

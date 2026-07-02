@@ -5,7 +5,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import {
   WorkOrderAssignedUserResponse,
   WorkOrderCustomerResponse,

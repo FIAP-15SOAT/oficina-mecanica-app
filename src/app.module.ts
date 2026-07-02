@@ -3,13 +3,13 @@ import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 
-import { AllExceptionsFilter } from './infrastructure/filters/all-exceptions.filter';
-import { ApplicationExceptionFilter } from './infrastructure/filters/application-exception.filter';
-import { DomainExceptionFilter } from './infrastructure/filters/domain-exception.filter';
-import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastructure-exception.filter';
+import { AllExceptionsFilter } from './infrastructure/http/filters/all-exceptions.filter';
+import { ApplicationExceptionFilter } from './infrastructure/http/filters/application-exception.filter';
+import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exception.filter';
+import { InfrastructureExceptionFilter } from './infrastructure/http/filters/infrastructure-exception.filter';
 
-import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
-import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
+import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
+import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
 import { AuthModule } from './infrastructure/http/auth/auth.module';
 import { UserModule } from './infrastructure/http/user/user.module';
 import { ServiceModule } from './infrastructure/http/service/service.module';

@@ -30,11 +30,11 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
-import { RolesGuard } from '@infrastructure/auth/roles.guard';
-import { Roles } from '@infrastructure/auth/roles.decorator';
-import { Public } from '@infrastructure/auth/public.decorator';
-import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
+import { JwtAuthGuard } from '@infrastructure/http/auth/jwt-auth.guard';
+import { RolesGuard } from '@infrastructure/http/auth/roles.guard';
+import { Roles } from '@infrastructure/http/auth/roles.decorator';
+import { Public } from '@infrastructure/http/auth/public.decorator';
+import { AuthenticatedUser, CurrentUser } from '@infrastructure/http/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { QuoteController } from '@interface-adapters/quote/quote.controller';

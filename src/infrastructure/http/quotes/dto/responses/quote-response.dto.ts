@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import { WorkOrderResponseDto } from '@infrastructure/http/work-order/dto/responses/work-order-response.dto';
 import {
   QuoteServiceItemResponse,

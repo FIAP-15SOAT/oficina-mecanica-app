@@ -9,9 +9,9 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
-import { RolesGuard } from '@infrastructure/auth/roles.guard';
-import { Roles } from '@infrastructure/auth/roles.decorator';
+import { JwtAuthGuard } from '@infrastructure/http/auth/jwt-auth.guard';
+import { RolesGuard } from '@infrastructure/http/auth/roles.guard';
+import { Roles } from '@infrastructure/http/auth/roles.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { StockController } from '@interface-adapters/stock/stock.controller';

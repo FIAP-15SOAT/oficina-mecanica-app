@@ -2,7 +2,7 @@ import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 
 export class FilterPartsSuppliesDto {
   @ApiPropertyOptional({

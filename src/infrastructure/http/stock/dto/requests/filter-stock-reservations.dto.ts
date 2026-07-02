@@ -1,6 +1,6 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsUUID } from 'class-validator';
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 
 export class FilterStockReservationsDto {
   @ApiPropertyOptional({ format: 'uuid' })

@@ -9,8 +9,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
-import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
+import { AuthenticatedUser, CurrentUser } from '@infrastructure/http/auth/current-user.decorator';
+import { JwtAuthGuard } from '@infrastructure/http/auth/jwt-auth.guard';
 
 import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 

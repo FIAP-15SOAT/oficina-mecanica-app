@@ -6,7 +6,7 @@ import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-u
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
-import { JwtStrategy } from '@infrastructure/auth/jwt.strategy';
+import { JwtStrategy } from '@infrastructure/http/auth/jwt.strategy';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';

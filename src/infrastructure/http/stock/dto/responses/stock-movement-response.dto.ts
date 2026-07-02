@@ -4,7 +4,7 @@ import { CustomerType } from '@domain/enums/customer-type.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import {
   StockMovementPaginatedResponse,
   StockMovementResponse,

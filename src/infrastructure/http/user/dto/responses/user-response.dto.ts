@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import {
   UserDataResponse,
   UserPaginatedResponse,

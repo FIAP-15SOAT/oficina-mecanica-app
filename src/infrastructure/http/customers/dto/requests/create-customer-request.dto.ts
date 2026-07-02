@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { IsValidCpfCnpj } from '@infrastructure/validators/document.validator';
+import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
 import { PHONE_REGEX } from '@domain/constants/regex/phone.regex';
 import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/customer.constants';
 

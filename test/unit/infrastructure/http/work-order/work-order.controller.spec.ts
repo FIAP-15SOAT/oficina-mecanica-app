@@ -12,7 +12,7 @@ import { UpdateWorkOrderStatusRequestDto } from '@infrastructure/http/work-order
 import { UpdateWorkOrderServiceStatusRequestDto } from '@infrastructure/http/work-order/dto/requests/update-work-order-service-status-request.dto';
 import { FindAllWorkOrdersPaginatedQueryDto } from '@infrastructure/http/work-order/dto/requests/filter-work-orders.dto';
 
-import { AuthenticatedUser } from '@infrastructure/auth/current-user.decorator';
+import { AuthenticatedUser } from '@infrastructure/http/auth/current-user.decorator';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';

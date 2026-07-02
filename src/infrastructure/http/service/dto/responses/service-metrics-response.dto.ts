@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import {
   ServiceMetricsDataResponse,
   ServiceMetricsPaginatedResponse,

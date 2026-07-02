@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 
 export class FilterUsersDto {
   @ApiPropertyOptional({

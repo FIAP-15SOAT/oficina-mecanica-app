@@ -8,7 +8,7 @@ import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { AuthenticatedUser } from '@infrastructure/auth/current-user.decorator';
+import { AuthenticatedUser } from '@infrastructure/http/auth/current-user.decorator';
 import { CreateQuoteRequestDto } from '@infrastructure/http/quotes/dto/requests/create-quote-request.dto';
 import { AddQuoteServiceRequestDto } from '@infrastructure/http/quotes/dto/requests/add-quote-service-request.dto';
 import { AddQuotePartSupplyRequestDto } from '@infrastructure/http/quotes/dto/requests/add-quote-part-supply-request.dto';

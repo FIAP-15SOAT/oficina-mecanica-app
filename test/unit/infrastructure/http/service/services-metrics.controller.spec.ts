@@ -5,7 +5,7 @@ import { ServicesMetricsController } from '@infrastructure/http/service/services
 import { ServiceController as ServiceCleanController } from '@interface-adapters/service/service.controller';
 import { ServiceMetricsPresenter } from '@interface-adapters/service/service-metrics.presenter';
 
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 import { ServiceMetrics } from '@domain/interfaces/repositories/service.repository.interface';
 
 describe('ServicesMetricsController', () => {

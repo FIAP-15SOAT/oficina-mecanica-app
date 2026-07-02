@@ -7,7 +7,7 @@ import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
 
 import { LoginRequestDto } from '@infrastructure/http/auth/dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from '@infrastructure/http/auth/dto/requests/refresh-token-request.dto';
-import { AuthenticatedUser } from '@infrastructure/auth/current-user.decorator';
+import { AuthenticatedUser } from '@infrastructure/http/auth/current-user.decorator';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';

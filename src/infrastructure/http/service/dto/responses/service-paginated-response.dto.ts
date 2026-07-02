@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ServiceResponseDto } from './service-response.dto';
-import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@infrastructure/http/common/dto/paginated-response.dto';
 import { ServicePaginatedResponse } from '@interface-adapters/service/responses/service.response';
 
 export class ServicePaginatedResponseDto

@@ -8,14 +8,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
-import { Roles } from '@infrastructure/auth/roles.decorator';
-import { RolesGuard } from '@infrastructure/auth/roles.guard';
+import { JwtAuthGuard } from '@infrastructure/http/auth/jwt-auth.guard';
+import { Roles } from '@infrastructure/http/auth/roles.decorator';
+import { RolesGuard } from '@infrastructure/http/auth/roles.guard';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { ServiceController as ServiceCleanController } from '@interface-adapters/service/service.controller';
 
-import { PaginationDto } from '@presentation/common/dto/pagination.dto';
+import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 import { ServiceMetricsPaginatedResponseDto } from './dto/responses/service-metrics-response.dto';
 
 @ApiTags('Gestão de Serviços - Métricas')

@@ -1,14 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { DateSerializerInterceptor } from '../../src/infrastructure/interceptors/date-serializer.interceptor';
-import { SanitizeStringsPipe } from '../../src/infrastructure/pipes/sanitize-strings.pipe';
+import { DateSerializerInterceptor } from '../../src/infrastructure/http/interceptors/date-serializer.interceptor';
+import { SanitizeStringsPipe } from '../../src/infrastructure/http/pipes/sanitize-strings.pipe';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import { execSync } from 'child_process';
 import type { Server } from 'http';
 import { join } from 'path';
 import { AppModule } from '../../src/app.module';
-import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
+import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
 
 export interface TestContext {
   app: INestApplication;
