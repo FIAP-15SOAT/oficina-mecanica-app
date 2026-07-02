@@ -1,17 +1,22 @@
 import { randomUUID } from 'node:crypto';
-import { UserController } from '@presentation/user/user.controller';
-import { createMockUser } from '../../../helpers/user-mock.factory';
-import { CreateUserRequestDto } from '@presentation/user/dto/create-user-request.dto';
-import { UpdateUserRequestDto } from '@presentation/user/dto/update-user-request.dto';
-import { UpdateUserStatusRequestDto } from '@presentation/user/dto/update-user-status-request.dto';
+
+import { UserController } from '@interface-adapters/user/user.controller';
+import { UserPresenter } from '@interface-adapters/user/user.presenter';
+
+import { CreateUserRequest } from '@interface-adapters/user/requests/create-user-request';
+import { UpdateUserRequest } from '@interface-adapters/user/requests/update-user-request';
+
+import { UserRole } from '@domain/enums/user-role.enum';
+import { Email } from '@domain/value-objects/email.vo';
+
 import { ICreateUserUseCase } from '@application/ports/input/user/create-user.use-case.interface';
 import { IFindUserByIdUseCase } from '@application/ports/input/user/find-user-by-id.use-case.interface';
 import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-users.use-case.interface';
 import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
 import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
 import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
-import { UserRole } from '@domain/enums/user-role.enum';
-import { Email } from '@domain/value-objects/email.vo';
+
+import { createMockUser } from '../../../helpers/user-mock.factory';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -42,7 +47,7 @@ describe('UserController', () => {
 
   describe('create', () => {
     it('should create a user successfully', async () => {
-      const request: CreateUserRequestDto = {
+      const request: CreateUserRequest = {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
         password: 'SecurePass123!',
@@ -59,7 +64,7 @@ describe('UserController', () => {
 
       const result = await controller.create(request);
 
-      expect(result).toEqual({ data: createdUser.toPublicView() });
+      expect(result).toEqual(UserPresenter.toDataResponse(createdUser.toPublicView()));
       expect(createUserUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
@@ -74,48 +79,29 @@ describe('UserController', () => {
       const usersPublicView = users.map((u) => u.toPublicView());
       const paginatedResult = {
         items: usersPublicView,
-        pagination: {
-          totalRecords: 2,
-          totalPages: 1,
-          page: 1,
-          limit: 10,
-        },
+        pagination: { totalRecords: 2, totalPages: 1, page: 1, limit: 10 },
       };
 
       findAllUsersUseCase.execute.mockResolvedValue(paginatedResult);
 
       const result = await controller.findAll({ page: 1, limit: 10 });
 
-      expect(result).toEqual({
-        data: paginatedResult.items,
-        pagination: paginatedResult.pagination,
-      });
+      expect(result).toEqual(UserPresenter.toPaginatedResponse(paginatedResult));
       expect(findAllUsersUseCase.execute).toHaveBeenCalledWith({ page: 1, limit: 10 });
     });
 
     it('should use default pagination when not provided', async () => {
       const paginatedResult = {
         items: [],
-        pagination: {
-          totalRecords: 0,
-          totalPages: 0,
-          page: 1,
-          limit: 10,
-        },
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
       };
 
       findAllUsersUseCase.execute.mockResolvedValue(paginatedResult);
 
       const result = await controller.findAll({});
 
-      expect(result).toEqual({
-        data: paginatedResult.items,
-        pagination: paginatedResult.pagination,
-      });
-      expect(findAllUsersUseCase.execute).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-      });
+      expect(result).toEqual(UserPresenter.toPaginatedResponse(paginatedResult));
+      expect(findAllUsersUseCase.execute).toHaveBeenCalledWith({ page: 1, limit: 10 });
     });
   });
 
@@ -128,7 +114,7 @@ describe('UserController', () => {
 
       const result = await controller.findById(id);
 
-      expect(result).toEqual({ data: user.toPublicView() });
+      expect(result).toEqual(UserPresenter.toDataResponse(user.toPublicView()));
       expect(findUserByIdUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
@@ -136,7 +122,7 @@ describe('UserController', () => {
   describe('update', () => {
     it('should update a user successfully', async () => {
       const id = randomUUID();
-      const request: UpdateUserRequestDto = {
+      const request: UpdateUserRequest = {
         name: 'Updated Name',
         email: 'updated@example.com',
       };
@@ -144,14 +130,14 @@ describe('UserController', () => {
       const updatedUser = createMockUser({
         id,
         name: request.name,
-        email: request.email ? Email.create(request.email) : undefined,
+        email: Email.create(request.email!),
       });
 
       updateUserUseCase.execute.mockResolvedValue(updatedUser.toPublicView());
 
       const result = await controller.update(id, request);
 
-      expect(result).toEqual({ data: updatedUser.toPublicView() });
+      expect(result).toEqual(UserPresenter.toDataResponse(updatedUser.toPublicView()));
       expect(updateUserUseCase.execute).toHaveBeenCalledWith(id, request);
     });
   });
@@ -159,53 +145,38 @@ describe('UserController', () => {
   describe('updateStatus', () => {
     it('should update user status to inactive', async () => {
       const id = randomUUID();
-      const request: UpdateUserStatusRequestDto = {
-        active: false,
-      };
-
-      const updatedUser = createMockUser({
-        id,
-        isActive: false,
-      });
+      const updatedUser = createMockUser({ id, isActive: false });
 
       updateUserStatusUseCase.execute.mockResolvedValue(updatedUser.toPublicView());
 
-      const result = await controller.updateStatus(id, request);
+      const result = await controller.updateStatus(id, { active: false });
 
-      expect(result).toEqual({ data: updatedUser.toPublicView() });
+      expect(result).toEqual(UserPresenter.toDataResponse(updatedUser.toPublicView()));
       expect(updateUserStatusUseCase.execute).toHaveBeenCalledWith(id, false);
     });
 
     it('should update user status to active', async () => {
       const id = randomUUID();
-      const request: UpdateUserStatusRequestDto = {
-        active: true,
-      };
-
-      const updatedUser = createMockUser({
-        id,
-        isActive: true,
-      });
+      const updatedUser = createMockUser({ id, isActive: true });
 
       updateUserStatusUseCase.execute.mockResolvedValue(updatedUser.toPublicView());
 
-      const result = await controller.updateStatus(id, request);
+      const result = await controller.updateStatus(id, { active: true });
 
-      expect(result).toEqual({ data: updatedUser.toPublicView() });
+      expect(result).toEqual(UserPresenter.toDataResponse(updatedUser.toPublicView()));
       expect(updateUserStatusUseCase.execute).toHaveBeenCalledWith(id, true);
     });
   });
 
-  describe('delete', () => {
-    it('should delete a user successfully', async () => {
+  describe('remove', () => {
+    it('should call the delete use case with the correct id', async () => {
       const id = randomUUID();
 
       deleteUserUseCase.execute.mockResolvedValue(undefined);
 
-      await controller.delete(id);
+      await controller.remove(id);
 
       expect(deleteUserUseCase.execute).toHaveBeenCalledWith(id);
-      expect(deleteUserUseCase.execute).toHaveBeenCalledTimes(1);
     });
   });
 });

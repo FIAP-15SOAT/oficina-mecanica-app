@@ -8,6 +8,7 @@ import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-c
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
+import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
 import { UserController } from './user.controller';
 
 @Module({
@@ -15,36 +16,17 @@ import { UserController } from './user.controller';
   controllers: [UserController],
   providers: [
     {
-      provide: 'ICreateUserUseCase',
-      useFactory: (userRepo: IUserRepository, hashService: IHashService) =>
-        new CreateUserUseCase(userRepo, hashService),
+      provide: 'UserCleanController',
+      useFactory: (userRepository: IUserRepository, hashService: IHashService) =>
+        new UserCleanController(
+          new CreateUserUseCase(userRepository, hashService),
+          new FindUserByIdUseCase(userRepository),
+          new FindAllUsersUseCase(userRepository),
+          new UpdateUserUseCase(userRepository, hashService),
+          new UpdateUserStatusUseCase(userRepository),
+          new DeleteUserUseCase(userRepository),
+        ),
       inject: ['IUserRepository', 'IHashService'],
-    },
-    {
-      provide: 'IFindUserByIdUseCase',
-      useFactory: (userRepo: IUserRepository) => new FindUserByIdUseCase(userRepo),
-      inject: ['IUserRepository'],
-    },
-    {
-      provide: 'IFindAllUsersUseCase',
-      useFactory: (userRepo: IUserRepository) => new FindAllUsersUseCase(userRepo),
-      inject: ['IUserRepository'],
-    },
-    {
-      provide: 'IUpdateUserUseCase',
-      useFactory: (userRepo: IUserRepository, hashService: IHashService) =>
-        new UpdateUserUseCase(userRepo, hashService),
-      inject: ['IUserRepository', 'IHashService'],
-    },
-    {
-      provide: 'IUpdateUserStatusUseCase',
-      useFactory: (userRepo: IUserRepository) => new UpdateUserStatusUseCase(userRepo),
-      inject: ['IUserRepository'],
-    },
-    {
-      provide: 'IDeleteUserUseCase',
-      useFactory: (userRepo: IUserRepository) => new DeleteUserUseCase(userRepo),
-      inject: ['IUserRepository'],
     },
   ],
 })

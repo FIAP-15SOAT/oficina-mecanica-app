@@ -1,8 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import {
+  UserDataResponse,
+  UserPaginatedResponse,
+  UserResponse,
+} from '@interface-adapters/user/responses/user.response';
 
-export class UserResponseDto {
+export class UserResponseDto implements UserResponse {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000', format: 'uuid' })
   id!: string;
 
@@ -25,17 +30,15 @@ export class UserResponseDto {
   updatedAt!: Date;
 }
 
-export class UserDataResponseDto {
+export class UserDataResponseDto implements UserDataResponse {
   @ApiProperty({ type: UserResponseDto, description: 'Dados do usuário' })
   data!: UserResponseDto;
 }
 
-export class UserPaginatedResponseDto extends PaginatedResponseDto<UserResponseDto> {
+export class UserPaginatedResponseDto
+  extends PaginatedResponseDto<UserResponseDto>
+  implements UserPaginatedResponse
+{
   @ApiProperty({ type: [UserResponseDto], description: 'Usuários da página atual' })
-  data!: UserResponseDto[];
-}
-
-export class UsersDataResponseDto {
-  @ApiProperty({ type: [UserResponseDto], description: 'Lista de usuários' })
   data!: UserResponseDto[];
 }

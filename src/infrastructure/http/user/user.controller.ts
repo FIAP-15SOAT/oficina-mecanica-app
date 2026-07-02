@@ -35,18 +35,14 @@ import { JwtAuthGuard } from '@infrastructure/auth/jwt-auth.guard';
 import { Roles } from '@infrastructure/auth/roles.decorator';
 import { RolesGuard } from '@infrastructure/auth/roles.guard';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { ICreateUserUseCase } from '@application/ports/input/user/create-user.use-case.interface';
-import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
-import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-users.use-case.interface';
-import { IFindUserByIdUseCase } from '@application/ports/input/user/find-user-by-id.use-case.interface';
-import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
-import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
-import { CreateUserRequestDto } from './dto/create-user-request.dto';
-import { FindAllUsersQueryDto } from './dto/filter-users.dto';
-import { UpdateUserStatusRequestDto } from './dto/update-user-status-request.dto';
-import { UpdateUserRequestDto } from './dto/update-user-request.dto';
-import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/user-response.dto';
-import { UserPresenter } from './user.presenter';
+
+import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
+
+import { CreateUserRequestDto } from './dto/requests/create-user-request.dto';
+import { FindAllUsersQueryDto } from './dto/requests/filter-users.dto';
+import { UpdateUserStatusRequestDto } from './dto/requests/update-user-status-request.dto';
+import { UpdateUserRequestDto } from './dto/requests/update-user-request.dto';
+import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/responses/user-response.dto';
 
 @ApiTags('Gestão de Usuários')
 @ApiProduces('application/json')
@@ -57,18 +53,8 @@ import { UserPresenter } from './user.presenter';
 @ApiBearerAuth('access-token')
 export class UserController {
   constructor(
-    @Inject('ICreateUserUseCase')
-    private readonly createUserUseCase: ICreateUserUseCase,
-    @Inject('IFindUserByIdUseCase')
-    private readonly findUserByIdUseCase: IFindUserByIdUseCase,
-    @Inject('IFindAllUsersUseCase')
-    private readonly findAllUsersUseCase: IFindAllUsersUseCase,
-    @Inject('IUpdateUserUseCase')
-    private readonly updateUserUseCase: IUpdateUserUseCase,
-    @Inject('IUpdateUserStatusUseCase')
-    private readonly updateUserStatusUseCase: IUpdateUserStatusUseCase,
-    @Inject('IDeleteUserUseCase')
-    private readonly deleteUserUseCase: IDeleteUserUseCase,
+    @Inject('UserCleanController')
+    private readonly controller: UserCleanController,
   ) {}
 
   @Post()
@@ -79,9 +65,8 @@ export class UserController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiConflictResponse({ description: 'E-mail já cadastrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
-  async create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
-    const result = await this.createUserUseCase.execute(dto);
-    return UserPresenter.toDataResponse(result);
+  create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
+    return this.controller.create(dto);
   }
 
   @Get()
@@ -89,14 +74,8 @@ export class UserController {
   @ApiOperation({ summary: 'Listar usuários de forma paginada (somente Admin)' })
   @ApiOkResponse({ type: UserPaginatedResponseDto, description: 'Lista paginada de usuários' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  async findAll(@Query() query: FindAllUsersQueryDto): Promise<UserPaginatedResponseDto> {
-    const result = await this.findAllUsersUseCase.execute({
-      ...query,
-      page: query.page ?? 1,
-      limit: query.limit ?? 10,
-    });
-
-    return UserPresenter.toPaginatedResponse(result);
+  findAll(@Query() query: FindAllUsersQueryDto): Promise<UserPaginatedResponseDto> {
+    return this.controller.findAll(query);
   }
 
   @Get(':id')
@@ -107,9 +86,8 @@ export class UserController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
-    const result = await this.findUserByIdUseCase.execute(id);
-    return UserPresenter.toDataResponse(result);
+  findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserDataResponseDto> {
+    return this.controller.findById(id);
   }
 
   @Put(':id')
@@ -122,12 +100,11 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'E-mail já cadastrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
-  async update(
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserRequestDto,
   ): Promise<UserDataResponseDto> {
-    const result = await this.updateUserUseCase.execute(id, dto);
-    return UserPresenter.toDataResponse(result);
+    return this.controller.update(id, dto);
   }
 
   @Patch(':id')
@@ -139,12 +116,11 @@ export class UserController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Usuário já está no status informado' })
-  async updateStatus(
+  updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() request: UpdateUserStatusRequestDto,
+    @Body() dto: UpdateUserStatusRequestDto,
   ): Promise<UserDataResponseDto> {
-    const result = await this.updateUserStatusUseCase.execute(id, request.active);
-    return UserPresenter.toDataResponse(result);
+    return this.controller.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -156,7 +132,7 @@ export class UserController {
   @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
-  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.deleteUserUseCase.execute(id);
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.controller.remove(id);
   }
 }
