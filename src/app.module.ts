@@ -16,7 +16,7 @@ import { ServiceModule } from './infrastructure/http/service/service.module';
 import { PartsSuppliesModule } from './infrastructure/http/parts-supplies/parts-supplies.module';
 import { CustomersModule } from './infrastructure/http/customers/customers.module';
 import { VehiclesModule } from './infrastructure/http/vehicles/vehicles.module';
-import { WorkOrderModule } from './presentation/work-order/work-order.module';
+import { WorkOrderModule } from './infrastructure/http/work-order/work-order.module';
 import { QuotesModule } from './infrastructure/http/quotes/quotes.module';
 import { StockModule } from './presentation/stock/stock.module';
 

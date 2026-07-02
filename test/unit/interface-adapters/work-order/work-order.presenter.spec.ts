@@ -1,17 +1,20 @@
-import { WorkOrderPresenter } from '@presentation/work-order/work-order.presenter';
+import { randomUUID } from 'node:crypto';
+
+import { WorkOrderPresenter } from '@interface-adapters/work-order/work-order.presenter';
+
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { WorkOrderPartSupply } from '@domain/entities/work-order-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
+import { Plate } from '@domain/value-objects/plate.vo';
+import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
+
 import { createMockService } from '../../../helpers/service-mock.factory';
 import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory';
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { createMockUser } from '../../../helpers/user-mock.factory';
-import { Plate } from '@domain/value-objects/plate.vo';
-import { WorkOrderNumber } from '@domain/value-objects/work-order-number.vo';
-import { randomUUID } from 'node:crypto';
 
 describe('WorkOrderPresenter', () => {
   describe('toResponse', () => {

@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '@presentation/common/dto/pagination.dto';
 
 export class FilterWorkOrdersDto {
   @ApiPropertyOptional({ description: 'Filtrar por número da OS', example: '000001' })

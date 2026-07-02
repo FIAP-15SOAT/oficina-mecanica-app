@@ -2,7 +2,7 @@ import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
-import { WorkOrderPresenter } from '@presentation/work-order/work-order.presenter';
+import { WorkOrderPresenter } from '@interface-adapters/work-order/work-order.presenter';
 
 import {
   QuoteResponse,

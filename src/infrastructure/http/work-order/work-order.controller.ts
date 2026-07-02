@@ -34,29 +34,20 @@ import { Roles } from '@infrastructure/auth/roles.decorator';
 import { AuthenticatedUser, CurrentUser } from '@infrastructure/auth/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
-import { ICreateWorkOrderUseCase } from '@application/ports/input/work-order/create-work-order.use-case.interface';
-import { IFindWorkOrderByIdUseCase } from '@application/ports/input/work-order/find-work-order-by-id.use-case.interface';
-import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
-import { IUpdateWorkOrderUseCase } from '@application/ports/input/work-order/update-work-order.use-case.interface';
-import { IUpdateWorkOrderStatusUseCase } from '@application/ports/input/work-order/update-work-order-status.use-case.interface';
-import { IUpdateWorkOrderServiceStatusUseCase } from '@application/ports/input/work-order/update-work-order-service-status.use-case.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@application/ports/input/work-order/find-work-order-status-history.use-case.interface';
-import { IFindWorkOrderQuotesUseCase } from '@application/ports/input/quote/find-work-order-quotes.use-case.interface';
+import { WorkOrderController as WorkOrderCleanController } from '@interface-adapters/work-order/work-order.controller';
 
-import { CreateWorkOrderRequestDto } from './dto/create-work-order-request.dto';
-import { UpdateWorkOrderRequestDto } from './dto/update-work-order-request.dto';
-import { UpdateWorkOrderStatusRequestDto } from './dto/update-work-order-status-request.dto';
-import { FindAllWorkOrdersPaginatedQueryDto } from './dto/filter-work-orders.dto';
-import { UpdateWorkOrderServiceStatusRequestDto } from './dto/update-work-order-service-status-request.dto';
+import { CreateWorkOrderRequestDto } from './dto/requests/create-work-order-request.dto';
+import { UpdateWorkOrderRequestDto } from './dto/requests/update-work-order-request.dto';
+import { UpdateWorkOrderStatusRequestDto } from './dto/requests/update-work-order-status-request.dto';
+import { FindAllWorkOrdersPaginatedQueryDto } from './dto/requests/filter-work-orders.dto';
+import { UpdateWorkOrderServiceStatusRequestDto } from './dto/requests/update-work-order-service-status-request.dto';
 import {
   WorkOrderDataResponseDto,
   WorkOrderPaginatedResponseDto,
   WorkOrderServiceItemDataResponseDto,
-} from './dto/work-order-response.dto';
-import { StatusHistoryListResponseDto } from './dto/status-history-response.dto';
+} from './dto/responses/work-order-response.dto';
+import { StatusHistoryListResponseDto } from './dto/responses/status-history-response.dto';
 import { QuoteListResponseDto } from '@infrastructure/http/quotes/dto/responses/quote-response.dto';
-import { WorkOrderPresenter } from './work-order.presenter';
-import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 
 @ApiTags('Gestão de Ordens de Serviço')
 @ApiProduces('application/json')
@@ -66,22 +57,8 @@ import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 @ApiBearerAuth('access-token')
 export class WorkOrderController {
   constructor(
-    @Inject('ICreateWorkOrderUseCase')
-    private readonly createWorkOrderUseCase: ICreateWorkOrderUseCase,
-    @Inject('IFindWorkOrderByIdUseCase')
-    private readonly findWorkOrderByIdUseCase: IFindWorkOrderByIdUseCase,
-    @Inject('IFindAllWorkOrdersPaginatedUseCase')
-    private readonly findAllWorkOrdersPaginatedUseCase: IFindAllWorkOrdersPaginatedUseCase,
-    @Inject('IUpdateWorkOrderUseCase')
-    private readonly updateWorkOrderUseCase: IUpdateWorkOrderUseCase,
-    @Inject('IUpdateWorkOrderStatusUseCase')
-    private readonly updateWorkOrderStatusUseCase: IUpdateWorkOrderStatusUseCase,
-    @Inject('IUpdateWorkOrderServiceStatusUseCase')
-    private readonly updateWorkOrderServiceStatusUseCase: IUpdateWorkOrderServiceStatusUseCase,
-    @Inject('IFindWorkOrderStatusHistoryUseCase')
-    private readonly findWorkOrderStatusHistoryUseCase: IFindWorkOrderStatusHistoryUseCase,
-    @Inject('IFindWorkOrderQuotesUseCase')
-    private readonly findWorkOrderQuotesUseCase: IFindWorkOrderQuotesUseCase,
+    @Inject('WorkOrderCleanController')
+    private readonly controller: WorkOrderCleanController,
   ) {}
 
   @Get(':id/quotes')
@@ -90,9 +67,8 @@ export class WorkOrderController {
   @ApiOkResponse({ type: QuoteListResponseDto, description: 'Lista de orçamentos' })
   @ApiNotFoundResponse({ description: 'Ordem de Serviço não encontrada' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  async findQuotes(@Param('id', ParseUUIDPipe) id: string) {
-    const quotes = await this.findWorkOrderQuotesUseCase.execute(id);
-    return QuotePresenter.toListResponse(quotes);
+  findQuotes(@Param('id', ParseUUIDPipe) id: string): Promise<QuoteListResponseDto> {
+    return this.controller.findQuotes(id);
   }
 
   @Post()
@@ -108,28 +84,21 @@ export class WorkOrderController {
   @ApiConflictResponse({
     description: 'Regra de negócio violada',
   })
-  async create(@Body() dto: CreateWorkOrderRequestDto, @CurrentUser() user: AuthenticatedUser) {
-    const workOrder = await this.createWorkOrderUseCase.execute({
-      ...dto,
-      userId: user.sub,
-    });
-    return WorkOrderPresenter.toDataResponse(workOrder);
+  create(
+    @Body() dto: CreateWorkOrderRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<WorkOrderDataResponseDto> {
+    return this.controller.create(dto, user.sub);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar Ordens de Serviço paginado' })
   @ApiOkResponse({ type: WorkOrderPaginatedResponseDto })
-  async findAll(@Query() query: FindAllWorkOrdersPaginatedQueryDto) {
-    const { page, limit, ...filters } = query;
-
-    const result = await this.findAllWorkOrdersPaginatedUseCase.execute({
-      page: page ?? 1,
-      limit: limit ?? 10,
-      ...filters,
-    });
-
-    return WorkOrderPresenter.toPaginatedResponse(result);
+  findAll(
+    @Query() query: FindAllWorkOrdersPaginatedQueryDto,
+  ): Promise<WorkOrderPaginatedResponseDto> {
+    return this.controller.findAll(query);
   }
 
   @Get(':id')
@@ -138,9 +107,8 @@ export class WorkOrderController {
   @ApiOkResponse({ type: WorkOrderDataResponseDto })
   @ApiNotFoundResponse()
   @ApiParam({ name: 'id', format: 'uuid' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    const workOrder = await this.findWorkOrderByIdUseCase.execute(id);
-    return WorkOrderPresenter.toDataResponse(workOrder);
+  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<WorkOrderDataResponseDto> {
+    return this.controller.findOne(id);
   }
 
   @Put(':id')
@@ -150,16 +118,12 @@ export class WorkOrderController {
   @ApiNotFoundResponse()
   @ApiUnprocessableEntityResponse()
   @ApiParam({ name: 'id', format: 'uuid' })
-  async update(
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkOrderRequestDto,
     @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const workOrder = await this.updateWorkOrderUseCase.execute(id, {
-      ...dto,
-      userId: user.sub,
-    });
-    return WorkOrderPresenter.toDataResponse(workOrder);
+  ): Promise<WorkOrderDataResponseDto> {
+    return this.controller.update(id, dto, user.sub);
   }
 
   @Patch(':id')
@@ -173,17 +137,12 @@ export class WorkOrderController {
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  async updateStatus(
+  updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkOrderStatusRequestDto,
     @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const workOrder = await this.updateWorkOrderStatusUseCase.execute(id, {
-      status: dto.status,
-      notes: dto.notes,
-      userId: user.sub,
-    });
-    return WorkOrderPresenter.toDataResponse(workOrder);
+  ): Promise<WorkOrderDataResponseDto> {
+    return this.controller.updateStatus(id, dto, user.sub);
   }
 
   @Patch(':workOrderId/services/:serviceId')
@@ -200,19 +159,13 @@ export class WorkOrderController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiParam({ name: 'workOrderId', format: 'uuid' })
   @ApiParam({ name: 'serviceId', format: 'uuid' })
-  async updateServiceStatus(
+  updateServiceStatus(
     @Param('workOrderId', ParseUUIDPipe) workOrderId: string,
     @Param('serviceId', ParseUUIDPipe) serviceId: string,
     @Body() dto: UpdateWorkOrderServiceStatusRequestDto,
     @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const result = await this.updateWorkOrderServiceStatusUseCase.execute({
-      workOrderId,
-      serviceId,
-      status: dto.status,
-      userId: user.sub,
-    });
-    return WorkOrderPresenter.toServiceItemDataResponse(result);
+  ): Promise<WorkOrderServiceItemDataResponseDto> {
+    return this.controller.updateServiceStatus(workOrderId, serviceId, dto, user.sub);
   }
 
   @Get(':id/status-history')
@@ -221,8 +174,7 @@ export class WorkOrderController {
   @ApiOkResponse({ type: StatusHistoryListResponseDto })
   @ApiNotFoundResponse()
   @ApiParam({ name: 'id', format: 'uuid' })
-  async getStatusHistory(@Param('id', ParseUUIDPipe) id: string) {
-    const history = await this.findWorkOrderStatusHistoryUseCase.execute(id);
-    return WorkOrderPresenter.toStatusHistoryListResponse(history);
+  getStatusHistory(@Param('id', ParseUUIDPipe) id: string): Promise<StatusHistoryListResponseDto> {
+    return this.controller.getStatusHistory(id);
   }
 }

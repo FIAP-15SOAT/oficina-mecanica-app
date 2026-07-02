@@ -1,4 +1,4 @@
-import type { WorkOrderResponseDto } from '@presentation/work-order/dto/work-order-response.dto';
+import type { WorkOrderResponse } from '@interface-adapters/work-order/responses/work-order.response';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -32,7 +32,7 @@ export interface QuotePartSupplyItemResponse {
 
 export interface QuoteResponse {
   id: string;
-  workOrder: WorkOrderResponseDto;
+  workOrder: WorkOrderResponse;
   status: QuoteStatus;
   notes: string | null;
   sentAt: Date | null;

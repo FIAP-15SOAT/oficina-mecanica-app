@@ -7,24 +7,24 @@ import { Vehicle } from '@domain/entities/vehicle.entity';
 import { User } from '@domain/entities/user.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
 import {
-  WorkOrderAssignedUserResponseDto,
-  WorkOrderCustomerResponseDto,
-  WorkOrderDataResponseDto,
-  WorkOrderPaginatedResponseDto,
-  WorkOrderPartSupplyItemResponseDto,
-  WorkOrderResponseDto,
-  WorkOrderServiceItemResponseDto,
-  WorkOrderServiceItemDataResponseDto,
-  WorkOrderVehicleResponseDto,
-} from './dto/work-order-response.dto';
+  WorkOrderAssignedUserResponse,
+  WorkOrderCustomerResponse,
+  WorkOrderDataResponse,
+  WorkOrderPaginatedResponse,
+  WorkOrderPartSupplyItemResponse,
+  WorkOrderResponse,
+  WorkOrderServiceItemResponse,
+  WorkOrderServiceItemDataResponse,
+  WorkOrderVehicleResponse,
+} from './responses/work-order.response';
 import {
-  StatusHistoryChangedByDto,
-  StatusHistoryListResponseDto,
-  StatusHistoryResponseDto,
-} from './dto/status-history-response.dto';
+  StatusHistoryChangedByResponse,
+  StatusHistoryListResponse,
+  StatusHistoryResponse,
+} from './responses/status-history.response';
 
 export class WorkOrderPresenter {
-  static toSummaryResponse(workOrder: WorkOrder): WorkOrderResponseDto {
+  static toSummaryResponse(workOrder: WorkOrder): WorkOrderResponse {
     return {
       id: workOrder.id,
       number: workOrder.number.toString(),
@@ -47,7 +47,7 @@ export class WorkOrderPresenter {
     };
   }
 
-  static toResponse(workOrder: WorkOrder): WorkOrderResponseDto {
+  static toResponse(workOrder: WorkOrder): WorkOrderResponse {
     return {
       ...WorkOrderPresenter.toSummaryResponse(workOrder),
       services: workOrder.services.map((s) => WorkOrderPresenter.toServiceItem(s)),
@@ -55,13 +55,13 @@ export class WorkOrderPresenter {
     };
   }
 
-  static toDataResponse(workOrder: WorkOrder): WorkOrderDataResponseDto {
+  static toDataResponse(workOrder: WorkOrder): WorkOrderDataResponse {
     return { data: WorkOrderPresenter.toResponse(workOrder) };
   }
 
   static toPaginatedResponse(
     paginatedResult: PaginatedResult<WorkOrder>,
-  ): WorkOrderPaginatedResponseDto {
+  ): WorkOrderPaginatedResponse {
     const { items, pagination } = paginatedResult;
     return {
       data: items.map((wo) => WorkOrderPresenter.toSummaryResponse(wo)),
@@ -69,10 +69,10 @@ export class WorkOrderPresenter {
     };
   }
 
-  static toStatusHistoryListResponse(history: StatusHistory[]): StatusHistoryListResponseDto {
+  static toStatusHistoryListResponse(history: StatusHistory[]): StatusHistoryListResponse {
     return {
       data: history.map(
-        (entry): StatusHistoryResponseDto => ({
+        (entry): StatusHistoryResponse => ({
           id: entry.id,
           changedBy: entry.changedBy ? WorkOrderPresenter.toChangedBy(entry.changedBy) : null,
           previousStatus: entry.previousStatus,
@@ -84,11 +84,11 @@ export class WorkOrderPresenter {
     };
   }
 
-  static toServiceItemDataResponse(item: WorkOrderService): WorkOrderServiceItemDataResponseDto {
+  static toServiceItemDataResponse(item: WorkOrderService): WorkOrderServiceItemDataResponse {
     return { data: WorkOrderPresenter.toServiceItem(item) };
   }
 
-  private static toCustomer(customer: Customer): WorkOrderCustomerResponseDto {
+  private static toCustomer(customer: Customer): WorkOrderCustomerResponse {
     return {
       id: customer.id,
       name: customer.name,
@@ -99,7 +99,7 @@ export class WorkOrderPresenter {
     };
   }
 
-  private static toVehicle(vehicle: Vehicle): WorkOrderVehicleResponseDto {
+  private static toVehicle(vehicle: Vehicle): WorkOrderVehicleResponse {
     return {
       id: vehicle.id,
       plate: vehicle.plate.value,
@@ -111,7 +111,7 @@ export class WorkOrderPresenter {
     };
   }
 
-  private static toUser(user: User): WorkOrderAssignedUserResponseDto {
+  private static toUser(user: User): WorkOrderAssignedUserResponse {
     return {
       id: user.id,
       name: user.name,
@@ -120,11 +120,11 @@ export class WorkOrderPresenter {
     };
   }
 
-  private static toChangedBy(user: User): StatusHistoryChangedByDto {
+  private static toChangedBy(user: User): StatusHistoryChangedByResponse {
     return WorkOrderPresenter.toUser(user);
   }
 
-  static toServiceItem(this: void, item: WorkOrderService): WorkOrderServiceItemResponseDto {
+  static toServiceItem(this: void, item: WorkOrderService): WorkOrderServiceItemResponse {
     return {
       id: item.serviceId,
       name: item.service!.name,
@@ -143,7 +143,7 @@ export class WorkOrderPresenter {
   private static toPartSupplyItem(
     this: void,
     item: WorkOrderPartSupply,
-  ): WorkOrderPartSupplyItemResponseDto {
+  ): WorkOrderPartSupplyItemResponse {
     return {
       id: item.partSupplyId,
       name: item.partSupply!.name,

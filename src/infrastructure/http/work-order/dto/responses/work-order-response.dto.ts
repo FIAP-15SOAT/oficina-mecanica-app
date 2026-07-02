@@ -6,8 +6,19 @@ import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
+import {
+  WorkOrderAssignedUserResponse,
+  WorkOrderCustomerResponse,
+  WorkOrderDataResponse,
+  WorkOrderPaginatedResponse,
+  WorkOrderPartSupplyItemResponse,
+  WorkOrderResponse,
+  WorkOrderServiceItemResponse,
+  WorkOrderServiceItemDataResponse,
+  WorkOrderVehicleResponse,
+} from '@interface-adapters/work-order/responses/work-order.response';
 
-export class WorkOrderCustomerResponseDto {
+export class WorkOrderCustomerResponseDto implements WorkOrderCustomerResponse {
   @ApiProperty({
     description: 'ID único do Cliente',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -35,7 +46,7 @@ export class WorkOrderCustomerResponseDto {
   phone!: string;
 }
 
-export class WorkOrderVehicleResponseDto {
+export class WorkOrderVehicleResponseDto implements WorkOrderVehicleResponse {
   @ApiProperty({
     description: 'ID único do Veículo',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -62,7 +73,7 @@ export class WorkOrderVehicleResponseDto {
   mileage!: number | null;
 }
 
-export class WorkOrderAssignedUserResponseDto {
+export class WorkOrderAssignedUserResponseDto implements WorkOrderAssignedUserResponse {
   @ApiProperty({
     description: 'ID único do Usuário',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -80,7 +91,7 @@ export class WorkOrderAssignedUserResponseDto {
   role!: UserRole;
 }
 
-export class WorkOrderServiceItemResponseDto {
+export class WorkOrderServiceItemResponseDto implements WorkOrderServiceItemResponse {
   @ApiProperty({
     description: 'ID único do Serviço',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -143,7 +154,7 @@ export class WorkOrderServiceItemResponseDto {
   updatedAt!: Date;
 }
 
-export class WorkOrderServiceItemDataResponseDto {
+export class WorkOrderServiceItemDataResponseDto implements WorkOrderServiceItemDataResponse {
   @ApiProperty({
     type: WorkOrderServiceItemResponseDto,
     description: 'Dados do Serviço na Ordem de Serviço',
@@ -151,7 +162,7 @@ export class WorkOrderServiceItemDataResponseDto {
   data!: WorkOrderServiceItemResponseDto;
 }
 
-export class WorkOrderPartSupplyItemResponseDto {
+export class WorkOrderPartSupplyItemResponseDto implements WorkOrderPartSupplyItemResponse {
   @ApiProperty({
     description: 'ID único da Peça ou Insumo',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -199,7 +210,7 @@ export class WorkOrderPartSupplyItemResponseDto {
   totalPrice!: number;
 }
 
-export class WorkOrderResponseDto {
+export class WorkOrderResponseDto implements WorkOrderResponse {
   @ApiProperty({
     description: 'ID único da Ordem de Serviço',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -315,12 +326,15 @@ export class WorkOrderResponseDto {
   partSupplies?: WorkOrderPartSupplyItemResponseDto[];
 }
 
-export class WorkOrderDataResponseDto {
+export class WorkOrderDataResponseDto implements WorkOrderDataResponse {
   @ApiProperty({ type: WorkOrderResponseDto, description: 'Dados da Ordem de Serviço' })
   data!: WorkOrderResponseDto;
 }
 
-export class WorkOrderPaginatedResponseDto extends PaginatedResponseDto<WorkOrderResponseDto> {
+export class WorkOrderPaginatedResponseDto
+  extends PaginatedResponseDto<WorkOrderResponseDto>
+  implements WorkOrderPaginatedResponse
+{
   @ApiProperty({ type: [WorkOrderResponseDto], description: 'Ordens de Serviço da página atual' })
   data!: WorkOrderResponseDto[];
 }

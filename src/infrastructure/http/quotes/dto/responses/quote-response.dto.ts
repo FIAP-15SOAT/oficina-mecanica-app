@@ -3,7 +3,7 @@ import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { PaginatedResponseDto } from '@presentation/common/dto/paginated-response.dto';
-import { WorkOrderResponseDto } from '@presentation/work-order/dto/work-order-response.dto';
+import { WorkOrderResponseDto } from '@infrastructure/http/work-order/dto/responses/work-order-response.dto';
 import {
   QuoteServiceItemResponse,
   QuotePartSupplyItemResponse,
