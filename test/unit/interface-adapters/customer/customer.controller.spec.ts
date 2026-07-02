@@ -1,16 +1,21 @@
 import { randomUUID } from 'node:crypto';
+
 import { CustomerController } from '@interface-adapters/customer/customer.controller';
 import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
+
 import { ICreateCustomerUseCase } from '@application/ports/input/customer/create-customer.use-case.interface';
 import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find-all-customers.use-case.interface';
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
-import { createMockCustomer } from '../../../helpers/customer-mock.factory';
+
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { UpdateCustomerRequest } from '@interface-adapters/customer/requests/update-customer-request';
+
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 
 describe('CustomerController', () => {
   let controller: CustomerController;
@@ -115,10 +120,22 @@ describe('CustomerController', () => {
 
   describe('update', () => {
     it('should return updated customer wrapped in data', async () => {
-      const updated = createMockCustomer({ name: 'Novo Nome' });
-      updateUseCase.execute.mockResolvedValue(updated);
+      const input: UpdateCustomerRequest = {
+        name: 'Novo Nome',
+        document: '123.456.789-09',
+        type: CustomerType.INDIVIDUAL,
+        email: 'joao@email.com',
+        phone: '11999999999',
+        address: {
+          street: 'Rua das Flores, 123',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01310100',
+        },
+      };
 
-      const input = { name: 'Novo Nome' } as unknown as Parameters<typeof controller.update>[1];
+      const updated = createMockCustomer({ name: input.name });
+      updateUseCase.execute.mockResolvedValue(updated);
 
       const result = await controller.update(updated.id, input);
 

@@ -92,7 +92,9 @@ describe('QuoteController', () => {
 
   it('should find one quote', async () => {
     const id = randomUUID();
+
     const quote = buildMockQuoteWithWorkOrder();
+
     findQuoteByIdUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.findOne(id);
@@ -104,8 +106,10 @@ describe('QuoteController', () => {
   it('should add a service', async () => {
     const id = randomUUID();
     const serviceId = randomUUID();
+
     const dto = { serviceId, quantity: 2 };
     const quote = buildMockQuoteWithWorkOrder();
+
     addQuoteServiceUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.addService(id, dto);
@@ -118,8 +122,10 @@ describe('QuoteController', () => {
   it('should update a service', async () => {
     const id = randomUUID();
     const serviceId = randomUUID();
+
     const dto = { quantity: 3 };
     const quote = buildMockQuoteWithWorkOrder();
+
     updateQuoteServiceQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updateService(id, serviceId, dto);
@@ -135,7 +141,8 @@ describe('QuoteController', () => {
   it('should remove a service', async () => {
     const id = randomUUID();
     const serviceId = randomUUID();
-    removeQuoteServiceUseCase.execute.mockResolvedValue({} as unknown as Quote);
+
+    removeQuoteServiceUseCase.execute.mockResolvedValue(buildMockQuoteWithWorkOrder());
 
     await controller.removeService(id, serviceId);
 
@@ -145,8 +152,11 @@ describe('QuoteController', () => {
   it('should add a part supply', async () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
+
     const dto = { partSupplyId, quantity: 2 };
+
     const quote = buildMockQuoteWithWorkOrder();
+
     addQuotePartSupplyUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.addPartSupply(id, dto);
@@ -159,8 +169,10 @@ describe('QuoteController', () => {
   it('should update a part supply', async () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
+
     const dto = { quantity: 3 };
     const quote = buildMockQuoteWithWorkOrder();
+
     updateQuotePartSupplyQuantityUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.updatePartSupply(id, partSupplyId, dto);
@@ -176,7 +188,8 @@ describe('QuoteController', () => {
   it('should remove a part supply', async () => {
     const id = randomUUID();
     const partSupplyId = randomUUID();
-    removeQuotePartSupplyUseCase.execute.mockResolvedValue({} as unknown as Quote);
+
+    removeQuotePartSupplyUseCase.execute.mockResolvedValue(buildMockQuoteWithWorkOrder());
 
     await controller.removePartSupply(id, partSupplyId);
 
@@ -186,6 +199,7 @@ describe('QuoteController', () => {
   it('should submit a quote', async () => {
     const id = randomUUID();
     const quote = buildMockQuoteWithWorkOrder();
+
     submitQuoteUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.submit(id);
@@ -197,7 +211,9 @@ describe('QuoteController', () => {
   it('should update status', async () => {
     const id = randomUUID();
     const userId = randomUUID();
+
     const dto: UpdateQuoteStatusRequest = { status: QuoteStatus.APPROVED };
+
     const quote = buildMockQuoteWithWorkOrder();
     updateQuoteStatusUseCase.execute.mockResolvedValue(quote);
 
@@ -211,6 +227,7 @@ describe('QuoteController', () => {
     const id = randomUUID();
     const token = 'token123';
     const quote = buildMockQuoteWithWorkOrder();
+
     emailDecisionQuoteUseCase.execute.mockResolvedValue(quote);
 
     const result = await controller.emailDecision(id, token);
@@ -224,15 +241,12 @@ describe('QuoteController', () => {
       items: [],
       pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
     };
+
     findAllQuotesPaginatedUseCase.execute.mockResolvedValue(resultUseCase);
 
     const result = await controller.findAll({ page: 1, limit: 10 });
 
-    expect(result).toEqual(
-      QuotePresenter.toPaginatedResponse(
-        resultUseCase as unknown as Parameters<typeof QuotePresenter.toPaginatedResponse>[0],
-      ),
-    );
+    expect(result).toEqual(QuotePresenter.toPaginatedResponse(resultUseCase));
     expect(findAllQuotesPaginatedUseCase.execute).toHaveBeenCalledWith({
       page: 1,
       limit: 10,

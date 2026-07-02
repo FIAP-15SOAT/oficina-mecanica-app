@@ -6,28 +6,26 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { User } from '@domain/entities/user.entity';
 import {
   createMockWorkOrder,
   createMockWorkOrderRepository,
 } from '../../../../helpers/work-order-mock.factory';
+import { createMockUser, createMockUserRepository } from '../../../../helpers/user-mock.factory';
 
 describe('UpdateWorkOrderUseCase', () => {
   let useCase: UpdateWorkOrderUseCase;
   let workOrderRepository: jest.Mocked<IWorkOrderRepository>;
-  let userRepository: Pick<jest.Mocked<IUserRepository>, 'findById'>;
+  let userRepository: jest.Mocked<IUserRepository>;
 
   beforeEach(() => {
     workOrderRepository = createMockWorkOrderRepository();
-    userRepository = { findById: jest.fn() };
-    useCase = new UpdateWorkOrderUseCase(
-      workOrderRepository,
-      userRepository as unknown as jest.Mocked<IUserRepository>,
-    );
+    userRepository = createMockUserRepository();
+    useCase = new UpdateWorkOrderUseCase(workOrderRepository, userRepository);
   });
 
   it('should update a work order in RECEIVED status', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+
     const updated = createMockWorkOrder({ ...wo, problemDescription: 'Barulho na suspensão' });
 
     workOrderRepository.findById.mockResolvedValue(wo);
@@ -44,12 +42,19 @@ describe('UpdateWorkOrderUseCase', () => {
 
   it('should update a work order and assign a user (active mechanic)', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+
     const userId = 'user-uuid';
-    const user = { id: userId, name: 'John', role: UserRole.MECHANIC, isActive: true };
+
+    const user = createMockUser({
+      id: userId,
+      name: 'John',
+      role: UserRole.MECHANIC,
+      isActive: true,
+    });
     const updated = createMockWorkOrder({ ...wo, assignedUserId: userId });
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user as unknown as User);
+    userRepository.findById.mockResolvedValue(user);
     workOrderRepository.update.mockResolvedValue(updated);
 
     const result = await useCase.execute(wo.id, {
@@ -63,10 +68,16 @@ describe('UpdateWorkOrderUseCase', () => {
 
   it('should throw BusinessRuleViolationException when assigned user is not a mechanic', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
-    const user = { id: 'user-id', name: 'John', role: UserRole.ADMIN, isActive: true };
+
+    const user = createMockUser({
+      id: 'user-id',
+      name: 'John',
+      role: UserRole.ADMIN,
+      isActive: true,
+    });
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user as unknown as User);
+    userRepository.findById.mockResolvedValue(user);
 
     await expect(
       useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
@@ -78,10 +89,16 @@ describe('UpdateWorkOrderUseCase', () => {
 
   it('should throw BusinessRuleViolationException when assigned user is inactive', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
-    const user = { id: 'user-id', name: 'John', role: UserRole.MECHANIC, isActive: false };
+
+    const user = createMockUser({
+      id: 'user-id',
+      name: 'John',
+      role: UserRole.MECHANIC,
+      isActive: false,
+    });
 
     workOrderRepository.findById.mockResolvedValue(wo);
-    userRepository.findById.mockResolvedValue(user as unknown as User);
+    userRepository.findById.mockResolvedValue(user);
 
     await expect(
       useCase.execute(wo.id, { assignedUserId: user.id, userId: randomUUID() }),
@@ -98,6 +115,7 @@ describe('UpdateWorkOrderUseCase', () => {
 
   it('should throw BusinessRuleViolationException when work order is APPROVED', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.APPROVED });
+
     workOrderRepository.findById.mockResolvedValue(wo);
 
     await expect(
@@ -107,6 +125,7 @@ describe('UpdateWorkOrderUseCase', () => {
 
   it('should throw ResourceNotFoundException when assigned user not found', async () => {
     const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+
     workOrderRepository.findById.mockResolvedValue(wo);
     userRepository.findById.mockResolvedValue(null);
 

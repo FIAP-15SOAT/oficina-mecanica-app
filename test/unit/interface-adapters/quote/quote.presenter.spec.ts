@@ -4,6 +4,7 @@ import { Quote } from '@domain/entities/quote.entity';
 import { QuoteService } from '@domain/entities/quote-service.entity';
 import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+
 import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
@@ -19,6 +20,7 @@ describe('QuotePresenter', () => {
     const workOrder = createMockWorkOrder({ customer, vehicle });
 
     const now = new Date();
+
     const quote = Quote.reconstitute({
       id: randomUUID(),
       workOrderId: workOrder.id,
@@ -43,11 +45,12 @@ describe('QuotePresenter', () => {
     it('should format a quote with workOrder correctly', () => {
       const quote = buildQuoteWithWorkOrder();
       const response = QuotePresenter.toResponse(quote);
+
       expect(response.id).toBe(quote.id);
       expect(response.totalAmount).toBe(200);
       expect(response.workOrder).toBeDefined();
       expect(response.workOrder.id).toBe(quote.workOrder!.id);
-      expect((response as unknown as Record<string, unknown>)['workOrderId']).toBeUndefined();
+      expect('workOrderId' in response).toBe(false);
       expect(response.workOrder.services).toBeUndefined();
       expect(response.workOrder.partSupplies).toBeUndefined();
     });
@@ -56,6 +59,7 @@ describe('QuotePresenter', () => {
   describe('toDataResponse', () => {
     it('should wrap response in data property', () => {
       const quote = buildQuoteWithWorkOrder();
+
       const response = QuotePresenter.toDataResponse(quote);
       expect(response.data.id).toBe(quote.id);
       expect(response.data.workOrder).toBeDefined();
@@ -65,6 +69,7 @@ describe('QuotePresenter', () => {
   describe('toWithItemsResponse', () => {
     it('should include services and parts with enrichment data', () => {
       const service = createMockService({ name: 'Troca de óleo', description: 'Com filtro' });
+
       const partSupply = createMockPartSupply({ name: 'Filtro de Óleo', sku: 'FO-001' });
 
       const qs = QuoteService.reconstitute({
@@ -76,6 +81,7 @@ describe('QuotePresenter', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
       qs.service = service;
 
       const qp = QuotePartSupply.reconstitute({
@@ -87,9 +93,11 @@ describe('QuotePresenter', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
       qp.partSupply = partSupply;
 
       const quote = buildQuoteWithWorkOrder({ services: [qs], partsSupplies: [qp] });
+
       const response = QuotePresenter.toWithItemsResponse(quote);
 
       expect(response.data.services).toHaveLength(1);
@@ -104,13 +112,16 @@ describe('QuotePresenter', () => {
 
     it('should return empty arrays when quote has no items', () => {
       const quote = buildQuoteWithWorkOrder({ services: [], partsSupplies: [] });
+
       const response = QuotePresenter.toWithItemsResponse(quote);
+
       expect(response.data.services).toEqual([]);
       expect(response.data.partsSupplies).toEqual([]);
     });
 
     it('should include partSupply with null partNumber when not set', () => {
       const partSupply = createMockPartSupply({ partNumber: undefined });
+
       const qp = QuotePartSupply.reconstitute({
         quoteId: randomUUID(),
         partSupplyId: partSupply.id,
@@ -120,9 +131,11 @@ describe('QuotePresenter', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
       qp.partSupply = partSupply;
 
       const quote = buildQuoteWithWorkOrder({ services: [], partsSupplies: [qp] });
+
       const response = QuotePresenter.toWithItemsResponse(quote);
 
       expect(response.data.partsSupplies[0].partNumber).toBeNull();
@@ -132,6 +145,7 @@ describe('QuotePresenter', () => {
   describe('toPaginatedResponse', () => {
     it('should format paginated result correctly', () => {
       const quote = buildQuoteWithWorkOrder();
+
       const paginatedResult = {
         items: [quote],
         pagination: {
@@ -154,6 +168,7 @@ describe('QuotePresenter', () => {
   describe('toListResponse', () => {
     it('should format list result correctly', () => {
       const quote = buildQuoteWithWorkOrder();
+
       const response = QuotePresenter.toListResponse([quote]);
 
       expect(response.data).toHaveLength(1);
