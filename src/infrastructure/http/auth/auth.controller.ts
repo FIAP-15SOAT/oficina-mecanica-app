@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Inject,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -33,10 +24,7 @@ import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto
 @ApiInternalServerErrorResponse({ description: 'Erro interno do servidor' })
 @Controller('auth')
 export class AuthController {
-  constructor(
-    @Inject('AuthCleanController')
-    private readonly controller: AuthCleanController,
-  ) {}
+  constructor(private readonly controller: AuthCleanController) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -44,8 +32,8 @@ export class AuthController {
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Login realizado com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
-  login(@Body() dto: LoginRequestDto): Promise<AuthDataResponseDto> {
-    return this.controller.login(dto);
+  login(@Body() request: LoginRequestDto): Promise<AuthDataResponseDto> {
+    return this.controller.login(request);
   }
 
   @Post('refresh')
@@ -54,8 +42,8 @@ export class AuthController {
   @ApiOkResponse({ type: AuthDataResponseDto, description: 'Tokens renovados com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
-  refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
-    return this.controller.refresh(dto);
+  refresh(@Body() request: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
+    return this.controller.refresh(request);
   }
 
   @Get('me')

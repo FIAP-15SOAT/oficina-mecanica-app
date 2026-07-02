@@ -18,7 +18,7 @@ import { CustomerVehiclesController } from './customer-vehicles.controller';
   controllers: [VehiclesController, CustomerVehiclesController],
   providers: [
     {
-      provide: 'VehicleCleanController',
+      provide: VehicleCleanController,
       useFactory: (
         vehicleRepository: IVehicleRepository,
         customerRepository: ICustomerRepository,

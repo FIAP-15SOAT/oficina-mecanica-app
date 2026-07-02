@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -51,10 +50,7 @@ import { VehiclePaginatedResponseDto } from './dto/responses/vehicle-paginated-r
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('vehicles')
 export class VehiclesController {
-  constructor(
-    @Inject('VehicleCleanController')
-    private readonly controller: VehicleController,
-  ) {}
+  constructor(private readonly controller: VehicleController) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
@@ -71,8 +67,8 @@ export class VehiclesController {
   })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
   @ApiConflictResponse({ description: 'Placa já cadastrada' })
-  create(@Body() dto: CreateVehicleRequestDto): Promise<VehicleDataResponseDto> {
-    return this.controller.create(dto);
+  create(@Body() request: CreateVehicleRequestDto): Promise<VehicleDataResponseDto> {
+    return this.controller.create(request);
   }
 
   @Get()
@@ -113,9 +109,9 @@ export class VehiclesController {
   @ApiConflictResponse({ description: 'Placa já cadastrada para outro veículo' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateVehicleRequestDto,
+    @Body() request: UpdateVehicleRequestDto,
   ): Promise<VehicleDataResponseDto> {
-    return this.controller.update(id, dto);
+    return this.controller.update(id, request);
   }
 
   @Delete(':id')

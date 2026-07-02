@@ -20,7 +20,7 @@ import { AuthController } from './auth.controller';
   controllers: [AuthController],
   providers: [
     {
-      provide: 'AuthCleanController',
+      provide: AuthCleanController,
       useFactory: (
         userRepository: IUserRepository,
         hashService: IHashService,

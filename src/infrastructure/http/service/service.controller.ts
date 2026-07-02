@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -52,10 +51,7 @@ import { ServiceMetricsDataResponseDto } from './dto/responses/service-metrics-r
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class ServiceController {
-  constructor(
-    @Inject('ServiceCleanController')
-    private readonly controller: ServiceCleanController,
-  ) {}
+  constructor(private readonly controller: ServiceCleanController) {}
 
   @Get(':id/metrics')
   @Roles(UserRole.ADMIN)

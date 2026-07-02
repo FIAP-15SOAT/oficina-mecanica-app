@@ -14,7 +14,7 @@ import { StockReservationsController } from './stock-reservations.controller';
   controllers: [StockMovementsController, StockReservationsController],
   providers: [
     {
-      provide: 'StockCleanController',
+      provide: StockCleanController,
       useFactory: (
         movementRepository: IStockMovementRepository,
         reservationRepository: IStockReservationRepository,

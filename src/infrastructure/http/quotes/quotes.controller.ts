@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -61,10 +60,7 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class QuotesController {
-  constructor(
-    @Inject('QuoteCleanController')
-    private readonly controller: QuoteController,
-  ) {}
+  constructor(private readonly controller: QuoteController) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
@@ -82,8 +78,8 @@ export class QuotesController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Ordem de Serviço não encontrada' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
-  create(@Body() dto: CreateQuoteRequestDto): Promise<QuoteDataResponseDto> {
-    return this.controller.create(dto);
+  create(@Body() request: CreateQuoteRequestDto): Promise<QuoteDataResponseDto> {
+    return this.controller.create(request);
   }
 
   @Get(':id')
@@ -110,9 +106,9 @@ export class QuotesController {
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   addService(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: AddQuoteServiceRequestDto,
+    @Body() request: AddQuoteServiceRequestDto,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.addService(id, dto);
+    return this.controller.addService(id, request);
   }
 
   @Patch(':id/services/:serviceId')
@@ -129,9 +125,9 @@ export class QuotesController {
   updateService(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('serviceId', ParseUUIDPipe) serviceId: string,
-    @Body() dto: UpdateQuoteServiceItemRequestDto,
+    @Body() request: UpdateQuoteServiceItemRequestDto,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.updateService(id, serviceId, dto);
+    return this.controller.updateService(id, serviceId, request);
   }
 
   @Delete(':id/services/:serviceId')
@@ -164,9 +160,9 @@ export class QuotesController {
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   addPartSupply(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: AddQuotePartSupplyRequestDto,
+    @Body() request: AddQuotePartSupplyRequestDto,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.addPartSupply(id, dto);
+    return this.controller.addPartSupply(id, request);
   }
 
   @Patch(':id/parts-supplies/:partSupplyId')
@@ -183,9 +179,9 @@ export class QuotesController {
   updatePartSupply(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('partSupplyId', ParseUUIDPipe) partSupplyId: string,
-    @Body() dto: UpdateQuotePartSupplyItemRequestDto,
+    @Body() request: UpdateQuotePartSupplyItemRequestDto,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.updatePartSupply(id, partSupplyId, dto);
+    return this.controller.updatePartSupply(id, partSupplyId, request);
   }
 
   @Delete(':id/parts-supplies/:partSupplyId')
@@ -233,10 +229,10 @@ export class QuotesController {
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateQuoteStatusRequestDto,
+    @Body() request: UpdateQuoteStatusRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.updateStatus(id, user.sub, dto);
+    return this.controller.updateStatus(id, user.sub, request);
   }
 
   @Get(':id/decisions')

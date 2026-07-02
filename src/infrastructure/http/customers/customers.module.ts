@@ -15,7 +15,7 @@ import { CustomersController } from './customers.controller';
   controllers: [CustomersController],
   providers: [
     {
-      provide: 'CustomerCleanController',
+      provide: CustomerCleanController,
       useFactory: (customerRepository: ICustomerRepository) =>
         new CustomerCleanController(
           new CreateCustomerUseCase(customerRepository),

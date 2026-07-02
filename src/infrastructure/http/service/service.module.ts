@@ -18,7 +18,7 @@ import { ServicesMetricsController } from './services-metrics.controller';
   controllers: [ServiceController, ServicesMetricsController],
   providers: [
     {
-      provide: 'ServiceCleanController',
+      provide: ServiceCleanController,
       useFactory: (serviceRepository: IServiceRepository) =>
         new ServiceCleanController(
           new CreateServiceUseCase(serviceRepository),

@@ -17,7 +17,7 @@ import { PartsSuppliesController } from './parts-supplies.controller';
   controllers: [PartsSuppliesController],
   providers: [
     {
-      provide: 'PartSupplyCleanController',
+      provide: PartSupplyCleanController,
       useFactory: (partSupplyRepository: IPartSupplyRepository, unitOfWork: IUnitOfWork) =>
         new PartSupplyCleanController(
           new CreatePartSupplyUseCase(partSupplyRepository),

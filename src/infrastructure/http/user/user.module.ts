@@ -16,7 +16,7 @@ import { UserController } from './user.controller';
   controllers: [UserController],
   providers: [
     {
-      provide: 'UserCleanController',
+      provide: UserCleanController,
       useFactory: (userRepository: IUserRepository, hashService: IHashService) =>
         new UserCleanController(
           new CreateUserUseCase(userRepository, hashService),

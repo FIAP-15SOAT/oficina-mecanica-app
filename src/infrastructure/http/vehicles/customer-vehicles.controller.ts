@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -27,10 +27,7 @@ import { VehicleListResponseDto } from './dto/responses/vehicle-list-response.dt
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('customers')
 export class CustomerVehiclesController {
-  constructor(
-    @Inject('VehicleCleanController')
-    private readonly controller: VehicleController,
-  ) {}
+  constructor(private readonly controller: VehicleController) {}
 
   @Get(':id/vehicles')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)

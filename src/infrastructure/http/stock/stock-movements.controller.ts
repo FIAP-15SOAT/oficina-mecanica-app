@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
@@ -26,10 +26,7 @@ import { FindStockMovementsQueryDto } from './dto/requests/filter-stock-movement
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class StockMovementsController {
-  constructor(
-    @Inject('StockCleanController')
-    private readonly controller: StockController,
-  ) {}
+  constructor(private readonly controller: StockController) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)

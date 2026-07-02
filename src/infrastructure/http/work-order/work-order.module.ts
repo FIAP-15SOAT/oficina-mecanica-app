@@ -22,7 +22,7 @@ import { WorkOrderController } from './work-order.controller';
   controllers: [WorkOrderController],
   providers: [
     {
-      provide: 'WorkOrderCleanController',
+      provide: WorkOrderCleanController,
       useFactory: (
         unitOfWork: IUnitOfWork,
         workOrderRepository: IWorkOrderRepository,

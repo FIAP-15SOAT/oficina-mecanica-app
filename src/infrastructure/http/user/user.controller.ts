@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -52,10 +51,7 @@ import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/responses/u
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class UserController {
-  constructor(
-    @Inject('UserCleanController')
-    private readonly controller: UserCleanController,
-  ) {}
+  constructor(private readonly controller: UserCleanController) {}
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -65,8 +61,8 @@ export class UserController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiConflictResponse({ description: 'E-mail já cadastrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
-  create(@Body() dto: CreateUserRequestDto): Promise<UserDataResponseDto> {
-    return this.controller.create(dto);
+  create(@Body() request: CreateUserRequestDto): Promise<UserDataResponseDto> {
+    return this.controller.create(request);
   }
 
   @Get()
@@ -102,9 +98,9 @@ export class UserController {
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação de domínio' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserRequestDto,
+    @Body() request: UpdateUserRequestDto,
   ): Promise<UserDataResponseDto> {
-    return this.controller.update(id, dto);
+    return this.controller.update(id, request);
   }
 
   @Patch(':id')
@@ -118,9 +114,9 @@ export class UserController {
   @ApiUnprocessableEntityResponse({ description: 'Usuário já está no status informado' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserStatusRequestDto,
+    @Body() request: UpdateUserStatusRequestDto,
   ): Promise<UserDataResponseDto> {
-    return this.controller.updateStatus(id, dto);
+    return this.controller.updateStatus(id, request);
   }
 
   @Delete(':id')

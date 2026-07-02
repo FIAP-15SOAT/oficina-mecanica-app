@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -52,10 +51,7 @@ import { PartSupplyPaginatedResponseDto } from './dto/responses/part-supply-pagi
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('parts-supplies')
 export class PartsSuppliesController {
-  constructor(
-    @Inject('PartSupplyCleanController')
-    private readonly controller: PartSupplyController,
-  ) {}
+  constructor(private readonly controller: PartSupplyController) {}
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -68,8 +64,8 @@ export class PartsSuppliesController {
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
   @ApiUnauthorizedResponse({ description: 'Não autenticado' })
   @ApiForbiddenResponse({ description: 'Acesso negado' })
-  create(@Body() dto: CreatePartSupplyRequestDto): Promise<PartSupplyDataResponseDto> {
-    return this.controller.create(dto);
+  create(@Body() request: CreatePartSupplyRequestDto): Promise<PartSupplyDataResponseDto> {
+    return this.controller.create(request);
   }
 
   @Get()
@@ -113,9 +109,9 @@ export class PartsSuppliesController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePartSupplyRequestDto,
+    @Body() request: UpdatePartSupplyRequestDto,
   ): Promise<PartSupplyDataResponseDto> {
-    return this.controller.update(id, dto);
+    return this.controller.update(id, request);
   }
 
   @Delete(':id')
@@ -144,8 +140,8 @@ export class PartsSuppliesController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   updateStock(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateStockDto,
+    @Body() request: UpdateStockDto,
   ): Promise<PartSupplyDataResponseDto> {
-    return this.controller.updateStock(id, dto);
+    return this.controller.updateStock(id, request);
   }
 }

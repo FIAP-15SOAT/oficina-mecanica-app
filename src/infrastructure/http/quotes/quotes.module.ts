@@ -31,7 +31,7 @@ import { QuotesController } from './quotes.controller';
   controllers: [QuotesController],
   providers: [
     {
-      provide: 'QuoteCleanController',
+      provide: QuoteCleanController,
       useFactory: (
         unitOfWork: IUnitOfWork,
         quoteRepository: IQuoteRepository,

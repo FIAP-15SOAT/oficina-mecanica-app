@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -56,10 +55,7 @@ import { QuoteListResponseDto } from '@infrastructure/http/quotes/dto/responses/
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class WorkOrderController {
-  constructor(
-    @Inject('WorkOrderCleanController')
-    private readonly controller: WorkOrderCleanController,
-  ) {}
+  constructor(private readonly controller: WorkOrderCleanController) {}
 
   @Get(':id/quotes')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
@@ -85,10 +81,10 @@ export class WorkOrderController {
     description: 'Regra de negócio violada',
   })
   create(
-    @Body() dto: CreateWorkOrderRequestDto,
+    @Body() request: CreateWorkOrderRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<WorkOrderDataResponseDto> {
-    return this.controller.create(dto, user.sub);
+    return this.controller.create(request, user.sub);
   }
 
   @Get()
@@ -120,10 +116,10 @@ export class WorkOrderController {
   @ApiParam({ name: 'id', format: 'uuid' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateWorkOrderRequestDto,
+    @Body() request: UpdateWorkOrderRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<WorkOrderDataResponseDto> {
-    return this.controller.update(id, dto, user.sub);
+    return this.controller.update(id, request, user.sub);
   }
 
   @Patch(':id')
@@ -139,10 +135,10 @@ export class WorkOrderController {
   @ApiParam({ name: 'id', format: 'uuid' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateWorkOrderStatusRequestDto,
+    @Body() request: UpdateWorkOrderStatusRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<WorkOrderDataResponseDto> {
-    return this.controller.updateStatus(id, dto, user.sub);
+    return this.controller.updateStatus(id, request, user.sub);
   }
 
   @Patch(':workOrderId/services/:serviceId')
@@ -162,10 +158,10 @@ export class WorkOrderController {
   updateServiceStatus(
     @Param('workOrderId', ParseUUIDPipe) workOrderId: string,
     @Param('serviceId', ParseUUIDPipe) serviceId: string,
-    @Body() dto: UpdateWorkOrderServiceStatusRequestDto,
+    @Body() request: UpdateWorkOrderServiceStatusRequestDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<WorkOrderServiceItemDataResponseDto> {
-    return this.controller.updateServiceStatus(workOrderId, serviceId, dto, user.sub);
+    return this.controller.updateServiceStatus(workOrderId, serviceId, request, user.sub);
   }
 
   @Get(':id/status-history')

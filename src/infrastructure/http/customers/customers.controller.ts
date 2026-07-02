@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -51,10 +50,7 @@ import { CustomerPaginatedResponseDto } from './dto/responses/customer-paginated
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('customers')
 export class CustomersController {
-  constructor(
-    @Inject('CustomerCleanController')
-    private readonly controller: CustomerController,
-  ) {}
+  constructor(private readonly controller: CustomerController) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
@@ -70,8 +66,8 @@ export class CustomersController {
     description: 'Erro de validação de domínio (documento inválido)',
   })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
-  create(@Body() dto: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
-    return this.controller.create(dto);
+  create(@Body() request: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
+    return this.controller.create(request);
   }
 
   @Get()
@@ -112,9 +108,9 @@ export class CustomersController {
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado para outro cliente' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateCustomerRequestDto,
+    @Body() request: UpdateCustomerRequestDto,
   ): Promise<CustomerDataResponseDto> {
-    return this.controller.update(id, dto);
+    return this.controller.update(id, request);
   }
 
   @Delete(':id')

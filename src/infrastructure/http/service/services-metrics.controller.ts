@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
@@ -25,10 +25,7 @@ import { ServiceMetricsPaginatedResponseDto } from './dto/responses/service-metr
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class ServicesMetricsController {
-  constructor(
-    @Inject('ServiceCleanController')
-    private readonly controller: ServiceCleanController,
-  ) {}
+  constructor(private readonly controller: ServiceCleanController) {}
 
   @Get()
   @Roles(UserRole.ADMIN)
