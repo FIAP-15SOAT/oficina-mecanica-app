@@ -1,8 +1,9 @@
-import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { Service } from '@domain/entities/service.entity';
+import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
+import { UpdateServiceDto } from '@application/ports/input/service/dto/update-service.dto';
+
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { UpdateServiceDto } from '@application/ports/input/service/dto/update-service.dto';
 
 export class UpdateServiceUseCase {
   constructor(private readonly serviceRepository: IServiceRepository) {}

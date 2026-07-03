@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+
 import { BcryptHashService } from './bcrypt-hash.service';
 import { JwtTokenService } from './jwt-token.service';
 import { MailerEmailSenderService } from './mailer-email-sender.service';

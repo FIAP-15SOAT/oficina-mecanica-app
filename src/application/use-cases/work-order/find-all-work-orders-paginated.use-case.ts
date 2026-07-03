@@ -1,16 +1,19 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
+import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
+import { SortDirection } from '@domain/enums/sort-direction.enum';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+
+import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
 import {
   IWorkOrderRepository,
   WorkOrderFilters,
 } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { IFindAllWorkOrdersPaginatedUseCase } from '@application/ports/input/work-order/find-all-work-orders-paginated.use-case.interface';
+
 import { FindAllWorkOrdersFilters } from '@application/ports/input/work-order/dto/find-all-work-orders.dto';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 import { parseSort } from '@application/utils/parse-sort.util';
-import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
-import { SortDirection } from '@domain/enums/sort-direction.enum';
-import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 
 export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPaginatedUseCase {
   private static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);

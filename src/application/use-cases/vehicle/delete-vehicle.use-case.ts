@@ -1,7 +1,8 @@
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { IDeleteVehicleUseCase } from '@application/ports/input/vehicle/delete-vehicle.use-case.interface';
+
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class DeleteVehicleUseCase implements IDeleteVehicleUseCase {
   constructor(private readonly vehicleRepository: IVehicleRepository) {}

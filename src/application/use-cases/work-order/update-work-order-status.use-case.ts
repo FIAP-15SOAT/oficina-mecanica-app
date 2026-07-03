@@ -1,9 +1,11 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { UpdateWorkOrderStatusDto } from '@application/ports/input/work-order/dto/update-work-order-status.dto';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 export class UpdateWorkOrderStatusUseCase {
