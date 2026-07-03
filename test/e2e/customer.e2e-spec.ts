@@ -178,6 +178,45 @@ describe('Customer (E2E)', () => {
         .expect(400);
     });
 
+    it('should accept valid CNPJ where first check-digit remainder < 2 (d1 = 0)', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          document: '00000000000604',
+          type: 'COMPANY',
+          email: 'company-d1zero@email.com',
+        })
+        .expect(201);
+    });
+
+    it('should accept valid CNPJ where second check-digit remainder < 2 (d2 = 0)', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          document: '00000000001910',
+          type: 'COMPANY',
+          email: 'company-d2zero@email.com',
+        })
+        .expect(201);
+    });
+
+    it('should accept valid alphanumeric CNPJ (new format with letters in base)', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          document: '12ABC345000177',
+          type: 'COMPANY',
+          email: 'company-alphanum@email.com',
+        })
+        .expect(201);
+    });
+
     it('should return 400 when required fields are missing', async () => {
       await request(httpServer)
         .post('/api/customers')

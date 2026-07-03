@@ -611,6 +611,13 @@ describe('WorkOrder (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(400);
     });
+
+    it('should return 400 for empty sort field', async () => {
+      await request(httpServer)
+        .get('/api/work-orders?sort=:asc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(400);
+    });
   });
 
   // ─── GET /api/work-orders/:id ──────────────────────────────────────────────
