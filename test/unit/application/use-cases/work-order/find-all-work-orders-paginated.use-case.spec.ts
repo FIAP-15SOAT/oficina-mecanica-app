@@ -90,6 +90,12 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     );
   });
 
+  it('should throw BadRequestException for invalid sort direction', async () => {
+    await expect(useCase.execute({ page: 1, limit: 10, sort: 'status:invalid' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
   it('should inject statusNotIn=DEFAULT_HIDDEN_STATUSES when status is not provided', async () => {
     workOrderRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
