@@ -1,7 +1,9 @@
 import { StatusHistory } from '@domain/entities/status-history.entity';
+
+import { IFindWorkOrderStatusHistoryUseCase } from '@application/ports/input/work-order/find-work-order-status-history.use-case.interface';
 import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
-import { IFindWorkOrderStatusHistoryUseCase } from '@application/ports/input/work-order/find-work-order-status-history.use-case.interface';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindWorkOrderStatusHistoryUseCase implements IFindWorkOrderStatusHistoryUseCase {

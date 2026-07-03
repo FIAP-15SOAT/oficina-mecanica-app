@@ -1,10 +1,12 @@
 import { Customer } from '@domain/entities/customer.entity';
-import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { CreateCustomerDto } from '@application/ports/input/customer/dto/create-customer.dto';
-import { ICreateCustomerUseCase } from '@application/ports/input/customer/create-customer.use-case.interface';
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+
+import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { ICreateCustomerUseCase } from '@application/ports/input/customer/create-customer.use-case.interface';
+
+import { CreateCustomerDto } from '@application/ports/input/customer/dto/create-customer.dto';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 export class CreateCustomerUseCase implements ICreateCustomerUseCase {
   constructor(private readonly customerRepository: ICustomerRepository) {}

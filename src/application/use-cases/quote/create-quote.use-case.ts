@@ -1,8 +1,10 @@
 import { Quote } from '@domain/entities/quote.entity';
+
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { QuoteItemValidator } from '@application/services/quote-item-validator';
+
 import { CreateQuoteDto } from '@application/ports/input/quote/dto/create-quote.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { QuoteItemValidator } from '@application/services/quote-item-validator';
 
 export class CreateQuoteUseCase {
   constructor(private readonly unitOfWork: IUnitOfWork) {}

@@ -1,4 +1,3 @@
-import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import {
   ITokenService,
   TokenPair,
@@ -9,6 +8,7 @@ import {
   RefreshTokenInputDto,
   RefreshTokenOutputDto,
 } from '@application/ports/input/auth/dto/refresh-token.dto';
+import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
 export class RefreshTokenUseCase {
   constructor(

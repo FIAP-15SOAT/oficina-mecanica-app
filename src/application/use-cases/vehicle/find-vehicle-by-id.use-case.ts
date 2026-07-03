@@ -1,7 +1,9 @@
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { Vehicle } from '@domain/entities/vehicle.entity';
+
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { IFindVehicleByIdUseCase } from '@application/ports/input/vehicle/find-vehicle-by-id.use-case.interface';
+
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindVehicleByIdUseCase implements IFindVehicleByIdUseCase {
   constructor(private readonly vehicleRepository: IVehicleRepository) {}

@@ -1,7 +1,8 @@
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
+
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class DeleteCustomerUseCase implements IDeleteCustomerUseCase {
   constructor(private readonly customerRepository: ICustomerRepository) {}

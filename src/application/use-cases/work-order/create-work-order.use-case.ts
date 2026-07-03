@@ -2,11 +2,13 @@ import { WorkOrder } from '@domain/entities/work-order.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
 import { Quote } from '@domain/entities/quote.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
+
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { QuoteItemValidator } from '@application/services/quote-item-validator';
 import { CreateWorkOrderDto } from '@application/ports/input/work-order/dto/create-work-order.dto';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
-import { QuoteItemValidator } from '@application/services/quote-item-validator';
 
 export class CreateWorkOrderUseCase {
   constructor(private readonly unitOfWork: IUnitOfWork) {}
