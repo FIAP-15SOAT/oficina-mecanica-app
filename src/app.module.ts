@@ -10,15 +10,15 @@ import { InfrastructureExceptionFilter } from './infrastructure/http/filters/inf
 
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
-import { AuthModule } from './infrastructure/http/auth/auth.module';
-import { UserModule } from './infrastructure/http/user/user.module';
-import { ServiceModule } from './infrastructure/http/service/service.module';
-import { PartsSuppliesModule } from './infrastructure/http/parts-supplies/parts-supplies.module';
-import { CustomersModule } from './infrastructure/http/customers/customers.module';
-import { VehiclesModule } from './infrastructure/http/vehicles/vehicles.module';
-import { WorkOrderModule } from './infrastructure/http/work-order/work-order.module';
-import { QuotesModule } from './infrastructure/http/quotes/quotes.module';
-import { StockModule } from './infrastructure/http/stock/stock.module';
+import { AuthModule } from './infrastructure/http/controllers/auth/auth.module';
+import { UserModule } from './infrastructure/http/controllers/user/user.module';
+import { ServiceModule } from './infrastructure/http/controllers/service/service.module';
+import { PartSupplyModule } from './infrastructure/http/controllers/part-supply/part-supply.module';
+import { CustomerModule } from './infrastructure/http/controllers/customer/customer.module';
+import { VehicleModule } from './infrastructure/http/controllers/vehicle/vehicle.module';
+import { WorkOrderModule } from './infrastructure/http/controllers/work-order/work-order.module';
+import { QuoteModule } from './infrastructure/http/controllers/quote/quote.module';
+import { StockModule } from './infrastructure/http/controllers/stock/stock.module';
 
 @Module({
   imports: [
@@ -44,11 +44,11 @@ import { StockModule } from './infrastructure/http/stock/stock.module';
     AuthModule,
     UserModule,
     ServiceModule,
-    PartsSuppliesModule,
-    CustomersModule,
-    VehiclesModule,
+    PartSupplyModule,
+    CustomerModule,
+    VehicleModule,
     WorkOrderModule,
-    QuotesModule,
+    QuoteModule,
     StockModule,
   ],
   providers: [

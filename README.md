@@ -80,10 +80,12 @@ src/
 │
 ├── infrastructure/                  # Implementações concretas (framework e serviços externos)
 │   ├── http/                        # Borda NestJS — @Controller fino que delega ao Clean Controller
-│   │   ├── <domínio>/               # @Controller + module + dto/requests + dto/responses
+│   │   ├── controllers/<domínio>/   # @Controller + module + dto/requests + dto/responses
 │   │   │                            # (@ApiProperty; *ResponseDto implements o tipo puro)
-│   │   ├── auth/                    # JwtStrategy, Guards (JwtAuthGuard, RolesGuard),
-│   │   │                            # @CurrentUser, @Roles, @Public
+│   │   │                            # domínios no singular; auth em controllers/auth/
+│   │   ├── guards/                  # JwtAuthGuard, RolesGuard
+│   │   ├── decorators/              # @CurrentUser, @Roles, @Public
+│   │   ├── strategies/              # JwtStrategy (Passport)
 │   │   ├── filters/                 # Exception Filters: Domain, Application,
 │   │   │                            # Infrastructure, AllExceptions
 │   │   ├── interceptors/            # DateSerializerInterceptor (ISO 8601 com timezone)
@@ -1141,7 +1143,7 @@ Alguns branches (`?`, `??`, `?.`) nos Presenters (`interface-adapters/`) e na bo
 |---|---|---|
 | `toStatusHistoryListResponse` — `entry.changedBy ? ... : null` | Ramo falso (`null`) | O histórico de status iniciado por usuário autenticado sempre persiste `changedById`. Apenas eventos automáticos disparados sem usuário (ex.: envio de orçamento via job interno) registram `null`. |
 
-### `src/infrastructure/http/quotes/quotes.module.ts`
+### `src/infrastructure/http/controllers/quote/quote.module.ts`
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|
