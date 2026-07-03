@@ -68,25 +68,33 @@ jobs:
             HEAD_SHA="${{ github.sha }}"
           fi
 
+          # Write the changed-file list to a file and match against the file
+          # directly. Piping it into `grep -q`/`awk` would break under
+          # `set -o pipefail`: on a large diff the writer blocks on the pipe
+          # buffer while the early-exiting reader closes it, so the writer
+          # takes SIGPIPE and the pipeline reports failure even on a match.
+          # --no-renames so a moved file always surfaces under its new path
+          # (rename detection can otherwise hide the destination path).
+          CHANGED_FILES_FILE="$(mktemp)"
           if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
-            CHANGED_FILES="$(git show --pretty='' --name-only "${HEAD_SHA}")"
+            git show --pretty='' --name-only --no-renames "${HEAD_SHA}" > "${CHANGED_FILES_FILE}"
           else
-            CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+            git diff --name-only --no-renames "${BASE_SHA}" "${HEAD_SHA}" > "${CHANGED_FILES_FILE}"
           fi
 
           prisma_changed=false
           infra_changed=false
           app_changed=false
 
-          if echo "${CHANGED_FILES}" | grep -qE '^(prisma/|prisma\.config\.ts$)'; then
+          if grep -qE '^(app/prisma/|app/prisma\.config\.ts$)' "${CHANGED_FILES_FILE}"; then
             prisma_changed=true
           fi
 
-          if echo "${CHANGED_FILES}" | grep -qE '^(infra/|\.github/workflows/infra\.yml$)'; then
+          if grep -qE '^(infra/|\.github/workflows/infra\.yml$)' "${CHANGED_FILES_FILE}"; then
             infra_changed=true
           fi
 
-          if echo "${CHANGED_FILES}" | awk 'NF && $0 !~ /^infra\// && $0 != ".github/workflows/infra.yml" { found=1; exit } END { exit !found }'; then
+          if awk 'NF && $0 !~ /^infra\// && $0 != ".github/workflows/infra.yml" { found=1; exit } END { exit !found }' "${CHANGED_FILES_FILE}"; then
             app_changed=true
           fi
 
@@ -101,6 +109,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect_changes
     if: needs.detect_changes.outputs.app_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    defaults:
+      run:
+        working-directory: app
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -128,6 +140,8 @@ jobs:
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        with:
+          projectBaseDir: app
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -136,6 +150,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect_changes
     if: needs.detect_changes.outputs.app_changed == 'true' && needs.detect_changes.outputs.prisma_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    defaults:
+      run:
+        working-directory: app
 
     services:
       postgres:
@@ -216,7 +234,7 @@ jobs:
       - name: Build and Push Image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./app
           push: true
           tags: |
             ${{ steps.image_meta.outputs.image_uri }}

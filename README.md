@@ -30,8 +30,10 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 
 O projeto segue **Clean Architecture** com separação estrita de camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. O código-fonte aponta apenas para dentro: `domain/` e `application/` são **livres de framework e ORM** (uma cerca de ESLint proíbe `@nestjs/*` e `@generated/client` nessas camadas e quebra a build se violada). A camada `interface-adapters/` concentra os **Clean Controllers** e **Presenters** (POJOs livres de framework); a borda NestJS (rotas, Swagger, guards, DTOs) fica em `infrastructure/http/` e apenas **delega** ao Clean Controller.
 
+Toda a aplicação fica sob o diretório `app/` na raiz do repositório (código, testes, Prisma e todas as configs de tooling); a raiz guarda apenas concerns transversais (`README.md`, `CLAUDE.md`, `.gitignore`) e as pastas `docs/`, `infra/`, `k8s/`, `collections/`, `reports/` e `openspec/`.
+
 ```
-src/
+app/src/
 ├── domain/                          # Camada de domínio (regras de negócio puras, sem framework)
 │   ├── entities/                    # Entidades ricas com validação de domínio e invariantes
 │   │                                # WorkOrder e Quote são Aggregate Roots
@@ -108,7 +110,7 @@ src/
 └── main.ts                          # helmet, CORS (ALLOWED_ORIGINS), SanitizeStringsPipe,
                                      # ValidationPipe, DateSerializerInterceptor, prefixo /api
 
-test/
+app/test/
 ├── helpers/                         # Mock factories reutilizáveis (incluindo
 │                                    # UnitOfWorkMockFactory) e helpers de E2E
 │                                    # (auth, db cleanup, test app bootstrap)
@@ -131,7 +133,7 @@ test/
     ├── vehicle.e2e-spec.ts
     └── work-order.e2e-spec.ts
 
-prisma/
+app/prisma/
 ├── schema.prisma                    # Schema do banco (15 modelos, 8 enums)
 ├── prisma.config.ts                 # Configuração do Prisma v7 (adapter-pg)
 ├── migrations/                      # Migrations geradas pelo Prisma — inclui a sequence
@@ -292,9 +294,9 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./docs/adr)
 Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em containers. As migrations são executadas automaticamente e o banco é populado com o seed.
 
 ```bash
-# Clonar o repositório e entrar na pasta
+# Clonar o repositório e entrar na pasta da aplicação
 git clone <url-do-repositorio>
-cd oficina_mecanica_grupo39
+cd oficina_mecanica_grupo39/app
 
 # (Opcional) Copiar e ajustar variáveis de ambiente
 cp .env.example .env
@@ -341,8 +343,11 @@ MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
 
 ### Passo a passo
 
+> Toda a aplicação vive em `app/` (não há `package.json` na raiz). Execute os comandos abaixo — e todos os `npm`/`prisma`/`docker compose` — a partir de `app/`.
+
 ```bash
-# 1. Instalar dependências
+# 1. Entrar na pasta da aplicação e instalar dependências
+cd app
 npm install
 
 # 2. Copiar e ajustar variáveis de ambiente
@@ -366,6 +371,8 @@ Após a inicialização:
 
 ## Comandos
 
+Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.json` na raiz do repositório.
+
 | Comando | Descrição |
 |---|---|
 | `npm run start` | Inicia a aplicação |
@@ -379,7 +386,7 @@ Após a inicialização:
 | `npm run test:e2e:cov` | Testes E2E com cobertura |
 | `npm run lint` | Linting com auto-fix |
 | `npm run format` | Formata código com Prettier |
-| `npm run prisma:generate` | Gera o Prisma Client (`prisma/generated/`) |
+| `npm run prisma:generate` | Gera o Prisma Client (`app/prisma/generated/`) |
 | `npm run prisma:migrate` | Cria/aplica migrations (dev) |
 | `npm run prisma:migrate:prod` | Aplica migrations em produção (`migrate deploy`) |
 | `npm run prisma:studio` | Abre o Prisma Studio (GUI do banco) |
@@ -995,7 +1002,7 @@ Detalhamento por job:
   - Calcula três flags: `app_changed`, `infra_changed` e `prisma_changed` a partir do diff do evento.
   - Publica essas flags como output para controlar execução condicional dos jobs seguintes.
 2. `ci_quality`
-  - Instala dependências (`npm ci`), gera Prisma Client, executa lint, testes com cobertura e SonarQube Scan.
+  - Roda com `working-directory: app`; instala dependências (`npm ci`), gera Prisma Client, executa lint, testes com cobertura e SonarQube Scan (`projectBaseDir: app`).
   - É pré-requisito para o build da imagem.
 3. `db_ci_validation` (condicional)
   - Só executa quando `prisma_changed == true`.
