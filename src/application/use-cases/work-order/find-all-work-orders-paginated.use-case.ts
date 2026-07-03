@@ -10,9 +10,17 @@ import { buildPaginatedResult } from '@application/utils/pagination.util';
 import { parseSort } from '@application/utils/parse-sort.util';
 import { SortCriterion } from '@domain/interfaces/common/sort-criterion';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
+import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 
 export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPaginatedUseCase {
   private static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);
+
+  private static readonly DEFAULT_HIDDEN_STATUSES: WorkOrderStatus[] = [
+    WorkOrderStatus.COMPLETED,
+    WorkOrderStatus.DELIVERED,
+    WorkOrderStatus.CANCELLED,
+  ];
+
   private static readonly DEFAULT_SORT: SortCriterion[] = [
     { field: 'status', direction: SortDirection.DESC },
     { field: 'createdAt', direction: SortDirection.ASC },
@@ -30,7 +38,7 @@ export class FindAllWorkOrdersPaginatedUseCase implements IFindAllWorkOrdersPagi
     const filters: WorkOrderFilters = { ...inputFilters };
 
     if (!inputFilters.status) {
-      filters.statusNotIn = WorkOrder.DEFAULT_HIDDEN_STATUSES;
+      filters.statusNotIn = FindAllWorkOrdersPaginatedUseCase.DEFAULT_HIDDEN_STATUSES;
     }
 
     const result = await this.workOrderRepository.findAllPaginated(pagination, filters, sort);
