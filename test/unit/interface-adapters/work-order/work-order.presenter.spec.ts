@@ -15,6 +15,7 @@ import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory'
 import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
 import { createMockUser } from '../../../helpers/user-mock.factory';
+import { createMockStatusHistory } from '../../../helpers/status-history-mock.factory';
 
 describe('WorkOrderPresenter', () => {
   describe('toResponse', () => {
@@ -347,6 +348,66 @@ describe('WorkOrderPresenter', () => {
       const response = WorkOrderPresenter.toResponse(workOrder);
 
       expect(response.partSupplies![0].partNumber).toBeNull();
+    });
+  });
+
+  describe('toStatusHistoryListResponse', () => {
+    it('should return empty data array when history is empty', () => {
+      const result = WorkOrderPresenter.toStatusHistoryListResponse([]);
+
+      expect(result.data).toEqual([]);
+    });
+
+    it('should map all fields of a status history entry with no changedBy', () => {
+      const now = new Date();
+
+      const entry = createMockStatusHistory({
+        previousStatus: WorkOrderStatus.RECEIVED,
+        newStatus: WorkOrderStatus.IN_DIAGNOSIS,
+        notes: 'Diagnóstico iniciado',
+        createdAt: now,
+      });
+
+      const result = WorkOrderPresenter.toStatusHistoryListResponse([entry]);
+
+      expect(result.data).toHaveLength(1);
+
+      const item = result.data[0];
+
+      expect(item.id).toBe(entry.id);
+      expect(item.previousStatus).toBe(WorkOrderStatus.RECEIVED);
+      expect(item.newStatus).toBe(WorkOrderStatus.IN_DIAGNOSIS);
+      expect(item.notes).toBe('Diagnóstico iniciado');
+      expect(item.createdAt).toBe(now);
+      expect(item.changedBy).toBeNull();
+    });
+
+    it('should map changedBy user fields when user is set', () => {
+      const user = createMockUser({ name: 'Mecânico' });
+      const entry = createMockStatusHistory({ previousStatus: null });
+      entry.changedBy = user;
+
+      const result = WorkOrderPresenter.toStatusHistoryListResponse([entry]);
+
+      const changedBy = result.data[0].changedBy!;
+
+      expect(changedBy).not.toBeNull();
+      expect(changedBy.id).toBe(user.id);
+      expect(changedBy.name).toBe('Mecânico');
+      expect(changedBy.email).toBe(user.email.value);
+      expect(changedBy.role).toBe(user.role);
+    });
+
+    it('should map multiple entries preserving order', () => {
+      const entry1 = createMockStatusHistory({ newStatus: WorkOrderStatus.IN_DIAGNOSIS });
+
+      const entry2 = createMockStatusHistory({ newStatus: WorkOrderStatus.APPROVED });
+
+      const result = WorkOrderPresenter.toStatusHistoryListResponse([entry1, entry2]);
+
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].newStatus).toBe(WorkOrderStatus.IN_DIAGNOSIS);
+      expect(result.data[1].newStatus).toBe(WorkOrderStatus.APPROVED);
     });
   });
 });

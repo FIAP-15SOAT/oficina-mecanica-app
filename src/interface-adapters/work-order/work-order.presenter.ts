@@ -18,7 +18,6 @@ import {
   WorkOrderVehicleResponse,
 } from './responses/work-order.response';
 import {
-  StatusHistoryChangedByResponse,
   StatusHistoryListResponse,
   StatusHistoryResponse,
 } from './responses/status-history.response';
@@ -74,7 +73,7 @@ export class WorkOrderPresenter {
       data: history.map(
         (entry): StatusHistoryResponse => ({
           id: entry.id,
-          changedBy: entry.changedBy ? WorkOrderPresenter.toChangedBy(entry.changedBy) : null,
+          changedBy: entry.changedBy ? WorkOrderPresenter.toUser(entry.changedBy) : null,
           previousStatus: entry.previousStatus,
           newStatus: entry.newStatus,
           notes: entry.notes,
@@ -118,10 +117,6 @@ export class WorkOrderPresenter {
       email: user.email.value,
       role: user.role,
     };
-  }
-
-  private static toChangedBy(user: User): StatusHistoryChangedByResponse {
-    return WorkOrderPresenter.toUser(user);
   }
 
   static toServiceItem(this: void, item: WorkOrderService): WorkOrderServiceItemResponse {
