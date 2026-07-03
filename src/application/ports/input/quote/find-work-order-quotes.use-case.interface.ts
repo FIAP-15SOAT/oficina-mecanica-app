@@ -1,5 +1,5 @@
 import { Quote } from '@domain/entities/quote.entity';
 
-export abstract class IFindWorkOrderQuotesUseCase {
-  abstract execute(workOrderId: string): Promise<Quote[]>;
+export interface IFindWorkOrderQuotesUseCase {
+  execute(workOrderId: string): Promise<Quote[]>;
 }
