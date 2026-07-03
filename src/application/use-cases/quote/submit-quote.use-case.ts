@@ -1,17 +1,20 @@
-import { ITokenService } from '@domain/interfaces/services/token.service.interface';
 import { Quote } from '@domain/entities/quote.entity';
 import { Customer } from '@domain/entities/customer.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
+import { WorkOrder } from '@domain/entities/work-order.entity';
+
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 import { TokenType } from '@domain/enums/token-type.enum';
+import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
+
+import { ITokenService } from '@application/ports/output/token.service.interface';
+import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import {
   IEmailSenderService,
   SendEmailInput,
-} from '@domain/interfaces/services/email-sender.service.interface';
+} from '@application/ports/output/email-sender.service.interface';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { WorkOrder } from '@domain/entities/work-order.entity';
 
 interface QuoteEmailDecisionTokenPayload extends Record<string, unknown> {
   quoteId: string;

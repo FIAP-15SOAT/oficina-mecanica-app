@@ -1,13 +1,16 @@
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { User } from '@domain/entities/user.entity';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+import { Email } from '@domain/value-objects/email.vo';
+
+import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+
 import {
   UpdateUserDto,
   UpdateUserOutputDto,
-} from '@domain/interfaces/use-cases/user/dto/update-user.dto';
-import { Email } from '@domain/value-objects/email.vo';
+} from '@application/ports/input/user/dto/update-user.dto';
+
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateUserUseCase {
   constructor(

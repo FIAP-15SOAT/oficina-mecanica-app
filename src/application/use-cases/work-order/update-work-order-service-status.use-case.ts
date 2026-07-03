@@ -1,11 +1,14 @@
+import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderService } from '@domain/entities/work-order-service.entity';
 import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { StatusHistory } from '@domain/entities/status-history.entity';
+
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { WorkOrder } from '@domain/entities/work-order.entity';
+
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { UpdateWorkOrderServiceStatusDto } from '@domain/interfaces/use-cases/work-order/dto/update-work-order-service-status.dto';
+import { UpdateWorkOrderServiceStatusDto } from '@application/ports/input/work-order/dto/update-work-order-service-status.dto';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateWorkOrderServiceStatusUseCase {

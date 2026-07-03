@@ -1,11 +1,13 @@
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { User } from '@domain/entities/user.entity';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
+
+import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+
 import {
   CreateUserDto,
   CreateUserOutputDto,
-} from '@domain/interfaces/use-cases/user/dto/create-user.dto';
+} from '@application/ports/input/user/dto/create-user.dto';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 export class CreateUserUseCase {
   constructor(

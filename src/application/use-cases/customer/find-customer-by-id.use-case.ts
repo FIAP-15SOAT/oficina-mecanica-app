@@ -1,7 +1,8 @@
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { Customer } from '@domain/entities/customer.entity';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { IFindCustomerByIdUseCase } from '@domain/interfaces/use-cases/customer/find-customer-by-id.use-case.interface';
+import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
+
+import { Customer } from '@domain/entities/customer.entity';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindCustomerByIdUseCase implements IFindCustomerByIdUseCase {
   constructor(private readonly customerRepository: ICustomerRepository) {}

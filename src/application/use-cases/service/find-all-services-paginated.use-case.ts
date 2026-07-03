@@ -1,6 +1,6 @@
 import { Service } from '@domain/entities/service.entity';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
-import { FindAllServicesPaginatedInputDto } from '@domain/interfaces/use-cases/service/dto/find-all-services-paginated.dto';
+import { FindAllServicesPaginatedInputDto } from '@application/ports/input/service/dto/find-all-services-paginated.dto';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 

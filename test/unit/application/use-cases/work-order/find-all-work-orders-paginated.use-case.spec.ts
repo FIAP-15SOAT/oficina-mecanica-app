@@ -2,7 +2,6 @@ import { FindAllWorkOrdersPaginatedUseCase } from '@application/use-cases/work-o
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { SortDirection } from '@domain/enums/sort-direction.enum';
 import { BadRequestException } from '@application/exceptions/bad-request.exception';
-import { WorkOrder } from '@domain/entities/work-order.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import {
   createMockWorkOrder,
@@ -36,7 +35,13 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
     expect(result.pagination.page).toBe(input.page);
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: input.page, limit: input.limit },
-      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      {
+        statusNotIn: [
+          WorkOrderStatus.COMPLETED,
+          WorkOrderStatus.DELIVERED,
+          WorkOrderStatus.CANCELLED,
+        ],
+      },
       DEFAULT_SORT,
     );
   });
@@ -66,7 +71,13 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      {
+        statusNotIn: [
+          WorkOrderStatus.COMPLETED,
+          WorkOrderStatus.DELIVERED,
+          WorkOrderStatus.CANCELLED,
+        ],
+      },
       [{ field: 'createdAt', direction: SortDirection.ASC }],
     );
   });
@@ -79,13 +90,26 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: input.page, limit: input.limit },
-      { customerId: input.customerId, statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      {
+        customerId: input.customerId,
+        statusNotIn: [
+          WorkOrderStatus.COMPLETED,
+          WorkOrderStatus.DELIVERED,
+          WorkOrderStatus.CANCELLED,
+        ],
+      },
       DEFAULT_SORT,
     );
   });
 
   it('should throw BadRequestException for disallowed sort field', async () => {
     await expect(useCase.execute({ page: 1, limit: 10, sort: 'number:asc' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('should throw BadRequestException for invalid sort direction', async () => {
+    await expect(useCase.execute({ page: 1, limit: 10, sort: 'status:invalid' })).rejects.toThrow(
       BadRequestException,
     );
   });
@@ -97,7 +121,13 @@ describe('FindAllWorkOrdersPaginatedUseCase', () => {
 
     expect(workOrderRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { statusNotIn: WorkOrder.DEFAULT_HIDDEN_STATUSES },
+      {
+        statusNotIn: [
+          WorkOrderStatus.COMPLETED,
+          WorkOrderStatus.DELIVERED,
+          WorkOrderStatus.CANCELLED,
+        ],
+      },
       DEFAULT_SORT,
     );
   });

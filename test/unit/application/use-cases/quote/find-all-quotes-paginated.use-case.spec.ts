@@ -2,15 +2,14 @@ import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
+import { createMockQuoteRepository } from '../../../../helpers/quote-mock.factory';
 
 describe('FindAllQuotesPaginatedUseCase', () => {
   let useCase: FindAllQuotesPaginatedUseCase;
   let quoteRepository: jest.Mocked<IQuoteRepository>;
 
   beforeEach(() => {
-    quoteRepository = {
-      findAllPaginated: jest.fn(),
-    } as unknown as jest.Mocked<IQuoteRepository>;
+    quoteRepository = createMockQuoteRepository();
     useCase = new FindAllQuotesPaginatedUseCase(quoteRepository);
   });
 
@@ -47,6 +46,7 @@ describe('FindAllQuotesPaginatedUseCase', () => {
         updatedAt: new Date(),
       }),
     ];
+
     const paginatedResult = {
       items: quotes,
       pagination: {
@@ -71,6 +71,7 @@ describe('FindAllQuotesPaginatedUseCase', () => {
 
   it('should call repository with filters', async () => {
     const input = { workOrderId: 'wo-1', status: QuoteStatus.APPROVED, page: 2, limit: 5 };
+
     quoteRepository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
 
     await useCase.execute(input);

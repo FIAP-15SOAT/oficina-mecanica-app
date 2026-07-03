@@ -1,7 +1,7 @@
 import type { Server } from 'http';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
-import type { PrismaService } from '@infrastructure/database/prisma/prisma.service';
+import type { PrismaService } from '@infrastructure/persistence/prisma/prisma.service';
 
 export interface AuthTokens {
   accessToken: string;

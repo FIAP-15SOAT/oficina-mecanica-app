@@ -2,8 +2,8 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { PartSupply } from '@domain/entities/part-supply.entity';
 import { IPartSupplyRepository } from '@domain/interfaces/repositories/part-supply.repository.interface';
-import { UpdatePartSupplyDto } from '@domain/interfaces/use-cases/part-supply/dto/update-part-supply.dto';
-import { IUpdatePartSupplyUseCase } from '@domain/interfaces/use-cases/part-supply/update-part-supply.use-case.interface';
+import { UpdatePartSupplyDto } from '@application/ports/input/part-supply/dto/update-part-supply.dto';
+import { IUpdatePartSupplyUseCase } from '@application/ports/input/part-supply/update-part-supply.use-case.interface';
 
 export class UpdatePartSupplyUseCase implements IUpdatePartSupplyUseCase {
   constructor(private readonly partSupplyRepository: IPartSupplyRepository) {}

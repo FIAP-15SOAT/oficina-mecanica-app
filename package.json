@@ -114,7 +114,7 @@
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
       "!src/**/*.dto.ts",
-      "!src/infrastructure/database/prisma/prisma.service.ts",
+      "!src/infrastructure/persistence/prisma/prisma.service.ts",
       "!src/domain/constants/**"
     ],
     "coverageDirectory": "coverage",
@@ -127,7 +127,7 @@
       "^@config/(.*)$": "<rootDir>/src/config/$1",
       "^@domain/(.*)$": "<rootDir>/src/domain/$1",
       "^@infrastructure/(.*)$": "<rootDir>/src/infrastructure/$1",
-      "^@presentation/(.*)$": "<rootDir>/src/presentation/$1",
+      "^@interface-adapters/(.*)$": "<rootDir>/src/interface-adapters/$1",
       "^@generated/(.*)$": "<rootDir>/prisma/generated/$1",
       "^(.*)\\.js$": "$1"
     }

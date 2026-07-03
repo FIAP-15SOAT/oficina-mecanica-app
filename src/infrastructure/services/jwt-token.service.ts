@@ -5,7 +5,7 @@ import {
   ITokenService,
   TokenPair,
   TokenPayload,
-} from '@domain/interfaces/services/token.service.interface';
+} from '@application/ports/output/token.service.interface';
 
 @Injectable()
 export class JwtTokenService implements ITokenService {

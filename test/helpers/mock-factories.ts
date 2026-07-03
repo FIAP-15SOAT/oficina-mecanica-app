@@ -1,7 +1,7 @@
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { IHashService } from '@domain/interfaces/services/hash.service.interface';
-import { ITokenService, TokenPair } from '@domain/interfaces/services/token.service.interface';
+import { IHashService } from '@application/ports/output/hash.service.interface';
+import { ITokenService, TokenPair } from '@application/ports/output/token.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
 

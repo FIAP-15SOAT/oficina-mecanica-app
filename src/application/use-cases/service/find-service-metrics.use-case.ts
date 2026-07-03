@@ -2,7 +2,7 @@ import {
   ServiceMetrics,
   IServiceRepository,
 } from '@domain/interfaces/repositories/service.repository.interface';
-import { IFindServiceMetricsUseCase } from '@domain/interfaces/use-cases/service/find-service-metrics.use-case.interface';
+import { IFindServiceMetricsUseCase } from '@application/ports/input/service/find-service-metrics.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindServiceMetricsUseCase implements IFindServiceMetricsUseCase {

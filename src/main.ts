@@ -4,8 +4,9 @@ import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { setupSwagger } from './config/swagger.config';
-import { DateSerializerInterceptor } from './infrastructure/interceptors/date-serializer.interceptor';
-import { SanitizeStringsPipe } from './infrastructure/pipes/sanitize-strings.pipe';
+
+import { DateSerializerInterceptor } from './infrastructure/http/interceptors/date-serializer.interceptor';
+import { SanitizeStringsPipe } from './infrastructure/http/pipes/sanitize-strings.pipe';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);

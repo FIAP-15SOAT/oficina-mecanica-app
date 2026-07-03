@@ -1,10 +1,12 @@
 import { StockMovement } from '@domain/entities/stock-movement.entity';
-import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
-import { IFindStockMovementsUseCase } from '@domain/interfaces/use-cases/stock/find-stock-movements.use-case.interface';
-import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
-import { buildPaginatedResult } from '@application/utils/pagination.util';
 
-import { FindStockMovementsInputDto } from '@domain/interfaces/use-cases/stock/dto/find-stock-movements.dto';
+import { IStockMovementRepository } from '@domain/interfaces/repositories/stock-movement.repository.interface';
+import { IFindStockMovementsUseCase } from '@application/ports/input/stock/find-stock-movements.use-case.interface';
+
+import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+import { FindStockMovementsInputDto } from '@application/ports/input/stock/dto/find-stock-movements.dto';
+
+import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindStockMovementsUseCase implements IFindStockMovementsUseCase {
   constructor(private readonly stockMovementRepository: IStockMovementRepository) {}

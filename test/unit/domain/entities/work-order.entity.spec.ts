@@ -604,34 +604,6 @@ describe('WorkOrder Entity', () => {
     });
   });
 
-  describe('validateAllowedSortFields', () => {
-    it('should not throw for allowed fields', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['status', 'createdAt'])).not.toThrow();
-    });
-
-    it('should not throw for a single allowed field', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['status'])).not.toThrow();
-    });
-
-    it('should throw DomainValidationException for unknown field', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['number'])).toThrow(
-        DomainValidationException,
-      );
-    });
-
-    it('should throw with the unknown field name in the message', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['number'])).toThrow(
-        /number/,
-      );
-    });
-
-    it('should throw on the first invalid field', () => {
-      expect(() => WorkOrder.validateAllowedSortFields(['status', 'number'])).toThrow(
-        DomainValidationException,
-      );
-    });
-  });
-
   describe('applyQuoteItems()', () => {
     it('should create WO service/part items and recalculate totalAmount from item prices', () => {
       const qService = createMockQuoteService();

@@ -1,7 +1,9 @@
 import { Vehicle } from '@domain/entities/vehicle.entity';
+
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { IFindVehiclesByCustomerIdUseCase } from '@domain/interfaces/use-cases/vehicle/find-vehicles-by-customer-id.use-case.interface';
+import { IFindVehiclesByCustomerIdUseCase } from '@application/ports/input/vehicle/find-vehicles-by-customer-id.use-case.interface';
+
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class FindVehiclesByCustomerIdUseCase implements IFindVehiclesByCustomerIdUseCase {

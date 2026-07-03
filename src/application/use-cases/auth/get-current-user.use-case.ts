@@ -1,6 +1,6 @@
-import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { GetCurrentUserOutputDto } from '@domain/interfaces/use-cases/auth/dto/get-current-user.dto';
+import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class GetCurrentUserUseCase {
   constructor(private readonly userRepository: IUserRepository) {}

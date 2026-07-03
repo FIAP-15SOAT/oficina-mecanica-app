@@ -1,4 +1,4 @@
-import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
+import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
 
 export async function cleanDatabase(prisma: PrismaService): Promise<void> {
   await prisma.stockReservation.deleteMany();

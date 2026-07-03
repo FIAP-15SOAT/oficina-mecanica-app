@@ -598,18 +598,25 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.pagination).toBeDefined();
     });
 
-    it('should return 422 for disallowed sort field', async () => {
+    it('should return 400 for disallowed sort field', async () => {
       await request(httpServer)
         .get('/api/work-orders?sort=number:asc')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(422);
+        .expect(400);
     });
 
-    it('should return 422 for invalid sort direction', async () => {
+    it('should return 400 for invalid sort direction', async () => {
       await request(httpServer)
         .get('/api/work-orders?sort=status:invalid')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(422);
+        .expect(400);
+    });
+
+    it('should return 400 for empty sort field', async () => {
+      await request(httpServer)
+        .get('/api/work-orders?sort=:asc')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(400);
     });
   });
 

@@ -3,7 +3,7 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { UpdateCustomerDto } from '@domain/interfaces/use-cases/customer/dto/update-customer.dto';
+import { UpdateCustomerDto } from '@application/ports/input/customer/dto/update-customer.dto';
 import {
   createMockCustomer,
   createMockCustomerRepository,

@@ -3,22 +3,22 @@ import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 
-import { AllExceptionsFilter } from './infrastructure/filters/all-exceptions.filter';
-import { ApplicationExceptionFilter } from './infrastructure/filters/application-exception.filter';
-import { DomainExceptionFilter } from './infrastructure/filters/domain-exception.filter';
-import { InfrastructureExceptionFilter } from './infrastructure/filters/infrastructure-exception.filter';
+import { AllExceptionsFilter } from './infrastructure/http/filters/all-exceptions.filter';
+import { ApplicationExceptionFilter } from './infrastructure/http/filters/application-exception.filter';
+import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exception.filter';
+import { InfrastructureExceptionFilter } from './infrastructure/http/filters/infrastructure-exception.filter';
 
-import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
-import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
-import { AuthModule } from './presentation/auth/auth.module';
-import { UserModule } from './presentation/user/user.module';
-import { ServiceModule } from './presentation/service/service.module';
-import { PartsSuppliesModule } from './presentation/parts-supplies/parts-supplies.module';
-import { CustomersModule } from './presentation/customers/customers.module';
-import { VehiclesModule } from './presentation/vehicles/vehicles.module';
-import { WorkOrderModule } from './presentation/work-order/work-order.module';
-import { QuoteModule } from './presentation/quote/quote.module';
-import { StockModule } from './presentation/stock/stock.module';
+import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
+import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
+import { AuthModule } from './infrastructure/http/auth/auth.module';
+import { UserModule } from './infrastructure/http/user/user.module';
+import { ServiceModule } from './infrastructure/http/service/service.module';
+import { PartsSuppliesModule } from './infrastructure/http/parts-supplies/parts-supplies.module';
+import { CustomersModule } from './infrastructure/http/customers/customers.module';
+import { VehiclesModule } from './infrastructure/http/vehicles/vehicles.module';
+import { WorkOrderModule } from './infrastructure/http/work-order/work-order.module';
+import { QuotesModule } from './infrastructure/http/quotes/quotes.module';
+import { StockModule } from './infrastructure/http/stock/stock.module';
 
 @Module({
   imports: [
@@ -48,7 +48,7 @@ import { StockModule } from './presentation/stock/stock.module';
     CustomersModule,
     VehiclesModule,
     WorkOrderModule,
-    QuoteModule,
+    QuotesModule,
     StockModule,
   ],
   providers: [

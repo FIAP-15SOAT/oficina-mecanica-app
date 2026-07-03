@@ -1,12 +1,15 @@
 import { Quote } from '@domain/entities/quote.entity';
-import { IApproveQuoteUseCase } from '@domain/interfaces/use-cases/quote/approve-quote.use-case.interface';
-import { IRejectQuoteUseCase } from '@domain/interfaces/use-cases/quote/reject-quote.use-case.interface';
+import { QuoteStatus } from '@domain/enums/quote-status.enum';
+
+import { IApproveQuoteUseCase } from '@application/ports/input/quote/approve-quote.use-case.interface';
+import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
+
 import {
   IUpdateQuoteStatusUseCase,
   UpdateQuoteStatusDto,
-} from '@domain/interfaces/use-cases/quote/update-quote-status.use-case.interface';
+} from '@application/ports/input/quote/update-quote-status.use-case.interface';
+
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
-import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
   constructor(

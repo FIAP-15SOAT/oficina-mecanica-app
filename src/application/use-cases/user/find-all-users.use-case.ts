@@ -1,8 +1,10 @@
-import { UserPublicView } from '@domain/entities/user.entity';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-users.use-case.interface';
+
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
-import { IFindAllUsersUseCase } from '@domain/interfaces/use-cases/user/find-all-users.use-case.interface';
-import { FindAllUsersPaginatedInput } from '@domain/interfaces/use-cases/user/dto/find-all-users-paginated.dto';
+import { FindAllUsersPaginatedInput } from '@application/ports/input/user/dto/find-all-users-paginated.dto';
+import { UserPublicView } from '@domain/entities/user.entity';
+
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllUsersUseCase implements IFindAllUsersUseCase {

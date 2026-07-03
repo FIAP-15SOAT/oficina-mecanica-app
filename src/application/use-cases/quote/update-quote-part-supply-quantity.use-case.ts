@@ -1,6 +1,6 @@
 import { Quote } from '@domain/entities/quote.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { UpdateQuotePartSupplyQuantityDto } from '@domain/interfaces/use-cases/quote/dto/update-quote-part-supply-quantity.dto';
+import { UpdateQuotePartSupplyQuantityDto } from '@application/ports/input/quote/dto/update-quote-part-supply-quantity.dto';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateQuotePartSupplyQuantityUseCase {

@@ -1,0 +1,137 @@
+import { randomUUID } from 'node:crypto';
+
+import { Plate } from '@domain/value-objects/plate.vo';
+import { Document } from '@domain/value-objects/document.vo';
+import { CustomerType } from '@domain/enums/customer-type.enum';
+
+import { VehiclePresenter } from '@interface-adapters/vehicle/vehicle.presenter';
+
+import {
+  createMockVehicle,
+  createMockVehicleCustomer,
+} from '../../../helpers/vehicle-mock.factory';
+
+describe('VehiclePresenter', () => {
+  describe('toResponse', () => {
+    it('should map all vehicle fields correctly', () => {
+      const vehicle = createMockVehicle({
+        plate: Plate.create('XYZ-9876'),
+        brand: 'Honda',
+        model: 'Civic',
+        year: 2022,
+        color: 'Branco',
+        mileage: 30000,
+      });
+
+      const response = VehiclePresenter.toResponse(vehicle);
+
+      expect(response.id).toBe(vehicle.id);
+      expect(response.customerId).toBe(vehicle.customerId);
+      expect(response.plate).toBe('XYZ9876');
+      expect(response.brand).toBe('Honda');
+      expect(response.model).toBe('Civic');
+      expect(response.year).toBe(2022);
+      expect(response.color).toBe('Branco');
+      expect(response.mileage).toBe(30000);
+      expect(response.createdAt).toBe(vehicle.createdAt);
+      expect(response.updatedAt).toBe(vehicle.updatedAt);
+    });
+
+    it('should map customer summary from nested customer relation', () => {
+      const customer = createMockVehicleCustomer({
+        id: randomUUID(),
+        name: 'Maria Souza',
+        document: Document.create('98765432100', CustomerType.INDIVIDUAL),
+      });
+
+      const vehicle = createMockVehicle({ customer });
+
+      const response = VehiclePresenter.toResponse(vehicle);
+
+      expect(response.customer.id).toBe(customer.id);
+      expect(response.customer.name).toBe('Maria Souza');
+      expect(response.customer.document).toBe('98765432100');
+    });
+
+    it('should return null for color and mileage when absent', () => {
+      const vehicle = createMockVehicle({ color: null, mileage: null });
+
+      const response = VehiclePresenter.toResponse(vehicle);
+
+      expect(response.color).toBeNull();
+      expect(response.mileage).toBeNull();
+    });
+  });
+
+  describe('toDataResponse', () => {
+    it('should wrap the vehicle response in a data property', () => {
+      const vehicle = createMockVehicle();
+
+      const result = VehiclePresenter.toDataResponse(vehicle);
+
+      expect(result.data).toBeDefined();
+      expect(result.data.id).toBe(vehicle.id);
+      expect(result.data.plate).toBe(vehicle.plate.value);
+    });
+  });
+
+  describe('toPaginatedDataResponse', () => {
+    it('should map items and preserve pagination metadata', () => {
+      const vehicles = [createMockVehicle(), createMockVehicle()];
+      const pagination = { totalRecords: 2, totalPages: 1, page: 1, limit: 10 };
+
+      const result = VehiclePresenter.toPaginatedDataResponse({ items: vehicles, pagination });
+
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].id).toBe(vehicles[0].id);
+      expect(result.data[1].id).toBe(vehicles[1].id);
+      expect(result.pagination).toEqual(pagination);
+    });
+
+    it('should return empty data array when items is empty', () => {
+      const result = VehiclePresenter.toPaginatedDataResponse({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
+
+      expect(result.data).toHaveLength(0);
+    });
+  });
+
+  describe('toListResponse', () => {
+    it('should map a list of vehicles to response DTOs', () => {
+      const vehicles = [createMockVehicle(), createMockVehicle(), createMockVehicle()];
+
+      const result = VehiclePresenter.toListResponse(vehicles);
+
+      expect(result.data).toHaveLength(3);
+
+      result.data.forEach((item, index) => {
+        expect(item.id).toBe(vehicles[index].id);
+        expect(item.plate).toBe(vehicles[index].plate.value);
+        expect(item.customerId).toBe(vehicles[index].customerId);
+      });
+    });
+
+    it('should return empty data array for an empty list', () => {
+      const result = VehiclePresenter.toListResponse([]);
+
+      expect(result.data).toHaveLength(0);
+      expect(result.data).toEqual([]);
+    });
+
+    it('should include customer summary for each vehicle', () => {
+      const customer = createMockVehicleCustomer({
+        name: 'Carlos Lima',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      });
+
+      const vehicle = createMockVehicle({ customer });
+
+      const result = VehiclePresenter.toListResponse([vehicle]);
+
+      expect(result.data[0].customer.name).toBe('Carlos Lima');
+      expect(result.data[0].customer.document).toBe('12345678909');
+    });
+  });
+});

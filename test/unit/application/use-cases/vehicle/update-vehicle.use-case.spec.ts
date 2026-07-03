@@ -4,7 +4,7 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
-import { UpdateVehicleDto } from '@domain/interfaces/use-cases/vehicle/dto/update-vehicle.dto';
+import { UpdateVehicleDto } from '@application/ports/input/vehicle/dto/update-vehicle.dto';
 import {
   createMockCustomer,
   createMockCustomerRepository,

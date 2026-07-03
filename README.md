@@ -2,7 +2,7 @@
 
 Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecânicas. Gestão de ordens de serviço, clientes, veículos, peças, insumos, serviços, orçamentos e estoque.
 
-**Tech Challenge — Fase 1 — Grupo 15SOAT**
+**Tech Challenge — Fase 2 — Grupo 15SOAT**
 
 ## Stack
 
@@ -28,7 +28,7 @@ Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecâni
 
 ## Arquitetura
 
-O projeto segue **Clean Architecture** com separação estrita de quatro camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. As dependências fluem apenas para dentro (Presentation → Application → Domain; Infrastructure implementa contratos do Domain).
+O projeto segue **Clean Architecture** com separação estrita de camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. O código-fonte aponta apenas para dentro: `domain/` e `application/` são **livres de framework e ORM** (uma cerca de ESLint proíbe `@nestjs/*` e `@generated/client` nessas camadas e quebra a build se violada). A camada `interface-adapters/` concentra os **Clean Controllers** e **Presenters** (POJOs livres de framework); a borda NestJS (rotas, Swagger, guards, DTOs) fica em `infrastructure/http/` e apenas **delega** ao Clean Controller.
 
 ```
 src/
@@ -46,13 +46,14 @@ src/
 │   ├── constants/                   # Regex compartilhadas (placa, telefone, e-mail, senha)
 │   │                                # + limites de validação por agregado
 │   ├── validators/                  # DocumentValidator (CPF/CNPJ com dígito verificador)
-│   └── interfaces/                  # Contratos da camada de domínio
-│       ├── common/                  # PaginationInput, PaginatedResult
-│       ├── repositories/            # Contratos de repositórios + IUnitOfWork
-│       ├── services/                # IEmailSenderService, IHashService, ITokenService
-│       └── use-cases/               # Contratos dos casos de uso (consumidos pelos controllers)
+│   └── interfaces/                  # Contratos da camada de domínio (permanecem no domínio)
+│       ├── common/                  # PaginationQuery, PaginatedResult, SortCriterion
+│       └── repositories/            # Contratos de repositórios (IRepository) + IUnitOfWork
 │
-├── application/                     # Camada de aplicação (orquestração de casos de uso)
+├── application/                     # Camada de aplicação (orquestração de casos de uso, sem framework)
+│   ├── ports/
+│   │   ├── input/<domínio>/         # I<Nome>UseCase (input ports) + DTOs de entrada
+│   │   └── output/                  # IEmailSenderService, IHashService, ITokenService (output ports)
 │   ├── use-cases/
 │   │   ├── auth/                    # Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD + atualização de status
@@ -69,38 +70,36 @@ src/
 │   │                                # UnauthorizedAccessException
 │   └── utils/                       # PaginationUtil (sanitização e cálculo de páginas)
 │
+├── interface-adapters/<domínio>/    # Adapters livres de framework (POJOs, zero @nestjs/*)
+│                                    # domínios: auth, customer, part-supply, quote, service,
+│                                    # stock, user, vehicle, work-order
+│   ├── <domínio>.controller.ts      # Clean Controller: orquestra o(s) use-case(s) + Presenter
+│   ├── <domínio>.presenter.ts       # Entidade → tipo de resposta PURO (sem @ApiProperty)
+│   ├── requests/                    # Tipos de request do controller (defaults de paginação aqui)
+│   └── responses/                   # <Dom>Response / <Dom>DataResponse / <Dom>PaginatedResponse
+│
 ├── infrastructure/                  # Implementações concretas (framework e serviços externos)
-│   ├── auth/                        # JwtStrategy, Guards (JwtAuthGuard, RolesGuard),
-│   │                                # @CurrentUser, @Roles, @Public
-│   ├── database/prisma/             # PrismaService + PrismaModule (singleton de conexão)
-│   ├── exceptions/                  # InfrastructureException, AuthenticationFailedException,
-│   │                                # DatabaseOperationException, ServiceIntegrationException,
-│   │                                # ConcurrencyException
-│   ├── filters/                     # Exception Filters: Domain, Application,
-│   │                                # Infrastructure, AllExceptions
-│   ├── interceptors/                # DateSerializerInterceptor (ISO 8601 com timezone)
-│   ├── mappers/                     # Conversão Prisma model → Entidade de domínio (14 mappers)
-│   ├── pipes/                       # SanitizeStringsPipe (global, antes do ValidationPipe)
-│   ├── repositories/                # Implementações Prisma (11 repositórios) +
-│   │                                # PrismaUnitOfWork + RepositoriesModule (@Global)
+│   ├── http/                        # Borda NestJS — @Controller fino que delega ao Clean Controller
+│   │   ├── <domínio>/               # @Controller + module + dto/requests + dto/responses
+│   │   │                            # (@ApiProperty; *ResponseDto implements o tipo puro)
+│   │   ├── auth/                    # JwtStrategy, Guards (JwtAuthGuard, RolesGuard),
+│   │   │                            # @CurrentUser, @Roles, @Public
+│   │   ├── filters/                 # Exception Filters: Domain, Application,
+│   │   │                            # Infrastructure, AllExceptions
+│   │   ├── interceptors/            # DateSerializerInterceptor (ISO 8601 com timezone)
+│   │   ├── pipes/                   # SanitizeStringsPipe (global, antes do ValidationPipe)
+│   │   ├── validators/              # IsValidCpfCnpj (adapter class-validator)
+│   │   └── common/dto/              # PaginationDto, PaginatedResponseDto compartilhados
+│   ├── persistence/prisma/          # PrismaService + PrismaModule (singleton de conexão)
+│   │   ├── repositories/            # Implementações Prisma (11 repositórios) + PrismaUnitOfWork +
+│   │   │                            # RepositoriesModule (@Global) — única pasta a importar @generated/client
+│   │   ├── mappers/                 # Conversão Prisma model → Entidade de domínio (14 mappers)
+│   │   └── helpers/                 # Helpers de paginação, existência e ordenação (Prisma)
 │   ├── services/                    # BcryptHashService, JwtTokenService,
 │   │                                # MailerEmailSenderService + InfrastructureServicesModule
-│   └── validators/                  # IsValidCpfCnpj (adapter class-validator)
-│
-├── presentation/                    # Camada de apresentação (controllers, DTOs, presenters)
-│   ├── auth/                        # AuthController + DTOs + AuthPresenter
-│   ├── user/                        # UserController + DTOs + UserPresenter
-│   ├── service/                     # ServiceController + ServicesMetricsController +
-│   │                                # ServicePresenter + ServiceMetricsPresenter
-│   ├── parts-supplies/              # PartsSuppliesController + DTOs + PartSupplyPresenter
-│   ├── customers/                   # CustomersController + DTOs + CustomerPresenter
-│   ├── vehicles/                    # VehiclesController + DTOs + VehiclePresenter
-│   ├── work-order/                  # WorkOrderController + DTOs + WorkOrderPresenter
-│   ├── quote/                       # QuoteController + DTOs + QuotePresenter
-│   ├── stock/                       # StockMovementsController + StockReservationsController +
-│   │                                # StockPresenter
-│   ├── common/dto/                  # PaginationDto, PaginatedResponseDto compartilhados
-│   └── exceptions/                  # PresentationException, InvalidInputException
+│   └── exceptions/                  # InfrastructureException, AuthenticationFailedException,
+│                                    # DatabaseOperationException, ServiceIntegrationException,
+│                                    # ConcurrencyException
 │
 ├── config/                          # Configurações (Swagger)
 ├── app.module.ts
@@ -111,14 +110,13 @@ test/
 ├── helpers/                         # Mock factories reutilizáveis (incluindo
 │                                    # UnitOfWorkMockFactory) e helpers de E2E
 │                                    # (auth, db cleanup, test app bootstrap)
-├── unit/                            # 132 suites de testes unitários (espelham src/)
+├── unit/                            # 151 suites de testes unitários (espelham src/)
 │   ├── domain/                      # entities/, value-objects/, validators/
 │   ├── application/use-cases/       # auth, customer, part-supply, quote, service,
 │   │                                # stock, user, vehicle, work-order
-│   ├── infrastructure/              # auth, exceptions, filters, interceptors,
-│   │                                # mappers, pipes, repositories, services, validators
-│   └── presentation/                # controllers e presenters por domínio +
-│                                    # validation-schemas
+│   ├── interface-adapters/          # Clean Controllers + Presenters por domínio
+│   └── infrastructure/              # http/ (controllers, filters, interceptors, pipes,
+│                                    # validators, auth), persistence/prisma, services
 └── e2e/                             # 10 suites de testes E2E (Testcontainers + PostgreSQL real)
     ├── all-exceptions.filter.e2e-spec.ts
     ├── auth.e2e-spec.ts
@@ -279,7 +277,7 @@ Cada camada tem sua própria hierarquia de exceções, sem dependência de frame
 | Infrastructure | `DatabaseOperationException` | 503 |
 | Infrastructure | `ServiceIntegrationException` | 503 |
 
-A camada de apresentação também expõe sua hierarquia (`PresentationException` → `InvalidInputException`) para situações em que a entrada precisa ser tratada antes mesmo de alcançar a camada de aplicação. Erros de validação de DTO permanecem cobertos pelo `ValidationPipe` global do NestJS (HTTP 400). Demais exceções não mapeadas são capturadas pelo `AllExceptionsFilter` e devolvidas como **HTTP 500**.
+Erros de validação de DTO são cobertos pelo `ValidationPipe` global do NestJS (HTTP 400). Demais exceções não mapeadas são capturadas pelo `AllExceptionsFilter` e devolvidas como **HTTP 500**.
 
 ### Decisões de Arquitetura (ADRs)
 
@@ -591,7 +589,7 @@ npm test          # executa os testes
 npm run test:cov  # com relatório de cobertura
 ```
 
-132 suites cobrindo todas as camadas (`application/`, `domain/` — incluindo entidades, value objects e validators, `infrastructure/` e `presentation/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Controllers são testados com mocks dos use-cases via `@nestjs/testing`. As factories de mocks (incluindo `UnitOfWorkMockFactory`) estão em `test/helpers/`, organizadas por entidade.
+151 suites cobrindo todas as camadas (`application/`, `domain/` — incluindo entidades, value objects e validators —, `interface-adapters/` e `infrastructure/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Os Clean Controllers são instanciados diretamente com use-cases mockados; a borda HTTP (`@Controller` fino) é exercitada via `jest.spyOn` no Clean Controller real. As factories de mocks (incluindo `UnitOfWorkMockFactory`) estão em `test/helpers/`, organizadas por entidade.
 
 A cobertura é coletada nas camadas `application/` e `domain/`. DTOs, modules, enums, `main.ts`, exceções e arquivos gerados pelo Prisma são excluídos dos thresholds (ver `package.json` → `jest.collectCoverageFrom`).
 
@@ -1128,22 +1126,22 @@ MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
 
 ## Cobertura de Testes E2E — Branches Estruturalmente Inalcançáveis
 
-Alguns branches (`?`, `??`, `?.`) na camada de apresentação não podem ser cobertos pelos testes E2E. Isso ocorre por design da infraestrutura (JOINs obrigatórios via Prisma `include`) ou por invariantes do domínio (FKs NOT NULL, autenticação JWT). Abaixo, cada caso é documentado com a justificativa.
+Alguns branches (`?`, `??`, `?.`) nos Presenters (`interface-adapters/`) e na borda HTTP (`infrastructure/http/`) não podem ser cobertos pelos testes E2E. Isso ocorre por design da infraestrutura (JOINs obrigatórios via Prisma `include`) ou por invariantes do domínio (FKs NOT NULL, autenticação JWT). Abaixo, cada caso é documentado com a justificativa.
 
-### `src/presentation/stock/stock.presenter.ts`
+### `src/interface-adapters/stock/stock.presenter.ts`
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|
 | `mapWorkOrderData` — `wo.assignedUser ? ... : null` | Ramo falso (`null`) coberto, ramo verdadeiro depende de cenário com mecânico atribuído | OS sem mecânico atribuído é o caso comum; o JOIN `assignedUser` é opcional na tabela. |
 | `toStockMovementResponse` — `item.workOrder ? ... : null` | Ramo verdadeiro/falso conforme tipo de movimento | Movimentações automáticas têm `workOrderId`; manuais podem ter `null`. |
 
-### `src/presentation/work-order/work-order.presenter.ts`
+### `src/interface-adapters/work-order/work-order.presenter.ts`
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|
 | `toStatusHistoryListResponse` — `entry.changedBy ? ... : null` | Ramo falso (`null`) | O histórico de status iniciado por usuário autenticado sempre persiste `changedById`. Apenas eventos automáticos disparados sem usuário (ex.: envio de orçamento via job interno) registram `null`. |
 
-### `src/presentation/quote/quote.module.ts`
+### `src/infrastructure/http/quotes/quotes.module.ts`
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|

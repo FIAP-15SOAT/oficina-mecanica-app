@@ -59,6 +59,13 @@ export interface WorkOrderProps {
   partSupplies?: WorkOrderPartSupply[];
 }
 
+type WorkOrderTimestampField =
+  | 'startedAt'
+  | 'finishedAt'
+  | 'deliveredAt'
+  | 'rejectedAt'
+  | 'approvedAt';
+
 export class WorkOrder {
   readonly id: string;
   readonly number: WorkOrderNumber;
@@ -181,11 +188,9 @@ export class WorkOrder {
     partSupplies: WorkOrderPartSupply[];
   } {
     const existingServiceIds = new Set(this._services.map((s) => s.serviceId));
-
     const existingPartSupplyIds = new Set(this._partSupplies.map((p) => p.partSupplyId));
 
     const duplicateService = quote.services.find((s) => existingServiceIds.has(s.serviceId));
-
     const duplicatePart = quote.partsSupplies.find((p) =>
       existingPartSupplyIds.has(p.partSupplyId),
     );
@@ -222,7 +227,9 @@ export class WorkOrder {
 
     this._services = [...this._services, ...services];
     this._partSupplies = [...this._partSupplies, ...partSupplies];
+
     this.recalculateTotalAmount();
+
     this.updatedAt = new Date();
 
     return { services, partSupplies };
@@ -235,16 +242,14 @@ export class WorkOrder {
     this._totalAmount = servicesTotal + partsTotal;
   }
 
-  private canCreateQuote(): boolean {
-    return (
-      this.status === WorkOrderStatus.IN_DIAGNOSIS ||
-      this.status === WorkOrderStatus.AWAITING_APPROVAL ||
-      this.status === WorkOrderStatus.REJECTED
-    );
-  }
-
   ensureCanCreateQuote(): void {
-    if (!this.canCreateQuote()) {
+    const allowedStatuses = [
+      WorkOrderStatus.IN_DIAGNOSIS,
+      WorkOrderStatus.AWAITING_APPROVAL,
+      WorkOrderStatus.REJECTED,
+    ];
+
+    if (!allowedStatuses.includes(this.status)) {
       throw new BusinessRuleViolationException(
         `Orçamento só pode ser criado quando a Ordem de Serviço está nos status permitidos. Status atual: "${this.status}".`,
       );
@@ -294,38 +299,6 @@ export class WorkOrder {
     this.updatedAt = new Date();
   }
 
-  static readonly DEFAULT_HIDDEN_STATUSES: WorkOrderStatus[] = [
-    WorkOrderStatus.COMPLETED,
-    WorkOrderStatus.DELIVERED,
-    WorkOrderStatus.CANCELLED,
-  ];
-
-  static readonly ALLOWED_SORT_FIELDS = new Set(['status', 'createdAt']);
-
-  static validateAllowedSortFields(fields: string[]): void {
-    for (const field of fields) {
-      if (!WorkOrder.ALLOWED_SORT_FIELDS.has(field)) {
-        throw new DomainValidationException(
-          `Campo '${field}' não é permitido para ordenação. Campos permitidos: ${[...WorkOrder.ALLOWED_SORT_FIELDS].join(', ')}`,
-        );
-      }
-    }
-  }
-
-  private static readonly PATCH_STATUS_ALLOWED = new Set<WorkOrderStatus>([
-    WorkOrderStatus.IN_DIAGNOSIS,
-    WorkOrderStatus.CANCELLED,
-    WorkOrderStatus.DELIVERED,
-  ]);
-
-  static assertAllowedPatchStatus(status: WorkOrderStatus): void {
-    if (!WorkOrder.PATCH_STATUS_ALLOWED.has(status)) {
-      throw new BusinessRuleViolationException(
-        `O status "${status}" não é permitido nesta operação.`,
-      );
-    }
-  }
-
   private static readonly STATUS_TRANSITION_MAP: Record<WorkOrderStatus, WorkOrderStatus[]> = {
     [WorkOrderStatus.RECEIVED]: [WorkOrderStatus.IN_DIAGNOSIS, WorkOrderStatus.CANCELLED],
     [WorkOrderStatus.IN_DIAGNOSIS]: [WorkOrderStatus.AWAITING_APPROVAL, WorkOrderStatus.CANCELLED],
@@ -367,16 +340,18 @@ export class WorkOrder {
   private updateTimestampsForStatus(newStatus: WorkOrderStatus): void {
     const now = new Date();
 
-    if (newStatus === WorkOrderStatus.IN_PROGRESS) {
-      this.startedAt = now;
-    } else if (newStatus === WorkOrderStatus.COMPLETED) {
-      this.finishedAt = now;
-    } else if (newStatus === WorkOrderStatus.DELIVERED) {
-      this.deliveredAt = now;
-    } else if (newStatus === WorkOrderStatus.REJECTED) {
-      this.rejectedAt = now;
-    } else if (newStatus === WorkOrderStatus.APPROVED) {
-      this.approvedAt = now;
+    const statusTimestampMap: Partial<Record<WorkOrderStatus, WorkOrderTimestampField>> = {
+      [WorkOrderStatus.IN_PROGRESS]: 'startedAt',
+      [WorkOrderStatus.COMPLETED]: 'finishedAt',
+      [WorkOrderStatus.DELIVERED]: 'deliveredAt',
+      [WorkOrderStatus.REJECTED]: 'rejectedAt',
+      [WorkOrderStatus.APPROVED]: 'approvedAt',
+    };
+
+    const field = statusTimestampMap[newStatus];
+
+    if (field) {
+      this[field] = now;
     }
   }
 

@@ -2,6 +2,9 @@ import { CreateCustomerUseCase } from '@application/use-cases/customer/create-cu
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { Document } from '@domain/value-objects/document.vo';
+import { Email } from '@domain/value-objects/email.vo';
+import { Phone } from '@domain/value-objects/phone.vo';
 import {
   createMockCustomer,
   createMockCustomerRepository,
@@ -27,10 +30,15 @@ describe('CreateCustomerUseCase', () => {
 
   it('should create customer when document and email are unique', async () => {
     const sanitizedDocument = '12345678909';
+
     const saved = createMockCustomer({
-      ...validInput,
-      document: sanitizedDocument,
-    } as unknown as Parameters<typeof createMockCustomer>[0]);
+      name: validInput.name,
+      document: Document.create(sanitizedDocument, validInput.type),
+      type: validInput.type,
+      email: Email.create(validInput.email),
+      phone: Phone.create(validInput.phone),
+    });
+
     customerRepository.findByDocument.mockResolvedValue(null);
     customerRepository.findByEmail.mockResolvedValue(null);
     customerRepository.create.mockResolvedValue(saved);

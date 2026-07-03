@@ -1,8 +1,11 @@
 import { Customer } from '@domain/entities/customer.entity';
+
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
-import { FindAllCustomersInputDto } from '@domain/interfaces/use-cases/customer/dto/find-all-customers.dto';
-import { IFindAllCustomersUseCase } from '@domain/interfaces/use-cases/customer/find-all-customers.use-case.interface';
+import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find-all-customers.use-case.interface';
+
+import { FindAllCustomersInputDto } from '@application/ports/input/customer/dto/find-all-customers.dto';
 import { PaginatedResult, PaginationInput } from '@domain/interfaces/common/pagination.interface';
+
 import { buildPaginatedResult } from '@application/utils/pagination.util';
 
 export class FindAllCustomersUseCase implements IFindAllCustomersUseCase {
