@@ -97,12 +97,11 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     if (status) where.status = status;
     else if (statusNotIn?.length) where.status = { notIn: statusNotIn };
 
-    // status:desc → most urgent first (IN_PROGRESS, priority 1) → ORDER BY priority ASC
-    // status:asc  → least urgent first (DELIVERED, priority 9) → ORDER BY priority DESC
     const orderBy: Prisma.WorkOrderOrderByWithRelationInput[] = (sort ?? []).map((criterion) => {
       if (criterion.field === 'status') {
         return { statusInfo: { priority: criterion.direction } };
       }
+
       return { [criterion.field]: criterion.direction };
     });
 
