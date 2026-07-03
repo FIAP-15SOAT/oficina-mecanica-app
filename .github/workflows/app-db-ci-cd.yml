@@ -78,7 +78,7 @@ jobs:
           infra_changed=false
           app_changed=false
 
-          if echo "${CHANGED_FILES}" | grep -qE '^(prisma/|prisma\.config\.ts$)'; then
+          if echo "${CHANGED_FILES}" | grep -qE '^(app/prisma/|app/prisma\.config\.ts$)'; then
             prisma_changed=true
           fi
 
@@ -101,6 +101,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect_changes
     if: needs.detect_changes.outputs.app_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    defaults:
+      run:
+        working-directory: app
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -128,6 +132,8 @@ jobs:
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        with:
+          projectBaseDir: app
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -136,6 +142,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect_changes
     if: needs.detect_changes.outputs.app_changed == 'true' && needs.detect_changes.outputs.prisma_changed == 'true' && (github.event_name != 'push' || needs.detect_changes.outputs.infra_changed == 'false')
+
+    defaults:
+      run:
+        working-directory: app
 
     services:
       postgres:
@@ -216,7 +226,7 @@ jobs:
       - name: Build and Push Image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./app
           push: true
           tags: |
             ${{ steps.image_meta.outputs.image_uri }}
