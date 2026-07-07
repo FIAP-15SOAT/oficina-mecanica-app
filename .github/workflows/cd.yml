@@ -165,7 +165,7 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
 
-      - name: Create DB migration Job manifest
+      - name: Apply DB migration Job
         id: db_job
         run: |
           JOB_NAME="db-migrate-${{ github.run_id }}-${{ github.run_attempt }}"
@@ -173,56 +173,13 @@ jobs:
 
           echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
 
-          cat > k8s/db-migrate-job.rendered.yaml <<EOF
-          apiVersion: batch/v1
-          kind: Job
-          metadata:
-            name: ${JOB_NAME}
-            namespace: ${{ vars.K8S_NAMESPACE }}
-            labels:
-              app.kubernetes.io/name: db-migrate-job
-              app.kubernetes.io/part-of: oficina-mecanica
-          spec:
-            ttlSecondsAfterFinished: 1209600
-            backoffLimit: 0
-            template:
-              metadata:
-                labels:
-                  app.kubernetes.io/name: db-migrate-job
-                  app.kubernetes.io/part-of: oficina-mecanica
-              spec:
-                restartPolicy: Never
-                containers:
-                  - name: migrate
-                    image: ${IMAGE_URI}
-                    imagePullPolicy: Always
-                    env:
-                      - name: POSTGRES_USER
-                        valueFrom:
-                          secretKeyRef:
-                            name: postgres-secret
-                            key: POSTGRES_USER
-                      - name: POSTGRES_PASSWORD
-                        valueFrom:
-                          secretKeyRef:
-                            name: postgres-secret
-                            key: POSTGRES_PASSWORD
-                      - name: POSTGRES_DB
-                        valueFrom:
-                          secretKeyRef:
-                            name: postgres-secret
-                            key: POSTGRES_DB
-                    command:
-                      - sh
-                      - -c
-                      - |
-                        export DATABASE_URL="postgresql://\$POSTGRES_USER:\$POSTGRES_PASSWORD@postgres.${{ vars.K8S_NAMESPACE }}.svc.cluster.local:5432/\$POSTGRES_DB?schema=public"
-                        npx prisma migrate deploy
-                        npx prisma db seed
-          EOF
+          RENDERED="$(sed -e "s|JOB_NAME_PLACEHOLDER|${JOB_NAME}|g" \
+                          -e "s|IMAGE_URI_PLACEHOLDER|${IMAGE_URI}|g" \
+                        k8s/00-db-migrate-job.yaml)"
 
-      - name: Apply DB migration Job
-        run: kubectl apply -f k8s/db-migrate-job.rendered.yaml
+          echo "----- rendered Job manifest -----"
+          echo "${RENDERED}"
+          echo "${RENDERED}" | kubectl apply -f -
 
       - name: Wait DB migration Job completion
         run: |

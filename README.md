@@ -739,6 +739,7 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | Namespace `oficina` | Terraform | `infra/k8s-base/k8s_namespace.tf` |
 | PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | `infra/k8s-base/k8s_postgres.tf` |
 | metrics-server | Terraform | `infra/k8s-base/k8s_metrics_server.tf` |
+| DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
 | API Deployment (`03-api-deployment.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
@@ -830,6 +831,7 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 
 Arquivos em `k8s/`:
 
+- `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`
 - `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT` e `TZ`)
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
@@ -958,7 +960,7 @@ Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (provisionar+de
 1. `terraform-aws-base` — `init` → `validate` → `plan` → `apply -auto-approve` em `infra/aws-base` (EKS, ECR, VPC…).
 2. `terraform-k8s-base` (depende de `aws-base`) — mesmo fluxo em `infra/k8s-base` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password`.
 3. `build-push-image` (depende de `aws-base`, pelo ECR) — login no ECR, build **único** da imagem e push com tag imutável (`github.sha`) + `latest`; exporta o `image_uri`.
-4. `db-migrate` (depende de `k8s-base` + `build-push-image`) — configura kubeconfig e aplica um Kubernetes Job (TTL de 2 semanas para auditoria) que roda **`prisma migrate deploy` seguido de `prisma db seed`**: aplica apenas as migrations pendentes (não-destrutivo, nunca reseta) e reafirma os dados de referência de forma idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha.
+4. `db-migrate` (depende de `k8s-base` + `build-push-image`) — configura kubeconfig, **renderiza o manifesto versionado `k8s/00-db-migrate-job.yaml`** (substituindo o nome único por run e a imagem imutável via `sed`) e aplica o Kubernetes Job (TTL de 2 semanas para auditoria) que roda **`prisma migrate deploy` seguido de `prisma db seed`**: aplica apenas as migrations pendentes (não-destrutivo, nunca reseta) e reafirma os dados de referência de forma idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha.
 5. `app-deploy` (depende de `db-migrate` e `build-push-image`) — renderiza `k8s/01-api-secret.yaml` (secrets da aplicação) e `k8s/03-api-deployment.yaml` (imagem imutável), aplica os manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida o rollout.
 
 **Estados Terraform separados (obrigatório):** `aws-base` e `k8s-base` têm states distintos porque o provider Kubernetes do segundo é configurado a partir dos outputs do primeiro — criar o cluster e usá-lo no mesmo state seria um chicken-and-egg. Por isso são dois jobs sequenciais, e não há mais um `check_aws_base_state`: no fluxo unificado o `aws-base` é sempre aplicado antes, então os outputs já existem quando o `k8s-base` roda.
