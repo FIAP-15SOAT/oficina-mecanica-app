@@ -632,7 +632,7 @@ npx newman run collections/oficina-collection.json -e collections/oficina-enviro
 A infraestrutura foi separada em dois stacks Terraform independentes para reduzir acoplamento e tornar o fluxo de provisionamento previsível:
 
 - `infra/aws-base`: recursos-base de cloud (rede + EKS + ECR)
-- `infra/k8s-workflows`: recursos Kubernetes compartilhados (namespace, banco PostgreSQL e metrics-server)
+- `infra/k8s-base`: recursos Kubernetes compartilhados (namespace, banco PostgreSQL e metrics-server)
 
 Essa separação foi adotada para evitar bootstrap complexo do provider Kubernetes no mesmo stack de criação do EKS e para permitir evolução independente entre camada cloud e camada de workloads.
 
@@ -640,8 +640,8 @@ Essa separação foi adotada para evitar bootstrap complexo do provider Kubernet
 
 - Stack cloud: `infra/aws-base`
   - backend S3: `infra/prod-simulated/aws-base/terraform.tfstate`
-- Stack workloads: `infra/k8s-workflows`
-  - backend S3: `infra/prod-simulated/k8s-workflows/terraform.tfstate`
+- Stack workloads: `infra/k8s-base`
+  - backend S3: `infra/prod-simulated/k8s-base/terraform.tfstate`
   - consome `terraform_remote_state` do stack `aws-base` para obter endpoint, CA e nome do cluster
 
 ### Recursos provisionados
@@ -652,7 +652,7 @@ Essa separação foi adotada para evitar bootstrap complexo do provider Kubernet
 - EKS cluster
 - Repositório ECR para imagens da aplicação
 
-`infra/k8s-workflows`:
+`infra/k8s-base`:
 
 - Namespace compartilhado da solução (`oficina`)
 - Banco PostgreSQL no cluster via Secret + Service + StatefulSet (armazenamento efêmero `emptyDir`)
@@ -675,7 +675,7 @@ Essa separação foi adotada para evitar bootstrap complexo do provider Kubernet
   - `cluster_version`
   - `vpc_id`, `private_subnet_ids`, `public_subnet_ids`
 
-`infra/k8s-workflows`:
+`infra/k8s-base`:
 
 - Entradas principais:
   - `aws_region`, `project_name`, `environment`
@@ -710,7 +710,7 @@ terraform plan
 terraform apply
 
 # 2) Provisiona workloads Kubernetes compartilhados
-cd ../k8s-workflows
+cd ../k8s-base
 terraform init
 terraform plan -var="k8s_postgres_password=<SENHA_FORTE>"
 terraform apply -var="k8s_postgres_password=<SENHA_FORTE>"
@@ -722,7 +722,7 @@ No CI, o secret do PostgreSQL é injetado via `TF_VAR_k8s_postgres_password`.
 
 Os recursos em Kubernetes foram divididos por responsabilidade:
 
-- Base e dados críticos via Terraform (`infra/k8s-workflows`)
+- Base e dados críticos via Terraform (`infra/k8s-base`)
   - namespace, PostgreSQL e metrics-server
 - Aplicação via manifests YAML (`k8s/`)
   - Secret, ConfigMap, Deployment, Service e HPA
@@ -736,9 +736,9 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 | Recurso | Ownership | Onde é definido/aplicado |
 |---|---|---|
-| Namespace `oficina` | Terraform | `infra/k8s-workflows/k8s_namespace.tf` |
-| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | `infra/k8s-workflows/k8s_postgres.tf` |
-| metrics-server | Terraform | `infra/k8s-workflows/k8s_metrics_server.tf` |
+| Namespace `oficina` | Terraform | `infra/k8s-base/k8s_namespace.tf` |
+| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | `infra/k8s-base/k8s_postgres.tf` |
+| metrics-server | Terraform | `infra/k8s-base/k8s_metrics_server.tf` |
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
 | API Deployment (`03-api-deployment.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
@@ -940,7 +940,7 @@ Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de dep
 
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
-Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`):
+Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain):
 
 1. `lint` — `npm run lint`.
 2. `unit-tests` — `npm run test:cov`; publica `coverage/lcov.info` como artifact.
@@ -948,7 +948,7 @@ Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite 
 4. `build` — `npm run build`.
 5. `db-validation` — sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed) para provar que as migrations aplicam do zero e o seed funciona. O banco é descartado com o job — nunca toca em ambiente real.
 6. `sast` — SonarQube Scan (`projectBaseDir: app`), consumindo o `lcov` do `unit-tests` via artifact.
-7. `tf-validate` — `terraform fmt -check` (recursivo), `init`+`validate` nos dois stacks, e `plan` no `aws-base` **e** no `k8s-workflows`. O plan do `k8s-workflows` depende dos outputs do `aws-base` (cluster), então roda quando o cluster já foi provisionado e é pulado com aviso num projeto novo.
+7. `tf-validate` — `terraform fmt -check` (recursivo), `init`+`validate` nos dois stacks, e `plan` no `aws-base` **e** no `k8s-base`. O plan do `k8s-base` depende dos outputs do `aws-base` (cluster), então roda quando o cluster já foi provisionado e é pulado com aviso num projeto novo.
 8. `open-pr` — depende de todos os jobs acima; abre o PR para `master` se ainda não existir.
 
 ### 2) Workflow de CD (`cd.yml`)
@@ -956,12 +956,12 @@ Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite 
 Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (provisionar+deployar sob demanda, ex.: lab novo). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são gated por `vars.ENABLE_APP_DEPLOY`.
 
 1. `terraform-aws-base` — `init` → `validate` → `plan` → `apply -auto-approve` em `infra/aws-base` (EKS, ECR, VPC…).
-2. `terraform-k8s-workflows` (depende de `aws-base`) — mesmo fluxo em `infra/k8s-workflows` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password`.
+2. `terraform-k8s-base` (depende de `aws-base`) — mesmo fluxo em `infra/k8s-base` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password`.
 3. `build-push-image` (depende de `aws-base`, pelo ECR) — login no ECR, build **único** da imagem e push com tag imutável (`github.sha`) + `latest`; exporta o `image_uri`.
-4. `db-migrate` (depende de `k8s-workflows` + `build-push-image`) — configura kubeconfig e aplica um Kubernetes Job (TTL de 2 semanas para auditoria) que roda **`prisma migrate deploy` seguido de `prisma db seed`**: aplica apenas as migrations pendentes (não-destrutivo, nunca reseta) e reafirma os dados de referência de forma idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha.
-5. `app-deploy` (depende de `db-migrate`) — renderiza `k8s/01-api-secret.yaml` (secrets da aplicação) e `k8s/03-api-deployment.yaml` (imagem imutável), aplica os manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida o rollout.
+4. `db-migrate` (depende de `k8s-base` + `build-push-image`) — configura kubeconfig e aplica um Kubernetes Job (TTL de 2 semanas para auditoria) que roda **`prisma migrate deploy` seguido de `prisma db seed`**: aplica apenas as migrations pendentes (não-destrutivo, nunca reseta) e reafirma os dados de referência de forma idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha.
+5. `app-deploy` (depende de `db-migrate` e `build-push-image`) — renderiza `k8s/01-api-secret.yaml` (secrets da aplicação) e `k8s/03-api-deployment.yaml` (imagem imutável), aplica os manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida o rollout.
 
-**Estados Terraform separados (obrigatório):** `aws-base` e `k8s-workflows` têm states distintos porque o provider Kubernetes do segundo é configurado a partir dos outputs do primeiro — criar o cluster e usá-lo no mesmo state seria um chicken-and-egg. Por isso são dois jobs sequenciais, e não há mais um `check_aws_base_state`: no fluxo unificado o `aws-base` é sempre aplicado antes, então os outputs já existem quando o `k8s-workflows` roda.
+**Estados Terraform separados (obrigatório):** `aws-base` e `k8s-base` têm states distintos porque o provider Kubernetes do segundo é configurado a partir dos outputs do primeiro — criar o cluster e usá-lo no mesmo state seria um chicken-and-egg. Por isso são dois jobs sequenciais, e não há mais um `check_aws_base_state`: no fluxo unificado o `aws-base` é sempre aplicado antes, então os outputs já existem quando o `k8s-base` roda.
 
 A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
 
@@ -981,7 +981,7 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `ci.yml`, `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
 | Secret | `SONAR_TOKEN` | `ci.yml` | Autenticação do SonarQube Scan |
-| Secret | `K8S_POSTGRES_PASSWORD` | `cd.yml` | Senha do PostgreSQL injetada no Terraform (`k8s-workflows`) e no Secret da aplicação (`app-deploy`) |
+| Secret | `K8S_POSTGRES_PASSWORD` | `ci.yml`, `cd.yml` | Senha do PostgreSQL: injetada como `TF_VAR_k8s_postgres_password` no `plan` do stack `k8s-base` (CI `tf-validate`) e no `apply` (CD), e no Secret da aplicação (`app-deploy`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
 | Secret | `QUOTE_DECISION_TOKEN_SECRET` | `cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
@@ -997,8 +997,8 @@ Os secrets ficam no nível do repositório porque são consumidos por mais de um
 #### Injeção de secrets da aplicação
 
 - O secret `K8S_POSTGRES_PASSWORD` deve ser forte e diferente dos valores de desenvolvimento local.
-- No CD (`cd.yml`), o job `terraform-k8s-workflows` recebe `K8S_POSTGRES_PASSWORD` como `TF_VAR_k8s_postgres_password` (mesmo valor, nomes diferentes por contexto).
-- Esse valor preenche a variável `k8s_postgres_password` no stack `infra/k8s-workflows`, que cria/atualiza o Secret Kubernetes `postgres-secret`.
+- No CD (`cd.yml`), o job `terraform-k8s-base` recebe `K8S_POSTGRES_PASSWORD` como `TF_VAR_k8s_postgres_password` (mesmo valor, nomes diferentes por contexto).
+- Esse valor preenche a variável `k8s_postgres_password` no stack `infra/k8s-base`, que cria/atualiza o Secret Kubernetes `postgres-secret`.
 - O `postgres-secret` é referenciado pelo StatefulSet do PostgreSQL (`env_from`), portanto essa senha é a credencial efetivamente usada na inicialização do banco no cluster.
 - No workflow de deploy (`cd.yml`), o job `app-deploy` também lê `K8S_POSTGRES_PASSWORD` para renderizar o manifesto `k8s/01-api-secret.yaml`, preenchendo a `DATABASE_URL` consumida pela aplicação.
 

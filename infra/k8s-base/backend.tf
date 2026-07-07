@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket       = "bkt-oficina-mecanica"
-    key          = "infra/prod-simulated/k8s-workflows/terraform.tfstate"
+    key          = "infra/prod-simulated/k8s-base/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true
     use_lockfile = true

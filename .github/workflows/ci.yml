@@ -156,25 +156,25 @@ jobs:
         working-directory: infra/aws-base
       - name: Terraform Init Kubernetes
         run: terraform init -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
       - name: Terraform Validate Kubernetes
         run: terraform validate -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
       - name: Terraform Plan Infra AWS
         run: terraform plan -no-color
         working-directory: infra/aws-base
-      # k8s-workflows plan needs the aws-base outputs (cluster info), which exist
+      # k8s-base plan needs the aws-base outputs (cluster info), which exist
       # once aws-base is applied. Plan it when the cluster is provisioned; skip
       # gracefully on a fresh project where aws-base was never applied.
       - name: Terraform Plan Kubernetes (if cluster provisioned)
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
         env:
           TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
         run: |
           if terraform -chdir=../aws-base output -raw cluster_name >/dev/null 2>&1; then
             terraform plan -no-color
           else
-            echo "aws-base has no outputs yet (never applied) — skipping k8s-workflows plan."
+            echo "aws-base has no outputs yet (never applied) — skipping k8s-base plan."
           fi
 
   open-pr:

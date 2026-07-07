@@ -53,7 +53,7 @@ jobs:
         run: terraform apply -auto-approve -no-color
         working-directory: infra/aws-base
 
-  terraform-k8s-workflows:
+  terraform-k8s-base:
     name: Terraform Kubernetes
     runs-on: ubuntu-latest
     environment: production
@@ -80,19 +80,19 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
 
       - name: Terraform Validate
         run: terraform validate -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
 
       - name: Terraform Plan
         run: terraform plan -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -no-color
-        working-directory: infra/k8s-workflows
+        working-directory: infra/k8s-base
 
   build-push-image:
     name: Build and Push App Image
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     needs:
-      - terraform-k8s-workflows
+      - terraform-k8s-base
       - build-push-image
     if: vars.ENABLE_APP_DEPLOY == 'true'
     permissions:
