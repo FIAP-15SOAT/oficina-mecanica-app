@@ -34,5 +34,6 @@ crash.*.log
 .codex
 .agent
 .github/*
-!.github/workflows/*
+!.github/workflows/
+!.github/actions/
 openspec/

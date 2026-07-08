@@ -1,0 +1,263 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  terraform-aws-base:
+    name: Terraform Infra AWS
+    runs-on: ubuntu-latest
+    environment: production
+    if: vars.ENABLE_APP_DEPLOY == 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/aws-base
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: infra/aws-base
+
+  terraform-k8s-base:
+    name: Terraform Kubernetes
+    runs-on: ubuntu-latest
+    environment: production
+    needs: terraform-aws-base
+    if: vars.ENABLE_APP_DEPLOY == 'true'
+    permissions:
+      contents: read
+    env:
+      TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: infra/k8s-base
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: infra/k8s-base
+
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: infra/k8s-base
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: infra/k8s-base
+
+  build-push-image:
+    name: Build and Push App Image
+    runs-on: ubuntu-latest
+    environment: production
+    needs: terraform-aws-base
+    if: vars.ENABLE_APP_DEPLOY == 'true'
+    permissions:
+      contents: read
+    outputs:
+      image_uri: ${{ steps.image_meta.outputs.image_uri }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login_ecr
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
+
+      - name: Set image metadata
+        id: image_meta
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${{ steps.login_ecr.outputs.registry }}/${ECR_REPOSITORY}:${COMMIT_SHA}"
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ./app
+          push: true
+          tags: |
+            ${{ steps.image_meta.outputs.image_uri }}
+            ${{ steps.login_ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
+          build-args: |
+            DATABASE_URL=${{ vars.PRISMA_GENERATE_DATABASE_URL || 'postgresql://prisma:prisma@localhost:5432/prisma?schema=public' }}
+
+  db-migrate:
+    name: DB Migrate & Seed (Kubernetes Job)
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - terraform-k8s-base
+      - build-push-image
+    if: vars.ENABLE_APP_DEPLOY == 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Apply DB migration Job
+        id: db_job
+        run: |
+          JOB_NAME="db-migrate-${{ github.run_id }}-${{ github.run_attempt }}"
+          IMAGE_URI="${{ needs.build-push-image.outputs.image_uri }}"
+
+          echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
+
+          RENDERED="$(sed -e "s|JOB_NAME_PLACEHOLDER|${JOB_NAME}|g" \
+                          -e "s|IMAGE_URI_PLACEHOLDER|${IMAGE_URI}|g" \
+                        k8s/00-db-migrate-job.yaml)"
+
+          echo "----- rendered Job manifest -----"
+          echo "${RENDERED}"
+          echo "${RENDERED}" | kubectl apply -f -
+
+      - name: Wait DB migration Job completion
+        run: |
+          JOB_NAME="${{ steps.db_job.outputs.job_name }}"
+          NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+
+          if ! kubectl wait --for=condition=Complete "job/${JOB_NAME}" -n "${NAMESPACE}" --timeout=900s; then
+            echo "Job ${JOB_NAME} did not complete successfully. Collecting diagnostics..."
+            kubectl describe job "${JOB_NAME}" -n "${NAMESPACE}" || true
+            POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
+            if [[ -n "${POD_NAME}" ]]; then
+              kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true || true
+            fi
+            exit 1
+          fi
+
+      - name: Show DB migration Job logs
+        run: |
+          JOB_NAME="${{ steps.db_job.outputs.job_name }}"
+          NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+          POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
+          if [[ -n "${POD_NAME}" ]]; then
+            kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true
+          fi
+
+  app-deploy:
+    name: App Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - build-push-image
+      - db-migrate
+    if: vars.ENABLE_APP_DEPLOY == 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Render API secret manifest with database password
+        env:
+          K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
+        run: |
+          CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
+          JWT_SECRET="${JWT_SECRET}" \
+          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
+            envsubst \
+            '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
+            < k8s/01-api-secret.yaml \
+            > k8s/01-api-secret.rendered.yaml
+
+      - name: Render deployment manifest with immutable image
+        run: |
+          sed "s|IMAGE_URI_PLACEHOLDER|${{ needs.build-push-image.outputs.image_uri }}|g" \
+            k8s/03-api-deployment.yaml > k8s/03-api-deployment.rendered.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/01-api-secret.rendered.yaml
+          kubectl apply -f k8s/02-api-configmap.yaml
+          kubectl apply -f k8s/03-api-deployment.rendered.yaml
+          kubectl apply -f k8s/04-api-service.yaml
+          kubectl apply -f k8s/05-api-hpa.yaml
+
+      - name: Wait rollout
+        run: kubectl rollout status deployment/${{ vars.K8S_DEPLOYMENT_NAME }} --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s

@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: JOB_NAME_PLACEHOLDER
+  namespace: oficina
+  labels:
+    app.kubernetes.io/name: db-migrate-job
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  ttlSecondsAfterFinished: 1209600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db-migrate-job
+        app.kubernetes.io/part-of: oficina-mecanica
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: IMAGE_URI_PLACEHOLDER
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+          command:
+            - sh
+            - -c
+            - |
+              export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres.oficina.svc.cluster.local:5432/$POSTGRES_DB?schema=public"
+              npx prisma migrate deploy
+              npx prisma db seed
