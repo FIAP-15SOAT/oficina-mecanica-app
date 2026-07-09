@@ -73,7 +73,7 @@ jobs:
         run: npm run build
 
   db-validation:
-    name: DB Validation (Ephemeral)
+    name: DB Validation
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -114,13 +114,13 @@ jobs:
       - name: Terraform Fmt Check
         run: terraform fmt -check -recursive
         working-directory: infra
-      - name: Terraform Init Infra AWS (no backend)
+      - name: Terraform Init Infra AWS
         run: terraform init -backend=false -no-color
         working-directory: infra/aws-base
       - name: Terraform Validate Infra AWS
         run: terraform validate -no-color
         working-directory: infra/aws-base
-      - name: Terraform Init Kubernetes (no backend)
+      - name: Terraform Init Kubernetes
         run: terraform init -backend=false -no-color
         working-directory: infra/k8s-base
       - name: Terraform Validate Kubernetes
@@ -141,7 +141,7 @@ jobs:
         run: |
           terraform init -reconfigure -no-color
           terraform plan -no-color
-      - name: Terraform Plan Kubernetes (if cluster provisioned)
+      - name: Terraform Plan Kubernetes
         if: steps.aws_creds.outcome == 'success'
         working-directory: infra/k8s-base
         env:
