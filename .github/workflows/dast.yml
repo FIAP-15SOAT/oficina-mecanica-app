@@ -72,7 +72,6 @@ jobs:
             -v "$GITHUB_WORKSPACE/zap-work:/zap/wrk:rw" \
             -e ZAP_AUTH_HEADER=Authorization \
             -e ZAP_AUTH_HEADER_VALUE="$ZAP_AUTH_HEADER_VALUE" \
-            -e ZAP_AUTH_HEADER_SITE=api:3000 \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-api-scan.py \
               -t http://api:3000/api/docs-json \
