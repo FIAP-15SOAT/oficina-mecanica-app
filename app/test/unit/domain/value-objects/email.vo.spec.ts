@@ -3,19 +3,13 @@ import { DomainValidationException } from '@domain/exceptions/domain-validation.
 
 describe('Email VO', () => {
   describe('create', () => {
-    it('creates from a valid email', () => {
-      const email = Email.create('user@example.com');
-      expect(email.value).toBe('user@example.com');
-    });
-
-    it('trims whitespace', () => {
-      const email = Email.create('  user@example.com  ');
-      expect(email.value).toBe('user@example.com');
-    });
-
-    it('lowercases the email', () => {
-      const email = Email.create('User@Example.COM');
-      expect(email.value).toBe('user@example.com');
+    it.each([
+      ['a valid email', 'user@example.com', 'user@example.com'],
+      ['an email with surrounding whitespace', '  user@example.com  ', 'user@example.com'],
+      ['a mixed-case email', 'User@Example.COM', 'user@example.com'],
+    ])('creates from %s', (_description, raw, expected) => {
+      const email = Email.create(raw);
+      expect(email.value).toBe(expected);
     });
 
     it.each([null, undefined, '', '   '])('throws when value is %p', (raw) => {
