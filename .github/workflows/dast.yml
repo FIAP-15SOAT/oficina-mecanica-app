@@ -23,7 +23,7 @@ env:
 
 jobs:
   zap-scan:
-    name: OWASP ZAP Passive Scan
+    name: OWASP ZAP API Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -51,7 +51,7 @@ jobs:
           token="$(curl -fsS -X POST "$API_BASE_URL/api/auth/login" \
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"${SEED_ADMIN_EMAIL}\",\"password\":\"${SEED_ADMIN_PASSWORD}\"}" \
-            | jq -r '.data.accessToken')"
+            | jq -r '.data.accessToken' || true)"
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "::error::Failed to authenticate against /api/auth/login."
             exit 1
@@ -67,12 +67,13 @@ jobs:
 
       - name: Run OWASP ZAP API scan
         run: |
+          # ZAP 2.17.0 (stable) pinned by digest — bump with: docker buildx imagetools inspect ghcr.io/zaproxy/zaproxy:stable
           docker run --rm \
             --network "${COMPOSE_PROJECT}_default" \
             -v "$GITHUB_WORKSPACE/zap-work:/zap/wrk:rw" \
             -e ZAP_AUTH_HEADER=Authorization \
             -e ZAP_AUTH_HEADER_VALUE="$ZAP_AUTH_HEADER_VALUE" \
-            ghcr.io/zaproxy/zaproxy:stable \
+            ghcr.io/zaproxy/zaproxy@sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2 \
             zap-api-scan.py \
               -t http://api:3000/api/docs-json \
               -f openapi \

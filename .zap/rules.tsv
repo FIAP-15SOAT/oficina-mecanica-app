@@ -1,4 +1,4 @@
-# ZAP passive-scan rule configuration for the DAST workflow (.github/workflows/dast.yml)
+# ZAP scan rule configuration for the DAST workflow (.github/workflows/dast.yml)
 # Format: <ruleId><TAB><WARN|IGNORE|FAIL><TAB>(rule name — informational)
 # Change WARN to IGNORE to silence a rule, or to FAIL to make it fail the run.
 #
