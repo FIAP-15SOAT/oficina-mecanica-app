@@ -59,7 +59,7 @@ describe('PrismaStatusHistoryRepository', () => {
 
       const result = await repository.findByWorkOrderId(randomUUID());
 
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
     });
   });
 });

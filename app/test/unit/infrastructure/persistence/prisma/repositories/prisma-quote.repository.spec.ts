@@ -346,7 +346,7 @@ describe('PrismaQuoteRepository', () => {
       const workOrderId = randomUUID();
       const result = await repository.findByWorkOrderId(workOrderId);
 
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
       expect(prisma.quote.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workOrderId },
@@ -581,7 +581,7 @@ describe('PrismaQuoteRepository', () => {
       const result = await repository.findAllPaginated({ page: 1, limit: 10 }, {});
 
       expect(result.total).toBe(1);
-      expect(result.items.length).toBe(1);
+      expect(result.items).toHaveLength(1);
       expect(prisma.quote.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           include: expect.objectContaining({ workOrder: expect.any(Object) }),
