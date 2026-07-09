@@ -255,6 +255,8 @@ jobs:
         run: |
           kubectl apply -f k8s/01-api-secret.rendered.yaml
           kubectl apply -f k8s/02-api-configmap.yaml
+          kubectl apply -f k8s/03-mailhog-deployment.yaml
+          kubectl apply -f k8s/04-mailhog-service.yaml
           kubectl apply -f k8s/03-api-deployment.rendered.yaml
           kubectl apply -f k8s/04-api-service.yaml
           kubectl apply -f k8s/05-api-hpa.yaml
