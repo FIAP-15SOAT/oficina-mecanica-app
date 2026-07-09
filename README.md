@@ -914,12 +914,13 @@ kubectl apply -f k8s/05-api-hpa.yaml
 
 ## CI/CD
 
-A automação está dividida por responsabilidade, em dois workflows:
+A automação está dividida por responsabilidade, em três workflows:
 
 | Workflow | Arquivo | Gatilho | Responsabilidade |
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | `push` em branches de trabalho (`feature/**`, `fix/**`) | Validar a mudança (inclui `terraform plan`) e abrir o PR |
 | CD | `.github/workflows/cd.yml` | `push` em `master` (pós-merge) + `workflow_dispatch` | Fluxo de entrega completo: **provisiona a infra (Terraform), builda a imagem, migra o banco e deploya a app** |
+| SAST | `.github/workflows/sast.yml` | `pull_request` + `push` em `master` | Análise do SonarCloud (PR + `master`), em paralelo ao CD (não bloqueia o deploy) |
 
 O CD faz o **fluxo de entrega ponta a ponta**: aplica o Terraform (infra) **antes** de migrar e deployar. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD. Seguindo a prática do HashiCorp, o **`terraform plan` roda no CI** (o revisor vê o diff de infra no PR) e o **`terraform apply` roda no CD** — o merge na `master` (protegida, só via PR com checks verdes) é a aprovação.
 
@@ -935,6 +936,7 @@ Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_requ
 |---|---|---|---|
 | `ci.yml` | `ci-<ref>` | `true` | Um push mais novo torna o run anterior obsoleto; cancelar economiza runners |
 | `cd.yml` | `production` | `false` | Nunca interromper um `terraform apply`/deploy no meio; o próximo run enfileira atrás (protege o state do Terraform e o rollout) |
+| `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`master` torna a análise anterior obsoleta; cancelar economiza runners |
 
 Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_APP_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
 
@@ -945,13 +947,12 @@ Escopo: validação de qualquer branch de trabalho, sempre por completo (sem det
 Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain):
 
 1. `lint` — `npm run lint`.
-2. `unit-tests` — `npm run test:cov`; publica `coverage/lcov.info` como artifact.
+2. `unit-tests` — `npm run test:cov`.
 3. `e2e-tests` — `npm run test:e2e:cov` (Testcontainers sobe um PostgreSQL descartável no próprio job).
 4. `build` — `npm run build`.
 5. `db-validation` — sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed) para provar que as migrations aplicam do zero e o seed funciona. O banco é descartado com o job — nunca toca em ambiente real.
-6. `sast` — SonarQube Scan (`projectBaseDir: app`), consumindo o `lcov` do `unit-tests` via artifact.
-7. `tf-validate` — duas fases. **Validação (sempre roda, sem credencial):** `terraform fmt -check` (recursivo) + `init -backend=false` + `validate` nos dois stacks — ordenada **antes** de qualquer step AWS, então um token expirado nunca mascara um erro de fmt/validate. **Plan (condicional):** configura as credenciais — a própria action `configure-aws-credentials` valida o token via `sts:GetCallerIdentity` (rodada com `continue-on-error`), então o sucesso dela já indica que o lab está acessível; só roda `terraform plan` (`aws-base` e `k8s-base`, este último quando o cluster já foi provisionado) se o lab do AWS Academy estiver acessível — senão pula (registrando o status no _Job Summary_ do run) e o job segue **verde**. No CI, um `plan` que roda e **falha bloqueia** o merge (um plan quebrado quebraria o `apply` no CD); só o caso de ambiente fora / token expirado é tolerado — aí o `plan` é pulado e o job segue verde. Ou seja: o job não falha por indisponibilidade do ambiente, mas falha por erro real de plan.
-8. `open-pr` — depende de todos os jobs acima; abre o PR para `master` se ainda não existir.
+6. `tf-validate` — duas fases. **Validação (sempre roda, sem credencial):** `terraform fmt -check` (recursivo) + `init -backend=false` + `validate` nos dois stacks — ordenada **antes** de qualquer step AWS, então um token expirado nunca mascara um erro de fmt/validate. **Plan (condicional):** configura as credenciais — a própria action `configure-aws-credentials` valida o token via `sts:GetCallerIdentity` (rodada com `continue-on-error`), então o sucesso dela já indica que o lab está acessível; só roda `terraform plan` (`aws-base` e `k8s-base`, este último quando o cluster já foi provisionado) se o lab do AWS Academy estiver acessível — senão pula (registrando o status no _Job Summary_ do run) e o job segue **verde**. No CI, um `plan` que roda e **falha bloqueia** o merge (um plan quebrado quebraria o `apply` no CD); só o caso de ambiente fora / token expirado é tolerado — aí o `plan` é pulado e o job segue verde. Ou seja: o job não falha por indisponibilidade do ambiente, mas falha por erro real de plan.
+7. `open-pr` — depende de todos os jobs acima; abre o PR para `master` (com um PAT `OPEN_PR_TOKEN`, para o `sast.yml` rodar no PR desde o primeiro push) se ainda não existir.
 
 ### 2) Workflow de CD (`cd.yml`)
 
@@ -971,7 +972,16 @@ A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A mig
 
 O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert`, sem duplicar; para usuários, a senha só é definida na criação e não é sobrescrita), ele roda junto com a migração no job `db-migrate` (`migrate deploy` + `db seed`) a cada deploy. Assim os dados de referência (incluindo os usuários Admin) são reafirmados sem apagar nada, e um ambiente com armazenamento efêmero (`emptyDir`) se auto-recupera no próximo deploy — sem passo manual.
 
-A configuração do Sonar (chave do projeto, organização, exclusões e caminho do `lcov.info`) está em `sonar-project.properties`.
+### 3) Workflow de SAST (`sast.yml`)
+
+Análise do SonarCloud num workflow dedicado. O plano do Sonar do projeto analisa apenas a **branch principal (`master`) e Pull Requests** — não branches de trabalho avulsas —, então o SAST **saiu do CI e do CD** e roda aqui:
+
+- **`pull_request` → `master`**: análise em modo PR (detecção de _New Code_ + decoração do PR).
+- **`push` → `master`**: análise da branch principal (relatório consolidado + o baseline que a análise de PR usa como referência).
+
+Roda `test:cov` + Sonar Scan (`projectBaseDir: app`). Com `sonar.qualitygate.wait=true` (em `sonar-project.properties`), o run **fica vermelho se o quality gate reprovar**. Por ser um workflow **separado do CD**, uma análise vermelha na `master` **não bloqueia o deploy** (rodam em paralelo). A configuração do Sonar (chave do projeto, organização, exclusões, caminho do `lcov.info`) está em `sonar-project.properties`.
+
+Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TOKEN`, a criação do PR dispara o `sast.yml` — então a análise/decoração aparece **desde o primeiro push** (o `GITHUB_TOKEN` não dispararia workflows no PR criado automaticamente).
 
 ### Secrets e Variables
 
@@ -982,7 +992,8 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para Terraform, validação e deploy |
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `ci.yml`, `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
-| Secret | `SONAR_TOKEN` | `ci.yml` | Autenticação do SonarQube Scan |
+| Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
+| Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
 | Secret | `K8S_POSTGRES_PASSWORD` | `ci.yml`, `cd.yml` | Senha do PostgreSQL: injetada como `TF_VAR_k8s_postgres_password` no `plan` do stack `k8s-base` (CI `tf-validate`) e no `apply` (CD), e no Secret da aplicação (`app-deploy`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
