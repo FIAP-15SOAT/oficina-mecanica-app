@@ -914,13 +914,14 @@ kubectl apply -f k8s/05-api-hpa.yaml
 
 ## CI/CD
 
-A automação está dividida por responsabilidade, em três workflows:
+A automação está dividida por responsabilidade, em quatro workflows:
 
 | Workflow | Arquivo | Gatilho | Responsabilidade |
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | `push` em branches de trabalho (`feature/**`, `fix/**`) | Validar a mudança (inclui `terraform plan`) e abrir o PR |
 | CD | `.github/workflows/cd.yml` | `push` em `master` (pós-merge) + `workflow_dispatch` | Fluxo de entrega completo: **provisiona a infra (Terraform), builda a imagem, migra o banco e deploya a app** |
 | SAST | `.github/workflows/sast.yml` | `pull_request` + `push` em `master` | Análise do SonarCloud (PR + `master`), em paralelo ao CD (não bloqueia o deploy) |
+| DAST | `.github/workflows/dast.yml` | `pull_request` → `master` + `workflow_dispatch` | Scan passivo OWASP ZAP da API rodando (autenticado, via OpenAPI), em paralelo ao CI/CD |
 
 O CD faz o **fluxo de entrega ponta a ponta**: aplica o Terraform (infra) **antes** de migrar e deployar. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD. Seguindo a prática do HashiCorp, o **`terraform plan` roda no CI** (o revisor vê o diff de infra no PR) e o **`terraform apply` roda no CD** — o merge na `master` (protegida, só via PR com checks verdes) é a aprovação.
 
@@ -937,6 +938,7 @@ Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_requ
 | `ci.yml` | `ci-<ref>` | `true` | Um push mais novo torna o run anterior obsoleto; cancelar economiza runners |
 | `cd.yml` | `production` | `false` | Nunca interromper um `terraform apply`/deploy no meio; o próximo run enfileira atrás (protege o state do Terraform e o rollout) |
 | `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`master` torna a análise anterior obsoleta; cancelar economiza runners |
+| `dast.yml` | `dast-<pr ou ref>` | `true` | Um push novo no PR torna o scan anterior obsoleto; cancelar economiza runners |
 
 Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_APP_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
 
@@ -983,6 +985,21 @@ Roda `test:cov` + Sonar Scan (`projectBaseDir: app`). Com `sonar.qualitygate.wai
 
 Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TOKEN`, a criação do PR dispara o `sast.yml` — então a análise/decoração aparece **desde o primeiro push** (o `GITHUB_TOKEN` não dispararia workflows no PR criado automaticamente).
 
+### 4) Workflow de DAST (`dast.yml`)
+
+Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicado — como o SAST, roda em paralelo ao CI/CD e não bloqueia nenhum deles. Diferente do SAST (separado por limitação do plano do Sonar), o DAST é separado por ter um **ciclo de gatilho próprio**:
+
+- **`pull_request` → `master`**: escaneia o candidato a merge — o gate natural do DAST.
+- **`workflow_dispatch`**: execução sob demanda.
+
+Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o loop rápido; subir a stack inteira a cada push seria caro e redundante) nem em `push` → `master` (a `master` é protegida — só entra via PR —, então o scan do PR já cobriu aquele código).
+
+O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`), espera o app responder em `/api/docs` (não há `/health`; é o mesmo path do readinessProbe do k8s), faz login em `POST /api/auth/login` com um admin do seed e roda o `zap-api-scan.py` (`-f openapi`) contra a spec em `/api/docs-json`. Como quase toda rota está atrás do `JwtAuthGuard`, o token JWT é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`.
+
+O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`): alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, flags de cookie de sessão).
+
+O job **falha se o ZAP encontrar problemas** — qualquer alerta não marcado como `IGNORE` faz o `zap-api-scan.py` sair com código diferente de zero e o job fica **vermelho**, como acontece com o SAST. O relatório (HTML + JSON) **não se perde**: sobe como artifact do run mesmo quando o job falha (upload com `if: always()`). O `.zap/rules.tsv` é a alavanca de calibração — os primeiros runs provavelmente ficam vermelhos até você marcar os falsos-positivos como `IGNORE` (se falhar em todo WARN for agressivo demais, dá para usar `-I` e marcar como `FAIL` só as regras que devem bloquear). As credenciais do admin do seed vêm de **secrets do repositório** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`), nunca hardcoded, e são usadas só contra o banco descartável do job. Scan **ativo/destrutivo está fora de escopo** — apenas passivo.
+
 ### Secrets e Variables
 
 Para que os workflows e o provisionamento funcionem corretamente, é necessário configurar os secrets e variables do repositório no GitHub. A tabela abaixo é a referência prática de configuração, incluindo onde cada item é usado.
@@ -993,6 +1010,8 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `ci.yml`, `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
 | Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
+| Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
+| Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
 | Secret | `K8S_POSTGRES_PASSWORD` | `ci.yml`, `cd.yml` | Senha do PostgreSQL: injetada como `TF_VAR_k8s_postgres_password` no `plan` do stack `k8s-base` (CI `tf-validate`) e no `apply` (CD), e no Secret da aplicação (`app-deploy`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
