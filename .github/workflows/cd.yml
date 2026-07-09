@@ -141,7 +141,7 @@ jobs:
             DATABASE_URL=${{ vars.PRISMA_GENERATE_DATABASE_URL || 'postgresql://prisma:prisma@localhost:5432/prisma?schema=public' }}
 
   db-migrate:
-    name: DB Migrate & Seed (Kubernetes Job)
+    name: DB Migrate & Seed
     runs-on: ubuntu-latest
     environment: production
     needs:
