@@ -16,6 +16,7 @@ Clean Architecture + DDD do backend da Oficina Mecânica — camadas estritas, e
 - [Aprovação de orçamento por e-mail](#aprovação-de-orçamento-por-e-mail)
 - [Exceções por Camada](#exceções-por-camada)
 - [Decisões de Arquitetura (ADRs)](#decisões-de-arquitetura-adrs)
+- [Modelo C4](#modelo-c4)
 
 ## Estrutura de camadas
 
@@ -281,4 +282,8 @@ Erros de validação de DTO são cobertos pelo `ValidationPipe` global do NestJS
 Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no formato Markdown:
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
+
+## Modelo C4
+
+A arquitetura também é documentada com o [C4 model](https://c4model.com) (Contexto, Container e Componente) em [`docs/c4/`](./c4), com os diagramas fonte em PlantUML e as imagens já renderizadas.
 

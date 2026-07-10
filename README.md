@@ -127,6 +127,7 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests, storage, probes, deploy |
 | 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
 | 📐 [ADRs](docs/adr) | Decisões arquiteturais |
+| 🧩 [Modelo C4](docs/c4) | Diagramas de Contexto, Container e Componente |
 
 ## 👥 Autores
 
