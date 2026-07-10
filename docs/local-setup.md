@@ -103,4 +103,4 @@ O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
 
 Use qualquer um desses e-mails com a senha `Tech@2026` no endpoint `POST /api/auth/login` para autenticar e obter o token JWT.
 
-Os scripts de seed em `prisma/seeds/` (`user.seed.ts`, `customer.seed.ts`, `vehicle.seed.ts`, `service.seed.ts`, `part-supply.seed.ts`, `work-order.seed.ts`) são executados em ordem pelo entrypoint `prisma/seed.ts` e populam dados de referência para acelerar o onboarding e os testes manuais.
+Os scripts de seed em `prisma/seeds/` são executados em ordem pelo entrypoint `prisma/seed.ts`: `work-order-status-info.seed.ts` (tabela de referência de prioridade dos status de OS), depois `user.seed.ts`, `part-supply.seed.ts`, `service.seed.ts`, `customer.seed.ts`, `vehicle.seed.ts` e `work-order.seed.ts`. Eles populam dados de referência para acelerar o onboarding e os testes manuais. Todos são idempotentes (`upsert`), então podem rodar a cada deploy sem duplicar registros.

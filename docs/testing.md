@@ -16,7 +16,7 @@ npm run test:cov  # com relatório de cobertura
 
 151 suites cobrindo todas as camadas (`application/`, `domain/` — incluindo entidades, value objects e validators —, `interface-adapters/` e `infrastructure/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Os Clean Controllers são instanciados diretamente com use-cases mockados; a borda HTTP (`@Controller` fino) é exercitada via `jest.spyOn` no Clean Controller real. As factories de mocks (incluindo `UnitOfWorkMockFactory`) estão em `test/helpers/`, organizadas por entidade.
 
-A cobertura é coletada nas camadas `application/` e `domain/`. DTOs, modules, enums, `main.ts`, exceções e arquivos gerados pelo Prisma são excluídos dos thresholds (ver `package.json` → `jest.collectCoverageFrom`).
+A cobertura é coletada em todo `src/**` (todas as camadas — `domain/`, `application/`, `interface-adapters/` e `infrastructure/`), não apenas em `application/`/`domain/`. As exclusões são por sufixo/caminho, não por camada: `*.module.ts`, `main.ts`, `*.enums.ts`, `*.config.ts`, `*.exception.ts`, `*.dto.ts`, `infrastructure/persistence/prisma/prisma.service.ts` e `domain/constants/**` (ver `package.json` → `jest.collectCoverageFrom`). Os arquivos gerados pelo Prisma ficam de fora por viverem em `prisma/generated/`, fora de `src/`.
 
 ## E2E
 

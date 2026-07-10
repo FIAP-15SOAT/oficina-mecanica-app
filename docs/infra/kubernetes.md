@@ -35,7 +35,9 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
 | API Deployment (`03-api-deployment.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
+| MailHog Deployment (`03-mailhog-deployment.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` (dependência de e-mail) |
 | API Service (`04-api-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
+| MailHog Service (`04-mailhog-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` (SMTP `1025` / Web UI `8025`) |
 | API HPA (`05-api-hpa.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
 
 ## Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`

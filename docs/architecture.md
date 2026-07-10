@@ -29,11 +29,11 @@ app/src/
 │   ├── entities/                    # Entidades ricas com validação de domínio e invariantes
 │   │                                # WorkOrder e Quote são Aggregate Roots
 │   ├── value-objects/               # Document (CPF/CNPJ), Email, Phone, Plate,
-│   │                                # ZipCode, Address, LineItemPrice
+│   │                                # ZipCode, Address, LineItemPrice, WorkOrderNumber
 │   ├── enums/                       # UserRole, CustomerType, WorkOrderStatus,
 │   │                                # WorkOrderServiceStatus, QuoteStatus,
 │   │                                # QuoteDecisionAction, StockMovementType, Unit,
-│   │                                # PartSupplyCategory, TokenType
+│   │                                # PartSupplyCategory, TokenType, SortDirection
 │   ├── exceptions/                  # DomainException, DomainValidationException,
 │   │                                # EntityNotFoundException, BusinessRuleViolationException
 │   ├── constants/                   # Regex compartilhadas (placa, telefone, e-mail, senha)
@@ -86,7 +86,7 @@ app/src/
 │   │   ├── validators/              # IsValidCpfCnpj (adapter class-validator)
 │   │   └── common/dto/              # PaginationDto, PaginatedResponseDto compartilhados
 │   ├── persistence/prisma/          # PrismaService + PrismaModule (singleton de conexão)
-│   │   ├── repositories/            # Implementações Prisma (11 repositórios) + PrismaUnitOfWork +
+│   │   ├── repositories/            # Implementações Prisma (10 repositórios) + PrismaUnitOfWork +
 │   │   │                            # RepositoriesModule (@Global) — única pasta a importar @generated/client
 │   │   ├── mappers/                 # Conversão Prisma model → Entidade de domínio (14 mappers)
 │   │   └── helpers/                 # Helpers de paginação, existência e ordenação (Prisma)
@@ -125,7 +125,7 @@ app/test/
     └── work-order.e2e-spec.ts
 
 app/prisma/
-├── schema.prisma                    # Schema do banco (15 modelos, 8 enums)
+├── schema.prisma                    # Schema do banco (16 modelos, 8 enums)
 ├── prisma.config.ts                 # Configuração do Prisma v7 (adapter-pg)
 ├── migrations/                      # Migrations geradas pelo Prisma — inclui a sequence
 │                                    # `work_order_number_seq` (números de OS),
@@ -133,13 +133,13 @@ app/prisma/
 │                                    # versionamento (colunas `version`) e índices
 ├── generated/                       # Prisma Client gerado (output local)
 ├── seed.ts                          # Entry point do seed
-└── seeds/                           # Scripts de seed por entidade (user, customer, vehicle,
-                                     # service, part-supply, work-order)
+└── seeds/                           # Scripts de seed por entidade (work-order-status-info,
+                                     # user, customer, vehicle, service, part-supply, work-order)
 ```
 
 ## Modelos do banco de dados
 
-15 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`.
+16 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrderStatusInfo`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`. `WorkOrderStatusInfo` (`work_order_statuses`) é uma **tabela de referência** (lookup) — não expõe API própria e é populada pelo seed.
 
 Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`.
 
@@ -154,6 +154,7 @@ Convenções de modelagem:
 - **Address** é um perfil 1-1 do Customer — chave primária é `customer_id` (sem ID/timestamps próprios) e é deletado em cascata com o Customer.
 - **Identidades compostas**: `WorkOrderService`, `WorkOrderPartSupply`, `QuoteService` e `QuotePartSupply` usam chave primária composta `(parentId, itemId)` em vez de surrogate key.
 - **Índices secundários** por colunas usadas em filtros (`status`, `customerId`, `vehicleId`, `assignedUserId`, `partSupplyId`, `workOrderId`, etc.) e índice composto `(status, createdAt)` em `WorkOrder` para listagens ordenadas.
+- **Tabela de referência de status** (`WorkOrderStatusInfo` → `work_order_statuses`): a coluna `WorkOrder.status` é FK para o `code` (PK) dessa tabela, que associa cada `WorkOrderStatus` a uma `priority Int @unique` (1–9, de `RECEIVED` a `CANCELLED`). A listagem de OS usa essa prioridade para ordenar por status em ordem de negócio (e não alfabética) — ver [Ciclo de vida da Ordem de Serviço](#ciclo-de-vida-da-ordem-de-serviço).
 
 ## DDD — Aggregate Roots, Entidades e Value Objects
 
@@ -164,7 +165,7 @@ O domínio é modelado seguindo princípios de DDD:
   - `Quote` encapsula seus `QuoteService[]` e `QuotePartSupply[]`, recalcula `servicesAmount` / `partsAmount` / `totalAmount` automaticamente e expõe operações `submit()`, `approve()` e `reject()` que validam o status atual antes da transição.
 - **Entidades** — `Customer`, `Vehicle`, `Service`, `PartSupply`, `User`, `StatusHistory`, `StockMovement`, `StockReservation`, `WorkOrderService`, `WorkOrderPartSupply`, `QuoteService`, `QuotePartSupply`. Possuem identidade própria, estado mutável e validações de invariantes nos próprios métodos (`changeRole`, `changePassword`, `reserve`, `release`, etc.).
 - **Value Objects** — imutáveis, sem identidade, validados na criação:
-  - `Document` (CPF ou CNPJ com dígito verificador), `Email`, `Phone`, `Plate` (placa antiga `ABC-1234` ou Mercosul `ABC1D23` — sanitizada para maiúsculas e sem hífen), `ZipCode`, `Address`, `LineItemPrice` (quantidade × preço unitário com cálculo de total).
+  - `Document` (CPF ou CNPJ com dígito verificador), `Email`, `Phone`, `Plate` (placa antiga `ABC-1234` ou Mercosul `ABC1D23` — sanitizada para maiúsculas e sem hífen), `ZipCode`, `Address`, `LineItemPrice` (quantidade × preço unitário com cálculo de total), `WorkOrderNumber` (número da OS validado e normalizado com zero-padding para o comprimento mínimo).
 - **Reconstituição** — todas as entidades expõem `static create(...)` (com validações completas) e `static reconstitute(...)` (rehidratação a partir do banco, sem revalidar dados já persistidos). Os mappers da infraestrutura sempre usam `reconstitute`, evitando o custo de revalidar dados já consistentes e permitindo carregar agregados em estados intermediários (ex.: `APPROVED` ou `IN_PROGRESS`) que `create` não autorizaria.
 - **Enriquecimento de entidades** — relações expostas em consultas usam **referências completas** (`item.service`, `item.partSupply`, `quote.workOrder`, `wo.customer`, `wo.vehicle`, `wo.assignedUser`) carregadas via Prisma `include`. Os presenters projetam os campos necessários para o cliente HTTP.
 
@@ -176,7 +177,7 @@ Esse mecanismo protege fluxos críticos como atualização de status de OS, apro
 
 ## Perfis de usuário (RBAC)
 
-A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Endpoints podem ser marcados com `@Public()` quando dispensam autenticação (ex.: `/auth/login`, `/auth/refresh`, decisão de orçamento via link assinado).
+A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Os guards são aplicados **por controller** (`@UseGuards(JwtAuthGuard, RolesGuard)` na classe), não como guard global. O decorator `@Public()` libera uma rota específica dentro de um controller protegido — o `JwtAuthGuard` lê o metadata `IS_PUBLIC_KEY` e pula a autenticação; o único uso hoje é a decisão de orçamento via link assinado (`GET /quotes/:id/decisions`). O `AuthController` não tem guard de classe, então `POST /auth/login` e `POST /auth/refresh` já são públicos sem precisar de `@Public()` (apenas `GET /auth/me` é protegido com `@UseGuards(JwtAuthGuard)`).
 
 | Perfil | Permissões |
 |---|---|
@@ -223,6 +224,7 @@ Regras adicionais:
 - Timestamps `approvedAt`, `rejectedAt`, `startedAt`, `finishedAt` e `deliveredAt` são preenchidos automaticamente pelo agregado quando o status correspondente é atingido.
 - Apenas mecânicos **ativos** podem ser atribuídos como `assignedUser` (validado tanto na criação quanto na atualização).
 - O número da OS é gerado por uma sequence PostgreSQL (`work_order_number_seq`) e formatado com 6 dígitos zero-padded (`000001`, `000002`, …).
+- A listagem (`GET /work-orders`) aceita ordenação (`sort`) por `status` e/ou `createdAt`. Ao ordenar por `status`, a ordem segue a `priority` definida na tabela de referência `WorkOrderStatusInfo` (`RECEIVED` → … → `CANCELLED`), não a ordem alfabética. Padrão: `status:desc,createdAt:asc`.
 
 ## Ciclo de vida do Orçamento
 
