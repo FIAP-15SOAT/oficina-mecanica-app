@@ -4,9 +4,6 @@
 
 **Sistema Integrado de Atendimento e Execução de Serviços para oficinas mecânicas** — ordens de serviço, clientes, veículos, peças, insumos, serviços, orçamentos e estoque.
 
-[![CI](https://github.com/FIAP-15SOAT/oficina_mecanica_grupo39/actions/workflows/ci.yml/badge.svg)](https://github.com/FIAP-15SOAT/oficina_mecanica_grupo39/actions/workflows/ci.yml)
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=FIAP-15SOAT_oficina_mecanica_grupo39&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=FIAP-15SOAT_oficina_mecanica_grupo39)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=FIAP-15SOAT_oficina_mecanica_grupo39&metric=coverage)](https://sonarcloud.io/summary/new_code?id=FIAP-15SOAT_oficina_mecanica_grupo39)
 ![Node](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
@@ -84,7 +81,7 @@ docker compose down
 
 > O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e roda `prisma migrate deploy && prisma db seed && node dist/src/main` no `CMD` final.
 
-> **Para testar:** faça login em `POST /api/auth/login` com um admin do seed (ex.: `lucas.almeida-silva@hotmail.com`) e a senha `Tech@2026`. Veja todos os usuários em [Desenvolvimento › Seed](docs/development.md#seed).
+> **Para testar:** faça login em `POST /api/auth/login` com um admin do seed. Veja todos os usuários em [Como executar localmente › Seed](docs/local-setup.md#seed).
 
 ## ⚙️ Comandos
 
@@ -123,23 +120,21 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 |---|---|
 | 🏛️ [Arquitetura](docs/architecture.md) | Clean Architecture, DDD, ciclos de vida, UoW, exceções |
 | 🔌 [Referência da API](docs/api.md) | Endpoints por domínio, perfis (RBAC), formato de resposta |
-| 💻 [Desenvolvimento](docs/development.md) | Setup local, MailHog, variáveis de ambiente, seed |
-| 🧪 [Testes](docs/testing.md) | Unitários, E2E (Testcontainers), Postman/Newman |
+| 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
+| 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
 | 🔒 [Segurança](docs/security.md) | Mitigações no código e relatórios (ZAP, SonarQube) |
-| 🌍 [Infra · Terraform](docs/infra/terraform.md) | Stacks `aws-base` e `k8s-base` |
+| 🌍 [Infra · Terraform](docs/infra/terraform.md) | Infraestrutura AWS e Kubernets |
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests, storage, probes, deploy |
-| 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST + secrets |
+| 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
 | 📐 [ADRs](docs/adr) | Decisões arquiteturais |
 
 ## 👥 Autores
 
-Grupo 15SOAT — FIAP.
-
-- Guilherme da Rocha Salvador
-- Lucas Almeida da Silva
-- Rafael Neves de Oliveira
-- Ramoon Lincoln Barros Camacho
-- Renan Santana Camacho
+- [Guilherme da Rocha Salvador](https://github.com/guilhermesalvador404)
+- [Lucas Almeida da Silva](https://github.com/lucas-almeida-silva)
+- [Rafael Neves de Oliveira](https://github.com/RafaelNevesdeOliveira)
+- [Ramoon Lincoln Barros Camacho](https://github.com/ramooncamacho)
+- [Renan Santana Camacho](https://github.com/renancamacho)
 
 ## 📄 Licença
 

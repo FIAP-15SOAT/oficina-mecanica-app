@@ -1,4 +1,4 @@
-# 💻 Desenvolvimento
+# 💻 Como executar localmente
 
 Setup local (API na máquina, infra no Docker), variáveis de ambiente e dados de seed. Para subir tudo em containers com um comando, veja o Quick Start no [README](../README.md).
 
