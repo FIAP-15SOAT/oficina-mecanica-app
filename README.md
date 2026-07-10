@@ -925,6 +925,8 @@ A automação está dividida por responsabilidade, em quatro workflows:
 
 O CD faz o **fluxo de entrega ponta a ponta**: aplica o Terraform (infra) **antes** de migrar e deployar. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD. Seguindo a prática do HashiCorp, o **`terraform plan` roda no CI** (o revisor vê o diff de infra no PR) e o **`terraform apply` roda no CD** — o merge na `master` (protegida, só via PR com checks verdes) é a aprovação.
 
+> **Como ler os diagramas.** Nos diagramas de **CI** e **CD**, cada caixa é um **job** (com os principais steps em bullets) e as setas seguem as dependências `needs:`. Nos de **SAST** e **DAST** — que têm um **único job** —, cada caixa é um **step**, executado em sequência no mesmo runner.
+
 ### Fluxo de branch e Pull Request
 
 O CI dispara no `push` de uma branch de trabalho e roda todos os jobs de validação em paralelo (fail-fast). Se todos passam, o job `open-pr` abre um Pull Request para `master` — de forma idempotente (não abre duplicado se já existir PR); em pushes seguintes, o CI reexecuta e o `open-pr` vira no-op.
@@ -944,27 +946,37 @@ Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de dep
 
 ### 1) Workflow de CI (`ci.yml`)
 
+<p align="center"><img src="docs/diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 6 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation, Terraform Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para master" width="100%"></p>
+
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
-Jobs (paralelos, fail-fast). Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain):
+Os 6 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `open-pr` abre o PR. Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain).
 
-1. `lint` — `npm run lint`.
-2. `unit-tests` — `npm run test:cov`.
-3. `e2e-tests` — `npm run test:e2e:cov` (Testcontainers sobe um PostgreSQL descartável no próprio job).
-4. `build` — `npm run build`.
-5. `db-validation` — sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed) para provar que as migrations aplicam do zero e o seed funciona. O banco é descartado com o job — nunca toca em ambiente real.
-6. `tf-validate` — duas fases. **Validação (sempre roda, sem credencial):** `terraform fmt -check` (recursivo) + `init -backend=false` + `validate` nos dois stacks — ordenada **antes** de qualquer step AWS, então um token expirado nunca mascara um erro de fmt/validate. **Plan (condicional):** configura as credenciais — a própria action `configure-aws-credentials` valida o token via `sts:GetCallerIdentity` (rodada com `continue-on-error`), então o sucesso dela já indica que o lab está acessível; só roda `terraform plan` (`aws-base` e `k8s-base`, este último quando o cluster já foi provisionado) se o lab do AWS Academy estiver acessível — senão pula (registrando o status no _Job Summary_ do run) e o job segue **verde**. No CI, um `plan` que roda e **falha bloqueia** o merge (um plan quebrado quebraria o `apply` no CD); só o caso de ambiente fora / token expirado é tolerado — aí o `plan` é pulado e o job segue verde. Ou seja: o job não falha por indisponibilidade do ambiente, mas falha por erro real de plan.
-7. `open-pr` — depende de todos os jobs acima; abre o PR para `master` (com um PAT `OPEN_PR_TOKEN`, para o `sast.yml` rodar no PR desde o primeiro push) se ainda não existir.
+| # | Job | O que faz |
+|---|---|---|
+| 1 | `lint` | `npm run lint` — ESLint (inclui a cerca de dependências entre camadas) |
+| 2 | `unit-tests` | `npm run test:cov` — testes unitários com cobertura |
+| 3 | `e2e-tests` | `npm run test:e2e:cov` — E2E com um PostgreSQL descartável via Testcontainers no próprio job |
+| 4 | `build` | `npm run build` — compila o TypeScript |
+| 5 | `db-validation` | Sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed): prova que as migrations aplicam do zero e o seed funciona. Banco descartado com o job — nunca toca ambiente real |
+| 6 | `tf-validate` | `terraform fmt`/`validate` nos stacks `aws-base` e `k8s-base` (sempre, sem credencial) + `terraform plan` condicional — detalhe na nota abaixo |
+| 7 | `open-pr` | `needs:` os 6 jobs acima; abre o PR para `master` de forma idempotente (não duplica), com o PAT `OPEN_PR_TOKEN` para que o `sast.yml` rode no PR desde o primeiro push |
+
+**`tf-validate` — duas fases.** **Validação (sempre roda, sem credencial):** `terraform fmt -check` (recursivo) + `init -backend=false` + `validate` nos dois stacks — ordenada **antes** de qualquer step AWS, então um token expirado nunca mascara um erro de fmt/validate. **Plan (condicional):** configura as credenciais — a própria action `configure-aws-credentials` valida o token via `sts:GetCallerIdentity` (rodada com `continue-on-error`), então o sucesso dela já indica que o lab está acessível; só roda `terraform plan` (`aws-base` e `k8s-base`, este último quando o cluster já foi provisionado) se o lab do AWS Academy estiver acessível — senão pula (registrando o status no _Job Summary_ do run) e o job segue **verde**. No CI, um `plan` que roda e **falha bloqueia** o merge (um plan quebrado quebraria o `apply` no CD); só o caso de ambiente fora / token expirado é tolerado — aí o `plan` é pulado e o job segue verde. Ou seja: o job não falha por indisponibilidade do ambiente, mas falha por erro real de plan.
 
 ### 2) Workflow de CD (`cd.yml`)
 
-Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (provisionar+deployar sob demanda, ex.: lab novo). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são gated por `vars.ENABLE_APP_DEPLOY`.
+<p align="center"><img src="docs/diagrams/cd-workflow.png" alt="Diagrama do workflow de CD: DAG de 5 jobs — terraform-aws-base, depois terraform-k8s-base e build-push-image em paralelo, convergindo em db-migrate e por fim app-deploy — mais o painel de recursos provisionados na AWS e no Kubernetes" width="100%"></p>
 
-1. `terraform-aws-base` — `init` → `validate` → `plan` → `apply -auto-approve` em `infra/aws-base` (EKS, ECR, VPC…).
-2. `terraform-k8s-base` (depende de `aws-base`) — mesmo fluxo em `infra/k8s-base` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password`.
-3. `build-push-image` (depende de `aws-base`, pelo ECR) — login no ECR, build **único** da imagem e push com tag imutável (`github.sha`) + `latest`; exporta o `image_uri`.
-4. `db-migrate` (depende de `k8s-base` + `build-push-image`) — configura kubeconfig, **renderiza o manifesto versionado `k8s/00-db-migrate-job.yaml`** (substituindo o nome único por run e a imagem imutável via `sed`) e aplica o Kubernetes Job (TTL de 2 semanas para auditoria) que roda **`prisma migrate deploy` seguido de `prisma db seed`**: aplica apenas as migrations pendentes (não-destrutivo, nunca reseta) e reafirma os dados de referência de forma idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha.
-5. `app-deploy` (depende de `db-migrate` e `build-push-image`) — renderiza `k8s/01-api-secret.yaml` (secrets da aplicação) e `k8s/03-api-deployment.yaml` (imagem imutável), aplica os manifests (`Secret`, `ConfigMap`, `Deployment`, `Service`, `HPA`) e valida o rollout.
+Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (provisionar+deployar sob demanda, ex.: lab novo). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são gated por `vars.ENABLE_APP_DEPLOY`. A ordem é um **DAG por `needs:`** (não `workflow_run`): `aws-base` → (`k8s-base` ∥ `build-push-image`) → `db-migrate` → `app-deploy`.
+
+| # | Job | `needs:` | O que faz |
+|---|---|---|---|
+| 1 | `terraform-aws-base` | — | `init` → `validate` → `plan` → `apply -auto-approve` em `infra/aws-base` (EKS, ECR, VPC…) |
+| 2 | `terraform-k8s-base` | `aws-base` | mesmo fluxo em `infra/k8s-base` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password` |
+| 3 | `build-push-image` | `aws-base` (pelo ECR) | login no ECR, build **único** da imagem e push com tag imutável (`github.sha`) + `latest`; exporta o `image_uri` |
+| 4 | `db-migrate` | `k8s-base` + `build-push-image` | configura o kubeconfig, **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job (TTL de 2 semanas para auditoria): **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha |
+| 5 | `app-deploy` | `db-migrate` + `build-push-image` | renderiza `k8s/01-api-secret.yaml` (secrets da app) e `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests — `Secret` e `ConfigMap` da API, o **MailHog** (`Deployment` + `Service`, dependência de e-mail) e o `Deployment`/`Service`/`HPA` da API; valida o rollout |
 
 **Estados Terraform separados (obrigatório):** `aws-base` e `k8s-base` têm states distintos porque o provider Kubernetes do segundo é configurado a partir dos outputs do primeiro — criar o cluster e usá-lo no mesmo state seria um chicken-and-egg. Por isso são dois jobs sequenciais, e não há mais um `check_aws_base_state`: no fluxo unificado o `aws-base` é sempre aplicado antes, então os outputs já existem quando o `k8s-base` roda.
 
@@ -975,6 +987,18 @@ A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A mig
 O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert`, sem duplicar; para usuários, a senha só é definida na criação e não é sobrescrita), ele roda junto com a migração no job `db-migrate` (`migrate deploy` + `db seed`) a cada deploy. Assim os dados de referência (incluindo os usuários Admin) são reafirmados sem apagar nada, e um ambiente com armazenamento efêmero (`emptyDir`) se auto-recupera no próximo deploy — sem passo manual.
 
 ### 3) Workflow de SAST (`sast.yml`)
+
+<p align="center"><img src="docs/diagrams/sast-workflow.png" alt="Diagrama do workflow de SAST: job único sast, cujos steps (Checkout, Setup CI, Unit Tests com cobertura, SonarQube Scan) rodam em sequência e resultam no Quality Gate" width="100%"></p>
+
+> Este workflow tem **um único job (`sast`)**: no diagrama acima, cada caixa é um **step** (rodam em sequência no mesmo runner), não um job.
+
+| # | Step | O que faz |
+|---|---|---|
+| 1 | Checkout | `actions/checkout` com `fetch-depth: 0` (histórico completo, exigido pelo Sonar) |
+| 2 | Setup CI | composite `setup-ci`: Node 22 + cache npm, `npm ci`, `prisma generate` |
+| 3 | Unit tests with coverage | `npm run test:cov` — gera o `lcov.info` consumido pelo Sonar |
+| 4 | SonarQube Scan | `SonarSource/sonarqube-scan-action` (`projectBaseDir: app`, autenticado por `SONAR_TOKEN`) |
+| → | *resultado — Quality Gate* | com `sonar.qualitygate.wait=true` o run fica **vermelho** se o gate reprovar (não é um step) |
 
 Análise do SonarCloud num workflow dedicado. O plano do Sonar do projeto analisa apenas a **branch principal (`master`) e Pull Requests** — não branches de trabalho avulsas —, então o SAST **saiu do CI e do CD** e roda aqui:
 
@@ -987,6 +1011,22 @@ Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TO
 
 ### 4) Workflow de DAST (`dast.yml`)
 
+<p align="center"><img src="docs/diagrams/dast-workflow.png" alt="Diagrama do workflow de DAST: job único zap-scan com 8 steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()" width="100%"></p>
+
+> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama).
+
+| # | Step | O que faz |
+|---|---|---|
+| 1 | Checkout | `actions/checkout` |
+| 2 | Start the target stack | `docker compose -p dast up -d --build` — sobe a stack prod-like (Postgres + `migrate` + MailHog + API) |
+| 3 | Wait for the API to be ready | `curl /api/docs` em loop (até 60×, 5s cada); não há `/health` |
+| 4 | Perform authentication | `POST /api/auth/login` com um admin do seed → JWT; injetado como `Authorization: Bearer` no _replacer_ do ZAP |
+| 5 | Prepare the ZAP work directory | `mkdir zap-work`, copia `.zap/rules.tsv`, `chmod` |
+| 6 | Run OWASP ZAP API scan | `zap-api-scan.py -t /api/docs-json -f openapi` — **scan ativo**, na rede `dast_default`; gera relatório HTML + JSON |
+| 7 | Upload the ZAP report | `if: always()` — sobe o artifact `zap-report` (HTML + JSON) mesmo se o job falhar |
+| 8 | Tear down the stack | `if: always()` — `docker compose down -v` |
+| → | *resultado* | job fica **vermelho** se houver qualquer alerta ≠ `IGNORE` |
+
 Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicado — como o SAST, roda em paralelo ao CI/CD e não bloqueia nenhum deles. Diferente do SAST (separado por limitação do plano do Sonar), o DAST é separado por ter um **ciclo de gatilho próprio**:
 
 - **`pull_request` → `master`**: escaneia o candidato a merge — o gate natural do DAST.
@@ -996,7 +1036,7 @@ Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o 
 
 O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`), espera o app responder em `/api/docs` (não há `/health`; é o mesmo path do readinessProbe do k8s), faz login em `POST /api/auth/login` com um admin do seed e roda o `zap-api-scan.py` (`-f openapi`) contra a spec em `/api/docs-json`. Como quase toda rota está atrás do `JwtAuthGuard`, o token JWT é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`.
 
-O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`): alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, flags de cookie de sessão).
+O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`): alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, três flags de cookie de sessão) e o falso-positivo de XSS refletido em resposta JSON (`40014` — `Content-Type: application/json`, que o navegador nunca executa como HTML).
 
 O job **falha se o ZAP encontrar problemas** — qualquer alerta não marcado como `IGNORE` faz o `zap-api-scan.py` sair com código diferente de zero e o job fica **vermelho**, como acontece com o SAST. O relatório (HTML + JSON) **não se perde**: sobe como artifact do run mesmo quando o job falha (upload com `if: always()`). O `.zap/rules.tsv` é a alavanca de calibração — os primeiros runs provavelmente ficam vermelhos até você marcar os falsos-positivos como `IGNORE` (se falhar em todo WARN for agressivo demais, dá para usar `-I` e marcar como `FAIL` só as regras que devem bloquear). As credenciais do admin do seed vêm de **secrets do repositório** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`), nunca hardcoded, e são usadas só contra o banco descartável do job. O `zap-api-scan.py` roda por padrão um **scan ativo** afinado para APIs (importa a spec OpenAPI e exercita os endpoints) — como o alvo é sempre a stack efêmera do job, nunca um ambiente real, eventuais escritas são inofensivas.
 
