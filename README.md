@@ -289,6 +289,10 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./docs/adr)
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./docs/adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 
+### Modelo C4
+
+A arquitetura também é documentada com o [C4 model](https://c4model.com) (Contexto, Container e Componente) em [`docs/c4/`](./docs/c4), com os diagramas fonte em PlantUML e as imagens já renderizadas.
+
 ## Setup com Docker (recomendado)
 
 Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em containers. As migrations são executadas automaticamente e o banco é populado com o seed.

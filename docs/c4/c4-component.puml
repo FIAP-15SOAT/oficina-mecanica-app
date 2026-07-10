@@ -1,0 +1,78 @@
+@startuml c4-component
+!include lib/C4-PlantUML/C4_Component.puml
+
+!$LEGEND_TITLE_TEXT = "Legenda"
+UpdateElementStyle("component", $legendText="Componente")
+UpdateElementStyle("container", $legendText="Container")
+UpdateElementStyle("external_person", $legendText="Pessoa Externa")
+UpdateElementStyle("external_system", $legendText="Sistema Externo")
+UpdateElementStyle("external_container", $legendText="Container Externo")
+UpdateBoundaryStyle("container", $type="Container", $legendText="Limite do Container")
+
+SHOW_ELEMENT_TYPE($hidePersonType="false")
+SHOW_PERSON_OUTLINE()
+
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 60
+
+' Estiliza a forma nativa "component" do PlantUML (ícone UML de componente)
+' para herdar as mesmas cores/cantos arredondados usados pelo C4-PlantUML,
+' já que $baseShape="component" não herda o skinparam gerado por UpdateElementStyle.
+skinparam component {
+  BackgroundColor #85BBF0
+  FontColor #000000
+  BorderColor #78A8D8
+  RoundCorner 25
+}
+
+title Diagrama de Componente - API REST (Sistema da Oficina Mecânica)
+
+Person_Ext(cliente, "Cliente da Oficina", "Dono do veículo levado para manutenção na oficina")
+
+Container_Boundary(api, "API REST") {
+    Component(auth, "Auth", "NestJS Module", "Login, refresh de token e dados do usuário autenticado (JWT)", $baseShape="component")
+    Component(user, "Usuários", "NestJS Module", "CRUD de usuários e mecânicos (perfis ADMIN, MECHANIC, ATTENDANT)", $baseShape="component")
+    Component(customer, "Clientes", "NestJS Module", "CRUD de clientes (pessoa física/jurídica)", $baseShape="component")
+    Component(vehicle, "Veículos", "NestJS Module", "CRUD de veículos e listagem de veículos por cliente", $baseShape="component")
+    Component(service, "Serviços", "NestJS Module", "CRUD de tipos de serviço e métricas", $baseShape="component")
+    Component(partSupply, "Peças/Insumos", "NestJS Module", "CRUD de peças/insumos e ajuste manual de estoque", $baseShape="component")
+    Component(workOrder, "Ordens de Serviço", "NestJS Module", "Criação e gestão de ordens de serviço, status e histórico", $baseShape="component")
+    Component(quote, "Orçamentos", "NestJS Module", "Itens de orçamento, submissão, aprovação/rejeição por e-mail", $baseShape="component")
+    Component(stock, "Estoque", "NestJS Module", "Consulta de movimentações e reservas de estoque (somente leitura)", $baseShape="component")
+
+    Component(guards, "Guards / Segurança", "NestJS Guards", "JwtAuthGuard e RolesGuard - autenticação e autorização usadas pelos controllers HTTP de quase todos os módulos", $baseShape="component")
+    Component(repositories, "Repositories", "Prisma", "Camada de acesso a dados centralizada e global - todos os módulos de negócio persistem através dela", $baseShape="component")
+}
+
+ContainerDb_Ext(postgres, "Banco de Dados", "PostgreSQL", "Armazena todas as entidades de negócio do sistema (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários)")
+System_Ext(smtp, "Servidor SMTP", "Servidor de e-mail utilizado para o envio de notificações de orçamento ao cliente", $type="MailHog")
+
+Rel_U(cliente, quote, "Aprova ou rejeita o orçamento pelo link recebido", "HTTP/JSON - link assinado, sem login")
+
+Rel(auth, user, "Valida usuário autenticado")
+
+Rel(vehicle, customer, "Valida cliente do veículo")
+
+Rel(workOrder, customer, "Lê cliente ao criar OS")
+Rel(workOrder, vehicle, "Lê veículo ao criar OS")
+Rel(workOrder, user, "Valida mecânico responsável")
+Rel(workOrder, service, "Valida serviços do orçamento embutido")
+Rel(workOrder, partSupply, "Valida peças do orçamento embutido")
+Rel(workOrder, quote, "Cria e lista orçamentos da OS")
+Rel(workOrder, stock, "Baixa reserva e registra movimentação ao concluir serviço")
+
+Rel(quote, workOrder, "Lê e atualiza status da OS")
+Rel(quote, service, "Valida itens de serviço do orçamento")
+Rel(quote, partSupply, "Valida itens de peça do orçamento")
+Rel(quote, customer, "Busca e-mail do cliente para notificação")
+Rel(quote, stock, "Cria reservas de estoque ao aprovar orçamento")
+
+Rel(partSupply, stock, "Registra movimentação ao ajustar estoque manualmente")
+
+Rel_R(quote, smtp, "Envia e-mail com link de aprovação de orçamento", "SMTP")
+
+Rel_D(repositories, postgres, "Lê e escreve dados de negócio", "SQL via Prisma ORM")
+
+SHOW_LEGEND()
+@enduml

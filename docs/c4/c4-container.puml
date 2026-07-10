@@ -1,0 +1,38 @@
+@startuml c4-container
+!include lib/C4-PlantUML/C4_Container.puml
+
+!$LEGEND_TITLE_TEXT = "Legenda"
+UpdateElementStyle("person", $legendText="Pessoa")
+UpdateElementStyle("external_person", $legendText="Pessoa Externa")
+UpdateElementStyle("container", $legendText="Container")
+UpdateElementStyle("external_system", $legendText="Sistema Externo")
+UpdateBoundaryStyle("system", $type="Sistema de Software", $legendText="Limite do Sistema")
+
+SHOW_ELEMENT_TYPE($hidePersonType="false")
+SHOW_PERSON_OUTLINE()
+
+title Diagrama de Container - Sistema da Oficina Mecânica
+
+Person(admin, "Administrador", "Funcionário da oficina responsável pela configuração geral do sistema e por tarefas administrativas")
+Person(mecanico, "Mecânico", "Profissional da oficina responsável por executar os serviços nos veículos")
+Person(atendente, "Atendente", "Funcionário da oficina responsável pelo atendimento e relacionamento com os clientes")
+Person_Ext(cliente, "Cliente da Oficina", "Dono do veículo levado para manutenção na oficina")
+
+System_Boundary(oficina, "Sistema da Oficina Mecânica") {
+    Container(api, "API REST", "NestJS 11 / Node.js 22 / TypeScript", "Expõe a API REST (prefixo /api) para os atores, concentra toda a lógica de negócio em Clean Architecture, autenticação local via JWT e envio de e-mails de orçamento")
+    ContainerDb(postgres, "Banco de Dados", "PostgreSQL", "Armazena todas as entidades de negócio do sistema (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários)")
+}
+
+System_Ext(smtp, "Servidor SMTP", "Servidor de e-mail utilizado para o envio de notificações de orçamento ao cliente", $type="MailHog")
+
+Rel(admin, api, "Gerencia usuários, serviços, peças, clientes, veículos, ordens de serviço, orçamentos e estoque", "HTTP/JSON - REST autenticado via JWT Bearer")
+Rel(mecanico, api, "Executa e atualiza as ordens de serviço sob sua responsabilidade", "HTTP/JSON - REST autenticado via JWT Bearer")
+Rel(atendente, api, "Cadastra clientes e veículos, e cria e gerencia ordens de serviço e orçamentos", "HTTP/JSON - REST autenticado via JWT Bearer")
+Rel_U(cliente, api, "Aprova ou rejeita o orçamento pelo link recebido", "HTTP/JSON - link assinado, sem login")
+
+Rel_D(api, postgres, "Lê e escreve dados de negócio", "SQL via Prisma ORM")
+Rel_R(api, smtp, "Envia e-mail com link de aprovação de orçamento", "SMTP")
+Rel_U(smtp, cliente, "Entrega o e-mail com o link de decisão do orçamento", "E-mail")
+
+SHOW_LEGEND()
+@enduml
