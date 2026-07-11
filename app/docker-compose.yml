@@ -21,6 +21,10 @@ services:
 
   migrate:
     image: techchallenge-api:local
+    build: &api-build
+      context: .
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallenge?schema=public
     container_name: techchallenge-migrate
     command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
     environment:
@@ -33,10 +37,7 @@ services:
 
   api:
     image: techchallenge-api:local
-    build:
-      context: .
-      args:
-        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/techchallenge?schema=public
+    build: *api-build
     container_name: techchallenge-api
     restart: unless-stopped
     ports:
