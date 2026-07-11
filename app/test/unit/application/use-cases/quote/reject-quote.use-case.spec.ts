@@ -29,6 +29,7 @@ describe('RejectQuoteUseCase', () => {
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.quote.findByWorkOrderId as jest.Mock).mockResolvedValue([quote]);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
@@ -59,6 +60,7 @@ describe('RejectQuoteUseCase', () => {
 
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.quote.findByWorkOrderId as jest.Mock).mockResolvedValue([quote]);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
     (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
 
@@ -83,5 +85,26 @@ describe('RejectQuoteUseCase', () => {
     (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
+  });
+
+  it('should keep the work order in AWAITING_APPROVAL when another quote is still SENT', async () => {
+    const quote = createMockQuote({ status: QuoteStatus.SENT });
+    const otherSentQuote = createMockQuote({ status: QuoteStatus.SENT });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.AWAITING_APPROVAL,
+    });
+
+    (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.quote.findByWorkOrderId as jest.Mock).mockResolvedValue([quote, otherSentQuote]);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+
+    const result = await useCase.execute(quote.id);
+
+    expect(mockRepos.quote.update).toHaveBeenCalled();
+    expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
+    expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
+    expect(result.status).toBe(QuoteStatus.REJECTED);
   });
 });

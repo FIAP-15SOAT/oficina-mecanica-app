@@ -805,7 +805,7 @@ describe('Quote (E2E)', () => {
       expect(woAfterResubmit.body.data.status).toBe('AWAITING_APPROVAL');
     });
 
-    it('should not transition the work order when submitting a second quote (already AWAITING_APPROVAL)', async () => {
+    it('should submit a second competing quote while AWAITING_APPROVAL without transitioning the work order', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
 
       // First quote → submit → work order transitions to AWAITING_APPROVAL.
@@ -827,9 +827,8 @@ describe('Quote (E2E)', () => {
         .send({})
         .expect(200);
 
-      // A second quote can be created while the work order is AWAITING_APPROVAL.
-      // Submitting it exercises the branch where the work order status is NEITHER
-      // IN_DIAGNOSIS nor REJECTED, so no status transition is applied.
+      // A second (competing) quote can be created AND submitted while the work
+      // order is AWAITING_APPROVAL — the work order status is left unchanged.
       const secondService = await createService();
       const secondQuoteRes = await request(httpServer)
         .post('/api/quotes')
@@ -855,6 +854,182 @@ describe('Quote (E2E)', () => {
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
       expect(wo.body.data.status).toBe('AWAITING_APPROVAL');
+    });
+
+    it('should keep the work order awaiting approval when one competing quote is rejected, then let the other be approved', async () => {
+      const { workOrderId } = await createWorkOrderInDiagnosis();
+
+      // Two competing quotes, both submitted → both SENT, work order AWAITING_APPROVAL.
+      const serviceA = await createService();
+
+      const quoteARes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      const quoteAId = quoteARes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteAId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: serviceA.id, quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteAId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      const serviceB = await createService();
+
+      const quoteBRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId })
+        .expect(201);
+
+      const quoteBId = quoteBRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteBId}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: serviceB.id, quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteBId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      // Reject quote A → work order must stay AWAITING_APPROVAL because B is still out.
+      await request(httpServer)
+        .patch(`/api/quotes/${quoteAId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Cliente preferiu a outra proposta' })
+        .expect(200);
+
+      const woAfterReject = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woAfterReject.body.data.status).toBe('AWAITING_APPROVAL');
+
+      // Approving B now succeeds (previously this 409'd because the sibling's
+      // rejection had already moved the work order to REJECTED).
+      const approveRes = await request(httpServer)
+        .patch(`/api/quotes/${quoteBId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      expect(approveRes.body.data.status).toBe('APPROVED');
+
+      const woAfterApprove = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woAfterApprove.body.data.status).toBe('APPROVED');
+    });
+  });
+
+  describe('POST /api/quotes/:id/submissions — requires work order diagnosis', () => {
+    async function createReceivedWorkOrderWithQuote() {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      const service = await createService();
+
+      const woRes = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          problemDescription: 'Revisão',
+          services: [{ serviceId: service.id, quantity: 1 }],
+        })
+        .expect(201);
+
+      const workOrderId = woRes.body.data.id as string;
+      expect(woRes.body.data.status).toBe('RECEIVED');
+
+      const quotesRes = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}/quotes`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const quote = quotesRes.body.data[0] as { id: string; status: string };
+      expect(quote.status).toBe('PENDING');
+
+      return { workOrderId, quoteId: quote.id };
+    }
+
+    it('should return 409 when submitting a quote whose work order is still RECEIVED', async () => {
+      const { workOrderId, quoteId } = await createReceivedWorkOrderWithQuote();
+
+      await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(409);
+
+      const quoteRes = await request(httpServer)
+        .get(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(quoteRes.body.data.status).toBe('PENDING');
+
+      const woRes = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woRes.body.data.status).toBe('RECEIVED');
+    });
+
+    it('should submit and then approve after the work order is moved to IN_DIAGNOSIS', async () => {
+      const { workOrderId, quoteId } = await createReceivedWorkOrderWithQuote();
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const submitRes = await request(httpServer)
+        .post(`/api/quotes/${quoteId}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      expect(submitRes.body.data.status).toBe('SENT');
+
+      const woAfterSubmit = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woAfterSubmit.body.data.status).toBe('AWAITING_APPROVAL');
+
+      const approveRes = await request(httpServer)
+        .patch(`/api/quotes/${quoteId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'APPROVED' })
+        .expect(200);
+
+      expect(approveRes.body.data.status).toBe('APPROVED');
+
+      const woAfterApprove = await request(httpServer)
+        .get(`/api/work-orders/${workOrderId}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(woAfterApprove.body.data.status).toBe('APPROVED');
     });
   });
 

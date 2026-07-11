@@ -256,6 +256,20 @@ export class WorkOrder {
     }
   }
 
+  ensureCanSubmitQuote(): void {
+    const allowedStatuses = [
+      WorkOrderStatus.IN_DIAGNOSIS,
+      WorkOrderStatus.AWAITING_APPROVAL,
+      WorkOrderStatus.REJECTED,
+    ];
+
+    if (!allowedStatuses.includes(this.status)) {
+      throw new BusinessRuleViolationException(
+        `Orçamento só pode ser enviado após o diagnóstico da Ordem de Serviço. Status atual: "${this.status}".`,
+      );
+    }
+  }
+
   update(props: UpdateWorkOrderProps): void {
     if (this.status !== WorkOrderStatus.RECEIVED && this.status !== WorkOrderStatus.IN_DIAGNOSIS) {
       throw new BusinessRuleViolationException(

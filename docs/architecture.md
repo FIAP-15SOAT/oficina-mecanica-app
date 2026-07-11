@@ -196,8 +196,8 @@ Casos de uso transacionais incluem:
 - **Atualização de status de OS** (`PATCH /work-orders/:id`) — atualiza OS + registra histórico.
 - **Atualização de status de serviço da OS** — atualiza item, eventualmente promove OS para `IN_PROGRESS` / `COMPLETED`, consome reservas e gera `StockMovement` de saída quando aplicável, registra histórico.
 - **Aprovação de orçamento** — aprova orçamento, reserva estoque, materializa itens na OS, transiciona OS para `APPROVED`, rejeita demais orçamentos pendentes da mesma OS e registra histórico.
-- **Rejeição de orçamento** — rejeita orçamento, transiciona OS para `REJECTED` e registra histórico.
-- **Envio de orçamento** — transiciona orçamento para `SENT`, eventualmente avança OS para `AWAITING_APPROVAL` e registra histórico, dispara e-mail com tokens assinados.
+- **Rejeição de orçamento** — rejeita o orçamento; transiciona a OS para `REJECTED` **apenas se não houver outro orçamento ainda em `SENT`** para a mesma OS (propostas concorrentes) e registra histórico — caso contrário a OS permanece `AWAITING_APPROVAL`.
+- **Envio de orçamento** — exige que a OS já tenha sido diagnosticada (nunca `RECEIVED`; aceita `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED`); transiciona o orçamento para `SENT` e avança a OS para `AWAITING_APPROVAL` quando ela ainda está em `IN_DIAGNOSIS`/`REJECTED` (se já estiver `AWAITING_APPROVAL`, permanece — orçamentos concorrentes), registra histórico e dispara e-mail com tokens assinados.
 - **Movimentação manual de estoque** — atualiza `PartSupply` + cria `StockMovement` (com `workOrderId` opcional).
 - **Manipulação de itens do orçamento** — adicionar/atualizar/remover serviço ou peça/insumo recalcula totais e persiste o agregado dentro da transação.
 
@@ -233,11 +233,13 @@ Transições permitidas no agregado `Quote`:
 
 | De | Transição | Gatilho |
 |---|---|---|
-| `PENDING` | `SENT` | `submit()` (envio para o cliente — exige ao menos **um serviço**; peças sem serviço não são suficientes) |
+| `PENDING` | `SENT` | `submit()` (envio para o cliente — exige ao menos **um serviço**, peças sem serviço não são suficientes; e a OS deve já ter sido diagnosticada — `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED`, nunca `RECEIVED`, validado por `WorkOrder.ensureCanSubmitQuote()`) |
 | `SENT` | `APPROVED` | `approve()` (manual via PATCH ou link de e-mail) |
 | `SENT` | `REJECTED` | `reject()` (manual ou via link; `reason` opcional no PATCH) |
 
-Itens (serviços e peças/insumos) só podem ser adicionados, atualizados ou removidos enquanto o orçamento estiver `PENDING`. A OS deve estar em `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED` para que um novo orçamento possa ser criado via `POST /quotes`. Exceção: `POST /work-orders` pode criar um orçamento diretamente para uma OS recém-criada (`RECEIVED`) ao receber itens inline — sem passar pelo gate de status, pois a validade é garantida pelo próprio fluxo de criação.
+Itens (serviços e peças/insumos) só podem ser adicionados, atualizados ou removidos enquanto o orçamento estiver `PENDING`. A OS deve estar em `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED` para que um novo orçamento possa ser criado via `POST /quotes`. Exceção: `POST /work-orders` pode criar um orçamento diretamente para uma OS recém-criada (`RECEIVED`) ao receber itens inline — sem passar pelo gate de status, pois a validade é garantida pelo próprio fluxo de criação. Esse orçamento, porém, só pode ser **enviado** (`POST /quotes/:id/submissions`) depois que a OS passar pelo diagnóstico — tentar enviar com a OS ainda em `RECEIVED` retorna **HTTP 409**.
+
+Podem coexistir vários orçamentos `SENT` para a mesma OS (propostas concorrentes — ex.: uma completa e uma econômica). **Aprovar** um materializa seus itens, leva a OS a `APPROVED` e rejeita automaticamente os demais (`rejectPendingByWorkOrderId`, que cobre `PENDING` e `SENT`); **rejeitar** um mantém a OS em `AWAITING_APPROVAL` enquanto houver outro `SENT`, levando a OS a `REJECTED` apenas quando o último `SENT` é recusado.
 
 ## Estoque, reservas e movimentações
 
@@ -253,7 +255,7 @@ Fluxo automático no ciclo de vida da OS:
 
 Ao chamar `POST /quotes/:id/submissions`:
 
-1. O agregado `Quote` transiciona para `SENT`. A OS, se ainda em `IN_DIAGNOSIS` ou `REJECTED`, avança para `AWAITING_APPROVAL` (com histórico de status registrado).
+1. A OS precisa já ter sido diagnosticada — `WorkOrder.ensureCanSubmitQuote()` exige que ela **não** esteja em `RECEIVED` (aceita `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED`; caso contrário, **HTTP 409**). O agregado `Quote` transiciona para `SENT`; a OS avança para `AWAITING_APPROVAL` quando estava em `IN_DIAGNOSIS`/`REJECTED` (se já estava `AWAITING_APPROVAL` — orçamento concorrente — permanece), com histórico registrado.
 2. Dois tokens JWT independentes (assinados com `QUOTE_DECISION_TOKEN_SECRET` e expiração de 7 dias) são gerados — um para `APPROVE` e outro para `REJECT`. O payload contém `{ quoteId, action, type: QUOTE_EMAIL_DECISION }`.
 3. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) com dois links absolutos: `GET /quotes/:id/decisions?token=...`. A base URL é configurada por `QUOTE_DECISION_BASE_URL` (default: `http://localhost:${PORT}/api`).
 4. O endpoint público `GET /quotes/:id/decisions` (decorator `@Public()`) verifica o token, valida `quoteId` + `action` + `type` (do payload do JWT) e delega para `ApproveQuoteUseCase` ou `RejectQuoteUseCase`. Tokens inválidos ou para outro `quoteId` retornam **HTTP 401**.
