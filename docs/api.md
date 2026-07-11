@@ -134,11 +134,11 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | POST | `/:id/parts-supplies` | Adicionar peça/insumo ao orçamento — body `{ partSupplyId, quantity }` | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id/parts-supplies/:partSupplyId` | Atualizar quantidade de peça/insumo | ADMIN, MECHANIC, ATTENDANT |
 | DELETE | `/:id/parts-supplies/:partSupplyId` | Remover peça/insumo do orçamento | ADMIN, MECHANIC, ATTENDANT |
-| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail com links assinados) | ADMIN, MECHANIC, ATTENDANT |
+| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail com links assinados). Exige a OS já diagnosticada (nunca `RECEIVED` → 409); permite orçamentos concorrentes (vários `SENT` na mesma OS). | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id` | Aprovar (`status=APPROVED`) ou rejeitar (`status=REJECTED` + `reason`) manualmente | ADMIN, ATTENDANT |
 | GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?token=...` (a ação é derivada do payload do token) | Público |
 
-> Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais orçamentos pendentes da mesma OS. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
+> Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais orçamentos pendentes/enviados da mesma OS (propostas concorrentes). A rejeição só leva a OS a `REJECTED` quando não há outro orçamento `SENT`; havendo, a OS permanece `AWAITING_APPROVAL`. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
 
 ---
 

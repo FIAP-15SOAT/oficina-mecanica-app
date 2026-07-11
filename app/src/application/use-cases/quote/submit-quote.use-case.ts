@@ -39,9 +39,12 @@ export class SubmitQuoteUseCase {
         throw new ResourceNotFoundException('Orçamento', quoteId);
       }
 
+      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+
+      workOrder.ensureCanSubmitQuote();
+
       quote.submit();
 
-      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
       const customer = (await repos.customer.findById(workOrder.customerId))!;
 
       const [updatedQuote] = await Promise.all([
@@ -59,23 +62,25 @@ export class SubmitQuoteUseCase {
 
   private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder): Promise<void> {
     if (
-      workOrder.status === WorkOrderStatus.IN_DIAGNOSIS ||
-      workOrder.status === WorkOrderStatus.REJECTED
+      workOrder.status !== WorkOrderStatus.IN_DIAGNOSIS &&
+      workOrder.status !== WorkOrderStatus.REJECTED
     ) {
-      const previousStatus = workOrder.status;
-      workOrder.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
-
-      await Promise.all([
-        repos.workOrder.update(workOrder),
-        repos.statusHistory.create(
-          StatusHistory.create({
-            workOrderId: workOrder.id,
-            previousStatus,
-            newStatus: WorkOrderStatus.AWAITING_APPROVAL,
-          }),
-        ),
-      ]);
+      return;
     }
+
+    const previousStatus = workOrder.status;
+    workOrder.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
+
+    await Promise.all([
+      repos.workOrder.update(workOrder),
+      repos.statusHistory.create(
+        StatusHistory.create({
+          workOrderId: workOrder.id,
+          previousStatus,
+          newStatus: WorkOrderStatus.AWAITING_APPROVAL,
+        }),
+      ),
+    ]);
   }
 
   private async sendEmailNotification(

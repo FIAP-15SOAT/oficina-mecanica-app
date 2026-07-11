@@ -69,7 +69,50 @@ describe('SubmitQuoteUseCase', () => {
     expect(result).toBe(savedQuote);
   });
 
-  it('should submit quote without changing WO status when already AWAITING_APPROVAL', async () => {
+  it('should submit quote and change work order status to AWAITING_APPROVAL when REJECTED', async () => {
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.REJECTED,
+    });
+    const customer = createMockCustomer({ id: workOrder.customerId });
+    const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
+
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
+    (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+
+    const result = await useCase.execute(quote.id);
+
+    expect(mockRepos.workOrder.update).toHaveBeenCalled();
+    expect(mockRepos.statusHistory.create).toHaveBeenCalled();
+    expect(result).toBe(savedQuote);
+  });
+
+  it('should reject submitting when work order is still RECEIVED (not diagnosed)', async () => {
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.RECEIVED,
+    });
+
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+
+    await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.quote.update).not.toHaveBeenCalled();
+    expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
+    expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
+    expect(mockEmailSender.send).not.toHaveBeenCalled();
+  });
+
+  it('should submit a competing quote without transitioning the work order when already AWAITING_APPROVAL', async () => {
     const service = createMockQuoteService();
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
@@ -84,9 +127,13 @@ describe('SubmitQuoteUseCase', () => {
     (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
 
-    await useCase.execute(quote.id);
+    const result = await useCase.execute(quote.id);
 
+    expect(mockRepos.quote.update).toHaveBeenCalled();
+    expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
     expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
+    expect(mockEmailSender.send).toHaveBeenCalled();
+    expect(result).toBe(savedQuote);
   });
 
   it('should throw ResourceNotFoundException when quote not found', async () => {
@@ -97,15 +144,27 @@ describe('SubmitQuoteUseCase', () => {
 
   it('should throw BusinessRuleViolationException when quote is not PENDING', async () => {
     const quote = createMockQuote({ status: QuoteStatus.SENT });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.IN_DIAGNOSIS,
+    });
+
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
   it('should throw BusinessRuleViolationException when quote has no services or parts', async () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.IN_DIAGNOSIS,
+    });
+
     // services and partsSupplies not set → treated as empty
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
@@ -115,7 +174,7 @@ describe('SubmitQuoteUseCase', () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
-      status: WorkOrderStatus.AWAITING_APPROVAL,
+      status: WorkOrderStatus.IN_DIAGNOSIS,
     });
     const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
@@ -138,7 +197,7 @@ describe('SubmitQuoteUseCase', () => {
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
-      status: WorkOrderStatus.AWAITING_APPROVAL,
+      status: WorkOrderStatus.IN_DIAGNOSIS,
     });
     const customer = createMockCustomer({ email: Email.create('test@example.com') });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
