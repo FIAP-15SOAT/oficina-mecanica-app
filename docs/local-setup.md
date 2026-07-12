@@ -52,6 +52,8 @@ Após a inicialização:
 - **Swagger:** `http://localhost:3000/api/docs`
 - **MailHog (interface web):** `http://localhost:8025`
 
+Para executar chamadas à API, use o Swagger em `/api/docs` ou importe a collection e o environment do Postman (`collections/oficina-collection.json` e `collections/oficina-environment.json`) — o passo a passo está em [Testes › Postman / Newman](testing.md#postman--newman).
+
 ## Variáveis de Ambiente
 
 Veja `.env.example` para todas as variáveis disponíveis.

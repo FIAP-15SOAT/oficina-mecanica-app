@@ -81,7 +81,7 @@ docker compose down
 
 > O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e roda `prisma migrate deploy && prisma db seed && node dist/src/main` no `CMD` final.
 
-> **Para testar:** faça login em `POST /api/auth/login` com um admin do seed. Veja todos os usuários em [Como executar localmente › Seed](docs/local-setup.md#seed).
+> **Para testar:** faça login em `POST /api/auth/login` com um admin do seed (veja todos os usuários em [Como executar localmente › Seed](docs/local-setup.md#seed)). Para explorar os endpoints, use o **Swagger** em `/api/docs` ou importe a **collection do Postman** (`collections/oficina-collection.json` + `collections/oficina-environment.json`) — passo a passo em [Testes › Postman / Newman](docs/testing.md#postman--newman).
 
 ## ⚙️ Comandos
 
