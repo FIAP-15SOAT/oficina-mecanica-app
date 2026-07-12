@@ -2,12 +2,19 @@
 
 Divisão de responsabilidade: base e dados via Terraform (`infra/k8s-base`); aplicação via manifests em `k8s/`.
 
+> 🧭 Para a **visão de sistema** (inventário, topologia, fluxo em tempo de execução, segurança e limitações), comece pela [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de manifesto**: como cada workload é configurado e por quê. A definição HCL do PostgreSQL e do metrics-server (que são provisionados pelo Terraform) está em [terraform.md](terraform.md).
+
 ## Índice
 
 - [Motivo da divisão](#motivo-da-divisão)
 - [Ownership de recursos](#ownership-de-recursos)
+- [Convenções: labels e wiring de configuração](#convenções-labels-e-wiring-de-configuração)
+- [Recursos: CPU e memória (requests e limits)](#recursos-cpu-e-memória-requests-e-limits)
 - [Armazenamento do PostgreSQL: emptyDir vs EBS CSI](#armazenamento-do-postgresql-ausência-do-ebs-csi-driver-e-uso-de-emptydir)
+- [PostgreSQL no cluster (StatefulSet)](#postgresql-no-cluster-statefulset)
 - [Manifestos da aplicação](#manifestos-da-aplicação)
+- [Job de migração do banco](#job-de-migração-do-banco)
+- [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
 - [Acesso à aplicação](#acesso-à-aplicação-em-kubernetes)
 - [Health probes](#health-probes-readinessprobe-e-livenessprobe)
 - [Deploy manual](#deploy-em-kubernetes-manual)
@@ -39,6 +46,32 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | API Service (`04-api-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
 | MailHog Service (`04-mailhog-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` (SMTP `1025` / Web UI `8025`) |
 | API HPA (`05-api-hpa.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
+
+## Convenções: labels e wiring de configuração
+
+**Labels.** Todos os recursos carregam as labels recomendadas do Kubernetes, o que permite selecioná-los e agrupá-los de forma consistente:
+
+- `app.kubernetes.io/name` — identifica o componente (`oficina-api`, `postgres`, `mailhog`, `db-migrate-job`).
+- `app.kubernetes.io/part-of` — sempre `oficina-mecanica` (a solução como um todo).
+- `managed-by: terraform` — presente apenas nos recursos provisionados pelo Terraform (`k8s-base`), distinguindo-os dos manifests aplicados pelo CD.
+
+**Wiring de configuração.** A configuração da API é injetada como variáveis de ambiente a partir de duas fontes, separando o sensível do não-sensível:
+
+- `configMapKeyRef` → `api-config` (`ConfigMap`, **não sensível**): `NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`.
+- `secretKeyRef` → `api-secret` (`Secret`, **sensível**): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `QUOTE_DECISION_TOKEN_SECRET`.
+
+O Deployment referencia cada chave individualmente (`valueFrom`), o que torna explícito no manifesto de onde vem cada env — em vez de um `envFrom` opaco.
+
+## Recursos: CPU e memória (requests e limits)
+
+Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto antes de throttling/OOM-kill):
+
+| Workload | Requests (CPU / memória) | Limits (CPU / memória) | Fonte |
+|---|---|---|---|
+| API (`oficina-api`) | `200m` / `256Mi` | `500m` / `512Mi` | `k8s/03-api-deployment.yaml` |
+| PostgreSQL | `100m` / `256Mi` | `500m` / `512Mi` | `infra/k8s-base/k8s_postgres.tf` |
+| MailHog | `50m` / `64Mi` | `200m` / `256Mi` | `k8s/03-mailhog-deployment.yaml` |
+| Job `db-migrate` | — (não define) | — (não define) | `k8s/00-db-migrate-job.yaml` |
 
 ## Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`
 
@@ -121,18 +154,60 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 2. **`AmazonEBSCSIDriverPolicy` no node role**: solução mais simples, porém concede permissões de EBS a todos os processos rodando nos nodes — menos seguro que IRSA.
 3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. Não foi aplicado neste projeto devido ao budget limitado do laboratório (créditos AWS Academy de US$ 50), insuficiente para cobrir o custo de uma instância RDS durante o período de desenvolvimento e avaliação.
 
+## PostgreSQL no cluster (StatefulSet)
+
+Embora seja **provisionado pelo Terraform** (`infra/k8s-base/k8s_postgres.tf`), o banco roda como um workload Kubernetes; seus mecanismos de runtime são documentados aqui:
+
+- **Imagem** `postgres:16-alpine`, **1 réplica**, `imagePullPolicy: IfNotPresent`.
+- **Configuração** via `envFrom` → `secret_ref` do `postgres-secret` (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`) — as credenciais entram no container inteiras, sem hardcode no manifesto.
+- **Recursos**: requests `100m`/`256Mi`, limits `500m`/`512Mi` (ver [tabela de recursos](#recursos-cpu-e-memória-requests-e-limits)).
+- **Armazenamento** `emptyDir` montado em `/var/lib/postgresql/data` — efêmero, pelos motivos da seção anterior.
+- **Probes `pg_isready`** (exec): tanto a readiness quanto a liveness rodam `pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"` — uma verificação real de que o servidor Postgres aceita conexões, mais precisa que um simples TCP check. Ambas usam `periodSeconds: 10`, `timeoutSeconds: 5`, `failureThreshold: 6`; a liveness espera mais para começar (`initialDelaySeconds: 30` vs `10` da readiness), pela mesma lógica de "não reiniciar um banco que ainda está inicializando".
+- **DNS estável**: o `Service` ClusterIP publica `postgres.oficina.svc.cluster.local:5432`, que é o host usado na `DATABASE_URL` da API e do Job de migração.
+
 ## Manifestos da aplicação
 
 Arquivos em `k8s/`:
 
-- `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`
+- `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`. Detalhes em [Job de migração do banco](#job-de-migração-do-banco)
 - `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT` e `TZ`)
-- `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), consumo de Secret/ConfigMap e probes de saúde
+- `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
 - `04-api-service.yaml`: Service `ClusterIP` da API
 - `04-mailhog-service.yaml`: Service `ClusterIP` do MailHog, expondo as portas SMTP (`1025`) e Web UI (`8025`) para acesso interno ao cluster
-- `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2)
+- `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2) — ver [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
+
+## Job de migração do banco
+
+O `00-db-migrate-job.yaml` é um `Job` do Kubernetes executado **uma vez por deploy**, antes do rollout da API, para deixar o schema em dia. Características relevantes:
+
+- **`backoffLimit: 0` + `restartPolicy: Never`** — falha rápido, sem retentativas silenciosas: se a migração falhar, o Job falha imediatamente e o pipeline para (em vez de mascarar o erro com reinícios).
+- **`ttlSecondsAfterFinished: 1209600`** — o Job é coletado automaticamente **14 dias** após terminar, evitando acúmulo de Jobs concluídos no namespace (cada run cria um Job com nome renderizado, via `JOB_NAME_PLACEHOLDER`).
+- **Construção da `DATABASE_URL` em runtime** — o container recebe `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` via `secretKeyRef` do `postgres-secret` e monta a URL inline antes de rodar:
+
+  ```sh
+  export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres.oficina.svc.cluster.local:5432/$POSTGRES_DB?schema=public"
+  npx prisma migrate deploy
+  npx prisma db seed
+  ```
+
+- **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente — juntos garantem que, mesmo após a perda do `emptyDir`, o banco volta ao estado de referência esperado.
+
+## Autoscaling da API (HPA)
+
+O `05-api-hpa.yaml` (HPA `autoscaling/v2`) escala o Deployment `oficina-api` com base em **duas métricas de recurso**:
+
+| Campo | Valor |
+|---|---|
+| `scaleTargetRef` | `Deployment/oficina-api` |
+| `minReplicas` / `maxReplicas` | `1` / `5` |
+| CPU (`Resource`, `averageUtilization`) | `70` |
+| Memória (`Resource`, `averageUtilization`) | `80` |
+
+`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado no `k8s-base`); sem ele, o HPA não teria dados para decidir.
+
+O HPA escala apenas os **pods da API** (`1→5`); a escala do _cluster_ (nodes) está fora do escopo — o node group é mantido fixo em 1 por decisão, como registrado em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
 
 ## Acesso à aplicação em Kubernetes
 
@@ -166,6 +241,16 @@ A interface ficará disponível em:
 - MailHog: `http://localhost:8025`
 
 ## Health probes (readinessProbe e livenessProbe)
+
+Cada workload usa o **mecanismo de probe mais adequado ao que expõe**:
+
+| Workload | Mecanismo | Alvo |
+|---|---|---|
+| API (`oficina-api`) | HTTP `GET` | `/api/docs` (porta 3000) |
+| MailHog | TCP socket | porta `1025` (SMTP) |
+| PostgreSQL | `exec` | `pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"` |
+
+O MailHog não tem um endpoint HTTP de health dedicado, então um **TCP check** na porta SMTP (`1025`) é suficiente para saber que o processo está de pé; o PostgreSQL usa **`pg_isready`** por ser uma checagem semântica de "o banco aceita conexões" (ver [PostgreSQL no cluster](#postgresql-no-cluster-statefulset)). A API expõe HTTP, então usa uma probe HTTP.
 
 O Deployment da API configura duas probes HTTP GET em `/api/docs` (porta 3000):
 
