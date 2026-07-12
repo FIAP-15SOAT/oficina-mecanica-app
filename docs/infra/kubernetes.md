@@ -73,8 +73,6 @@ Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto 
 | MailHog | `50m` / `64Mi` | `200m` / `256Mi` | `k8s/03-mailhog-deployment.yaml` |
 | Job `db-migrate` | — (não define) | — (não define) | `k8s/00-db-migrate-job.yaml` |
 
-> Esta tabela é a **aritmética por trás** do teto de autoscaling descrito em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria): somadas as _requests_ da API (`200m`/`256Mi` por réplica), do PostgreSQL, do MailHog, do metrics-server e dos DaemonSets do sistema, um único node `t3.small` (2 vCPU / 2 GiB) não comporta as 5 réplicas que o HPA permitiria — réplicas adicionais ficariam `Pending` bem antes do teto. O HPA demonstra o padrão; o node único o limita.
-
 ## Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`
 
 ### O que foi tentado
@@ -207,9 +205,9 @@ O `05-api-hpa.yaml` (HPA `autoscaling/v2`) escala o Deployment `oficina-api` com
 | CPU (`Resource`, `averageUtilization`) | `70` |
 | Memória (`Resource`, `averageUtilization`) | `80` |
 
-`averageUtilization` é medido como **percentual da `request`** do pod, não da capacidade do node — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado no `k8s-base`); sem ele, o HPA não teria dados para decidir.
+`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado no `k8s-base`); sem ele, o HPA não teria dados para decidir.
 
-> O `maxReplicas: 5` é o teto lógico, não o efetivo — com um único node `t3.small` e sem Cluster Autoscaler, a capacidade do node limita as réplicas antes de 5. Ver [Recursos: CPU e memória](#recursos-cpu-e-memória-requests-e-limits) e [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
+O HPA escala apenas os **pods da API** (`1→5`); a escala do _cluster_ (nodes) está fora do escopo — o node group é mantido fixo em 1 por decisão, como registrado em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
 
 ## Acesso à aplicação em Kubernetes
 
