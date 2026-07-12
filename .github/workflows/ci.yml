@@ -147,11 +147,17 @@ jobs:
         env:
           TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
         run: |
-          if terraform -chdir=../aws-base output -raw cluster_name >/dev/null 2>&1; then
+          cluster_name="$(terraform -chdir=../aws-base output -raw cluster_name 2>/dev/null || true)"
+          if [ -n "$cluster_name" ]; then
             terraform init -reconfigure -no-color
             terraform plan -no-color
           else
-            echo "aws-base has no outputs yet (never applied) — skipping k8s-base plan."
+            echo "aws-base not applied (cluster_name output absent) — skipping k8s-base plan."
+            {
+              echo '### Terraform plan (k8s-base) — skipped ⏭️'
+              echo ''
+              echo 'The `aws-base` stack is not applied (its remote state exposes no `cluster_name` output), so the `k8s-base` plan cannot resolve its providers and was skipped. **This does not block CI** — `fmt` and `validate` passed, and the `aws-base` plan ran. The preview returns automatically once `aws-base` is applied.'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Note skipped plan in job summary
         if: steps.aws_creds.outcome == 'failure'
