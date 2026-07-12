@@ -123,6 +123,7 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 | 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
 | 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
 | 🔒 [Segurança](docs/security.md) | Mitigações no código e relatórios (ZAP, SonarQube) |
+| 🏗️ [Infra · Visão Geral](docs/infra/overview.md) | Arquitetura da infra como sistema: componentes, ownership, fluxos e trade-offs |
 | 🌍 [Infra · Terraform](docs/infra/terraform.md) | Infraestrutura AWS e Kubernetes (IaC) |
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests, storage, probes, deploy |
 | 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
