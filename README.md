@@ -14,14 +14,58 @@
 
 ## 📋 Sobre
 
-API REST para gestão de oficinas mecânicas, construída com **NestJS** e **Clean Architecture + DDD**.
+Projeto acadêmico da pós-graduação em Arquitetura de Software da FIAP (turma 15SOAT), **evoluído ao longo de 5 fases**. Cada fase parte de um novo cenário de negócio e adiciona uma camada de maturidade, do MVP de domínio à infraestrutura escalável.
 
-- **Ordens de serviço** com máquina de estados validada no domínio (`RECEIVED` → … → `DELIVERED`)
+Trata-se de uma API REST para gestão de oficinas mecânicas, construída com **NestJS** e **Clean Architecture + DDD**.
+Substitui o controle manual (anotações e planilhas) de uma oficina de médio porte por um **Sistema Integrado de Atendimento e Execução de Serviços** — do recebimento do veículo à entrega, com orçamento, aprovação do cliente, execução e baixa de estoque orquestrados pelo domínio, contemplando:
+
+- **Ordens de serviço** com máquina de estados validada no domínio
 - **Orçamentos** com aprovação/rejeição do cliente por **link assinado enviado por e-mail**
-- **Estoque** com reserva automática na aprovação e baixa (`StockMovement`) no início do serviço
+- **Estoque** com reserva automática na aprovação e baixa no início do serviço
 - **Autorização por papéis (RBAC)**: `ADMIN`, `MECHANIC`, `ATTENDANT`
 - **Autenticação JWT** (access + refresh) com bcrypt
 - **Concorrência otimista** (lock por `version`) em agregados sensíveis
+
+<details>
+<summary><strong>Fase 1 — MVP: Gestão de Ordens de Serviço com DDD</strong></summary>
+
+**Problema:** Uma oficina de médio porte conduzia o atendimento, o diagnóstico, a execução e a entrega dos veículos de forma desorganizada, apoiada em anotações manuais e planilhas — o que gerava erros na priorização dos atendimentos, falhas no controle de peças e insumos, dificuldade em acompanhar o status dos serviços, perda de histórico de clientes e veículos e ineficiência no fluxo de orçamentos e autorizações.
+
+**Objetivo:** Entregar a primeira versão (MVP) do back-end do Sistema Integrado de Atendimento e Execução de Serviços.
+
+**Proposta:** Construir o back-end com foco em gestão de ordens de serviço, clientes e peças, aplicando Domain-Driven Design (DDD) e boas práticas de qualidade de software e segurança.
+
+**Requisitos:**
+
+- Back-end monolítico em arquitetura em camadas;
+- APIs RESTful documentadas via Swagger;
+- Banco de dados à escolha, com justificativa (ver [ADR 0001](docs/adr/0001-uso-do-postgresql-como-banco-de-dados.md));
+- `Dockerfile` e `docker-compose.yml` orquestrando o ambiente completo;
+- Testes automatizados com cobertura mínima de 80% nos domínios críticos;
+- Autenticação JWT e validação de dados sensíveis (CPF/CNPJ, placa).
+
+🎥 **Demonstração:** [vídeo da Fase 1 (Google Drive)](https://drive.google.com/file/d/10DaHvGB_qMzGzi8Qty3tGAaExQTSPQ1h/view?usp=sharing)
+
+</details>
+
+### Fase 2 — Qualidade, Resiliência e Escalabilidade · fase atual
+
+**Problema:** Com o sucesso do MVP vieram o aumento da demanda, a expansão para novas unidades e a necessidade de garantir alta disponibilidade. A oficina precisa reduzir riscos operacionais, automatizar o provisionamento e o deploy do ambiente e sustentar grandes volumes de ordens de serviço em horários de pico, com escalabilidade dinâmica.
+
+**Objetivo:** Evoluir a aplicação da Fase 1 para garantir qualidade, resiliência e escalabilidade, incorporando práticas modernas de infraestrutura e automação.
+
+**Proposta:** Refatorar o código sob Clean Code e Clean Architecture e sustentar a aplicação com containerização, orquestração em Kubernetes, infraestrutura como código e uma pipeline de CI/CD.
+
+**Requisitos:**
+
+- Refatoração com Clean Code e Clean Architecture, com testes automatizados cobrindo os fluxos críticos;
+- APIs de abertura de OS, consulta de status, aprovação de orçamento por notificação externa, listagem ordenada por status (excluindo logicamente as finalizadas e entregues) e atualização de status por e-mail;
+- Containerização com Docker e `docker-compose` para desenvolvimento local;
+- Orquestração em Kubernetes: Deployments, Services, ConfigMaps e Secrets, e Horizontal Pod Autoscaler (HPA);
+- Infraestrutura como Código (IaC) com Terraform, provisionando o cluster Kubernetes e o banco de dados;
+- Pipeline de CI/CD: build, testes, imagem Docker, deploy no cluster e aplicação dos manifestos.
+
+🎥 **Demonstração:** [vídeo da Fase 2 (YouTube)](https://youtu.be/9s8oesicepc)
 
 ## 🧰 Stack
 
@@ -51,7 +95,7 @@ Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em container
 
 ```bash
 # Clonar o repositório e entrar na pasta da aplicação
-git clone <url-do-repositorio>
+git clone https://github.com/FIAP-15SOAT/oficina_mecanica_grupo39
 cd oficina_mecanica_grupo39/app
 
 # (Opcional) Copiar e ajustar variáveis de ambiente
@@ -129,6 +173,7 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 | 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
 | 📐 [ADRs](docs/adr) | Decisões arquiteturais |
 | 🧩 [Modelo C4](docs/c4) | Diagramas de Contexto, Container e Componente |
+| 🎨 [Modelagem de Domínio (Miro)](https://miro.com/app/board/uXjVGvVPEOw=/?share_link_id=9196435429) | Domain Storytelling, Event Storming e Dicionário de Linguagem Ubíqua |
 
 ## 👥 Autores
 
