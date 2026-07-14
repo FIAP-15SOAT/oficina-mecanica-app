@@ -1,40 +1,105 @@
-# Modelo C4 — Sistema da Oficina Mecânica
+# 🧩 Modelo C4 — Sistema da Oficina Mecânica
 
-Diagramas C4 (https://c4model.com) descrevendo a arquitetura do sistema, em português.
+Este diretório documenta a arquitetura do **Sistema da Oficina Mecânica** com o [modelo C4](https://c4model.com). O C4 descreve a arquitetura em **níveis de zoom sucessivos** — como aproximar um mapa: o mesmo sistema visto de mais longe (Contexto) ou de mais perto (Container, Componente). O sistema em foco é sempre o mesmo em todos os níveis; só muda o nível de detalhe.
 
-## Estrutura
+Este projeto documenta os **três primeiros níveis**. Cada seção abaixo traz a imagem do diagrama, a descrição dos elementos e as convenções seguidas.
 
-- `*.puml` — fonte de cada diagrama (PlantUML + [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML)).
-- `images/` — PNGs gerados a partir dos `.puml`.
-- `lib/C4-PlantUML/` — biblioteca C4-PlantUML vendorizada, para renderização reprodutível offline.
+## Índice
 
-## Convenções seguidas em todos os diagramas
+- [Como ler os quatro níveis](#como-ler-os-quatro-níveis)
+- [Convenções](#convenções)
+- [Nível 1 — Contexto do Sistema](#nível-1--contexto-do-sistema)
+- [Nível 2 — Container](#nível-2--container)
+- [Nível 3 — Componente da API REST](#nível-3--componente-da-api-rest)
+- [Documentação relacionada](#documentação-relacionada)
 
-- Nome do sistema em foco é sempre **"Sistema da Oficina Mecânica"**, idêntico em todos os níveis (Context, Container, Componente) — é o mesmo sistema, só muda o zoom.
-- Todo elemento declara o tipo explicitamente (`[Pessoa]`, `[Sistema de Software]`, `[Container: tecnologia]`, `[Componente: tecnologia]`), via `SHOW_ELEMENT_TYPE()`, conforme exigido pela documentação oficial do C4 e pelo material da aula (Aula 2 - Documentação de Arquitetura com o Modelo C4).
-- Cantos arredondados (`-DROUNDED_STYLE=1`), igual ao estilo oficial do C4 model/Structurizr.
-- Pessoas usam a silhueta oficial (círculo + corpo, via `SHOW_PERSON_OUTLINE()`), conforme os exemplos de `c4model.com/diagrams/system-context` e `.../container`.
-- No diagrama de Componente, cada componente leva o ícone UML clássico (dois retângulos), igual à legenda de `c4model.com/diagrams/component`. Como a forma nativa `component` do PlantUML não herda o estilo de cor do C4-PlantUML, foi necessário um bloco `skinparam component {...}` manual replicando as cores padrão (`#85BBF0`/`#78A8D8`) para manter a mesma paleta.
+## Como ler os quatro níveis
 
-## Diagramas
+O C4 define quatro níveis de detalhe. Cada nível é um zoom a mais sobre o **mesmo** sistema:
 
-1. **Contexto do Sistema** (`c4-system-context.puml`) — nível 1: o mais macro de todos, pensado para stakeholders não técnicos. Mostra apenas pessoas (Administrador, Mecânico, Atendente, Cliente da Oficina) e o Servidor SMTP como sistema externo — o PostgreSQL não aparece neste nível por ser detalhe interno. As caixas de pessoa descrevem quem elas são (não o que fazem); a ação fica no rótulo da seta. Nenhuma seta menciona protocolo/tecnologia (HTTP, JWT, SQL etc.) — isso é detalhe de nível mais baixo. Nomes sem sufixo técnico: "Sistema da Oficina Mecânica" (não "...API") e "Servidor SMTP" (não "MailHog", que é só a implementação de dev usada no nível de Container).
-2. **Container** (`c4-container.puml`) — nível 2: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a **API REST** (NestJS/Node.js/TypeScript) e o **Banco de Dados** (PostgreSQL, auto-hospedado no mesmo cluster/infra do time). Aqui sim aparecem tecnologia e protocolo nas setas, como recomendado para este nível. O servidor SMTP/MailHog permanece como sistema externo (aqui já com o nome técnico). Confirmado por análise de código/infra que não há workers, filas ou cache separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e não é modelado como container à parte.
-3. **Componente** (`c4-component.puml`) — nível 3: zoom dentro do container **API REST**, mostrando os 9 módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque) e 2 componentes transversais (Guards/Segurança, Repositories/Prisma), com as dependências reais entre módulos levantadas no código (ex.: Ordens de Serviço ↔ Orçamentos, Orçamentos → Estoque/SMTP). Inclui também o **Cliente da Oficina** como pessoa externa conectada diretamente ao componente Orçamentos (fluxo de aprovação por link, sem login) — é a única pessoa que interage com um componente específico em vez de passar só pela API como um todo. As setas entre componentes do mesmo container não levam rótulo de tecnologia (só "Uses" implícito na ação) — tecnologia só aparece quando a seta cruza para um container/sistema externo (Banco de Dados, Servidor SMTP), seguindo o exemplo oficial (Figura 3 do material da aula). A dependência de quase todos os módulos em relação a Guards/Segurança e Repositories está descrita no texto de cada um desses dois componentes, não desenhada como setas — evita ~18 setas repetidas que poluiriam o diagrama sem agregar informação nova.
+| Nível | O que mostra | Neste projeto |
+|---|---|---|
+| **1 · Contexto** | O sistema, seus usuários e os sistemas externos | ✅ [ver](#nível-1--contexto-do-sistema) |
+| **2 · Container** | Os blocos executáveis/implantáveis dentro do sistema | ✅ [ver](#nível-2--container) |
+| **3 · Componente** | As peças internas de um container | ✅ [ver](#nível-3--componente-da-api-rest) |
+| **4 · Código** | Classes/tabelas de um componente | ➖ fora de escopo |
 
-**Diagrama de Código (nível 4) não será feito** — é opcional no C4 model, mais adequado para geração automática a partir do código do que para desenho manual, e não agrega valor sobre o que o diagrama de Componente já mostra. **System Landscape também fica fora**, pois só faz sentido quando há múltiplos sistemas de software para mapear, e este projeto documenta um único sistema.
+## Convenções
 
-Não há diagrama de Deployment (Kubernetes/Terraform) ainda — em aberto, ver conversa para decidir se será feito.
+Convenções seguidas em todos os diagramas, para leitura consistente entre os níveis:
 
-## Como regenerar as imagens
+- **Nome único do sistema.** O sistema em foco é sempre **"Sistema da Oficina Mecânica"**, idêntico em Contexto, Container e Componente — é o mesmo sistema, só muda o zoom.
+- **Tipo explícito em todo elemento.** Cada elemento declara o tipo entre colchetes (`[Pessoa]`, `[Sistema de Software]`, `[Container: tecnologia]`, `[Componente: tecnologia]`).
+- **Pessoas com silhueta.** Os atores usam a silhueta oficial de pessoa (círculo + corpo), como nos exemplos de [c4model.com/diagrams/system-context](https://c4model.com/diagrams/system-context) e [.../container](https://c4model.com/diagrams/container).
+- **Ícone de componente.** No diagrama de Componente, cada componente leva o ícone UML clássico (dois retângulos), igual à legenda de [c4model.com/diagrams/component](https://c4model.com/diagrams/component), na mesma paleta azul dos demais elementos.
+- **Tecnologia só ao cruzar fronteira.** O rótulo de tecnologia/protocolo (HTTP, JWT, SQL, SMTP…) aparece nas setas apenas a partir do nível de Container. No Contexto as setas trazem só a ação; no Componente, a tecnologia surge apenas quando a seta sai do container para o Banco de Dados ou o Servidor SMTP.
 
-Requer Docker. A partir de `docs/c4/`:
+## Nível 1 — Contexto do Sistema
 
-```bash
-docker run --rm -v "$(pwd)":/data plantuml/plantuml -tpng -DRELATIVE_INCLUDE=1 -DROUNDED_STYLE=1 -o images c4-system-context.puml
-docker run --rm -v "$(pwd)":/data plantuml/plantuml -tpng -DRELATIVE_INCLUDE=1 -DROUNDED_STYLE=1 -o images c4-container.puml
-docker run --rm -v "$(pwd)":/data plantuml/plantuml -tpng -DRELATIVE_INCLUDE=1 -DROUNDED_STYLE=1 -o images c4-component.puml
-```
+O nível mais macro, pensado para stakeholders **não técnicos**: mostra quem usa o sistema e com quais sistemas externos ele conversa, sem nenhum detalhe interno.
 
-- `-DRELATIVE_INCLUDE=1` é necessária para que os `!include` internos da própria biblioteca C4-PlantUML (ex.: `C4_Container.puml` incluindo `C4_Context.puml`) usem os arquivos vendorizados em `lib/` em vez de buscar no GitHub — sem ela, a renderização ainda funciona (se houver rede), mas deixa de ser 100% offline.
-- `-DROUNDED_STYLE=1` usa caixas com cantos arredondados, igual ao estilo oficial do C4 model/Structurizr (em vez do retângulo de canto reto que é o padrão do C4-PlantUML).
+<p align="center"><img src="images/c4-system-context.png" alt="Diagrama de Contexto C4: as pessoas Administrador, Mecânico e Atendente interagem com o Sistema da Oficina Mecânica; o Cliente da Oficina, como pessoa externa, aprova ou rejeita orçamentos; o sistema envia o orçamento por e-mail através de um Servidor SMTP externo, que o entrega ao cliente" width="100%"></p>
+
+As caixas de pessoa descrevem **quem** cada ator é (não o que faz — a ação fica no rótulo da seta). Nenhuma seta menciona protocolo ou tecnologia, que são detalhe de nível mais baixo. Os nomes também evitam sufixo técnico: **"Sistema da Oficina Mecânica"** (não "...API") e **"Servidor SMTP"** (não "MailHog", que é apenas a implementação de desenvolvimento, revelada só no nível de Container). O **PostgreSQL não aparece** aqui por ser detalhe interno.
+
+| Elemento | Tipo | Papel |
+|---|---|---|
+| **Administrador** | Pessoa | Responsável pela configuração geral e por tarefas administrativas; gerencia usuários, serviços, peças, clientes, veículos, ordens de serviço, orçamentos e estoque |
+| **Mecânico** | Pessoa | Executa e atualiza as ordens de serviço sob sua responsabilidade |
+| **Atendente** | Pessoa | Cadastra clientes e veículos; cria e gerencia ordens de serviço e orçamentos |
+| **Cliente da Oficina** | Pessoa externa | Dono do veículo levado para manutenção; aprova ou rejeita o orçamento recebido por e-mail |
+| **Servidor SMTP** | Sistema externo | Entrega aos clientes os e-mails de orçamento enviados pelo sistema |
+
+## Nível 2 — Container
+
+Um zoom para dentro da fronteira do sistema: os blocos executáveis/implantáveis e como se comunicam.
+
+<p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a API REST (NestJS/Node.js/TypeScript) e o Banco de Dados (PostgreSQL); os funcionários acessam a API por HTTP/JSON autenticado via JWT Bearer e o Cliente da Oficina por link assinado; a API lê e escreve no PostgreSQL via Prisma ORM e envia e-mails ao Servidor SMTP externo (MailHog), que os entrega ao cliente" width="100%"></p>
+
+Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API REST** e o **Banco de Dados** —, além do **Servidor SMTP** externo (aqui já com o nome técnico, MailHog). É neste nível que aparecem **tecnologia e protocolo** nas setas, como recomendado. Confirmado por análise de código e infraestrutura que **não há workers, filas ou cache** separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e por isso **não é modelado como container à parte**.
+
+| Container | Tecnologia | Responsabilidade |
+|---|---|---|
+| **API REST** | NestJS 11 · Node.js 22 · TypeScript | Expõe a API REST (prefixo `/api`), concentra a lógica de negócio em Clean Architecture, faz autenticação local via JWT e envia os e-mails de orçamento |
+| **Banco de Dados** | PostgreSQL | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); auto-hospedado no mesmo cluster/infra do time |
+| **Servidor SMTP** | MailHog (externo) | Recebe e entrega os e-mails de orçamento (sink SMTP de desenvolvimento) |
+
+Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **link assinado, sem login**; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
+
+## Nível 3 — Componente da API REST
+
+O zoom mais interno: as peças que compõem o container **API REST**.
+
+<p align="center"><img src="images/c4-component.png" alt="Diagrama de Componente C4 da API REST: nove módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque) e dois componentes transversais (Guards/Segurança e Repositories/Prisma); Ordens de Serviço e Orçamentos se relacionam nos dois sentidos, os Orçamentos criam reservas no Estoque e enviam e-mail pelo Servidor SMTP, o Cliente da Oficina conecta-se direto ao componente Orçamentos, e os Repositories persistem no PostgreSQL" width="100%"></p>
+
+São **nove módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** conecta-se **diretamente** ao componente **Orçamentos** (aprovação por link, sem login) — é a única pessoa que interage com um componente específico em vez de passar pela API como um todo.
+
+As dependências de quase todos os módulos em relação a **Guards / Segurança** e **Repositories** estão descritas no texto desses dois componentes, e **não desenhadas como setas** — isso evita cerca de 18 setas repetidas que poluiriam o diagrama sem agregar informação. Como no exemplo oficial (Figura 3 do material da aula), as setas entre componentes do mesmo container não levam rótulo de tecnologia; a tecnologia só aparece quando a seta cruza para o Banco de Dados ou o Servidor SMTP.
+
+**Módulos de negócio**
+
+| Componente | Tecnologia | Responsabilidade |
+|---|---|---|
+| **Auth** | NestJS Module | Login, refresh de token e dados do usuário autenticado (JWT) |
+| **Usuários** | NestJS Module | CRUD de usuários e mecânicos (perfis ADMIN, MECHANIC, ATTENDANT) |
+| **Clientes** | NestJS Module | CRUD de clientes (pessoa física/jurídica) |
+| **Veículos** | NestJS Module | CRUD de veículos e listagem de veículos por cliente |
+| **Serviços** | NestJS Module | CRUD de tipos de serviço e métricas |
+| **Peças/Insumos** | NestJS Module | CRUD de peças/insumos e ajuste manual de estoque |
+| **Ordens de Serviço** | NestJS Module | Criação e gestão de ordens de serviço, status e histórico |
+| **Orçamentos** | NestJS Module | Itens de orçamento, submissão e aprovação/rejeição por e-mail |
+| **Estoque** | NestJS Module | Consulta de movimentações e reservas de estoque (somente leitura) |
+
+**Componentes transversais**
+
+| Componente | Tecnologia | Responsabilidade |
+|---|---|---|
+| **Guards / Segurança** | NestJS Guards | `JwtAuthGuard` e `RolesGuard` — autenticação e autorização usadas pelos controllers HTTP de quase todos os módulos |
+| **Repositories** | Prisma | Acesso a dados centralizado e global; todos os módulos de negócio persistem através dele |
+
+## Documentação relacionada
+
+- 🏛️ [Arquitetura](../architecture.md) — Clean Architecture, DDD, ciclos de vida, Unit of Work, exceções.
+- 🏗️ [Infra · Visão Geral](../infra/overview.md) — a infraestrutura como sistema (inclui as vistas de deployment).
+- 📐 [ADRs](../adr) — decisões arquiteturais.
+- 🌐 [c4model.com](https://c4model.com) — referência oficial do modelo C4.
