@@ -287,5 +287,5 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no f
 
 ## Modelo C4
 
-A arquitetura também é documentada com o [C4 model](https://c4model.com) (Contexto, Container e Componente) em [`docs/c4/`](./c4), com os diagramas fonte em PlantUML e as imagens já renderizadas.
+A arquitetura também é documentada com o [C4 model](https://c4model.com) (Contexto, Container e Componente) em [`docs/c4/`](./c4), com as imagens dos diagramas e a descrição de cada nível.
 
