@@ -1,5 +1,6 @@
 import { User } from '@domain/entities/user.entity';
 import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -37,6 +38,20 @@ export class UpdateUserUseCase {
       }
 
       user.changeEmail(updateUserDto.email);
+    }
+
+    if (updateUserDto.document !== undefined) {
+      const newDocument = Document.create(updateUserDto.document);
+
+      if (!newDocument.equals(user.document)) {
+        const existing = await this.userRepository.findByDocument(newDocument.value);
+
+        if (existing) {
+          throw new ResourceConflictException('Documento já cadastrado no sistema');
+        }
+      }
+
+      user.changeDocument(updateUserDto.document);
     }
 
     if (updateUserDto.name !== undefined) {
