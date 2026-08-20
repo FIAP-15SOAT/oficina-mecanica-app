@@ -557,7 +557,10 @@ import { generateValidCpf } from './document.helper';
 
 describe('generateValidCpf', () => {
   it('generates a valid, 11-digit CPF for arbitrary seeds', () => {
-    for (const seed of [1, 42, 999_999_999, 123_456_789, Date.now()]) {
+    // 899_999_999 is the boundary seed: seed % 900_000_000 + 100_000_000
+    // lands exactly on 999_999_999 (all nines), the one base value whose
+    // all-repeated-digit fallback must not overflow past 9 digits.
+    for (const seed of [1, 42, 999_999_999, 123_456_789, 899_999_999, Date.now()]) {
       const cpf = generateValidCpf(seed);
       expect(cpf).toHaveLength(11);
       expect(DocumentValidator.validateCpf(cpf)).toBe(true);
@@ -591,7 +594,9 @@ export function generateValidCpf(seed: number): string {
   let digitsStr = base.toString().padStart(9, '0');
 
   if (/^(\d)\1{8}$/.test(digitsStr)) {
-    base += 1;
+    // Subtract, not add: base can be as high as 999_999_999 (all nines),
+    // and adding 1 there would overflow to a 10-digit number.
+    base -= 1;
     digitsStr = base.toString().padStart(9, '0');
   }
 
@@ -2423,31 +2428,31 @@ const users: UserSeed[] = [
   {
     name: 'Rafael Neves de Oliveira',
     email: 'rafaelneves652@gmail.com',
-    document: '52998224725',
+    document: '10000000108',
     role: UserRole.ADMIN,
   },
   {
     name: 'Guilherme da Rocha Salvador',
     email: 'guilhermedarochasalvador@gmail.com',
-    document: '11144477735',
+    document: '10000000280',
     role: UserRole.ADMIN,
   },
   {
     name: 'Lucas Almeida da Silva',
     email: 'lucas.almeida-silva@hotmail.com',
-    document: '96328505300',
+    document: '10000000361',
     role: UserRole.ADMIN,
   },
   {
     name: 'Ramoon Lincoln Barros Camacho',
     email: 'ramooncamacho@hotmail.com',
-    document: '80418734127',
+    document: '10000000442',
     role: UserRole.ADMIN,
   },
   {
     name: 'Renan Santana Camacho',
     email: 'camacho.renan@gmail.com',
-    document: '15350946056',
+    document: '10000000523',
     role: UserRole.ADMIN,
   },
 ];
