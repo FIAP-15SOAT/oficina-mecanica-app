@@ -16,8 +16,8 @@ A documentação de arquitetura (`docs/architecture.md`) já descreve `domain/` 
 
 ## Decisão
 
-1. Extrair um enum genérico `DocumentType` (`INDIVIDUAL` | `COMPANY`) no shared kernel do domínio, representando o conceito real: "que tipo de pessoa este documento identifica" — um conceito que pertence ao `Document`, não ao `Customer`.
-2. `CustomerType` passa a ser um **re-export** de `DocumentType` (`export { DocumentType as CustomerType } from './document-type.enum'`), preservando nome, caminho de import e valores — nenhum dos ~30 call sites de `CustomerType` é alterado.
+1. Extrair um enum genérico `PersonType` (`INDIVIDUAL` | `COMPANY`) no shared kernel do domínio. O nome é `PersonType`, não `DocumentType`: o CPF/CNPJ é uma *consequência* de a entidade ser pessoa física ou jurídica, não o contrário — e é essa a linguagem que as próprias mensagens de erro do `Document` já usam (`'Pessoa física deve informar um CPF válido'`, `'Pessoa jurídica deve informar um CNPJ válido'`). `PersonType` nomeia o conceito de domínio real; `Document` e `Customer` apenas o consomem.
+2. `CustomerType` passa a ser um **re-export** de `PersonType` (`export { PersonType as CustomerType } from './person-type.enum'`), preservando nome, caminho de import e valores — nenhum dos ~30 call sites de `CustomerType` é alterado.
 3. `Document.create(value, type?)` — o parâmetro `type` vira opcional. Quando informado (fluxo de `Customer`, inalterado), valida que o valor bate com o tipo esperado. Quando omitido (fluxo de `User`), o VO autodetecta o tipo pelo tamanho do valor sanitizado antes de rodar a mesma validação de dígito verificador.
 4. `User.document` passa a ser `Document` (Value Object), não uma string solta — alinhando com o padrão já existente do VO `Email`, hoje compartilhado por `User` e `Customer`.
 
@@ -30,7 +30,7 @@ Menor diff imediato e zero risco ao código de `Customer`. Descartada como decis
 Descartada: o `DocumentValidator` de baixo nível já é agnóstico de entidade — duplicá-lo (ou envolvê-lo num segundo VO) violaria DRY sem nenhum ganho, já que não há necessidade real de comportamento diferente entre os dois VOs.
 
 ### C — Renomear/mover `CustomerType` para o novo local, sem enum próprio de `Document`
-Rejeitada por acoplar o nome do conceito de domínio (`DocumentType`) ao nome de um agregado específico (`Customer`), mesmo depois de generalizado — o re-export mantém a compatibilidade de nome onde ele já é usado (`Customer`) sem forçar essa mesma nomenclatura sobre `User`.
+Rejeitada por acoplar o nome do conceito de domínio (`PersonType`) ao nome de um agregado específico (`Customer`), mesmo depois de generalizado — o re-export mantém a compatibilidade de nome onde ele já é usado (`Customer`) sem forçar essa mesma nomenclatura sobre `User`.
 
 ## Consequências
 
@@ -42,11 +42,11 @@ Rejeitada por acoplar o nome do conceito de domínio (`DocumentType`) ao nome de
 
 ### Negativas / Trade-offs
 - `Document.create` com assinatura de `type` opcional é discretamente menos explícito no call site de `User` (o autor da chamada precisa saber que a ausência de `type` significa autodetecção) — mitigado por um comentário no próprio método `detectType`.
-- `CustomerType` como re-export de `DocumentType` é uma indireção a mais para quem lê `customer-type.enum.ts` pela primeira vez — mitigado por manter o arquivo pequeno e o re-export explícito (não um `import * as` opaco).
+- `CustomerType` como re-export de `PersonType` é uma indireção a mais para quem lê `customer-type.enum.ts` pela primeira vez — mitigado por manter o arquivo pequeno e o re-export explícito (não um `import * as` opaco).
 
 ### Riscos mitigados
 - **Regressão em `Customer`**: mitigada por manter a assinatura e o comportamento de `Document.create(value, type)` idênticos quando `type` é informado, e por rodar a suíte de testes existente de `Customer`/`Document` sem alterações antes de mesclar.
-- **Confusão entre "tipo de cliente" e "tipo de documento"**: são, de fato, o mesmo conceito de domínio (pessoa física vs. jurídica) hoje — a decisão assume essa equivalência; se um dia `CustomerType` precisar carregar semântica adicional que não se aplique a `DocumentType` (ou vice-versa), os dois enums devem ser desacoplados (removendo o re-export).
+- **Confusão entre "tipo de cliente" e "tipo de documento"**: são, de fato, o mesmo conceito de domínio (pessoa física vs. jurídica) hoje — a decisão assume essa equivalência; se um dia `CustomerType` precisar carregar semântica adicional que não se aplique a `PersonType` (ou vice-versa), os dois enums devem ser desacoplados (removendo o re-export).
 
 ## Referências
 

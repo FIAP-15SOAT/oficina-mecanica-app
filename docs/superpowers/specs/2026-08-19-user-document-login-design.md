@@ -23,13 +23,15 @@ A correção é generalizar o VO, não contorná-lo.
 
 ## Solução
 
-### 1. Extrair `DocumentType` como enum genérico do shared kernel
+### 1. Extrair `PersonType` como enum genérico do shared kernel
 
 `domain/` já é um único shared kernel para todo o domínio (confirmado em `docs/architecture.md`: `value-objects/` lista `Document (CPF/CNPJ)` e `enums/` lista `CustomerType` lado a lado com os demais enums, sem separação por bounded context). Não existe hoje isolamento entre os domínios de `User` e `Customer` — generalizar `Document` alinha o código com o desenho já documentado.
 
+O nome escolhido é `PersonType`, não `DocumentType`: o CPF/CNPJ é uma *consequência* de a entidade ser pessoa física ou jurídica, não o contrário — e é exatamente essa a linguagem que as mensagens de erro do próprio `Document` já usam (`'Pessoa física deve informar um CPF válido'`, `'Pessoa jurídica deve informar um CNPJ válido'`). `PersonType` nomeia o conceito de domínio real; `Document` apenas o consome.
+
 ```ts
-// domain/enums/document-type.enum.ts (novo)
-export enum DocumentType {
+// domain/enums/person-type.enum.ts (novo)
+export enum PersonType {
   INDIVIDUAL = 'INDIVIDUAL',
   COMPANY = 'COMPANY',
 }
@@ -37,16 +39,16 @@ export enum DocumentType {
 
 ```ts
 // domain/enums/customer-type.enum.ts (alterado)
-export { DocumentType as CustomerType } from './document-type.enum';
+export { PersonType as CustomerType } from './person-type.enum';
 ```
 
-`CustomerType` passa a ser um re-export de `DocumentType` — mesmo nome, mesmo caminho de import, mesmos valores. Nenhum dos ~30 call sites de `CustomerType` muda.
+`CustomerType` passa a ser um re-export de `PersonType` — mesmo nome, mesmo caminho de import, mesmos valores. Nenhum dos ~30 call sites de `CustomerType` muda.
 
 ### 2. Tornar o `type` opcional em `Document.create`, com autodetecção
 
 ```ts
 // domain/value-objects/document.vo.ts
-static create(value: string, type?: DocumentType): Document {
+static create(value: string, type?: PersonType): Document {
   Document.validatePresence(value);
   const sanitized = Document.sanitize(value);
   const resolvedType = type ?? Document.detectType(sanitized);
@@ -54,9 +56,9 @@ static create(value: string, type?: DocumentType): Document {
   return new Document(sanitized, resolvedType);
 }
 
-private static detectType(sanitized: string): DocumentType {
-  if (sanitized.length === 11) return DocumentType.INDIVIDUAL;
-  if (sanitized.length === 14) return DocumentType.COMPANY;
+private static detectType(sanitized: string): PersonType {
+  if (sanitized.length === 11) return PersonType.INDIVIDUAL;
+  if (sanitized.length === 14) return PersonType.COMPANY;
   throw new DomainValidationException('Documento inválido: informe um CPF ou CNPJ');
 }
 ```
@@ -149,7 +151,7 @@ model User {
 
 | Camada | Arquivo | Mudança |
 |---|---|---|
-| Domain | `enums/document-type.enum.ts` | novo |
+| Domain | `enums/person-type.enum.ts` | novo |
 | Domain | `enums/customer-type.enum.ts` | vira re-export |
 | Domain | `value-objects/document.vo.ts` | `type` opcional + autodetecção |
 | Domain | `entities/user.entity.ts` | campo `document`, `changeDocument()` |
