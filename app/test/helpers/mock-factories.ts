@@ -4,6 +4,7 @@ import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService, TokenPair } from '@application/ports/output/token.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 export function createMockUser(overrides: Partial<User> = {}): User {
   const now = new Date();
@@ -12,6 +13,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     id: 'user-uuid-123',
     name: 'Rafael Neves',
     email: Email.create('rafael@email.com'),
+    document: Document.create('12345678909'),
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ADMIN,
     isActive: true,
@@ -26,6 +28,7 @@ export function createMockUserRepository(): jest.Mocked<IUserRepository> {
     create: jest.fn(),
     findById: jest.fn(),
     findByEmail: jest.fn(),
+    findByDocument: jest.fn(),
     findAllPaginated: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
