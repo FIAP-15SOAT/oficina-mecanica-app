@@ -1,3 +1,6 @@
+import { User } from '@domain/entities/user.entity';
+import { Document } from '@domain/value-objects/document.vo';
+
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService } from '@application/ports/output/token.service.interface';
 
@@ -17,7 +20,7 @@ export class AuthenticateUserUseCase {
   ) {}
 
   async execute(input: AuthenticateUserInputDto): Promise<AuthenticateUserOutputDto> {
-    const user = await this.userRepository.findByEmail(input.email);
+    const user = await this.findUserByIdentifier(input.identifier);
 
     if (!user?.isActive) {
       throw new UnauthorizedAccessException('Credenciais inválidas');
@@ -42,5 +45,13 @@ export class AuthenticateUserUseCase {
         role: user.role,
       },
     };
+  }
+
+  private async findUserByIdentifier(identifier: string): Promise<User | null> {
+    if (identifier.includes('@')) {
+      return this.userRepository.findByEmail(identifier);
+    }
+
+    return this.userRepository.findByDocument(Document.sanitize(identifier));
   }
 }

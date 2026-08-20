@@ -26,7 +26,7 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(true);
 
     const result = await useCase.execute({
-      email: 'rafael@email.com',
+      identifier: 'rafael@email.com',
       password: 'Senha@123',
     });
 
@@ -45,7 +45,7 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ email: 'naoexiste@email.com', password: '123456' }),
+      useCase.execute({ identifier: 'naoexiste@email.com', password: '123456' }),
     ).rejects.toThrow(UnauthorizedAccessException);
   });
 
@@ -54,7 +54,7 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(user);
 
     await expect(
-      useCase.execute({ email: 'rafael@email.com', password: 'Senha@123' }),
+      useCase.execute({ identifier: 'rafael@email.com', password: 'Senha@123' }),
     ).rejects.toThrow('Credenciais inválidas');
   });
 
@@ -64,7 +64,7 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(false);
 
     await expect(
-      useCase.execute({ email: 'rafael@email.com', password: 'errada' }),
+      useCase.execute({ identifier: 'rafael@email.com', password: 'errada' }),
     ).rejects.toThrow('Credenciais inválidas');
   });
 
@@ -72,9 +72,34 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ email: 'rafael@email.com', password: '123456' }),
+      useCase.execute({ identifier: 'rafael@email.com', password: '123456' }),
     ).rejects.toThrow();
 
     expect(tokenService.signTokenPair).not.toHaveBeenCalled();
+  });
+
+  it('should authenticate by document when identifier has no @', async () => {
+    const user = createMockUser();
+    userRepository.findByDocument.mockResolvedValue(user);
+    hashService.compare.mockResolvedValue(true);
+
+    const result = await useCase.execute({
+      identifier: '12345678909',
+      password: 'Senha@123',
+    });
+
+    expect(result.accessToken).toBe('access-token-mock');
+    expect(userRepository.findByDocument).toHaveBeenCalledWith('12345678909');
+    expect(userRepository.findByEmail).not.toHaveBeenCalled();
+  });
+
+  it('should sanitize a masked document identifier before lookup', async () => {
+    userRepository.findByDocument.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({ identifier: '123.456.789-09', password: 'Senha@123' }),
+    ).rejects.toThrow('Credenciais inválidas');
+
+    expect(userRepository.findByDocument).toHaveBeenCalledWith('12345678909');
   });
 });
