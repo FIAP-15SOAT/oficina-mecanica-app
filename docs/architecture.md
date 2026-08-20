@@ -284,6 +284,7 @@ Erros de validação de DTO são cobertos pelo `ValidationPipe` global do NestJS
 Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no formato Markdown:
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
+- [ADR 0002 — Generalização do Value Object `Document` compartilhado entre `User` e `Customer`](./adr/0002-document-value-object-compartilhado-entre-user-e-customer.md)
 
 ## Modelo C4
 
