@@ -1,5 +1,6 @@
 import { Document } from '@domain/value-objects/document.vo';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('Document VO', () => {
@@ -78,5 +79,34 @@ describe('Document VO', () => {
         '12345678909',
       );
     });
+  });
+});
+
+describe('create — autodetect (no type)', () => {
+  it.each([
+    ['123.456.789-09', '12345678909', PersonType.INDIVIDUAL],
+    ['12345678909', '12345678909', PersonType.INDIVIDUAL],
+    ['12.345.678/0001-95', '12345678000195', PersonType.COMPANY],
+    ['12345678000195', '12345678000195', PersonType.COMPANY],
+  ])('detects type for %p', (input, expectedValue, expectedType) => {
+    const doc = Document.create(input);
+    expect(doc.value).toBe(expectedValue);
+    expect(doc.type).toBe(expectedType);
+  });
+
+  it('throws when sanitized value has neither CPF nor CNPJ length', () => {
+    expect(() => Document.create('12345')).toThrow(DomainValidationException);
+    expect(() => Document.create('12345')).toThrow('Documento inválido: informe um CPF ou CNPJ');
+  });
+
+  it('still throws on invalid checksum when autodetecting', () => {
+    expect(() => Document.create('111.111.111-11')).toThrow(DomainValidationException);
+    expect(() => Document.create('111.111.111-11')).toThrow('Pessoa física deve informar um CPF válido');
+  });
+});
+
+describe('sanitize (public helper)', () => {
+  it('strips formatting characters and uppercases', () => {
+    expect(Document.sanitize('  12.345.678/0001-95  ')).toBe('12345678000195');
   });
 });
