@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
+import { Document } from '../value-objects/document.vo';
 
 import { PASSWORD_REGEX } from '../constants/regex/password.regex';
 import {
@@ -15,6 +16,7 @@ const VALID_ROLES = Object.values(UserRole);
 export interface CreateUserProps {
   name: string;
   email: string;
+  document: string;
   passwordHash: string;
   role: UserRole;
 }
@@ -23,6 +25,7 @@ interface UserProps {
   id: string;
   name: string;
   email: Email;
+  document: Document;
   passwordHash: string;
   role: UserRole;
   isActive: boolean;
@@ -34,6 +37,7 @@ export class User {
   readonly id: string;
   name: string;
   email: Email;
+  document: Document;
   passwordHash: string;
   role: UserRole;
   isActive: boolean;
@@ -44,6 +48,7 @@ export class User {
     this.id = props.id;
     this.name = props.name;
     this.email = props.email;
+    this.document = props.document;
     this.passwordHash = props.passwordHash;
     this.role = props.role;
     this.isActive = props.isActive;
@@ -66,6 +71,7 @@ export class User {
       id: randomUUID(),
       name: props.name.trim(),
       email: Email.create(props.email),
+      document: Document.create(props.document),
       passwordHash: props.passwordHash,
       role: props.role,
       isActive: true,
@@ -88,6 +94,11 @@ export class User {
 
   changeEmail(email: string): void {
     this.email = Email.create(email);
+    this.updatedAt = new Date();
+  }
+
+  changeDocument(document: string): void {
+    this.document = Document.create(document);
     this.updatedAt = new Date();
   }
 
@@ -124,6 +135,7 @@ export class User {
       id: this.id,
       name: this.name,
       email: this.email.value,
+      document: this.document.value,
       role: this.role,
       isActive: this.isActive,
       createdAt: this.createdAt,
@@ -160,6 +172,7 @@ export interface UserPublicView {
   id: string;
   name: string;
   email: string;
+  document: string;
   role: UserRole;
   isActive: boolean;
   createdAt: Date;
