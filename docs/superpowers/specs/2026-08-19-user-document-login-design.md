@@ -141,6 +141,8 @@ model User {
 
 `NOT NULL` desde já — decisão de negócio confirmada (projeto não está em produção, aplica-se a todos os usuários, sem coluna opcional de transição).
 
+> **Nota de rollout:** esta migration (`ADD COLUMN document ... NOT NULL UNIQUE`, sem `DEFAULT`) só pode ser aplicada a uma tabela `users` vazia ou que já tenha documentos válidos e únicos preenchidos previamente (backfill). Executar `prisma migrate deploy` contra uma tabela `users` populada, sem um passo de backfill anterior, falha — o Postgres não consegue satisfazer a restrição `NOT NULL` para as linhas existentes. Quem for aplicar esta migration em um ambiente compartilhado com dados reais precisa rodar um backfill de `document` antes (ou garantir que a tabela esteja vazia).
+
 ### 7. HTTP DTOs
 
 - `CreateUserRequestDto`: novo campo `document`, com `@Transform` (remove máscara) + `@IsValidCpfCnpj()` — reaproveita o decorator já existente em `infrastructure/http/validators/document.validator.ts` (já agnóstico de tipo, usado hoje em `create-customer-request.dto.ts`).
