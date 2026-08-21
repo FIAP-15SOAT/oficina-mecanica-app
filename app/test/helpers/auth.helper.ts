@@ -2,15 +2,13 @@ import type { Server } from 'http';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
 import type { PrismaService } from '@infrastructure/persistence/prisma/prisma.service';
-import { generateValidCpf } from './document.helper';
+import { nextValidCpf } from './document.helper';
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   user: { id: string; name: string; email: string; role: string };
 }
-
-let sequence = 0;
 
 export async function registerAndLogin(
   app: Server,
@@ -24,11 +22,10 @@ export async function registerAndLogin(
   prisma?: PrismaService,
 ): Promise<AuthTokens> {
   const uid = Date.now();
-  sequence += 1;
 
   const name = overrides.name ?? `Test User ${uid}`;
   const email = overrides.email ?? `testuser${uid}@e2e.test`;
-  const document = overrides.document ?? generateValidCpf(uid + sequence);
+  const document = overrides.document ?? nextValidCpf();
   const password = overrides.password ?? 'Test@2026';
   const role = overrides.role ?? 'ADMIN';
 

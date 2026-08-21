@@ -22,3 +22,11 @@ export function generateValidCpf(seed: number): string {
 
   return [...digits, d1, d2].join('');
 }
+
+let sequence = 0;
+
+/** Returns a fresh, checksum-valid, collision-safe CPF on every call across the whole test run. */
+export function nextValidCpf(): string {
+  sequence += 1;
+  return generateValidCpf(Date.now() + sequence);
+}

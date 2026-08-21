@@ -3,10 +3,9 @@ import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
-import { generateValidCpf } from '../helpers/document.helper';
+import { nextValidCpf } from '../helpers/document.helper';
 
-let docSeq = 0;
-const nextDocument = () => generateValidCpf(Date.now() + docSeq++);
+const nextDocument = nextValidCpf;
 
 describe('User (E2E)', () => {
   let ctx: TestContext;

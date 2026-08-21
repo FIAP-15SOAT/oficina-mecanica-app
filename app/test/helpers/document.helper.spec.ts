@@ -1,5 +1,5 @@
 import { DocumentValidator } from '@domain/validators/document.validator';
-import { generateValidCpf } from './document.helper';
+import { generateValidCpf, nextValidCpf } from './document.helper';
 
 describe('generateValidCpf', () => {
   it('generates a valid, 11-digit CPF for arbitrary seeds', () => {
@@ -15,5 +15,22 @@ describe('generateValidCpf', () => {
 
   it('generates different CPFs for different seeds', () => {
     expect(generateValidCpf(1)).not.toBe(generateValidCpf(2));
+  });
+});
+
+describe('nextValidCpf', () => {
+  it('returns a valid CPF', () => {
+    const cpf = nextValidCpf();
+    expect(cpf).toHaveLength(11);
+    expect(DocumentValidator.validateCpf(cpf)).toBe(true);
+  });
+
+  it('never collides across many consecutive calls', () => {
+    const cpfs = Array.from({ length: 50 }, () => nextValidCpf());
+
+    expect(new Set(cpfs).size).toBe(50);
+    for (const cpf of cpfs) {
+      expect(DocumentValidator.validateCpf(cpf)).toBe(true);
+    }
   });
 });
