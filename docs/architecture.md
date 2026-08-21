@@ -285,6 +285,7 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no f
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 - [ADR 0002 — Generalização do Value Object `Document` compartilhado entre `User` e `Customer`](./adr/0002-document-value-object-compartilhado-entre-user-e-customer.md)
+- [ADR 0003 — `Customer` com autenticação própria, separada de `User`](./adr/0003-customer-com-autenticacao-propria-separada-de-user.md)
 
 ## Modelo C4
 
