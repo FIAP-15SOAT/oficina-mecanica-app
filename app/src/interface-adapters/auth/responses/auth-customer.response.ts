@@ -17,3 +17,12 @@ export interface AuthCustomerResponse {
 export interface AuthCustomerDataResponse {
   data: AuthCustomerResponse;
 }
+
+export interface AuthCustomerTokensResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthCustomerTokensDataResponse {
+  data: AuthCustomerTokensResponse;
+}

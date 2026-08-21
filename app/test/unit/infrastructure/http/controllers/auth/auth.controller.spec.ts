@@ -4,18 +4,23 @@ import { AuthController } from '@infrastructure/http/controllers/auth/auth.contr
 
 import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
+import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
 
 import { LoginRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-token-request.dto';
 import { LoginCustomerRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-customer-request.dto';
+import { RefreshCustomerTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-customer-token-request.dto';
 import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { CustomerTokenPayload } from '@application/ports/output/token.service.interface';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
 import { AuthenticateCustomerOutputDto } from '@application/ports/input/auth/dto/authenticate-customer.dto';
+import { RefreshCustomerTokenOutputDto } from '@application/ports/input/auth/dto/refresh-customer-token.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { createMockCustomer } from '../../../../../helpers/customer-mock.factory';
 
 describe('AuthController', () => {
   let httpController: AuthController;
@@ -23,6 +28,8 @@ describe('AuthController', () => {
 
   beforeEach(() => {
     cleanController = new AuthCleanController(
+      { execute: jest.fn() },
+      { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
@@ -142,6 +149,46 @@ describe('AuthController', () => {
 
       expect(result).toBe(response);
       expect(cleanController.loginCustomer).toHaveBeenCalledWith(dto);
+    });
+  });
+
+  describe('refreshCustomer', () => {
+    it('should delegate to the clean controller and return its result', async () => {
+      const dto: RefreshCustomerTokenRequestDto = { refreshToken: 'valid-refresh-token' };
+
+      const refreshResult: RefreshCustomerTokenOutputDto = {
+        accessToken: 'new-customer-access-token',
+        refreshToken: 'new-customer-refresh-token',
+      };
+
+      const response = { data: refreshResult };
+
+      jest.spyOn(cleanController, 'refreshCustomer').mockResolvedValue(response);
+
+      const result = await httpController.refreshCustomer(dto);
+
+      expect(result).toBe(response);
+      expect(cleanController.refreshCustomer).toHaveBeenCalledWith(dto);
+    });
+  });
+
+  describe('meCustomer', () => {
+    it('should delegate to the clean controller with the current customer id', async () => {
+      const customer = createMockCustomer();
+      const customerTokenPayload: CustomerTokenPayload = {
+        sub: customer.id,
+        email: customer.email.value,
+        type: 'customer',
+      };
+
+      const response = CustomerPresenter.toDataResponse(customer);
+
+      jest.spyOn(cleanController, 'meCustomer').mockResolvedValue(response);
+
+      const result = await httpController.meCustomer(customerTokenPayload);
+
+      expect(result).toBe(response);
+      expect(cleanController.meCustomer).toHaveBeenCalledWith(customerTokenPayload.sub);
     });
   });
 });

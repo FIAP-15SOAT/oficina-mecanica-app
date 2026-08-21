@@ -6,6 +6,8 @@ import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticat
 import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
 import { AuthenticateCustomerUseCase } from '@application/use-cases/auth/authenticate-customer.use-case';
+import { RefreshCustomerTokenUseCase } from '@application/use-cases/auth/refresh-customer-token.use-case';
+import { FindCustomerByIdUseCase } from '@application/use-cases/customer/find-customer-by-id.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { JwtStrategy } from '@infrastructure/http/strategies/jwt.strategy';
@@ -45,6 +47,15 @@ import { AuthController } from './auth.controller';
             configService.get<string>('CUSTOMER_JWT_EXPIRATION', '15m'),
             configService.get<string>('CUSTOMER_JWT_REFRESH_EXPIRATION', '7d'),
           ),
+          new RefreshCustomerTokenUseCase(
+            customerRepository,
+            tokenService,
+            configService.getOrThrow<string>('CUSTOMER_JWT_SECRET'),
+            configService.getOrThrow<string>('CUSTOMER_JWT_REFRESH_SECRET'),
+            configService.get<string>('CUSTOMER_JWT_EXPIRATION', '15m'),
+            configService.get<string>('CUSTOMER_JWT_REFRESH_EXPIRATION', '7d'),
+          ),
+          new FindCustomerByIdUseCase(customerRepository),
         ),
       inject: [
         'IUserRepository',

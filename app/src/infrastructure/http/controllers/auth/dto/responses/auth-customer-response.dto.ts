@@ -4,6 +4,8 @@ import {
   AuthCustomerDataResponse,
   AuthCustomerResponse,
   AuthCustomerSummaryResponse,
+  AuthCustomerTokensDataResponse,
+  AuthCustomerTokensResponse,
 } from '@interface-adapters/auth/responses/auth-customer.response';
 
 class AuthCustomerSummaryResponseDto implements AuthCustomerSummaryResponse {
@@ -37,4 +39,17 @@ export class AuthCustomerResponseDto implements AuthCustomerResponse {
 export class AuthCustomerDataResponseDto implements AuthCustomerDataResponse {
   @ApiProperty({ type: AuthCustomerResponseDto, description: 'Dados de autenticação do cliente' })
   data!: AuthCustomerResponseDto;
+}
+
+export class AuthCustomerTokensResponseDto implements AuthCustomerTokensResponse {
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  accessToken!: string;
+
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  refreshToken!: string;
+}
+
+export class AuthCustomerTokensDataResponseDto implements AuthCustomerTokensDataResponse {
+  @ApiProperty({ type: AuthCustomerTokensResponseDto })
+  data!: AuthCustomerTokensResponseDto;
 }

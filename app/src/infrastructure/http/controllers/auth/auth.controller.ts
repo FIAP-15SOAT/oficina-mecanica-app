@@ -13,16 +13,24 @@ import {
   AuthenticatedUser,
   CurrentUser,
 } from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentCustomer } from '@infrastructure/http/decorators/current-customer.decorator';
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
+import { JwtCustomerAuthGuard } from '@infrastructure/http/guards/jwt-customer-auth.guard';
+import { CustomerTokenPayload } from '@application/ports/output/token.service.interface';
 
 import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 
 import { AuthDataResponseDto } from './dto/responses/auth-response.dto';
 import { MeDataResponseDto } from './dto/responses/me-response.dto';
-import { AuthCustomerDataResponseDto } from './dto/responses/auth-customer-response.dto';
+import {
+  AuthCustomerDataResponseDto,
+  AuthCustomerTokensDataResponseDto,
+} from './dto/responses/auth-customer-response.dto';
+import { CustomerDataResponseDto } from '@infrastructure/http/controllers/customer/dto/responses/customer-response.dto';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
 import { LoginCustomerRequestDto } from './dto/requests/login-customer-request.dto';
+import { RefreshCustomerTokenRequestDto } from './dto/requests/refresh-customer-token-request.dto';
 
 @ApiTags('Autenticação')
 @ApiProduces('application/json')
@@ -69,5 +77,30 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
   loginCustomer(@Body() request: LoginCustomerRequestDto): Promise<AuthCustomerDataResponseDto> {
     return this.controller.loginCustomer(request);
+  }
+
+  @Post('customer/refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renovar tokens do cliente com refresh token' })
+  @ApiOkResponse({
+    type: AuthCustomerTokensDataResponseDto,
+    description: 'Tokens renovados com sucesso',
+  })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
+  refreshCustomer(
+    @Body() request: RefreshCustomerTokenRequestDto,
+  ): Promise<AuthCustomerTokensDataResponseDto> {
+    return this.controller.refreshCustomer(request);
+  }
+
+  @Get('customer/me')
+  @UseGuards(JwtCustomerAuthGuard)
+  @ApiBearerAuth('customer-access-token')
+  @ApiOperation({ summary: 'Obter dados do cliente autenticado' })
+  @ApiOkResponse({ type: CustomerDataResponseDto, description: 'Dados do cliente' })
+  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
+  meCustomer(@CurrentCustomer() customer: CustomerTokenPayload): Promise<CustomerDataResponseDto> {
+    return this.controller.meCustomer(customer.sub);
   }
 }
