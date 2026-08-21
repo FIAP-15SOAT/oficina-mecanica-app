@@ -19,8 +19,10 @@ import { AuthController as AuthCleanController } from '@interface-adapters/auth/
 
 import { AuthDataResponseDto } from './dto/responses/auth-response.dto';
 import { MeDataResponseDto } from './dto/responses/me-response.dto';
+import { AuthCustomerDataResponseDto } from './dto/responses/auth-customer-response.dto';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
+import { LoginCustomerRequestDto } from './dto/requests/login-customer-request.dto';
 
 @ApiTags('Autenticação')
 @ApiProduces('application/json')
@@ -57,5 +59,15 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
     return this.controller.me(user.sub);
+  }
+
+  @Post('customer/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Autenticar cliente' })
+  @ApiOkResponse({ type: AuthCustomerDataResponseDto, description: 'Login realizado com sucesso' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
+  loginCustomer(@Body() request: LoginCustomerRequestDto): Promise<AuthCustomerDataResponseDto> {
+    return this.controller.loginCustomer(request);
   }
 }

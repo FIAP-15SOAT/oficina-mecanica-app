@@ -19,3 +19,9 @@ export interface ITokenService {
   verifyWithSecret<T extends object = Record<string, unknown>>(token: string, secret: string): T;
   verifyRefreshToken(token: string): TokenPayload;
 }
+
+export interface CustomerTokenPayload {
+  sub: string;
+  email: string;
+  type: 'customer';
+}

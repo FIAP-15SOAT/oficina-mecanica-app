@@ -5,32 +5,39 @@ import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
 
 import { LoginRequest } from '@interface-adapters/auth/requests/login-request';
 import { RefreshTokenRequest } from '@interface-adapters/auth/requests/refresh-token-request';
+import { LoginCustomerRequest } from '@interface-adapters/auth/requests/login-customer-request';
 
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
 import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
+import { IAuthenticateCustomerUseCase } from '@application/ports/input/auth/authenticate-customer.use-case.interface';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
 import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
+import { AuthenticateCustomerOutputDto } from '@application/ports/input/auth/dto/authenticate-customer.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
+import { CustomerType } from '@domain/enums/customer-type.enum';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authenticateUseCase: jest.Mocked<IAuthenticateUserUseCase>;
   let getCurrentUserUseCase: jest.Mocked<IGetCurrentUserUseCase>;
   let refreshTokenUseCase: jest.Mocked<IRefreshTokenUseCase>;
+  let authenticateCustomerUseCase: jest.Mocked<IAuthenticateCustomerUseCase>;
 
   beforeEach(() => {
     authenticateUseCase = { execute: jest.fn() };
     getCurrentUserUseCase = { execute: jest.fn() };
     refreshTokenUseCase = { execute: jest.fn() };
+    authenticateCustomerUseCase = { execute: jest.fn() };
 
     controller = new AuthController(
       authenticateUseCase,
       getCurrentUserUseCase,
       refreshTokenUseCase,
+      authenticateCustomerUseCase,
     );
   });
 
@@ -108,6 +115,34 @@ describe('AuthController', () => {
 
       expect(result).toEqual(AuthPresenter.toMeDataResponse(currentUser));
       expect(getCurrentUserUseCase.execute).toHaveBeenCalledWith(userId);
+    });
+  });
+
+  describe('loginCustomer', () => {
+    it('should authenticate the customer and return tokens wrapped in data', async () => {
+      const request: LoginCustomerRequest = {
+        identifier: 'cliente@email.com',
+        password: 'Senha@123',
+      };
+
+      const authResult: AuthenticateCustomerOutputDto = {
+        accessToken: 'customer-access-token',
+        refreshToken: 'customer-refresh-token',
+        customer: {
+          id: randomUUID(),
+          name: 'Maria Souza',
+          email: 'cliente@email.com',
+          document: '12345678909',
+          type: CustomerType.INDIVIDUAL,
+        },
+      };
+
+      authenticateCustomerUseCase.execute.mockResolvedValue(authResult);
+
+      const result = await controller.loginCustomer(request);
+
+      expect(result).toEqual({ data: authResult });
+      expect(authenticateCustomerUseCase.execute).toHaveBeenCalledWith(request);
     });
   });
 });
