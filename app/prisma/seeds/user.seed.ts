@@ -55,6 +55,7 @@ export async function seedUsers(prisma: PrismaClient): Promise<void> {
       where: { email: user.email },
       update: {
         name: user.name,
+        document: user.document,
         role: user.role,
       },
       create: {
