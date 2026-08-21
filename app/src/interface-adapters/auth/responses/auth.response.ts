@@ -4,6 +4,7 @@ export interface AuthUserSummaryResponse {
   id: string;
   name: string;
   email: string;
+  document: string;
   role: UserRole;
 }
 

@@ -48,6 +48,7 @@ describe('AuthController', () => {
           id: randomUUID(),
           name: 'John Doe',
           email: 'john.doe@example.com',
+          document: '12345678909',
           role: UserRole.ATTENDANT,
         },
       };
@@ -72,6 +73,7 @@ describe('AuthController', () => {
           id: randomUUID(),
           name: 'John Doe',
           email: 'john.doe@example.com',
+          document: '12345678909',
           role: UserRole.ATTENDANT,
         },
       };

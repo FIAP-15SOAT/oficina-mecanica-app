@@ -12,6 +12,7 @@ export interface AuthenticateUserOutputDto {
     id: string;
     name: string;
     email: string;
+    document: string;
     role: UserRole;
   };
 }

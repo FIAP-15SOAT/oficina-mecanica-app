@@ -25,6 +25,7 @@ export class AuthPresenter {
         id: result.user.id,
         name: result.user.name,
         email: result.user.email,
+        document: result.user.document,
         role: result.user.role,
       },
     };

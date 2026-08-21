@@ -38,6 +38,7 @@ describe('AuthController', () => {
           id: randomUUID(),
           name: 'João',
           email: 'joao@email.com',
+          document: '12345678909',
           role: UserRole.ATTENDANT,
         },
       };
@@ -60,7 +61,13 @@ describe('AuthController', () => {
       const refreshResult: AuthenticateUserOutputDto = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        user: { id: randomUUID(), name: 'João', email: 'joao@email.com', role: UserRole.ATTENDANT },
+        user: {
+          id: randomUUID(),
+          name: 'João',
+          email: 'joao@email.com',
+          document: '12345678909',
+          role: UserRole.ATTENDANT,
+        },
       };
 
       const response = AuthPresenter.toAuthDataResponse(refreshResult);

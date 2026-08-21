@@ -17,6 +17,7 @@ describe('AuthPresenter', () => {
           id: randomUUID(),
           name: 'João da Silva',
           email: 'joao@email.com',
+          document: '12345678909',
           role: UserRole.MECHANIC,
         },
       };
