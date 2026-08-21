@@ -12,6 +12,9 @@ export class MeResponseDto implements MeResponse {
   @ApiProperty({ example: 'joao@email.com' })
   email!: string;
 
+  @ApiProperty({ example: '12345678909' })
+  document!: string;
+
   @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT })
   role!: UserRole;
 

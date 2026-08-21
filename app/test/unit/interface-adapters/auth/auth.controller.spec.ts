@@ -37,7 +37,7 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should authenticate the user and return tokens wrapped in data', async () => {
       const request: LoginRequest = {
-        email: 'john.doe@example.com',
+        identifier: 'john.doe@example.com',
         password: 'SecurePass123!',
       };
 
@@ -47,7 +47,7 @@ describe('AuthController', () => {
         user: {
           id: randomUUID(),
           name: 'John Doe',
-          email: request.email,
+          email: 'john.doe@example.com',
           role: UserRole.ATTENDANT,
         },
       };
@@ -93,6 +93,7 @@ describe('AuthController', () => {
         id: userId,
         name: 'John Doe',
         email: 'john.doe@example.com',
+        document: '12345678909',
         role: UserRole.ATTENDANT,
         isActive: true,
         createdAt: new Date(),

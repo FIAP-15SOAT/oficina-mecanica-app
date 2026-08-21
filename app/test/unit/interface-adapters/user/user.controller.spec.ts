@@ -50,6 +50,7 @@ describe('UserController', () => {
       const request: CreateUserRequest = {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
+        document: '12345678909',
         password: 'SecurePass123!',
         role: UserRole.MECHANIC,
       };

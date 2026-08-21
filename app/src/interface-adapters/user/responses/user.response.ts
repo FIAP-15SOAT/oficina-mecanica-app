@@ -5,6 +5,7 @@ export interface UserResponse {
   id: string;
   name: string;
   email: string;
+  document: string;
   role: UserRole;
   isActive: boolean;
   createdAt: Date;
