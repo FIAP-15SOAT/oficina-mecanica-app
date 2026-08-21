@@ -9,10 +9,13 @@ import {
   createMockCustomer,
   createMockCustomerRepository,
 } from '../../../../helpers/customer-mock.factory';
+import { createMockHashService } from '../../../../helpers/mock-factories';
 
 describe('CreateCustomerUseCase', () => {
   let useCase: CreateCustomerUseCase;
-  let customerRepository: jest.Mocked<ICustomerRepository>;
+  let customerRepository: ReturnType<typeof createMockCustomerRepository>;
+  let hashService: ReturnType<typeof createMockHashService>;
+  let emailSenderService: { send: jest.Mock };
 
   const validInput = {
     name: 'João da Silva',
@@ -25,7 +28,9 @@ describe('CreateCustomerUseCase', () => {
 
   beforeEach(() => {
     customerRepository = createMockCustomerRepository();
-    useCase = new CreateCustomerUseCase(customerRepository);
+    hashService = createMockHashService();
+    emailSenderService = { send: jest.fn().mockResolvedValue(undefined) };
+    useCase = new CreateCustomerUseCase(customerRepository, hashService, emailSenderService);
   });
 
   it('should create customer when document and email are unique', async () => {
@@ -64,5 +69,53 @@ describe('CreateCustomerUseCase', () => {
 
     await expect(useCase.execute(validInput)).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should generate a random password, hash it, and send it by e-mail', async () => {
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.create.mockImplementation((customer) => Promise.resolve(customer));
+
+    await useCase.execute({
+      name: 'Cliente Teste',
+      document: '12345678909',
+      type: CustomerType.INDIVIDUAL,
+      email: 'cliente@email.com',
+      phone: '11999999999',
+      address: { street: 'Rua A', city: 'SP', state: 'SP', zipCode: '01310100' },
+    });
+
+    expect(hashService.hash).toHaveBeenCalledTimes(1);
+    const [generatedPassword] = hashService.hash.mock.calls[0];
+    expect(typeof generatedPassword).toBe('string');
+    expect(generatedPassword.length).toBeGreaterThanOrEqual(8);
+
+    expect(emailSenderService.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toEmail: 'cliente@email.com',
+        toName: 'Cliente Teste',
+        message: expect.objectContaining({
+          text: expect.stringContaining(generatedPassword),
+        }),
+      }),
+    );
+  });
+
+  it('should never return the plain-text password', async () => {
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.create.mockImplementation((customer) => Promise.resolve(customer));
+
+    const result = await useCase.execute({
+      name: 'Cliente Teste',
+      document: '12345678909',
+      type: CustomerType.INDIVIDUAL,
+      email: 'cliente@email.com',
+      phone: '11999999999',
+      address: { street: 'Rua A', city: 'SP', state: 'SP', zipCode: '01310100' },
+    });
+
+    expect(result).not.toHaveProperty('password');
+    expect(JSON.stringify(result)).not.toContain('passwordHash');
   });
 });
