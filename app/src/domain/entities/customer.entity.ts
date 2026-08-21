@@ -5,6 +5,7 @@ import { Address, AddressProps } from '../value-objects/address.vo';
 import { Email } from '../value-objects/email.vo';
 import { Phone } from '../value-objects/phone.vo';
 import { Document } from '../value-objects/document.vo';
+import { PasswordValidator } from '../validators/password.validator';
 import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/customer.constants';
 
 export interface CreateCustomerProps {
@@ -14,6 +15,7 @@ export interface CreateCustomerProps {
   email: string;
   phone: string;
   address: AddressProps;
+  passwordHash: string;
 }
 
 export interface UpdateCustomerProps {
@@ -33,6 +35,7 @@ interface CustomerProps {
   email: Email;
   phone: Phone;
   address: Address | null;
+  passwordHash: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +48,7 @@ export class Customer {
   email: Email;
   phone: Phone;
   address: Address | null;
+  passwordHash: string;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -56,6 +60,7 @@ export class Customer {
     this.email = props.email;
     this.phone = props.phone;
     this.address = props.address;
+    this.passwordHash = props.passwordHash;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -66,6 +71,7 @@ export class Customer {
 
   static create(props: CreateCustomerProps): Customer {
     Customer.validateName(props.name);
+    Customer.validatePasswordHash(props.passwordHash);
 
     return new Customer({
       id: randomUUID(),
@@ -75,9 +81,14 @@ export class Customer {
       email: Email.create(props.email),
       phone: Phone.create(props.phone),
       address: Address.create(props.address),
+      passwordHash: props.passwordHash,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  static validatePasswordStrength(password: string): void {
+    PasswordValidator.validateStrength(password);
   }
 
   update(props: UpdateCustomerProps): void {
@@ -89,6 +100,12 @@ export class Customer {
     this.email = Email.create(props.email);
     this.phone = Phone.create(props.phone);
     this.address = Address.create(props.address);
+    this.updatedAt = new Date();
+  }
+
+  changePassword(passwordHash: string): void {
+    Customer.validatePasswordHash(passwordHash);
+    this.passwordHash = passwordHash;
     this.updatedAt = new Date();
   }
 
@@ -105,6 +122,12 @@ export class Customer {
 
     if (trimmed.length > MAX_NAME_LENGTH) {
       throw new DomainValidationException(`Nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres`);
+    }
+  }
+
+  private static validatePasswordHash(passwordHash: string): void {
+    if (!passwordHash || passwordHash.length === 0) {
+      throw new DomainValidationException('Hash de senha não pode ser vazio');
     }
   }
 }

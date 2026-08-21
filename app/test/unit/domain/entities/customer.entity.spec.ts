@@ -17,6 +17,7 @@ describe('Customer Entity', () => {
     email: 'joao@email.com',
     phone: '11999999999',
     address: validAddress,
+    passwordHash: '$2b$12$hashedpassword',
   };
 
   describe('create (factory method)', () => {
@@ -187,6 +188,47 @@ describe('Customer Entity', () => {
           'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999',
         );
       });
+    });
+  });
+
+  describe('create — passwordHash', () => {
+    it('should create customer with a passwordHash', () => {
+      const customer = Customer.create({ ...validProps, passwordHash: '$2b$12$hashedpassword' });
+      expect(customer.passwordHash).toBe('$2b$12$hashedpassword');
+    });
+
+    it('should throw if passwordHash is empty', () => {
+      expect(() => Customer.create({ ...validProps, passwordHash: '' })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => Customer.create({ ...validProps, passwordHash: '' })).toThrow(
+        'Hash de senha não pode ser vazio',
+      );
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should change the password hash', () => {
+      const customer = Customer.create({ ...validProps, passwordHash: '$2b$12$hashedpassword' });
+      customer.changePassword('$2b$12$newhash');
+
+      expect(customer.passwordHash).toBe('$2b$12$newhash');
+    });
+
+    it('should throw if new hash is empty', () => {
+      const customer = Customer.create({ ...validProps, passwordHash: '$2b$12$hashedpassword' });
+
+      expect(() => customer.changePassword('')).toThrow(DomainValidationException);
+    });
+  });
+
+  describe('validatePasswordStrength', () => {
+    it('should accept a strong password', () => {
+      expect(() => Customer.validatePasswordStrength('Senha@123')).not.toThrow();
+    });
+
+    it('should throw for a weak password', () => {
+      expect(() => Customer.validatePasswordStrength('weak')).toThrow(DomainValidationException);
     });
   });
 });
