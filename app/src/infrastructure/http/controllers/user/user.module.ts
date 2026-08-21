@@ -8,9 +8,12 @@ import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.
 import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
 import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
+import { ChangeOwnUserPasswordUseCase } from '@application/use-cases/user/change-own-user-password.use-case';
+import { ResetUserPasswordUseCase } from '@application/use-cases/user/reset-user-password.use-case';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
+import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 
 import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
 import { UserController } from './user.controller';
@@ -21,16 +24,22 @@ import { UserController } from './user.controller';
   providers: [
     {
       provide: UserCleanController,
-      useFactory: (userRepository: IUserRepository, hashService: IHashService) =>
+      useFactory: (
+        userRepository: IUserRepository,
+        hashService: IHashService,
+        emailSenderService: IEmailSenderService,
+      ) =>
         new UserCleanController(
           new CreateUserUseCase(userRepository, hashService),
           new FindUserByIdUseCase(userRepository),
           new FindAllUsersUseCase(userRepository),
-          new UpdateUserUseCase(userRepository, hashService),
+          new UpdateUserUseCase(userRepository),
           new UpdateUserStatusUseCase(userRepository),
           new DeleteUserUseCase(userRepository),
+          new ChangeOwnUserPasswordUseCase(userRepository, hashService),
+          new ResetUserPasswordUseCase(userRepository, hashService, emailSenderService),
         ),
-      inject: ['IUserRepository', 'IHashService'],
+      inject: ['IUserRepository', 'IHashService', 'IEmailSenderService'],
     },
   ],
 })

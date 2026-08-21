@@ -1,22 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
-import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
-import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/password.constants';
-import {
-  MIN_NAME_LENGTH,
-  MAX_NAME_LENGTH,
-} from '@domain/constants/validation/user.constants';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/user.constants';
 
 export class UpdateUserRequestDto {
   @ApiPropertyOptional({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
@@ -40,20 +27,15 @@ export class UpdateUserRequestDto {
     example: '123.456.789-09',
   })
   @IsOptional()
-  @Transform(({ value }: { value: string }) => value?.trim().replaceAll(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) =>
+    value
+      ?.trim()
+      .replaceAll(/[.\-/]/g, '')
+      .toUpperCase(),
+  )
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsValidCpfCnpj()
   document?: string;
-
-  @ApiPropertyOptional({
-    example: 'NovaSenha@123',
-    description:
-      'Nova senha (mín. 8 caracteres, com ao menos uma letra maiúscula, uma minúscula, um número e um caractere especial)',
-  })
-  @IsOptional()
-  @IsString({ message: 'A senha deve ser um texto.' })
-  @Matches(PASSWORD_REGEX, { message: PASSWORD_REQUIREMENTS_MESSAGE })
-  password?: string;
 
   @ApiPropertyOptional({ enum: UserRole, example: UserRole.MECHANIC })
   @IsOptional()

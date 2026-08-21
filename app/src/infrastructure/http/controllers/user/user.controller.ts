@@ -33,6 +33,10 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '@infrastructure/http/decorators/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
@@ -41,6 +45,7 @@ import { CreateUserRequestDto } from './dto/requests/create-user-request.dto';
 import { FindAllUsersQueryDto } from './dto/requests/filter-users.dto';
 import { UpdateUserStatusRequestDto } from './dto/requests/update-user-status-request.dto';
 import { UpdateUserRequestDto } from './dto/requests/update-user-request.dto';
+import { ChangeOwnPasswordRequestDto } from './dto/requests/change-own-password-request.dto';
 import { UserDataResponseDto, UserPaginatedResponseDto } from './dto/responses/user-response.dto';
 
 @ApiTags('Gestão de Usuários')
@@ -117,6 +122,30 @@ export class UserController {
     @Body() request: UpdateUserStatusRequestDto,
   ): Promise<UserDataResponseDto> {
     return this.controller.updateStatus(id, request);
+  }
+
+  @Patch('me/password')
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Trocar a própria senha' })
+  @ApiNoContentResponse({ description: 'Senha alterada com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Senha atual incorreta' })
+  async changeOwnPassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() request: ChangeOwnPasswordRequestDto,
+  ): Promise<void> {
+    await this.controller.changeOwnPassword(user.sub, request);
+  }
+
+  @Patch(':id/password')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Redefinir a senha de outro usuário (gera senha nova e envia por e-mail)',
+  })
+  @ApiNoContentResponse({ description: 'Senha redefinida e enviada por e-mail' })
+  async resetPassword(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.controller.resetPassword(id);
   }
 
   @Delete(':id')

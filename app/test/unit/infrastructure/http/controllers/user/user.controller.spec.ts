@@ -9,8 +9,10 @@ import { CreateUserRequestDto } from '@infrastructure/http/controllers/user/dto/
 import { UpdateUserRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-request.dto';
 import { UpdateUserStatusRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-status-request.dto';
 import { FindAllUsersQueryDto } from '@infrastructure/http/controllers/user/dto/requests/filter-users.dto';
+import { ChangeOwnPasswordRequestDto } from '@infrastructure/http/controllers/user/dto/requests/change-own-password-request.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
+import { TokenPayload } from '@application/ports/output/token.service.interface';
 
 import { createMockUser } from '../../../../../helpers/user-mock.factory';
 
@@ -34,6 +36,8 @@ describe('UserController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
+      { execute: jest.fn() } as never,
+      { execute: jest.fn() } as never,
     );
     httpController = new UserController(cleanController);
   });
@@ -128,6 +132,41 @@ describe('UserController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('changeOwnPassword', () => {
+    it('should delegate to the clean controller using the authenticated user id', async () => {
+      const authenticatedUser: TokenPayload = {
+        sub: randomUUID(),
+        email: 'jane.smith@example.com',
+        role: UserRole.MECHANIC,
+      };
+      const request: ChangeOwnPasswordRequestDto = {
+        currentPassword: 'Senha@123',
+        newPassword: 'NovaSenha@456',
+      };
+
+      jest.spyOn(cleanController, 'changeOwnPassword').mockResolvedValue(undefined);
+
+      await httpController.changeOwnPassword(authenticatedUser, request);
+
+      expect(cleanController.changeOwnPassword).toHaveBeenCalledWith(
+        authenticatedUser.sub,
+        request,
+      );
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should delegate to the clean controller', async () => {
+      const id = randomUUID();
+
+      jest.spyOn(cleanController, 'resetPassword').mockResolvedValue(undefined);
+
+      await httpController.resetPassword(id);
+
+      expect(cleanController.resetPassword).toHaveBeenCalledWith(id);
     });
   });
 });

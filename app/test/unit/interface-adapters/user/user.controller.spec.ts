@@ -15,6 +15,8 @@ import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-use
 import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
 import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
 import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
+import { ChangeOwnUserPasswordUseCase } from '@application/use-cases/user/change-own-user-password.use-case';
+import { ResetUserPasswordUseCase } from '@application/use-cases/user/reset-user-password.use-case';
 
 import { createMockUser } from '../../../helpers/user-mock.factory';
 
@@ -26,6 +28,8 @@ describe('UserController', () => {
   let updateUserUseCase: jest.Mocked<IUpdateUserUseCase>;
   let updateUserStatusUseCase: jest.Mocked<IUpdateUserStatusUseCase>;
   let deleteUserUseCase: jest.Mocked<IDeleteUserUseCase>;
+  let changeOwnUserPasswordUseCase: jest.Mocked<ChangeOwnUserPasswordUseCase>;
+  let resetUserPasswordUseCase: jest.Mocked<ResetUserPasswordUseCase>;
 
   beforeEach(() => {
     createUserUseCase = { execute: jest.fn() };
@@ -34,6 +38,12 @@ describe('UserController', () => {
     updateUserUseCase = { execute: jest.fn() };
     updateUserStatusUseCase = { execute: jest.fn() };
     deleteUserUseCase = { execute: jest.fn() };
+    changeOwnUserPasswordUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ChangeOwnUserPasswordUseCase>;
+    resetUserPasswordUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ResetUserPasswordUseCase>;
 
     controller = new UserController(
       createUserUseCase,
@@ -42,6 +52,8 @@ describe('UserController', () => {
       updateUserUseCase,
       updateUserStatusUseCase,
       deleteUserUseCase,
+      changeOwnUserPasswordUseCase,
+      resetUserPasswordUseCase,
     );
   });
 
@@ -178,6 +190,31 @@ describe('UserController', () => {
       await controller.remove(id);
 
       expect(deleteUserUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('changeOwnPassword', () => {
+    it('should delegate to the change-own-password use case', async () => {
+      const userId = randomUUID();
+      const input = { currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' };
+
+      changeOwnUserPasswordUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.changeOwnPassword(userId, input);
+
+      expect(changeOwnUserPasswordUseCase.execute).toHaveBeenCalledWith(userId, input);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should delegate to the reset-password use case', async () => {
+      const userId = randomUUID();
+
+      resetUserPasswordUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.resetPassword(userId);
+
+      expect(resetUserPasswordUseCase.execute).toHaveBeenCalledWith(userId);
     });
   });
 });

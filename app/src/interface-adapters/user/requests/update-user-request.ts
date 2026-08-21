@@ -4,6 +4,5 @@ export interface UpdateUserRequest {
   name?: string;
   email?: string;
   document?: string;
-  password?: string;
   role?: UserRole;
 }

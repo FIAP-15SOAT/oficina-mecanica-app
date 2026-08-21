@@ -5,7 +5,6 @@ export interface UpdateUserDto {
   name?: string;
   email?: string;
   document?: string;
-  password?: string;
   role?: UserRole;
 }
 

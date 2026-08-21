@@ -1,12 +1,7 @@
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
-import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { UserRole } from '@domain/enums/user-role.enum';
-import {
-  createMockHashService,
-  createMockUser,
-  createMockUserRepository,
-} from '../../../../helpers/mock-factories';
+import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
@@ -14,12 +9,10 @@ import { Document } from '@domain/value-objects/document.vo';
 describe('UpdateUserUseCase', () => {
   let useCase: UpdateUserUseCase;
   let userRepository: ReturnType<typeof createMockUserRepository>;
-  let hashService: ReturnType<typeof createMockHashService>;
 
   beforeEach(() => {
     userRepository = createMockUserRepository();
-    hashService = createMockHashService();
-    useCase = new UpdateUserUseCase(userRepository, hashService);
+    useCase = new UpdateUserUseCase(userRepository);
   });
 
   it('should update user name', async () => {
@@ -80,28 +73,6 @@ describe('UpdateUserUseCase', () => {
     expect(result.role).toBe(UserRole.ADMIN);
   });
 
-  it('should update password with hash', async () => {
-    const user = createMockUser();
-    userRepository.findById.mockResolvedValue(user);
-    userRepository.update.mockImplementation(() => Promise.resolve(createMockUser()));
-
-    await useCase.execute('user-uuid-123', { password: 'NovaSenha@123' });
-
-    expect(hashService.hash).toHaveBeenCalledWith('NovaSenha@123');
-  });
-
-  it('should throw DomainValidationException if new password is weak', async () => {
-    const user = createMockUser();
-    userRepository.findById.mockResolvedValue(user);
-
-    await expect(useCase.execute('user-uuid-123', { password: 'weak' })).rejects.toThrow(
-      DomainValidationException,
-    );
-
-    expect(hashService.hash).not.toHaveBeenCalled();
-    expect(userRepository.update).not.toHaveBeenCalled();
-  });
-
   it('should throw ResourceNotFoundException if user does not exist', async () => {
     userRepository.findById.mockResolvedValue(null);
 
@@ -139,8 +110,8 @@ describe('UpdateUserUseCase', () => {
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByDocument.mockResolvedValue(createMockUser({ id: 'outro-id' }));
 
-    await expect(
-      useCase.execute('user-uuid-123', { document: '12345678000195' }),
-    ).rejects.toThrow(ResourceConflictException);
+    await expect(useCase.execute('user-uuid-123', { document: '12345678000195' })).rejects.toThrow(
+      ResourceConflictException,
+    );
   });
 });
