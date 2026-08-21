@@ -1,8 +1,18 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
@@ -31,6 +41,7 @@ import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
 import { LoginCustomerRequestDto } from './dto/requests/login-customer-request.dto';
 import { RefreshCustomerTokenRequestDto } from './dto/requests/refresh-customer-token-request.dto';
+import { ChangeOwnCustomerPasswordRequestDto } from './dto/requests/change-own-customer-password-request.dto';
 
 @ApiTags('Autenticação')
 @ApiProduces('application/json')
@@ -102,5 +113,19 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   meCustomer(@CurrentCustomer() customer: CustomerTokenPayload): Promise<CustomerDataResponseDto> {
     return this.controller.meCustomer(customer.sub);
+  }
+
+  @Patch('customer/password')
+  @UseGuards(JwtCustomerAuthGuard)
+  @ApiBearerAuth('customer-access-token')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cliente troca a própria senha' })
+  @ApiNoContentResponse({ description: 'Senha alterada com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Senha atual incorreta' })
+  async changeOwnCustomerPassword(
+    @CurrentCustomer() customer: CustomerTokenPayload,
+    @Body() request: ChangeOwnCustomerPasswordRequestDto,
+  ): Promise<void> {
+    await this.controller.changeOwnCustomerPassword(customer.sub, request);
   }
 }

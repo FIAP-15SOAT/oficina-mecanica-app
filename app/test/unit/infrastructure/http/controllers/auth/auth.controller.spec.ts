@@ -10,6 +10,7 @@ import { LoginRequestDto } from '@infrastructure/http/controllers/auth/dto/reque
 import { RefreshTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-token-request.dto';
 import { LoginCustomerRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-customer-request.dto';
 import { RefreshCustomerTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-customer-token-request.dto';
+import { ChangeOwnCustomerPasswordRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/change-own-customer-password-request.dto';
 import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
 import { CustomerTokenPayload } from '@application/ports/output/token.service.interface';
 
@@ -34,6 +35,7 @@ describe('AuthController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
+      { execute: jest.fn() } as never,
     );
     httpController = new AuthController(cleanController);
   });
@@ -189,6 +191,29 @@ describe('AuthController', () => {
 
       expect(result).toBe(response);
       expect(cleanController.meCustomer).toHaveBeenCalledWith(customerTokenPayload.sub);
+    });
+  });
+
+  describe('changeOwnCustomerPassword', () => {
+    it('should delegate to the clean controller using the authenticated customer id', async () => {
+      const customerTokenPayload: CustomerTokenPayload = {
+        sub: randomUUID(),
+        email: 'cliente@email.com',
+        type: 'customer',
+      };
+      const request: ChangeOwnCustomerPasswordRequestDto = {
+        currentPassword: 'Senha@123',
+        newPassword: 'NovaSenha@456',
+      };
+
+      jest.spyOn(cleanController, 'changeOwnCustomerPassword').mockResolvedValue(undefined);
+
+      await httpController.changeOwnCustomerPassword(customerTokenPayload, request);
+
+      expect(cleanController.changeOwnCustomerPassword).toHaveBeenCalledWith(
+        customerTokenPayload.sub,
+        request,
+      );
     });
   });
 });

@@ -3,6 +3,7 @@ import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
+import { ResetCustomerPasswordUseCase } from '@application/use-cases/customer/reset-customer-password.use-case';
 
 import { CreateCustomerRequest } from './requests/create-customer-request';
 import { UpdateCustomerRequest } from './requests/update-customer-request';
@@ -18,6 +19,7 @@ export class CustomerController {
     private readonly findCustomerByIdUseCase: IFindCustomerByIdUseCase,
     private readonly updateCustomerUseCase: IUpdateCustomerUseCase,
     private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
+    private readonly resetCustomerPasswordUseCase: ResetCustomerPasswordUseCase,
   ) {}
 
   async create(input: CreateCustomerRequest): Promise<CustomerDataResponse> {
@@ -47,5 +49,9 @@ export class CustomerController {
 
   async remove(id: string): Promise<void> {
     await this.deleteCustomerUseCase.execute(id);
+  }
+
+  async resetPassword(customerId: string): Promise<void> {
+    await this.resetCustomerPasswordUseCase.execute(customerId);
   }
 }

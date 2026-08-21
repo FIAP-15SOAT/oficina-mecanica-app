@@ -8,6 +8,7 @@ import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
+import { ResetCustomerPasswordUseCase } from '@application/use-cases/customer/reset-customer-password.use-case';
 
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Email } from '@domain/value-objects/email.vo';
@@ -24,6 +25,7 @@ describe('CustomerController', () => {
   let findByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateCustomerUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteCustomerUseCase>;
+  let resetCustomerPasswordUseCase: jest.Mocked<ResetCustomerPasswordUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -31,12 +33,16 @@ describe('CustomerController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
+    resetCustomerPasswordUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ResetCustomerPasswordUseCase>;
     controller = new CustomerController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
+      resetCustomerPasswordUseCase,
     );
   });
 
@@ -152,6 +158,17 @@ describe('CustomerController', () => {
       await controller.remove(id);
 
       expect(deleteUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should delegate to the reset-password use case', async () => {
+      const id = randomUUID();
+      resetCustomerPasswordUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.resetPassword(id);
+
+      expect(resetCustomerPasswordUseCase.execute).toHaveBeenCalledWith(id);
     });
   });
 });

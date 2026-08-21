@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -111,6 +112,20 @@ export class CustomerController {
     @Body() request: UpdateCustomerRequestDto,
   ): Promise<CustomerDataResponseDto> {
     return this.controller.update(id, request);
+  }
+
+  @Patch(':id/password')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Redefinir a senha de um cliente (gera senha nova e envia por e-mail)' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
+  @ApiNoContentResponse({ description: 'Senha redefinida e enviada por e-mail' })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
+  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
+  async resetPassword(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.controller.resetPassword(id);
   }
 
   @Delete(':id')

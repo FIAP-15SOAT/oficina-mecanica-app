@@ -4,6 +4,8 @@ import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-toke
 import { IAuthenticateCustomerUseCase } from '@application/ports/input/auth/authenticate-customer.use-case.interface';
 import { IRefreshCustomerTokenUseCase } from '@application/ports/input/auth/refresh-customer-token.use-case.interface';
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
+import { ChangeOwnCustomerPasswordUseCase } from '@application/use-cases/auth/change-own-customer-password.use-case';
+import { ChangeOwnCustomerPasswordDto } from '@application/ports/input/auth/dto/change-own-customer-password.dto';
 
 import { LoginRequest } from './requests/login-request';
 import { RefreshTokenRequest } from './requests/refresh-token-request';
@@ -27,6 +29,7 @@ export class AuthController {
     private readonly authenticateCustomerUseCase: IAuthenticateCustomerUseCase,
     private readonly refreshCustomerTokenUseCase: IRefreshCustomerTokenUseCase,
     private readonly findCustomerByIdUseCase: IFindCustomerByIdUseCase,
+    private readonly changeOwnCustomerPasswordUseCase: ChangeOwnCustomerPasswordUseCase,
   ) {}
 
   async login(input: LoginRequest): Promise<AuthDataResponse> {
@@ -59,5 +62,12 @@ export class AuthController {
   async meCustomer(customerId: string): Promise<CustomerDataResponse> {
     const customer = await this.findCustomerByIdUseCase.execute(customerId);
     return CustomerPresenter.toDataResponse(customer);
+  }
+
+  async changeOwnCustomerPassword(
+    customerId: string,
+    input: ChangeOwnCustomerPasswordDto,
+  ): Promise<void> {
+    await this.changeOwnCustomerPasswordUseCase.execute(customerId, input);
   }
 }

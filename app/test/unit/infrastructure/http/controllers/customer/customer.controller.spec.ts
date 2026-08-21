@@ -36,6 +36,7 @@ describe('CustomerController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
+      { execute: jest.fn() } as never,
     );
     httpController = new CustomerController(cleanController);
   });
@@ -102,6 +103,17 @@ describe('CustomerController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should delegate to the clean controller', async () => {
+      const id = randomUUID();
+      jest.spyOn(cleanController, 'resetPassword').mockResolvedValue(undefined);
+
+      await httpController.resetPassword(id);
+
+      expect(cleanController.resetPassword).toHaveBeenCalledWith(id);
     });
   });
 });

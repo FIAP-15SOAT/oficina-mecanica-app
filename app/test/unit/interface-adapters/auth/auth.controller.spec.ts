@@ -15,6 +15,7 @@ import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-toke
 import { IAuthenticateCustomerUseCase } from '@application/ports/input/auth/authenticate-customer.use-case.interface';
 import { IRefreshCustomerTokenUseCase } from '@application/ports/input/auth/refresh-customer-token.use-case.interface';
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
+import { ChangeOwnCustomerPasswordUseCase } from '@application/use-cases/auth/change-own-customer-password.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
@@ -34,6 +35,7 @@ describe('AuthController', () => {
   let authenticateCustomerUseCase: jest.Mocked<IAuthenticateCustomerUseCase>;
   let refreshCustomerTokenUseCase: jest.Mocked<IRefreshCustomerTokenUseCase>;
   let findCustomerByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
+  let changeOwnCustomerPasswordUseCase: jest.Mocked<ChangeOwnCustomerPasswordUseCase>;
 
   beforeEach(() => {
     authenticateUseCase = { execute: jest.fn() };
@@ -42,6 +44,9 @@ describe('AuthController', () => {
     authenticateCustomerUseCase = { execute: jest.fn() };
     refreshCustomerTokenUseCase = { execute: jest.fn() };
     findCustomerByIdUseCase = { execute: jest.fn() };
+    changeOwnCustomerPasswordUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ChangeOwnCustomerPasswordUseCase>;
 
     controller = new AuthController(
       authenticateUseCase,
@@ -50,6 +55,7 @@ describe('AuthController', () => {
       authenticateCustomerUseCase,
       refreshCustomerTokenUseCase,
       findCustomerByIdUseCase,
+      changeOwnCustomerPasswordUseCase,
     );
   });
 
@@ -186,6 +192,19 @@ describe('AuthController', () => {
 
       expect(result).toEqual(CustomerPresenter.toDataResponse(customer));
       expect(findCustomerByIdUseCase.execute).toHaveBeenCalledWith(customer.id);
+    });
+  });
+
+  describe('changeOwnCustomerPassword', () => {
+    it('should delegate to the change-own-customer-password use case', async () => {
+      const customerId = randomUUID();
+      const input = { currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' };
+
+      changeOwnCustomerPasswordUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.changeOwnCustomerPassword(customerId, input);
+
+      expect(changeOwnCustomerPasswordUseCase.execute).toHaveBeenCalledWith(customerId, input);
     });
   });
 });
