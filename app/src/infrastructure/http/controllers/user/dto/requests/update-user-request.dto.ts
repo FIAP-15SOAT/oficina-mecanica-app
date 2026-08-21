@@ -40,7 +40,7 @@ export class UpdateUserRequestDto {
     example: '123.456.789-09',
   })
   @IsOptional()
-  @Transform(({ value }: { value: string }) => value?.replaceAll(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) => value?.trim().replaceAll(/[.\-/]/g, '').toUpperCase())
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsValidCpfCnpj()
   document?: string;

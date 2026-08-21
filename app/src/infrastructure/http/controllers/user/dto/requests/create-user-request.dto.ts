@@ -39,7 +39,7 @@ export class CreateUserRequestDto {
     description: 'CPF (000.000.000-00) ou CNPJ válido, único',
     example: '123.456.789-09',
   })
-  @Transform(({ value }: { value: string }) => value?.replaceAll(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) => value?.trim().replaceAll(/[.\-/]/g, '').toUpperCase())
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsNotEmpty({ message: 'O documento é obrigatório' })
   @IsValidCpfCnpj()
