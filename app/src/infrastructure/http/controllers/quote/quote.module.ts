@@ -15,6 +15,7 @@ import { RejectQuoteUseCase } from '@application/use-cases/quote/reject-quote.us
 import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-quote-status.use-case';
 import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-decision-quote.use-case';
 import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
+import { FindPendingQuotesForCustomerUseCase } from '@application/use-cases/quote/find-pending-quotes-for-customer.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
@@ -24,12 +25,23 @@ import { ITokenService } from '@application/ports/output/token.service.interface
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
+import { CustomerQuoteController as CustomerQuoteCleanController } from '@interface-adapters/quote/customer-quote.controller';
 import { QuoteController } from './quote.controller';
+import { CustomerQuoteController } from './customer-quote.controller';
 
 @Module({
   imports: [InfrastructureServicesModule],
-  controllers: [QuoteController],
+  // Ordem importa: CustomerQuoteController precisa vir ANTES de QuoteController.
+  // Caso contrário, o Nest resolveria GET /quotes/me pela rota genérica
+  // GET /quotes/:id do QuoteController (tratando "me" como um :id).
+  controllers: [CustomerQuoteController, QuoteController],
   providers: [
+    {
+      provide: CustomerQuoteCleanController,
+      useFactory: (quoteRepository: IQuoteRepository) =>
+        new CustomerQuoteCleanController(new FindPendingQuotesForCustomerUseCase(quoteRepository)),
+      inject: ['IQuoteRepository'],
+    },
     {
       provide: QuoteCleanController,
       useFactory: (
