@@ -1,5 +1,9 @@
 /* eslint-disable no-console */
 import { PrismaClient, CustomerType } from '../generated/client';
+import * as bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
+const DEFAULT_PASSWORD = 'Tech@2026';
 
 interface CustomerSeed {
   name: string;
@@ -37,6 +41,7 @@ export async function seedCustomers(prisma: PrismaClient): Promise<Record<string
   console.log('🌱 Seeding customers...');
 
   const ids: Record<string, string> = {};
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
   for (const customer of customers) {
     const record = await prisma.customer.upsert({
@@ -53,12 +58,15 @@ export async function seedCustomers(prisma: PrismaClient): Promise<Record<string
         type: customer.type,
         email: customer.email,
         phone: customer.phone,
+        passwordHash,
       },
     });
 
     ids[customer.document] = record.id;
     console.log(`  ✓ Customer: ${customer.name}`);
   }
+
+  console.log(`✅ ${customers.length} customers seeded (senha padrão: ${DEFAULT_PASSWORD})`);
 
   return ids;
 }
