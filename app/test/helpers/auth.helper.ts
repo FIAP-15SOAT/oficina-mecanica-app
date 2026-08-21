@@ -7,7 +7,7 @@ import { nextValidCpf } from './document.helper';
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  user: { id: string; name: string; email: string; role: string };
+  user: { id: string; name: string; email: string; document: string; role: string };
 }
 
 export async function registerAndLogin(
