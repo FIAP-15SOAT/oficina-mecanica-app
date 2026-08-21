@@ -16,9 +16,11 @@ import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-qu
 import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-decision-quote.use-case';
 import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
 import { FindPendingQuotesForCustomerUseCase } from '@application/use-cases/quote/find-pending-quotes-for-customer.use-case';
+import { AuthenticatedQuoteDecisionUseCase } from '@application/use-cases/quote/authenticated-quote-decision.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
+import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 
 import { ITokenService } from '@application/ports/output/token.service.interface';
@@ -38,9 +40,25 @@ import { CustomerQuoteController } from './customer-quote.controller';
   providers: [
     {
       provide: CustomerQuoteCleanController,
-      useFactory: (quoteRepository: IQuoteRepository) =>
-        new CustomerQuoteCleanController(new FindPendingQuotesForCustomerUseCase(quoteRepository)),
-      inject: ['IQuoteRepository'],
+      useFactory: (
+        quoteRepository: IQuoteRepository,
+        workOrderRepository: IWorkOrderRepository,
+        unitOfWork: IUnitOfWork,
+      ) => {
+        const approveQuoteUseCase = new ApproveQuoteUseCase(unitOfWork);
+        const rejectQuoteUseCase = new RejectQuoteUseCase(unitOfWork);
+
+        return new CustomerQuoteCleanController(
+          new FindPendingQuotesForCustomerUseCase(quoteRepository),
+          new AuthenticatedQuoteDecisionUseCase(
+            quoteRepository,
+            workOrderRepository,
+            approveQuoteUseCase,
+            rejectQuoteUseCase,
+          ),
+        );
+      },
+      inject: ['IQuoteRepository', 'IWorkOrderRepository', 'IUnitOfWork'],
     },
     {
       provide: QuoteCleanController,

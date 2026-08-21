@@ -1,4 +1,13 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -14,7 +23,11 @@ import { CustomerTokenPayload } from '@application/ports/output/token.service.in
 
 import { CustomerQuoteController as CustomerQuoteCleanController } from '@interface-adapters/quote/customer-quote.controller';
 import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
-import { QuotePaginatedResponseDto } from './dto/responses/quote-response.dto';
+import { QuoteDecisionRequestDto } from './dto/requests/quote-decision-request.dto';
+import {
+  QuoteDataResponseDto,
+  QuotePaginatedResponseDto,
+} from './dto/responses/quote-response.dto';
 
 @ApiTags('Orçamentos')
 @ApiProduces('application/json')
@@ -39,5 +52,19 @@ export class CustomerQuoteController {
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });
+  }
+
+  @Patch(':id/decisions')
+  @ApiOperation({ summary: 'Cliente aprova ou rejeita o próprio orçamento' })
+  @ApiOkResponse({ type: QuoteDataResponseDto, description: 'Decisão registrada' })
+  @ApiUnauthorizedResponse({
+    description: 'Orçamento não encontrado ou não pertence a este cliente',
+  })
+  decide(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentCustomer() customer: CustomerTokenPayload,
+    @Body() request: QuoteDecisionRequestDto,
+  ): Promise<QuoteDataResponseDto> {
+    return this.controller.decide(id, customer.sub, request);
   }
 }
