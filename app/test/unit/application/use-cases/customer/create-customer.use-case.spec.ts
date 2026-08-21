@@ -115,6 +115,14 @@ describe('CreateCustomerUseCase', () => {
       address: { street: 'Rua A', city: 'SP', state: 'SP', zipCode: '01310100' },
     });
 
+    // Capture the plaintext password that was passed to the hash service
+    expect(hashService.hash).toHaveBeenCalledTimes(1);
+    const [generatedPassword] = hashService.hash.mock.calls[0];
+
+    // Verify the result does not contain the plaintext password value
+    expect(result.passwordHash).not.toBe(generatedPassword);
+
+    // Verify structural assertions: no 'password' property and 'passwordHash' key not in serialization
     expect(result).not.toHaveProperty('password');
     expect(JSON.stringify(result)).not.toContain('passwordHash');
   });

@@ -231,4 +231,45 @@ describe('Customer Entity', () => {
       expect(() => Customer.validatePasswordStrength('weak')).toThrow(DomainValidationException);
     });
   });
+
+  describe('toJSON (serialization)', () => {
+    it('should exclude passwordHash from JSON serialization', () => {
+      const customer = Customer.create({
+        ...validProps,
+        passwordHash: '$2b$12$verysensitivehash',
+      });
+
+      const serialized = JSON.stringify(customer);
+
+      // The sensitive hash value should not appear in the serialized output
+      expect(serialized).not.toContain('$2b$12$verysensitivehash');
+      // The key 'passwordHash' should not appear in the serialized output
+      expect(serialized).not.toContain('passwordHash');
+    });
+
+    it('should include other fields in JSON serialization', () => {
+      const customer = Customer.create(validProps);
+
+      const serialized = JSON.stringify(customer);
+      const parsed = JSON.parse(serialized);
+
+      // Verify that essential fields are still present
+      expect(parsed.id).toBe(customer.id);
+      expect(parsed.name).toBe('João da Silva');
+      expect(parsed.email).toEqual(customer.email);
+      expect(parsed.type).toBe(CustomerType.INDIVIDUAL);
+      expect(parsed.createdAt).toBe(customer.createdAt.toISOString());
+    });
+
+    it('should be safe to pass through JSON serialization/deserialization', () => {
+      const customer = Customer.create(validProps);
+      const serialized = JSON.stringify(customer);
+      const parsed = JSON.parse(serialized);
+
+      // Ensure the entity's actual passwordHash property is not exposed
+      expect(parsed).not.toHaveProperty('passwordHash');
+      // But the entity object itself still has the property (only excluded from serialization)
+      expect(customer.passwordHash).toBe(validProps.passwordHash);
+    });
+  });
 });
