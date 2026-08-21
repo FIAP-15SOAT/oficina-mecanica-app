@@ -60,17 +60,16 @@ Duas estratégias nomeadas distintas (`'jwt'` para staff, `'jwt-customer'` para 
 3. Chamar `Customer.create(...)` com o hash.
 4. Enviar e-mail ao cliente com a senha em texto puro, via `IEmailSenderService` (mesma porta já usada para o e-mail de orçamento) — a senha nunca é retornada pela API, só pelo e-mail.
 
-**Endpoint dedicado de troca de senha**, um para cada agregado (`PATCH /users/:id/password` e `PATCH /customers/:id/password`), com a mesma regra nos dois:
+**Endpoint dedicado de troca de senha — dividido em duas rotas por agregado, não uma só.** A ideia original (uma única rota `PATCH /:id/password`, decidindo self-vs-admin comparando `:id` com o `sub` do token) não funciona bem para `Customer`: "eu mesmo trocando" usa o `JwtCustomerAuthGuard` (token de cliente), enquanto "admin/atendente trocando de outra pessoa" usa o `JwtAuthGuard` de staff — são dois domínios de guard diferentes, e uma única rota não aceita os dois ao mesmo tempo sem um guard composto. Solução mais simples e mais RESTful: separar em rota `/me/` (self, um guard só) e rota `/:id/` (admin, o outro guard):
 
-| Quem está trocando | Body | Efeito |
-|---|---|---|
-| O próprio dono (`:id` == `sub` do token) | `{ currentPassword, newPassword }` | Confere `currentPassword` via `IHashService.compare`; se bater, troca para `newPassword` (validado por `PASSWORD_REGEX`). **Sem e-mail.** |
-| Outra pessoa (`:id` != `sub`) — só quem tem permissão de gestão | (vazio) | Gera uma senha nova aleatória (mesma função da criação), salva o hash, **envia e-mail ao dono da conta** avisando que a senha foi alterada por outra pessoa, com a senha nova. |
-| Outra pessoa sem permissão | — | `403`. |
+| Rota | Guard | Body | Efeito |
+|---|---|---|---|
+| `PATCH /users/me/password` | `JwtAuthGuard` (qualquer role — todo funcionário troca a própria senha) | `{ currentPassword, newPassword }` | Confere `currentPassword` via `IHashService.compare`; se bater, troca para `newPassword` (validado por `PASSWORD_REGEX`). **Sem e-mail.** |
+| `PATCH /users/:id/password` | `JwtAuthGuard` + `@Roles(ADMIN)` | (vazio) | Gera uma senha nova aleatória (mesma função da criação), salva o hash, **envia e-mail ao dono da conta** avisando que a senha foi alterada por outra pessoa, com a senha nova. |
+| `PATCH /customers/me/password` | `JwtCustomerAuthGuard` | `{ currentPassword, newPassword }` | Igual à de `User`, mas contra `ICustomerRepository`. |
+| `PATCH /customers/:id/password` | `JwtAuthGuard` + `@Roles(ADMIN, ATTENDANT)` | (vazio) | Igual à de `User`, mas contra `ICustomerRepository` — mesmos papéis que já gerenciam clientes hoje. |
 
-Permissão para trocar a senha de outra conta: `ADMIN` para `/users/:id/password`; `ADMIN` ou `ATTENDANT` para `/customers/:id/password` (mesmos papéis que já gerenciam clientes hoje).
-
-Essa regra cobre o cliente automaticamente sem nenhum `if` especial: como não existe front-end de autocadastro, toda troca de senha de cliente **é sempre** feita por outra pessoa (atendente/admin) — cai direto no segundo ramo da tabela, que já dispara o e-mail.
+Essa divisão cobre o cliente automaticamente sem nenhum `if` especial: como não existe front-end de autocadastro, toda troca de senha de cliente **é sempre** feita por outra pessoa (atendente/admin) — sempre passa pela rota `/:id/password`, que já dispara o e-mail. A rota `/me/password` do cliente só entra em uso no dia em que existir algum front-end de self-service.
 
 `password` é removido do `PATCH/PUT` geral de atualização de `User` (hoje em `UpdateUserDto`/`UpdateUserRequestDto`) — a troca de senha passa a existir só no endpoint dedicado.
 
