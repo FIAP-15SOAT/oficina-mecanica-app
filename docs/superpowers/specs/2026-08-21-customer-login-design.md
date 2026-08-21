@@ -66,8 +66,10 @@ Duas estratégias nomeadas distintas (`'jwt'` para staff, `'jwt-customer'` para 
 |---|---|---|---|
 | `PATCH /users/me/password` | `JwtAuthGuard` (qualquer role — todo funcionário troca a própria senha) | `{ currentPassword, newPassword }` | Confere `currentPassword` via `IHashService.compare`; se bater, troca para `newPassword` (validado por `PASSWORD_REGEX`). **Sem e-mail.** |
 | `PATCH /users/:id/password` | `JwtAuthGuard` + `@Roles(ADMIN)` | (vazio) | Gera uma senha nova aleatória (mesma função da criação), salva o hash, **envia e-mail ao dono da conta** avisando que a senha foi alterada por outra pessoa, com a senha nova. |
-| `PATCH /customers/me/password` | `JwtCustomerAuthGuard` | `{ currentPassword, newPassword }` | Igual à de `User`, mas contra `ICustomerRepository`. |
+| `PATCH /auth/customer/password` | `JwtCustomerAuthGuard` | `{ currentPassword, newPassword }` | Igual à de `User`, mas contra `ICustomerRepository`. |
 | `PATCH /customers/:id/password` | `JwtAuthGuard` + `@Roles(ADMIN, ATTENDANT)` | (vazio) | Igual à de `User`, mas contra `ICustomerRepository` — mesmos papéis que já gerenciam clientes hoje. |
+
+**Nota de implementação:** a rota self-service do cliente fica em `AuthController` (`/auth/customer/password`), não em `CustomerController` (`/customers/me/password`) — motivo: guards do NestJS se somam entre classe e método (não se sobrepõem, diferente de `@Roles`), então se `CustomerController` tiver `@UseGuards(JwtAuthGuard, RolesGuard)` a nível de classe, um método ali dentro nunca poderia usar só `JwtCustomerAuthGuard` sem também exigir passar pelos guards de staff. `AuthController` não tem guard de classe, por isso é o lugar correto para qualquer rota self-service do cliente (mesmo raciocínio já usado para `GET /auth/customer/me`).
 
 Essa divisão cobre o cliente automaticamente sem nenhum `if` especial: como não existe front-end de autocadastro, toda troca de senha de cliente **é sempre** feita por outra pessoa (atendente/admin) — sempre passa pela rota `/:id/password`, que já dispara o e-mail. A rota `/me/password` do cliente só entra em uso no dia em que existir algum front-end de self-service.
 
