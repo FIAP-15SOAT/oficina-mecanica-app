@@ -18,6 +18,14 @@ import {
 import { UserMapper } from '../mappers/user.mapper';
 import { paginate } from '../helpers/prisma-paginate.helper';
 
+function conflictMessage(error: Prisma.PrismaClientKnownRequestError): string {
+  const target = error.meta?.target;
+  const fields = Array.isArray(target) ? target : [];
+
+  if (fields.includes('document')) return 'Documento já cadastrado';
+  return 'E-mail já cadastrado';
+}
+
 @Injectable()
 export class PrismaUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -28,6 +36,7 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
+          document: user.document.value,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -37,7 +46,7 @@ export class PrismaUserRepository implements IUserRepository {
       return UserMapper.toDomain(created);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ResourceConflictException('E-mail já cadastrado');
+        throw new ResourceConflictException(conflictMessage(error));
       }
       throw error;
     }
@@ -53,6 +62,14 @@ export class PrismaUserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!record) return null;
+
+    return UserMapper.toDomain(record);
+  }
+
+  async findByDocument(document: string): Promise<User | null> {
+    const record = await this.prisma.user.findUnique({ where: { document } });
 
     if (!record) return null;
 
@@ -95,6 +112,7 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
+          document: user.document.value,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -104,7 +122,7 @@ export class PrismaUserRepository implements IUserRepository {
       return UserMapper.toDomain(updated);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ResourceConflictException('E-mail já cadastrado para outro usuário');
+        throw new ResourceConflictException(`${conflictMessage(error)} para outro usuário`);
       }
       throw error;
     }

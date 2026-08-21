@@ -2,6 +2,7 @@ import { User as PrismaUser } from '@generated/client';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 export class UserMapper {
   static toDomain(record: PrismaUser): User {
@@ -9,6 +10,7 @@ export class UserMapper {
       id: record.id,
       name: record.name,
       email: Email.create(record.email),
+      document: Document.create(record.document),
       passwordHash: record.passwordHash,
       role: record.role as UserRole,
       isActive: record.isActive,
