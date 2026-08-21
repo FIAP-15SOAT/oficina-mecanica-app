@@ -12,10 +12,10 @@ import { Transform } from 'class-transformer';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
 import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
+import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/password.constants';
 import {
   MIN_NAME_LENGTH,
   MAX_NAME_LENGTH,
-  PASSWORD_REQUIREMENTS_MESSAGE,
 } from '@domain/constants/validation/user.constants';
 
 export class UpdateUserRequestDto {

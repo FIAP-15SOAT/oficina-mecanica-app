@@ -1,7 +1,7 @@
 import { UserRole } from '@domain/enums/user-role.enum';
 import { User } from '@domain/entities/user.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/user.constants';
+import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/password.constants';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
 
