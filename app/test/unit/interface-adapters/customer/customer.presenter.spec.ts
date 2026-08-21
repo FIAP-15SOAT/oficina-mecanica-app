@@ -30,6 +30,7 @@ describe('CustomerPresenter', () => {
       type: CustomerType.INDIVIDUAL,
       email: Email.create('joao@email.com'),
       phone: Phone.create('11999999999'),
+      passwordHash: '$2b$12$hashedpassword',
       address,
       createdAt: now,
       updatedAt: now,

@@ -19,6 +19,7 @@ export function createMockVehicleCustomer(overrides: Partial<Customer> = {}): Cu
     type,
     email: Email.create('joao@email.com'),
     phone: Phone.create('11999999999'),
+    passwordHash: '$2b$12$hashedpassword',
     address: null,
     createdAt: now,
     updatedAt: now,

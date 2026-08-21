@@ -20,6 +20,7 @@ export class CustomerMapper {
       type,
       email: Email.create(prismaRecord.email),
       phone: Phone.create(prismaRecord.phone),
+      passwordHash: prismaRecord.passwordHash,
       address: prismaRecord.address
         ? Address.create({
             street: prismaRecord.address.street,

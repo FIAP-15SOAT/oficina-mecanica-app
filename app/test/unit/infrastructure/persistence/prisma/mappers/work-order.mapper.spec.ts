@@ -123,6 +123,7 @@ describe('WorkOrderMapper', () => {
           type: CustomerType.INDIVIDUAL,
           email: 'maria@test.com',
           phone: '11988887777',
+          passwordHash: '$2b$12$hashedpassword',
           address: null,
           createdAt: now,
           updatedAt: now,

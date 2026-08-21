@@ -37,6 +37,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
           document: customer.document.value,
           email: customer.email.value,
           phone: customer.phone.value,
+          passwordHash: customer.passwordHash,
           ...(customer.address && {
             address: {
               create: {
@@ -143,6 +144,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
           type: customer.type,
           email: customer.email.value,
           phone: customer.phone.value,
+          passwordHash: customer.passwordHash,
           address: addressData,
         },
         include: ADDRESS_INCLUDE,

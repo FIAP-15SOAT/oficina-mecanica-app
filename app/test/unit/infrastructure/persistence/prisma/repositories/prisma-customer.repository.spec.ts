@@ -36,6 +36,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
+        passwordHash: '$2b$12$hashedpassword',
         address: {
           street: 'Main St',
           city: 'São Paulo',
@@ -61,6 +62,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
+        passwordHash: '$2b$12$hashedpassword',
         address: {
           street: 'Main St',
           city: 'São Paulo',
@@ -85,6 +87,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
+        passwordHash: '$2b$12$hashedpassword',
         address: {
           street: 'Main St',
           city: 'São Paulo',
@@ -163,6 +166,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.COMPANY,
         email: Email.create('updated@example.com'),
         phone: Phone.create('11999998888'),
+        passwordHash: '$2b$12$hashedpassword',
         address: Address.create({
           street: 'Main St',
           city: 'City',
@@ -193,6 +197,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
+        passwordHash: '$2b$12$hashedpassword',
         address: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -217,6 +222,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: Email.create('dup@example.com'),
         phone: Phone.create('11999999999'),
+        passwordHash: '$2b$12$hashedpassword',
         address: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -238,6 +244,7 @@ describe('PrismaCustomerRepository', () => {
         type: CustomerType.INDIVIDUAL,
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
+        passwordHash: '$2b$12$hashedpassword',
         address: null,
         createdAt: new Date(),
         updatedAt: new Date(),
