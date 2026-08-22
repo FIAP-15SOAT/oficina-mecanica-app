@@ -1,6 +1,7 @@
 // test/e2e/customer.e2e-spec.ts
 import type { Server } from 'http';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
@@ -435,6 +436,7 @@ describe('Customer (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'semendereco@email.com',
           phone: '11987654321',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
 

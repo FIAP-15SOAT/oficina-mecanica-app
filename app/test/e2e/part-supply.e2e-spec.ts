@@ -1,5 +1,6 @@
 import type { Server } from 'http';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
@@ -758,6 +759,7 @@ describe('PartSupply (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'test@test.com',
           phone: '123',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({

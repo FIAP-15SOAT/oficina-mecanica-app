@@ -1,5 +1,6 @@
 import type { Server } from 'http';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
@@ -132,6 +133,7 @@ describe('Stock (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'test@stock.com',
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({
@@ -190,6 +192,7 @@ describe('Stock (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'filter@stock.com',
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({
@@ -275,6 +278,7 @@ describe('Stock (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'mov@stock.com',
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
       const vehicle = await ctx.prisma.vehicle.create({
@@ -356,6 +360,7 @@ describe('Stock (E2E)', () => {
           type: 'INDIVIDUAL',
           email: `mech.cust.${Date.now()}@test.com`,
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
 

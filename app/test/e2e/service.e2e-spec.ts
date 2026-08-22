@@ -1,5 +1,6 @@
 import type { Server } from 'http';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
@@ -434,6 +435,7 @@ describe('Service (E2E)', () => {
           type: 'INDIVIDUAL',
           email: `metrics-list${Date.now()}@test.com`,
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
           address: {
             create: {
               street: 'Rua Teste',
@@ -516,6 +518,7 @@ describe('Service (E2E)', () => {
           type: 'INDIVIDUAL',
           email: 'metrics@test.com',
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
           address: {
             create: {
               street: 'Rua Teste',
@@ -608,6 +611,7 @@ describe('Service (E2E)', () => {
           type: 'INDIVIDUAL',
           email: `conflict${Date.now()}@test.com`,
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
 
@@ -670,6 +674,7 @@ describe('Service (E2E)', () => {
           type: 'INDIVIDUAL',
           email: `wo-conflict${Date.now()}@test.com`,
           phone: '11999999999',
+          passwordHash: await bcrypt.hash('Test@2026', 10),
         },
       });
 
