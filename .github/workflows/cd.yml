@@ -84,6 +84,33 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
 
+      - name: Render and apply API secrets and ConfigMap
+        env:
+          DB_USER: ${{ vars.DB_USER || 'techchallenge' }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD || secrets.TF_VAR_DB_PASSWORD }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT || '5432' }}
+          DB_NAME: ${{ vars.DB_NAME || 'techchallenge' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
+        run: |
+          DB_USER="${DB_USER}" \
+          DB_PASSWORD="${DB_PASSWORD}" \
+          DB_HOST="${DB_HOST}" \
+          DB_PORT="${DB_PORT}" \
+          DB_NAME="${DB_NAME}" \
+          JWT_SECRET="${JWT_SECRET}" \
+          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
+            envsubst \
+            '${DB_USER} ${DB_PASSWORD} ${DB_HOST} ${DB_PORT} ${DB_NAME} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
+            < k8s/01-api-secret.yaml \
+            > k8s/01-api-secret.rendered.yaml
+
+          kubectl apply -f k8s/01-api-secret.rendered.yaml
+          kubectl apply -f k8s/02-api-configmap.yaml
+
       - name: Apply DB migration Job
         id: db_job
         run: |
@@ -149,22 +176,6 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
 
-      - name: Render API secret manifest with database password
-        env:
-          K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
-        run: |
-          CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
-          JWT_SECRET="${JWT_SECRET}" \
-          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
-          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
-            envsubst \
-            '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
-            < k8s/01-api-secret.yaml \
-            > k8s/01-api-secret.rendered.yaml
-
       - name: Render deployment manifest with immutable image
         run: |
           sed "s|IMAGE_URI_PLACEHOLDER|${{ needs.build-push-image.outputs.image_uri }}|g" \
@@ -172,8 +183,6 @@ jobs:
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/01-api-secret.rendered.yaml
-          kubectl apply -f k8s/02-api-configmap.yaml
           kubectl apply -f k8s/03-mailhog-deployment.yaml
           kubectl apply -f k8s/04-mailhog-service.yaml
           kubectl apply -f k8s/03-api-deployment.rendered.yaml
