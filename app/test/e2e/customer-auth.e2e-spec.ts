@@ -3,6 +3,7 @@ import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { registerAndLoginCustomer } from '../helpers/customer-auth.helper';
+import { registerAndLogin } from '../helpers/auth.helper';
 
 describe('Customer Auth (E2E)', () => {
   let ctx: TestContext;
@@ -77,14 +78,13 @@ describe('Customer Auth (E2E)', () => {
         .expect(400);
     });
 
-    it('should not accept a User (staff) token on customer-guarded routes', async () => {
-      // garante que os dois domínios de autenticação são realmente independentes:
-      // um token de staff não deve resolver como cliente autenticado.
-      const staffAuth = await request(httpServer)
-        .post('/api/auth/login')
-        .send({ identifier: 'nao-existe-staff@e2e.test', password: 'Senha@123' });
+    it('should reject a genuine staff (User) access token on a customer-guarded route', async () => {
+      const staffAuth = await registerAndLogin(httpServer, {}, ctx.prisma);
 
-      expect(staffAuth.status).toBe(401); // nem chega a ter token — staff não cadastrado
+      await request(httpServer)
+        .get('/api/auth/customer/me')
+        .set('Authorization', `Bearer ${staffAuth.accessToken}`)
+        .expect(401);
     });
   });
 
@@ -134,12 +134,12 @@ describe('Customer Auth (E2E)', () => {
       await request(httpServer).get('/api/auth/customer/me').expect(401);
     });
 
-    it('should return 401 when using a staff access token', async () => {
-      const staffAuth = await registerAndLoginCustomer(httpServer, ctx.prisma); // apenas para ter um token de cliente válido de referência
-      // usa um token de CLIENTE contra uma rota de STAFF, e vice-versa, para confirmar isolamento:
+    it('should reject a genuine customer access token on a staff-guarded route', async () => {
+      const customerAuth = await registerAndLoginCustomer(httpServer, ctx.prisma);
+
       await request(httpServer)
         .get('/api/auth/me')
-        .set('Authorization', `Bearer ${staffAuth.accessToken}`)
+        .set('Authorization', `Bearer ${customerAuth.accessToken}`)
         .expect(401);
     });
   });
