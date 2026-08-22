@@ -40,6 +40,10 @@ export async function setupTestApp(): Promise<TestContext> {
   process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-for-e2e';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
   process.env.QUOTE_DECISION_TOKEN_SECRET = 'test-jwt-secret-key-for-e2e';
+  process.env.CUSTOMER_JWT_SECRET = 'test-customer-jwt-secret-key-for-e2e';
+  process.env.CUSTOMER_JWT_EXPIRATION = '15m';
+  process.env.CUSTOMER_JWT_REFRESH_SECRET = 'test-customer-jwt-refresh-secret-key-for-e2e';
+  process.env.CUSTOMER_JWT_REFRESH_EXPIRATION = '7d';
 
   execSync('npx prisma migrate deploy', {
     env: { ...process.env },
