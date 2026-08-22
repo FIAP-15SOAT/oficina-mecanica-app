@@ -35,9 +35,9 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 | Recurso | Ownership | Onde é definido/aplicado |
 |---|---|---|
-| Namespace `oficina` | Terraform | [`oficina-mecanica-k8s/terraform/k8s_namespace.tf`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) |
-| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | [`oficina-mecanica-k8s/terraform/k8s_postgres.tf`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) |
-| metrics-server | Terraform | [`oficina-mecanica-k8s/terraform/k8s_metrics_server.tf`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) |
+| Namespace `oficina` | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_namespace.tf`) |
+| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_postgres.tf`) |
+| metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
