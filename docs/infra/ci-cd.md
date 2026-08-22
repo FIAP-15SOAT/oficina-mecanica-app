@@ -49,7 +49,7 @@ Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de dep
 
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
-Os 6 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `open-pr` abre o PR. Os que precisam do toolchain Node usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain).
+Os 5 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `open-pr` abre o PR. Os jobs usam o composite `.github/actions/setup-ci` (Node com cache de npm + `npm ci` + `prisma generate`, tudo em `app/`); todas as actions de terceiros são fixadas por commit SHA completo (mitigação de supply-chain).
 
 | # | Job | O que faz |
 |---|---|---|
@@ -58,26 +58,21 @@ Os 6 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `o
 | 3 | `e2e-tests` | `npm run test:e2e:cov` — E2E com um PostgreSQL descartável via Testcontainers no próprio job |
 | 4 | `build` | `npm run build` — compila o TypeScript |
 | 5 | `db-validation` | Sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed): prova que as migrations aplicam do zero e o seed funciona. Banco descartado com o job — nunca toca ambiente real |
-| 6 | `tf-validate` | `terraform fmt`/`validate` nos stacks `aws-base` e `k8s-base` (sempre, sem credencial) + `terraform plan` condicional — detalhe na nota abaixo |
-| 7 | `open-pr` | `needs:` os 6 jobs acima; abre o PR para `master` de forma idempotente (não duplica), com o PAT `OPEN_PR_TOKEN` para que o `sast.yml` rode no PR desde o primeiro push |
+| 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `master` de forma idempotente (não duplica), com o PAT `OPEN_PR_TOKEN` para que o `sast.yml` rode no PR desde o primeiro push |
 
-**`tf-validate` — duas fases.** **Validação (sempre roda, sem credencial):** `terraform fmt -check` (recursivo) + `init -backend=false` + `validate` nos dois stacks — ordenada **antes** de qualquer step AWS, então um token expirado nunca mascara um erro de fmt/validate. **Plan (condicional):** configura as credenciais — a própria action `configure-aws-credentials` valida o token via `sts:GetCallerIdentity` (rodada com `continue-on-error`), então o sucesso dela já indica que o lab está acessível; só então roda `terraform plan`. O `aws-base` planeja sempre que o ambiente está acessível. O **`k8s-base` tem um segundo gate, independente da credencial**: seu provider Kubernetes e o data source `aws_eks_cluster_auth` são configurados **em tempo de plan** a partir dos outputs do `aws-base` (`cluster_name`, `cluster_endpoint`, …), que só existem depois do `apply` do `aws-base`. Por isso o `plan` do `k8s-base` só roda quando o `aws-base` já foi aplicado (o step checa se o output `cluster_name` do `aws-base` está presente e não-vazio) — caso contrário é pulado (com nota no _Job Summary_) e o job segue **verde**. Isso é relevante porque, com credencial de **IAM user persistente**, o ambiente está sempre acessível, mas o cluster pode não estar provisionado (lab liga-desliga): aí pular o plan do `k8s-base` é o comportamento esperado, não uma falha. No CI, um `plan` que roda e **falha bloqueia** o merge (um plan quebrado quebraria o `apply` no CD); só os casos de ambiente fora / token expirado / `aws-base` não aplicado são tolerados — aí o `plan` é pulado e o job segue verde. Ou seja: o job não falha por indisponibilidade do ambiente, mas falha por erro real de plan.
+> As validações de Terraform (`fmt`, `validate`, `plan`) são executadas nos repositórios dedicados de infraestrutura ([`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) e [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)).
 
 ## 2) Workflow de CD (`cd.yml`)
 
-<p align="center"><img src="../diagrams/cd-workflow.png" alt="Diagrama do workflow de CD: DAG de 5 jobs — terraform-aws-base, depois terraform-k8s-base e build-push-image em paralelo, convergindo em db-migrate e por fim app-deploy — mais o painel de recursos provisionados na AWS e no Kubernetes" width="100%"></p>
+<p align="center"><img src="../diagrams/cd-workflow.png" alt="Diagrama do workflow de CD: DAG de 3 jobs — build-push-image, db-migrate e app-deploy" width="100%"></p>
 
-Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (provisionar+deployar sob demanda, ex.: lab novo). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são gated por `vars.ENABLE_APP_DEPLOY`. A ordem é um **DAG por `needs:`** (não `workflow_run`): `aws-base` → (`k8s-base` ∥ `build-push-image`) → `db-migrate` → `app-deploy`.
+Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (deploy sob demanda). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são condicionados por `vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'`. A ordem é um **DAG por `needs:`**: `build-push-image` → `db-migrate` → `app-deploy`.
 
 | # | Job | `needs:` | O que faz |
 |---|---|---|---|
-| 1 | `terraform-aws-base` | — | `init` → `validate` → `plan` → `apply -auto-approve` em `infra/aws-base` (EKS, ECR, VPC…) |
-| 2 | `terraform-k8s-base` | `aws-base` | mesmo fluxo em `infra/k8s-base` (namespace, PostgreSQL, `postgres-secret`, metrics-server); recebe a senha via `TF_VAR_k8s_postgres_password` |
-| 3 | `build-push-image` | `aws-base` (pelo ECR) | login no ECR, build **único** da imagem e push com tag imutável (`github.sha`) + `latest`; exporta o `image_uri` |
-| 4 | `db-migrate` | `k8s-base` + `build-push-image` | configura o kubeconfig, **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job (TTL de 2 semanas para auditoria): **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão, com diagnóstico e logs em caso de falha |
-| 5 | `app-deploy` | `db-migrate` + `build-push-image` | renderiza `k8s/01-api-secret.yaml` (secrets da app) e `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests — `Secret` e `ConfigMap` da API, o **MailHog** (`Deployment` + `Service`, dependência de e-mail) e o `Deployment`/`Service`/`HPA` da API; valida o rollout |
-
-**Estados Terraform separados (obrigatório):** `aws-base` e `k8s-base` têm states distintos porque o provider Kubernetes do segundo é configurado a partir dos outputs do primeiro — criar o cluster e usá-lo no mesmo state seria um chicken-and-egg. Por isso são dois jobs sequenciais, e não há mais um `check_aws_base_state`: no fluxo unificado o `aws-base` é sempre aplicado antes, então os outputs já existem quando o `k8s-base` roda.
+| 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tags imutáveis (`:sha` e `:latest`); exporta o `image_uri` |
+| 2 | `db-migrate` | `build-push-image` | Configura o kubeconfig, **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão com timeout e logs |
+| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/01-api-secret.yaml` (secrets da app via `envsubst`) e `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — `Secret` e `ConfigMap` da API, o **MailHog** (`Deployment` + `Service`) e o `Deployment`/`Service`/`HPA` da API; valida o rollout |
 
 A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
 
@@ -145,36 +140,35 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 
 | Tipo | Nome | Usado em | Finalidade |
 |---|---|---|---|
-| Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para Terraform, validação e deploy |
+| Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para validação e deploy |
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
-| Secret | `AWS_SESSION_TOKEN` | `ci.yml`, `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
+| Secret | `AWS_SESSION_TOKEN` | `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
 | Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
-| Secret | `K8S_POSTGRES_PASSWORD` | `ci.yml`, `cd.yml` | Senha do PostgreSQL: injetada como `TF_VAR_k8s_postgres_password` no `plan` do stack `k8s-base` (CI `tf-validate`) e no `apply` (CD), e no Secret da aplicação (`app-deploy`) |
+| Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para renderizar a `DATABASE_URL` no Secret da aplicação (`01-api-secret.yaml`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
 | Secret | `QUOTE_DECISION_TOKEN_SECRET` | `cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
+| Variable | `DB_HOST` | `cd.yml` | Endereço DNS do banco RDS (ex: `rds-oficina-mecanica.xxxx.us-east-1.rds.amazonaws.com`) |
+| Variable | `DB_USER` | `cd.yml` | Usuário do banco PostgreSQL (padrão: `techchallenge`) |
+| Variable | `DB_PORT` | `cd.yml` | Porta do PostgreSQL (padrão: `5432`) |
+| Variable | `DB_NAME` | `cd.yml` | Nome da base de dados (padrão: `techchallenge`) |
 | Variable | `PRISMA_GENERATE_DATABASE_URL` | `ci.yml`, `cd.yml` | URL fake usada apenas pelo `prisma generate` (só parseada, nunca conectada); há fallback embutido nos workflows |
 | Variable | `ECR_REPOSITORY` | `cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
 | Variable | `EKS_CLUSTER_NAME` | `cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
 | Variable | `K8S_DEPLOYMENT_NAME` | `cd.yml` | Nome do Deployment usado no `kubectl rollout status` |
 | Variable | `K8S_NAMESPACE` | `cd.yml` | Namespace onde a aplicação e os Jobs de banco são aplicados |
-| Variable | `ENABLE_APP_DEPLOY` | `cd.yml` | Habilita ou desabilita os jobs que tocam o cluster (deploy/migração/seed) |
+| Variable | `ENABLE_DEPLOY` | `cd.yml` | Habilita ou desabilita os jobs que tocam o cluster (`build-push-image`, `db-migrate`, `app-deploy`) |
 
-Os secrets ficam no nível do repositório porque são consumidos por mais de um contexto (as credenciais AWS, por exemplo, são usadas pelo `tf-validate` do CI e por todos os jobs do CD). O `environment: production` do CD funciona como portão de deploy (regras de proteção), não como isolamento de secrets. Como as credenciais são de laboratório do AWS Academy, o `AWS_SESSION_TOKEN` expira quando o lab é reiniciado e precisa ser reconfigurado a cada sessão (ex.: via `gh secret set`).
+Os secrets ficam no nível do repositório ou organização porque são consumidos por mais de um contexto. Como as credenciais são de laboratório do AWS Academy, o `AWS_SESSION_TOKEN` expira quando o lab é reiniciado e precisa ser reconfigurado a cada sessão.
 
 ### Injeção de secrets da aplicação
 
-- O secret `K8S_POSTGRES_PASSWORD` deve ser forte e diferente dos valores de desenvolvimento local.
-- No CD (`cd.yml`), o job `terraform-k8s-base` recebe `K8S_POSTGRES_PASSWORD` como `TF_VAR_k8s_postgres_password` (mesmo valor, nomes diferentes por contexto).
-- Esse valor preenche a variável `k8s_postgres_password` no stack `infra/k8s-base`, que cria/atualiza o Secret Kubernetes `postgres-secret`.
-- O `postgres-secret` é referenciado pelo StatefulSet do PostgreSQL (`env_from`), portanto essa senha é a credencial efetivamente usada na inicialização do banco no cluster.
-- No workflow de deploy (`cd.yml`), o job `app-deploy` também lê `K8S_POSTGRES_PASSWORD` para renderizar o manifesto `k8s/01-api-secret.yaml`, preenchendo a `DATABASE_URL` consumida pela aplicação.
-
-Além da senha do PostgreSQL, o workflow também injeta os secrets:
-
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `QUOTE_DECISION_TOKEN_SECRET`
+- O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-database`.
+- No workflow de deploy (`cd.yml`), o job `db-migrate` renderiza o manifesto `k8s/01-api-secret.yaml` via `envsubst` com os valores de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, preenchendo a `DATABASE_URL` consumida pela API e pelo Job de migração.
+- Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:
+  - `JWT_SECRET`
+  - `JWT_REFRESH_SECRET`
+  - `QUOTE_DECISION_TOKEN_SECRET`

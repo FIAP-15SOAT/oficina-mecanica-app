@@ -26,7 +26,7 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(true);
 
     const result = await useCase.execute({
-      identifier: 'rafael@email.com',
+      identifier: 'admin@email.com',
       password: 'Senha@123',
     });
 
@@ -54,7 +54,7 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(user);
 
     await expect(
-      useCase.execute({ identifier: 'rafael@email.com', password: 'Senha@123' }),
+      useCase.execute({ identifier: 'admin@email.com', password: 'Senha@123' }),
     ).rejects.toThrow('Credenciais inválidas');
   });
 
@@ -64,7 +64,7 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(false);
 
     await expect(
-      useCase.execute({ identifier: 'rafael@email.com', password: 'errada' }),
+      useCase.execute({ identifier: 'admin@email.com', password: 'errada' }),
     ).rejects.toThrow('Credenciais inválidas');
   });
 
@@ -72,7 +72,7 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ identifier: 'rafael@email.com', password: '123456' }),
+      useCase.execute({ identifier: 'admin@email.com', password: '123456' }),
     ).rejects.toThrow();
 
     expect(tokenService.signTokenPair).not.toHaveBeenCalled();

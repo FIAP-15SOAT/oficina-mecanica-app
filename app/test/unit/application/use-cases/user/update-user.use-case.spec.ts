@@ -42,11 +42,11 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should allow keeping the same email', async () => {
-    const user = createMockUser({ email: Email.create('rafael@email.com') });
+    const user = createMockUser({ email: Email.create('admin@email.com') });
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(() => Promise.resolve(user));
 
-    await useCase.execute('user-uuid-123', { email: 'rafael@email.com' });
+    await useCase.execute('user-uuid-123', { email: 'admin@email.com' });
 
     expect(userRepository.findByEmail).not.toHaveBeenCalled();
   });

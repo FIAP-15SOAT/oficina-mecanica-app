@@ -14,12 +14,6 @@ interface UserSeed {
 
 const users: UserSeed[] = [
   {
-    name: 'Rafael Neves de Oliveira',
-    email: 'rafaelneves652@gmail.com',
-    document: '12345678909',
-    role: UserRole.ADMIN,
-  },
-  {
     name: 'Guilherme da Rocha Salvador',
     email: 'guilhermedarochasalvador@gmail.com',
     document: '11144477735',

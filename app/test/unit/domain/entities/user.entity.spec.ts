@@ -7,8 +7,8 @@ import { Document } from '@domain/value-objects/document.vo';
 
 describe('User Entity', () => {
   const validProps = {
-    name: 'Rafael Neves',
-    email: 'rafael@email.com',
+    name: 'Usuario Teste',
+    email: 'usuario@email.com',
     document: '12345678909',
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ATTENDANT,
@@ -18,8 +18,8 @@ describe('User Entity', () => {
     it('should create a valid user', () => {
       const user = User.create(validProps);
 
-      expect(user.name).toBe('Rafael Neves');
-      expect(user.email.value).toBe('rafael@email.com');
+      expect(user.name).toBe('Usuario Teste');
+      expect(user.email.value).toBe('usuario@email.com');
       expect(user.passwordHash).toBe(validProps.passwordHash);
       expect(user.role).toBe(UserRole.ATTENDANT);
       expect(user.isActive).toBe(true);
@@ -32,15 +32,15 @@ describe('User Entity', () => {
     });
 
     it('should normalize email to lowercase and trim', () => {
-      const user = User.create({ ...validProps, email: '  RAFAEL@Email.COM  ' });
+      const user = User.create({ ...validProps, email: '  USUARIO@Email.COM  ' });
 
-      expect(user.email.value).toBe('rafael@email.com');
+      expect(user.email.value).toBe('usuario@email.com');
     });
 
     it('should trim name', () => {
-      const user = User.create({ ...validProps, name: '  Rafael Neves  ' });
+      const user = User.create({ ...validProps, name: '  Usuario Teste  ' });
 
-      expect(user.name).toBe('Rafael Neves');
+      expect(user.name).toBe('Usuario Teste');
     });
 
     it('should throw error if name is too short', () => {
@@ -278,8 +278,8 @@ describe('User Entity', () => {
 
       const user = User.reconstitute({
         id: 'uuid-123',
-        name: 'Rafael',
-        email: Email.create('rafael@email.com'),
+        name: 'Usuario Teste',
+        email: Email.create('usuario@email.com'),
         document: Document.create('12345678909'),
         passwordHash: 'secret-hash',
         role: UserRole.ADMIN,
@@ -292,8 +292,8 @@ describe('User Entity', () => {
 
       expect(view).toEqual({
         id: 'uuid-123',
-        name: 'Rafael',
-        email: 'rafael@email.com',
+        name: 'Usuario Teste',
+        email: 'usuario@email.com',
         document: '12345678909',
         role: UserRole.ADMIN,
         isActive: true,
