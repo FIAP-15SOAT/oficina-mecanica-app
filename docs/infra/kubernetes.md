@@ -154,23 +154,20 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 2. **`AmazonEBSCSIDriverPolicy` no node role**: solução mais simples, porém concede permissões de EBS a todos os processos rodando nos nodes — menos seguro que IRSA.
 3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. Não foi aplicado neste projeto devido ao budget limitado do laboratório (créditos AWS Academy de US$ 50), insuficiente para cobrir o custo de uma instância RDS durante o período de desenvolvimento e avaliação.
 
-## PostgreSQL no cluster (StatefulSet)
+## Banco de Dados Relacional (Amazon RDS)
 
-Embora seja **provisionado pelo Terraform** ([`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)), o banco roda como um workload Kubernetes; seus mecanismos de runtime são documentados aqui:
+A persistência relacional da aplicação é fornecida pelo **Amazon RDS (PostgreSQL)**, gerenciado no repositório dedicado [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database):
 
-- **Imagem** `postgres:16-alpine`, **1 réplica**, `imagePullPolicy: IfNotPresent`.
-- **Configuração** via `envFrom` → `secret_ref` do `postgres-secret` (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`) — as credenciais entram no container inteiras, sem hardcode no manifesto.
-- **Recursos**: requests `100m`/`256Mi`, limits `500m`/`512Mi` (ver [tabela de recursos](#recursos-cpu-e-memória-requests-e-limits)).
-- **Armazenamento** `emptyDir` montado em `/var/lib/postgresql/data` — efêmero, pelos motivos da seção anterior.
-- **Probes `pg_isready`** (exec): tanto a readiness quanto a liveness rodam `pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"` — uma verificação real de que o servidor Postgres aceita conexões, mais precisa que um simples TCP check. Ambas usam `periodSeconds: 10`, `timeoutSeconds: 5`, `failureThreshold: 6`; a liveness espera mais para começar (`initialDelaySeconds: 30` vs `10` da readiness), pela mesma lógica de "não reiniciar um banco que ainda está inicializando".
-- **DNS estável**: o `Service` ClusterIP publica `postgres.oficina.svc.cluster.local:5432`, que é o host usado na `DATABASE_URL` da API e do Job de migração.
+- Instância gerenciada PostgreSQL 16 (Single-AZ, `db.t4g.micro`, 20 GiB GP3).
+- Alocado nas subnets privadas da VPC, com Security Group restrito ao CIDR da VPC.
+- Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret`.
 
 ## Manifestos da aplicação
 
 Arquivos em `k8s/`:
 
 - `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`. Detalhes em [Job de migração do banco](#job-de-migração-do-banco)
-- `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets
+- `01-api-secret.yaml`: secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`), renderizados no pipeline com valores provenientes dos GitHub Secrets e Variables
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT` e `TZ`)
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
@@ -184,15 +181,14 @@ O `00-db-migrate-job.yaml` é um `Job` do Kubernetes executado **uma vez por dep
 
 - **`backoffLimit: 0` + `restartPolicy: Never`** — falha rápido, sem retentativas silenciosas: se a migração falhar, o Job falha imediatamente e o pipeline para (em vez de mascarar o erro com reinícios).
 - **`ttlSecondsAfterFinished: 1209600`** — o Job é coletado automaticamente **14 dias** após terminar, evitando acúmulo de Jobs concluídos no namespace (cada run cria um Job com nome renderizado, via `JOB_NAME_PLACEHOLDER`).
-- **Construção da `DATABASE_URL` em runtime** — o container recebe `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` via `secretKeyRef` do `postgres-secret` e monta a URL inline antes de rodar:
+- **Consumo da `DATABASE_URL`** — o container recebe `DATABASE_URL` via `secretKeyRef` do `api-secret` e executa:
 
   ```sh
-  export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres.oficina.svc.cluster.local:5432/$POSTGRES_DB?schema=public"
   npx prisma migrate deploy
   npx prisma db seed
   ```
 
-- **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente — juntos garantem que, mesmo após a perda do `emptyDir`, o banco volta ao estado de referência esperado.
+- **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente.
 
 ## Autoscaling da API (HPA)
 

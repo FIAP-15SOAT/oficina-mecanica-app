@@ -140,17 +140,21 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 
 | Tipo | Nome | Usado em | Finalidade |
 |---|---|---|---|
-| Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para Terraform, validação e deploy |
+| Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para validação e deploy |
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
 | Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
-| Secret | `K8S_POSTGRES_PASSWORD` | `cd.yml` | Senha do PostgreSQL: consumida no `app-deploy` para renderizar a `DATABASE_URL` no Secret da aplicação (`01-api-secret.yaml`) |
+| Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para renderizar a `DATABASE_URL` no Secret da aplicação (`01-api-secret.yaml`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
 | Secret | `QUOTE_DECISION_TOKEN_SECRET` | `cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
+| Variable | `DB_HOST` | `cd.yml` | Endereço DNS do banco RDS (ex: `rds-oficina-mecanica.xxxx.us-east-1.rds.amazonaws.com`) |
+| Variable | `DB_USER` | `cd.yml` | Usuário do banco PostgreSQL (padrão: `techchallenge`) |
+| Variable | `DB_PORT` | `cd.yml` | Porta do PostgreSQL (padrão: `5432`) |
+| Variable | `DB_NAME` | `cd.yml` | Nome da base de dados (padrão: `techchallenge`) |
 | Variable | `PRISMA_GENERATE_DATABASE_URL` | `ci.yml`, `cd.yml` | URL fake usada apenas pelo `prisma generate` (só parseada, nunca conectada); há fallback embutido nos workflows |
 | Variable | `ECR_REPOSITORY` | `cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
 | Variable | `EKS_CLUSTER_NAME` | `cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
@@ -162,9 +166,9 @@ Os secrets ficam no nível do repositório ou organização porque são consumid
 
 ### Injeção de secrets da aplicação
 
-- O secret `K8S_POSTGRES_PASSWORD` deve ser forte e idêntico ao configurado no repositório `oficina-mecanica-k8s`.
-- No workflow de deploy (`cd.yml`), o job `app-deploy` lê `K8S_POSTGRES_PASSWORD` e renderiza o manifesto `k8s/01-api-secret.yaml` via `envsubst`, preenchendo a `DATABASE_URL` consumida pela API e pelo Job de migração.
-- Além da senha do PostgreSQL, o workflow também injeta os secrets:
+- O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-database`.
+- No workflow de deploy (`cd.yml`), o job `db-migrate` renderiza o manifesto `k8s/01-api-secret.yaml` via `envsubst` com os valores de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, preenchendo a `DATABASE_URL` consumida pela API e pelo Job de migração.
+- Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:
   - `JWT_SECRET`
   - `JWT_REFRESH_SECRET`
   - `QUOTE_DECISION_TOKEN_SECRET`
