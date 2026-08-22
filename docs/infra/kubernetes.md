@@ -1,8 +1,8 @@
 # ☸️ Kubernetes
 
-Divisão de responsabilidade: base e dados via Terraform (`infra/k8s-base`); aplicação via manifests em `k8s/`.
+Divisão de responsabilidade: base e plataforma via Terraform no repositório [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s); aplicação via manifests em `k8s/`.
 
-> 🧭 Para a **visão de sistema** (inventário, topologia, fluxo em tempo de execução, segurança e limitações), comece pela [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de manifesto**: como cada workload é configurado e por quê. A definição HCL do PostgreSQL e do metrics-server (que são provisionados pelo Terraform) está em [terraform.md](terraform.md).
+> 🧭 Para a **visão de sistema** (inventário, topologia, fluxo em tempo de execução, segurança e limitações), comece pela [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de manifesto**: como cada workload é configurado e por quê. A definição HCL do PostgreSQL e do metrics-server está em [terraform.md](terraform.md).
 
 ## Índice
 
@@ -21,23 +21,23 @@ Divisão de responsabilidade: base e dados via Terraform (`infra/k8s-base`); apl
 
 Os recursos em Kubernetes foram divididos por responsabilidade:
 
-- Base e dados críticos via Terraform (`infra/k8s-base`)
-  - namespace, PostgreSQL e metrics-server
+- Base e dados críticos via Terraform ([`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s))
+  - cluster EKS, ECR, namespace `oficina`, PostgreSQL e metrics-server
 - Aplicação via manifests YAML (`k8s/`)
-  - Secret, ConfigMap, Deployment, Service e HPA
+  - Secret, ConfigMap, Deployments, Services e HPA
 
 ## Motivo da divisão
 
-- Recursos de plataforma e dados (namespace, DB, observabilidade mínima) têm ciclo de vida mais estável e exigem rastreabilidade de estado: por isso ficam no Terraform.
+- Recursos de plataforma e dados (cluster, namespace, DB, observabilidade mínima) têm ciclo de vida mais estável e exigem rastreabilidade de estado: por isso ficam no Terraform.
 - Recursos da aplicação mudam com maior frequência (imagem, envs, escala): por isso ficam em manifests declarativos no diretório `k8s/` e são aplicados no deploy.
 
 ## Ownership de recursos
 
 | Recurso | Ownership | Onde é definido/aplicado |
 |---|---|---|
-| Namespace `oficina` | Terraform | `infra/k8s-base/k8s_namespace.tf` |
-| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | `infra/k8s-base/k8s_postgres.tf` |
-| metrics-server | Terraform | `infra/k8s-base/k8s_metrics_server.tf` |
+| Namespace `oficina` | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_namespace.tf`) |
+| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_postgres.tf`) |
+| metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
@@ -53,7 +53,7 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 - `app.kubernetes.io/name` — identifica o componente (`oficina-api`, `postgres`, `mailhog`, `db-migrate-job`).
 - `app.kubernetes.io/part-of` — sempre `oficina-mecanica` (a solução como um todo).
-- `managed-by: terraform` — presente apenas nos recursos provisionados pelo Terraform (`k8s-base`), distinguindo-os dos manifests aplicados pelo CD.
+- `managed-by: terraform` — presente apenas nos recursos provisionados pelo Terraform (`oficina-mecanica-k8s`), distinguindo-os dos manifests aplicados pelo CD.
 
 **Wiring de configuração.** A configuração da API é injetada como variáveis de ambiente a partir de duas fontes, separando o sensível do não-sensível:
 
@@ -69,7 +69,7 @@ Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto 
 | Workload | Requests (CPU / memória) | Limits (CPU / memória) | Fonte |
 |---|---|---|---|
 | API (`oficina-api`) | `200m` / `256Mi` | `500m` / `512Mi` | `k8s/03-api-deployment.yaml` |
-| PostgreSQL | `100m` / `256Mi` | `500m` / `512Mi` | `infra/k8s-base/k8s_postgres.tf` |
+| PostgreSQL | `100m` / `256Mi` | `500m` / `512Mi` | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) |
 | MailHog | `50m` / `64Mi` | `200m` / `256Mi` | `k8s/03-mailhog-deployment.yaml` |
 | Job `db-migrate` | — (não define) | — (não define) | `k8s/00-db-migrate-job.yaml` |
 
@@ -156,7 +156,7 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 
 ## PostgreSQL no cluster (StatefulSet)
 
-Embora seja **provisionado pelo Terraform** (`infra/k8s-base/k8s_postgres.tf`), o banco roda como um workload Kubernetes; seus mecanismos de runtime são documentados aqui:
+Embora seja **provisionado pelo Terraform** ([`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)), o banco roda como um workload Kubernetes; seus mecanismos de runtime são documentados aqui:
 
 - **Imagem** `postgres:16-alpine`, **1 réplica**, `imagePullPolicy: IfNotPresent`.
 - **Configuração** via `envFrom` → `secret_ref` do `postgres-secret` (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`) — as credenciais entram no container inteiras, sem hardcode no manifesto.
@@ -205,7 +205,7 @@ O `05-api-hpa.yaml` (HPA `autoscaling/v2`) escala o Deployment `oficina-api` com
 | CPU (`Resource`, `averageUtilization`) | `70` |
 | Memória (`Resource`, `averageUtilization`) | `80` |
 
-`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado no `k8s-base`); sem ele, o HPA não teria dados para decidir.
+`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado em `oficina-mecanica-k8s`); sem ele, o HPA não teria dados para decidir.
 
 O HPA escala apenas os **pods da API** (`1→5`); a escala do _cluster_ (nodes) está fora do escopo — o node group é mantido fixo em 1 por decisão, como registrado em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
 
