@@ -85,4 +85,14 @@ describe('AuthenticateCustomerUseCase', () => {
       useCase.execute({ identifier: customer.email.value, password: 'errada' }),
     ).rejects.toThrow('Credenciais inválidas');
   });
+
+  it('should still perform a password comparison even when the identifier is not found (timing-safety)', async () => {
+    customerRepository.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({ identifier: 'naoexiste@email.com', password: 'x' }),
+    ).rejects.toThrow();
+
+    expect(hashService.compare).toHaveBeenCalled();
+  });
 });

@@ -13,6 +13,12 @@ import { IAuthenticateCustomerUseCase } from '@application/ports/input/auth/auth
 
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
+// Hash bcrypt válido de um valor arbitrário. Não é secreto: existe apenas para que
+// `hashService.compare` sempre execute um trabalho real, evitando que o caminho
+// "identificador não encontrado" seja mensuravelmente mais rápido que o de
+// "senha incorreta" (timing side-channel).
+const DUMMY_PASSWORD_HASH = '$2b$12$PeogSPQuXXcQZWevnZMD7u5zikjQc626ibxG0hUlt7AuCb9vXvuBK';
+
 export class AuthenticateCustomerUseCase implements IAuthenticateCustomerUseCase {
   constructor(
     private readonly customerRepository: ICustomerRepository,
@@ -26,14 +32,12 @@ export class AuthenticateCustomerUseCase implements IAuthenticateCustomerUseCase
 
   async execute(input: AuthenticateCustomerInputDto): Promise<AuthenticateCustomerOutputDto> {
     const customer = await this.findCustomerByIdentifier(input.identifier);
+    const passwordMatches = await this.hashService.compare(
+      input.password,
+      customer?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
 
-    if (!customer) {
-      throw new UnauthorizedAccessException('Credenciais inválidas');
-    }
-
-    const passwordMatches = await this.hashService.compare(input.password, customer.passwordHash);
-
-    if (!passwordMatches) {
+    if (!customer || !passwordMatches) {
       throw new UnauthorizedAccessException('Credenciais inválidas');
     }
 
