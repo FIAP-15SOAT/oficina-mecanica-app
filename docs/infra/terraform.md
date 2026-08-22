@@ -127,7 +127,7 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 |---|---|---|---|
 | `db_name` | `string` | `techchallenge` | Nome do banco inicial |
 | `db_username` | `string` | `techchallenge` | Usuário administrador |
-| `db_password` | `string` | — (**`sensitive`**) | Senha do banco (injetada via `DB_PASSWORD`) |
+| `db_password` | `string` | — (**`sensitive`**) | Senha do banco (injetada via `TF_VAR_db_password` ou `-var="db_password=..."`) |
 | `db_instance_class` | `string` | `db.t4g.micro` | Família de instância RDS |
 | `db_allocated_storage` | `number` | `20` | Tamanho do disco em GiB |
 
