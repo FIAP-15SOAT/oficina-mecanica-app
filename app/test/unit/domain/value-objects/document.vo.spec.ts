@@ -101,7 +101,9 @@ describe('create — autodetect (no type)', () => {
 
   it('still throws on invalid checksum when autodetecting', () => {
     expect(() => Document.create('111.111.111-11')).toThrow(DomainValidationException);
-    expect(() => Document.create('111.111.111-11')).toThrow('Pessoa física deve informar um CPF válido');
+    expect(() => Document.create('111.111.111-11')).toThrow(
+      'Pessoa física deve informar um CPF válido',
+    );
   });
 });
 

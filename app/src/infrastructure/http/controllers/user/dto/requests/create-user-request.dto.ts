@@ -13,10 +13,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
 import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
 import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/password.constants';
-import {
-  MIN_NAME_LENGTH,
-  MAX_NAME_LENGTH,
-} from '@domain/constants/validation/user.constants';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/user.constants';
 
 export class CreateUserRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
@@ -39,7 +36,12 @@ export class CreateUserRequestDto {
     description: 'CPF (000.000.000-00) ou CNPJ válido, único',
     example: '123.456.789-09',
   })
-  @Transform(({ value }: { value: string }) => value?.trim().replaceAll(/[.\-/]/g, '').toUpperCase())
+  @Transform(({ value }: { value: string }) =>
+    value
+      ?.trim()
+      .replaceAll(/[.\-/]/g, '')
+      .toUpperCase(),
+  )
   @IsString({ message: 'O documento deve ser um texto.' })
   @IsNotEmpty({ message: 'O documento é obrigatório' })
   @IsValidCpfCnpj()

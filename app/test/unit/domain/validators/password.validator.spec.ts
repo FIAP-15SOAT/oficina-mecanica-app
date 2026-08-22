@@ -10,23 +10,33 @@ describe('PasswordValidator', () => {
 
     it('should throw if password is shorter than 8 characters', () => {
       expect(() => PasswordValidator.validateStrength('Ab@1cd')).toThrow(DomainValidationException);
-      expect(() => PasswordValidator.validateStrength('Ab@1cd')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+      expect(() => PasswordValidator.validateStrength('Ab@1cd')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
     });
 
     it('should throw if password has no uppercase letter', () => {
-      expect(() => PasswordValidator.validateStrength('senha@123')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+      expect(() => PasswordValidator.validateStrength('senha@123')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
     });
 
     it('should throw if password has no lowercase letter', () => {
-      expect(() => PasswordValidator.validateStrength('SENHA@123')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+      expect(() => PasswordValidator.validateStrength('SENHA@123')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
     });
 
     it('should throw if password has no digit', () => {
-      expect(() => PasswordValidator.validateStrength('Senha@abc')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+      expect(() => PasswordValidator.validateStrength('Senha@abc')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
     });
 
     it('should throw if password has no special character', () => {
-      expect(() => PasswordValidator.validateStrength('Senha1234')).toThrow(PASSWORD_REQUIREMENTS_MESSAGE);
+      expect(() => PasswordValidator.validateStrength('Senha1234')).toThrow(
+        PASSWORD_REQUIREMENTS_MESSAGE,
+      );
     });
 
     it('should throw if password is empty', () => {
