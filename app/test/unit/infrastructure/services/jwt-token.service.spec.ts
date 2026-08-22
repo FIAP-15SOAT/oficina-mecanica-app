@@ -10,7 +10,7 @@ describe('JwtTokenService', () => {
 
   const mockPayload: TokenPayload = {
     sub: 'user-uuid-123',
-    email: 'rafael@email.com',
+    email: 'admin@email.com',
     role: UserRole.ADMIN,
   };
 

@@ -65,7 +65,7 @@ describe('CreateUserUseCase', () => {
     await expect(
       useCase.execute({
         name: 'Duplicado',
-        email: 'rafael@email.com',
+        email: 'admin@email.com',
         password: 'Senha@123',
         role: UserRole.ATTENDANT,
       }),

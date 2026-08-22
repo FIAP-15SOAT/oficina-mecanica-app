@@ -93,13 +93,12 @@ MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
 
 ## Seed
 
-O seed cria 5 usuários Admin com senha padrão `Tech@2026`:
+O seed cria 4 usuários Admin com senha padrão `Tech@2026`:
 
 | Nome | E-mail | Senha |
 |------|--------|-------|
 | Guilherme da Rocha Salvador | `guilhermedarochasalvador@gmail.com` | `Tech@2026` |
 | Lucas Almeida da Silva | `lucas.almeida-silva@hotmail.com` | `Tech@2026` |
-| Rafael Neves de Oliveira | `rafaelneves652@gmail.com` | `Tech@2026` |
 | Ramoon Lincoln Barros Camacho | `ramooncamacho@hotmail.com` | `Tech@2026` |
 | Renan Santana Camacho | `camacho.renan@gmail.com` | `Tech@2026` |
 

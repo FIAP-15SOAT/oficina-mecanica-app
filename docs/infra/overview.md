@@ -34,19 +34,19 @@ A infraestrutura é documentada por **duas vistas complementares**. Ler as duas 
 
 A infraestrutura é criada em **três camadas** com ciclos de vida distintos — a divisão é deliberada (recursos estáveis no Terraform, recursos que mudam a cada deploy em manifests aplicados pelo pipeline):
 
-| # | Camada | Ferramenta | O que provisiona | Estado |
+| # | Camada / Repositório | Ferramenta | O que provisiona | Estado |
 |---|---|---|---|---|
-| 1 | `infra/aws-base` | Terraform | Rede (VPC, subnets, IGW, NAT), EKS (control plane + node group), ECR, CloudWatch, Security Group | S3 `infra/prod-simulated/aws-base/terraform.tfstate` |
-| 2 | `infra/k8s-base` | Terraform | Namespace, PostgreSQL (StatefulSet/Service/Secret), `metrics-server` | S3 `infra/prod-simulated/k8s-base/terraform.tfstate` |
-| 3 | `k8s/*.yaml` | **CD (`kubectl`)** | API (Deployment/Service/HPA), ConfigMap, Secret, MailHog, Job de migração | Sem state — reaplicado a cada deploy |
+| 1 | **`oficina-mecanica-infra-base`** | Terraform | Rede AWS (VPC, subnets públicas/privadas, IGW, NAT Gateway, Route Tables) | S3 `infra/prod-simulated/infra-base/terraform.tfstate` |
+| 2 | **`oficina-mecanica-k8s`** | Terraform + Helm | EKS (cluster + node group), ECR, CloudWatch, Security Group, Namespace, PostgreSQL (StatefulSet/Service/Secret), `metrics-server` | S3 `infra/prod-simulated/k8s/terraform.tfstate` |
+| 3 | **`oficina-mecanica-app` (`k8s/*.yaml`)** | **CD (`kubectl`)** | API (Deployment/Service/HPA), ConfigMap, Secret, MailHog, Job de migração | Sem state — reaplicado a cada deploy |
 
-Os dois stacks Terraform têm **states separados** porque o provider Kubernetes da camada 2 é configurado a partir dos **outputs** da camada 1 (endpoint, CA e token do cluster, via `terraform_remote_state`) — criar o cluster e usá-lo no mesmo state seria um problema de _chicken-and-egg_. A camada 3 não é Terraform: são manifests declarativos aplicados pelo pipeline de CD, porque imagem, envs e escala mudam com muito mais frequência que a plataforma. Detalhes da divisão em [kubernetes.md › Motivo da divisão](kubernetes.md#motivo-da-divisão) e [terraform.md](terraform.md).
+Os dois stacks Terraform têm **states separados** porque o stack de Kubernetes (Camada 2) é configurado consumindo a rede e subnets da Camada 1 (via `data.terraform_remote_state`). A camada 3 não é Terraform: são manifests declarativos aplicados pelo pipeline de CD, porque imagem, envs e escala mudam com muito mais frequência que a plataforma. Detalhes da divisão em [kubernetes.md › Motivo da divisão](kubernetes.md#motivo-da-divisão) e [terraform.md](terraform.md).
 
 ## Inventário de componentes e ownership
 
-O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas três camadas. Os caminhos são a fonte da verdade — se este documento divergir deles, o código vence.
+O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas três camadas:
 
-### Camada 1 — `infra/aws-base` (Terraform)
+### Camada 1 — `oficina-mecanica-infra-base` (Terraform)
 
 | Recurso | Definido em | Finalidade |
 |---|---|---|
@@ -56,18 +56,16 @@ O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas três camad
 | **Internet Gateway** | `networking.tf` | Entrada/saída pública da VPC (rota das subnets públicas) |
 | **NAT Gateway + Elastic IP** | `networking.tf` | Egresso das subnets privadas para a internet, com IP fixo; **único**, na `public[0]` |
 | **Route tables** (`rt_public`, `rt_private`) | `networking.tf` | `rt_public` → IGW; `rt_private` → NAT Gateway |
-| **Security Group** `secgrp-eks-cluster-*` | `eks.tf` | Control plane do EKS: ingress `443` **da CIDR da VPC**, egress `0.0.0.0/0` |
-| **CloudWatch Log Group** | `eks.tf` | Logs do control plane (`api`, `audit`, `authenticator`, `controllerManager`, `scheduler`); retenção **14 dias** |
-| **EKS cluster** (`1.35`) | `eks.tf` | Control plane Kubernetes gerenciado; endpoint **público e privado**; usa IAM roles **pré-existentes** (lidas via `data`, não criadas) |
-| **EKS node group** (`t3.small`, `1/1/1`) | `eks.tf` | Worker nodes EC2 nas **subnets privadas**; `desired = min = max = 1` |
-| **ECR** (+ lifecycle policy) | `ecr.tf` | Registry das imagens da API; `scan_on_push`; criptografia `AES256`; **mantém as últimas 20 imagens** |
 
-> As IAM roles `LabEksClusterRole` / `LabEksNodeRole` **não** são provisionadas — são pré-existentes do laboratório e apenas **lidas** via `data "aws_iam_role"`. Essa restrição (AWS Academy bloqueia criação de IAM) tem impacto direto no armazenamento do banco — ver [Limitações](#limitações-e-o-que-produção-exigiria).
-
-### Camada 2 — `infra/k8s-base` (Terraform)
+### Camada 2 — `oficina-mecanica-k8s` (Terraform)
 
 | Recurso | Definido em | Finalidade |
 |---|---|---|
+| **EKS cluster** (`1.35`) | `eks.tf` | Control plane Kubernetes gerenciado; endpoint **público e privado**; usa IAM roles **pré-existentes** (lidas via `data`, não criadas) |
+| **EKS node group** (`t3.small`, `1/1/1`) | `eks.tf` | Worker nodes EC2 nas **subnets privadas**; `desired = min = max = 1` |
+| **Security Group** `secgrp-eks-cluster-*` | `eks.tf` | Control plane do EKS: ingress `443` **da CIDR da VPC**, egress `0.0.0.0/0` |
+| **CloudWatch Log Group** | `eks.tf` | Logs do control plane (`api`, `audit`, `authenticator`, `controllerManager`, `scheduler`); retenção **14 dias** |
+| **ECR** (+ lifecycle policy) | `ecr.tf` | Registry das imagens da API; `scan_on_push`; criptografia `AES256`; **mantém as últimas 20 imagens** |
 | **Namespace** `oficina` | `k8s_namespace.tf` | Namespace compartilhado de toda a solução |
 | **Secret** `postgres-secret` | `k8s_postgres.tf` | `POSTGRES_DB=techchallenge`, `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD` (injetado pelo CI) |
 | **Service** `postgres` (ClusterIP `5432`) | `k8s_postgres.tf` | DNS estável `postgres.oficina.svc.cluster.local` para o banco |
@@ -89,7 +87,7 @@ O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas três camad
 
 ## Topologia de rede
 
-Fiel a `infra/aws-base/networking.tf` e `variables.tf` (a **vista física** acima ilustra o mesmo):
+Fiel ao repositório [`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) (`networking.tf` e `variables.tf`):
 
 - **VPC** `10.0.0.0/16`, nas **2 primeiras AZs** de `us-east-1` (`slice(azs, 0, 2)` → `us-east-1a`, `us-east-1b`).
 - **Subnets públicas**: `10.0.0.0/24` (AZ-a) e `10.0.1.0/24` (AZ-b) — associadas à `rt_public` (rota `0.0.0.0/0` → **Internet Gateway**). Hospedam o NAT Gateway.
@@ -124,22 +122,25 @@ Node (subnet privada) ──pull da imagem :sha──▶ Amazon ECR (via NAT)
 - **API → MailHog**: SMTP em `mailhog:1025` (do `api-config`), para os e-mails de aprovação/rejeição de orçamento.
 - **Egresso**: pods e nodes nas subnets privadas saem para a internet **pelo NAT Gateway** (inclusive o `pull` das imagens do ECR — não há VPC endpoints).
 
-## Fluxo de provisionamento (ordem de criação)
+## Fluxo de provisionamento e deploy
 
-O CD (`.github/workflows/cd.yml`, no `push` para `master`) provisiona e entrega ponta a ponta, numa **DAG por `needs:`** — a ordem não depende de `workflow_run`, e sim das dependências entre jobs:
+A entrega segue a separação desacoplada entre os três repositórios:
 
 ```
-terraform-aws-base
-      ├──▶ terraform-k8s-base ──┐
-      └──▶ build-push-image ────┴──▶ db-migrate ──▶ app-deploy
+[oficina-mecanica-infra-base] ──(S3 Remote State)──▶ [oficina-mecanica-k8s]
+                                                             │
+                                                             ▼ (EKS + ECR + Postgres prontos)
+[oficina-mecanica-app (CD)] : build-push-image ──▶ db-migrate ──▶ app-deploy
 ```
 
-1. **`terraform-aws-base`** — cria/atualiza rede, EKS, ECR (camada 1).
-2. **`terraform-k8s-base`** ∥ **`build-push-image`** — em paralelo: a camada 2 (namespace, PostgreSQL, `metrics-server`) e o build+push da imagem `:sha` no ECR.
-3. **`db-migrate`** — aplica o Job `00-db-migrate-job.yaml` (`migrate deploy` + `seed`, não-destrutivo) e aguarda a conclusão.
-4. **`app-deploy`** — renderiza e aplica os manifests da camada 3 (Secret → ConfigMap → MailHog → API Deployment/Service/HPA) e valida o rollout.
+1. **`oficina-mecanica-infra-base`**: Provisiona a VPC, subnets públicas/privadas, IGW, NAT Gateway e tabelas de roteamento, exportando o estado no S3.
+2. **`oficina-mecanica-k8s`**: Consome a VPC e subnets do estado de rede via `data.terraform_remote_state`, provisionando o cluster EKS, Node Group, ECR, namespace `oficina`, PostgreSQL e Metrics Server.
+3. **`oficina-mecanica-app` (CD)**:
+   - **`build-push-image`**: Constrói a imagem Docker multi-stage da aplicação NestJS e realiza o push para o Amazon ECR com tags imutáveis (`:sha` e `:latest`).
+   - **`db-migrate`**: Executa o Kubernetes Job descartável aplicando `prisma migrate deploy` e `prisma db seed` de forma não-destrutiva.
+   - **`app-deploy`**: Renderiza os secrets/configmaps e aplica os manifests Kubernetes (Deployments, Services, HPA) validando o rollout.
 
-O detalhamento job a job (gates, `environment: production`, `ENABLE_APP_DEPLOY`, secrets) está em [ci-cd.md › Workflow de CD](ci-cd.md#2-workflow-de-cd-cdyml) — não repetido aqui.
+O detalhamento job a job (gates, `environment: production`, `ENABLE_DEPLOY`, secrets) está em [ci-cd.md › Workflow de CD](ci-cd.md#2-workflow-de-cd-cdyml).
 
 ## Postura de segurança
 
