@@ -2,14 +2,114 @@
   "id": "oficina-env-001",
   "name": "Oficina Mecânica — Local",
   "values": [
-    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "default", "enabled": true },
-    { "key": "authToken", "value": "", "type": "secret", "enabled": true },
-    { "key": "refreshToken", "value": "", "type": "secret", "enabled": true },
-    { "key": "adminEmail", "value": "guilhermedarochasalvador@gmail.com", "type": "default", "enabled": true },
-    { "key": "adminPassword", "value": "Tech@2026", "type": "secret", "enabled": true },
-    { "key": "userId", "value": "", "type": "default", "enabled": true },
-    { "key": "serviceId", "value": "", "type": "default", "enabled": true },
-    { "key": "partSupplyId", "value": "", "type": "default", "enabled": true }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "adminEmail",
+      "value": "guilhermedarochasalvador@gmail.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "adminPassword",
+      "value": "Tech@2026",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "partSupplyId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "mechanicUserId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "mechanicAuthToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "customerAccessToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "customerRefreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "customerPassword",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "selfServiceCustomerId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "selfServiceVehicleId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "selfServiceWorkOrderId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "selfServiceServiceId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "selfServiceQuoteId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
   ],
   "_postman_variable_scope": "environment"
 }
