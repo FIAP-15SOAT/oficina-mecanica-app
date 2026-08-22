@@ -1,7 +1,6 @@
 import { CreateCustomerUseCase } from '@application/use-cases/customer/create-customer.use-case';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { Document } from '@domain/value-objects/document.vo';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';

@@ -39,7 +39,7 @@ describe('Customer Quote Decision (E2E)', () => {
       })
       .expect(201);
 
-    return res.body.data.id;
+    return res.body.data.id as string;
   }
 
   async function createWorkOrderInDiagnosis(
@@ -52,7 +52,7 @@ describe('Customer Quote Decision (E2E)', () => {
       .send({ customerId, vehicleId, problemDescription: 'Barulho no motor' })
       .expect(201);
 
-    const workOrderId = createRes.body.data.id;
+    const workOrderId = createRes.body.data.id as string;
 
     await request(httpServer)
       .patch(`/api/work-orders/${workOrderId}`)
@@ -74,7 +74,7 @@ describe('Customer Quote Decision (E2E)', () => {
       })
       .expect(201);
 
-    return res.body.data.id;
+    return res.body.data.id as string;
   }
 
   async function createSentQuoteForCustomer(customer: CustomerAuthTokens): Promise<string> {
@@ -88,7 +88,7 @@ describe('Customer Quote Decision (E2E)', () => {
       .send({ workOrderId })
       .expect(201);
 
-    const quoteId = quoteRes.body.data.id;
+    const quoteId = quoteRes.body.data.id as string;
 
     await request(httpServer)
       .post(`/api/quotes/${quoteId}/services`)
