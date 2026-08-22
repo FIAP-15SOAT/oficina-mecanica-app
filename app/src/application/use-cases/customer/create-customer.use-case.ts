@@ -42,15 +42,22 @@ export class CreateCustomerUseCase implements ICreateCustomerUseCase {
 
     const created = await this.customerRepository.create(customer);
 
-    await this.emailSenderService.send({
-      toEmail: created.email.value,
-      toName: created.name,
-      subject: 'Sua conta foi criada — dados de acesso',
-      message: {
-        text: `Olá, ${created.name}! Sua conta foi criada. Use o e-mail ou documento cadastrado e a senha "${plainPassword}" para acessar o sistema.`,
-        html: `<p>Olá, ${created.name}!</p><p>Sua conta foi criada. Use o e-mail ou documento cadastrado e a senha <strong>${plainPassword}</strong> para acessar o sistema.</p>`,
-      },
-    });
+    try {
+      await this.emailSenderService.send({
+        toEmail: created.email.value,
+        toName: created.name,
+        subject: 'Sua conta foi criada — dados de acesso',
+        message: {
+          text: `Olá, ${created.name}! Sua conta foi criada. Use o e-mail ou documento cadastrado e a senha "${plainPassword}" para acessar o sistema.`,
+          html: `<p>Olá, ${created.name}!</p><p>Sua conta foi criada. Use o e-mail ou documento cadastrado e a senha <strong>${plainPassword}</strong> para acessar o sistema.</p>`,
+        },
+      });
+    } catch (error) {
+      // A criação do cliente já foi persistida com sucesso; uma falha no envio do
+      // e-mail não deve invalidar o cadastro (a conta é recuperável via reset de senha).
+      // eslint-disable-next-line no-console
+      console.error('Falha ao enviar e-mail de senha inicial ao cliente', created.id, error);
+    }
 
     return created;
   }

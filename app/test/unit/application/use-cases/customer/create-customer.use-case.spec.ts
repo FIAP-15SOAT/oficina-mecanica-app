@@ -125,4 +125,29 @@ describe('CreateCustomerUseCase', () => {
     expect(result).not.toHaveProperty('password');
     expect(JSON.stringify(result)).not.toContain('passwordHash');
   });
+
+  it('should still resolve with the created customer even if the welcome e-mail fails to send', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const saved = createMockCustomer({
+      name: validInput.name,
+      document: Document.create('12345678909', validInput.type),
+      type: validInput.type,
+      email: Email.create(validInput.email),
+      phone: Phone.create(validInput.phone),
+    });
+
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.create.mockResolvedValue(saved);
+    emailSenderService.send.mockRejectedValueOnce(new Error('SMTP down'));
+
+    const result = await useCase.execute(validInput);
+
+    expect(result).toEqual(saved);
+    expect(customerRepository.create).toHaveBeenCalledTimes(1);
+    expect(emailSenderService.send).toHaveBeenCalledTimes(1);
+
+    consoleErrorSpy.mockRestore();
+  });
 });
