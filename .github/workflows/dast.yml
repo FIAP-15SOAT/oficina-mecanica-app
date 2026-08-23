@@ -50,7 +50,7 @@ jobs:
           echo "::add-mask::$SEED_ADMIN_PASSWORD"
           token="$(curl -fsS -X POST "$API_BASE_URL/api/auth/login" \
             -H 'Content-Type: application/json' \
-            -d "{\"email\":\"${SEED_ADMIN_EMAIL}\",\"password\":\"${SEED_ADMIN_PASSWORD}\"}" \
+            -d "{\"identifier\":\"${SEED_ADMIN_EMAIL}\",\"password\":\"${SEED_ADMIN_PASSWORD}\"}" \
             | jq -r '.data.accessToken' || true)"
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "::error::Failed to authenticate against /api/auth/login."
