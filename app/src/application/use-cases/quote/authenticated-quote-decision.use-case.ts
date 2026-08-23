@@ -27,7 +27,7 @@ export class AuthenticatedQuoteDecisionUseCase {
 
     const workOrder = await this.workOrderRepository.findById(quote.workOrderId);
 
-    if (!workOrder || workOrder.customerId !== input.customerId) {
+    if (workOrder?.customerId !== input.customerId) {
       throw new UnauthorizedAccessException(
         'Orçamento não encontrado ou não pertence a este cliente',
       );

@@ -11,12 +11,7 @@ import {
 } from '@application/ports/input/auth/dto/authenticate-user.dto';
 
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
-
-// Hash bcrypt válido de um valor arbitrário. Não é secreto: existe apenas para que
-// `hashService.compare` sempre execute um trabalho real, evitando que os caminhos
-// "identificador não encontrado" ou "usuário inativo" sejam mensuravelmente mais
-// rápidos que o de "senha incorreta" (timing side-channel).
-const DUMMY_PASSWORD_HASH = '$2b$12$PeogSPQuXXcQZWevnZMD7u5zikjQc626ibxG0hUlt7AuCb9vXvuBK';
+import { DUMMY_PASSWORD_HASH } from '@domain/constants/security/dummy-password-hash.constant';
 
 export class AuthenticateUserUseCase {
   constructor(

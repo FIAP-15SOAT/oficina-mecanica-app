@@ -12,12 +12,7 @@ import {
 import { IAuthenticateCustomerUseCase } from '@application/ports/input/auth/authenticate-customer.use-case.interface';
 
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
-
-// Hash bcrypt válido de um valor arbitrário. Não é secreto: existe apenas para que
-// `hashService.compare` sempre execute um trabalho real, evitando que o caminho
-// "identificador não encontrado" seja mensuravelmente mais rápido que o de
-// "senha incorreta" (timing side-channel).
-const DUMMY_PASSWORD_HASH = '$2b$12$PeogSPQuXXcQZWevnZMD7u5zikjQc626ibxG0hUlt7AuCb9vXvuBK';
+import { DUMMY_PASSWORD_HASH } from '@domain/constants/security/dummy-password-hash.constant';
 
 export class AuthenticateCustomerUseCase implements IAuthenticateCustomerUseCase {
   constructor(
