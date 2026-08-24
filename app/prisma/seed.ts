@@ -11,7 +11,7 @@ import { seedPartSupplies } from './seeds/part-supply.seed';
 import { seedWorkOrders } from './seeds/work-order.seed';
 import { seedWorkOrderStatusInfos } from './seeds/work-order-status-info.seed';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
