@@ -15,91 +15,11 @@ env:
   TF_IN_AUTOMATION: "true"
 
 jobs:
-  terraform-aws-base:
-    name: Terraform Infra AWS
-    runs-on: ubuntu-latest
-    environment: production
-    if: vars.ENABLE_APP_DEPLOY == 'true'
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Terraform Init
-        run: terraform init -no-color
-        working-directory: infra/aws-base
-
-      - name: Terraform Validate
-        run: terraform validate -no-color
-        working-directory: infra/aws-base
-
-      - name: Terraform Plan
-        run: terraform plan -no-color
-        working-directory: infra/aws-base
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -no-color
-        working-directory: infra/aws-base
-
-  terraform-k8s-base:
-    name: Terraform Kubernetes
-    runs-on: ubuntu-latest
-    environment: production
-    needs: terraform-aws-base
-    if: vars.ENABLE_APP_DEPLOY == 'true'
-    permissions:
-      contents: read
-    env:
-      TF_VAR_k8s_postgres_password: ${{ secrets.K8S_POSTGRES_PASSWORD }}
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Terraform Init
-        run: terraform init -no-color
-        working-directory: infra/k8s-base
-
-      - name: Terraform Validate
-        run: terraform validate -no-color
-        working-directory: infra/k8s-base
-
-      - name: Terraform Plan
-        run: terraform plan -no-color
-        working-directory: infra/k8s-base
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -no-color
-        working-directory: infra/k8s-base
-
   build-push-image:
     name: Build and Push App Image
     runs-on: ubuntu-latest
     environment: production
-    needs: terraform-aws-base
-    if: vars.ENABLE_APP_DEPLOY == 'true'
+    if: vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
     outputs:
@@ -146,9 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     needs:
-      - terraform-k8s-base
       - build-push-image
-    if: vars.ENABLE_APP_DEPLOY == 'true'
+    if: vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
 
@@ -165,6 +84,33 @@ jobs:
 
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Render and apply API secrets and ConfigMap
+        env:
+          DB_USER: ${{ vars.DB_USER || 'techchallenge' }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD || secrets.TF_VAR_DB_PASSWORD }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT || '5432' }}
+          DB_NAME: ${{ vars.DB_NAME || 'techchallenge' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
+        run: |
+          DB_USER="${DB_USER}" \
+          DB_PASSWORD="${DB_PASSWORD}" \
+          DB_HOST="${DB_HOST}" \
+          DB_PORT="${DB_PORT}" \
+          DB_NAME="${DB_NAME}" \
+          JWT_SECRET="${JWT_SECRET}" \
+          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
+            envsubst \
+            '${DB_USER} ${DB_PASSWORD} ${DB_HOST} ${DB_PORT} ${DB_NAME} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
+            < k8s/01-api-secret.yaml \
+            > k8s/01-api-secret.rendered.yaml
+
+          kubectl apply -f k8s/01-api-secret.rendered.yaml
+          kubectl apply -f k8s/02-api-configmap.yaml
 
       - name: Apply DB migration Job
         id: db_job
@@ -213,7 +159,7 @@ jobs:
     needs:
       - build-push-image
       - db-migrate
-    if: vars.ENABLE_APP_DEPLOY == 'true'
+    if: vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
 
@@ -231,22 +177,6 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
 
-      - name: Render API secret manifest with database password
-        env:
-          K8S_POSTGRES_PASSWORD: ${{ secrets.K8S_POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
-        run: |
-          CHANGE_ME_STRONG_PASSWORD="${K8S_POSTGRES_PASSWORD}" \
-          JWT_SECRET="${JWT_SECRET}" \
-          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
-          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
-            envsubst \
-            '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
-            < k8s/01-api-secret.yaml \
-            > k8s/01-api-secret.rendered.yaml
-
       - name: Render deployment manifest with immutable image
         run: |
           sed "s|IMAGE_URI_PLACEHOLDER|${{ needs.build-push-image.outputs.image_uri }}|g" \
@@ -254,8 +184,6 @@ jobs:
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/01-api-secret.rendered.yaml
-          kubectl apply -f k8s/02-api-configmap.yaml
           kubectl apply -f k8s/03-mailhog-deployment.yaml
           kubectl apply -f k8s/04-mailhog-service.yaml
           kubectl apply -f k8s/03-api-deployment.rendered.yaml

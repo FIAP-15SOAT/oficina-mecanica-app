@@ -13,7 +13,7 @@ describe('FindAllUsersUseCase', () => {
 
   it('should return paginated list of users', async () => {
     const users = [
-      createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN }),
+      createMockUser({ id: '1', name: 'Lucas', role: UserRole.ADMIN }),
       createMockUser({ id: '2', name: 'Guilherme', role: UserRole.MECHANIC }),
     ];
     userRepository.findAllPaginated.mockResolvedValue({
@@ -25,14 +25,14 @@ describe('FindAllUsersUseCase', () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.pagination.totalRecords).toBe(2);
-    expect(result.items[0].name).toBe('Rafael');
+    expect(result.items[0].name).toBe('Lucas');
     expect(result.items[1].name).toBe('Guilherme');
     expect(result.items[0]).not.toHaveProperty('passwordHash');
     expect(userRepository.findAllPaginated).toHaveBeenCalledWith({ page: 1, limit: 10 }, {});
   });
 
   it('should return paginated list with role filter', async () => {
-    const users = [createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN })];
+    const users = [createMockUser({ id: '1', name: 'Lucas', role: UserRole.ADMIN })];
     userRepository.findAllPaginated.mockResolvedValue({
       items: users,
       total: 1,
@@ -49,19 +49,19 @@ describe('FindAllUsersUseCase', () => {
   });
 
   it('should return paginated list with name filter', async () => {
-    const users = [createMockUser({ id: '1', name: 'Rafael', role: UserRole.ADMIN })];
+    const users = [createMockUser({ id: '1', name: 'Lucas', role: UserRole.ADMIN })];
     userRepository.findAllPaginated.mockResolvedValue({
       items: users,
       total: 1,
     });
 
-    const result = await useCase.execute({ page: 1, limit: 10, name: 'Rafael' });
+    const result = await useCase.execute({ page: 1, limit: 10, name: 'Lucas' });
 
     expect(result.items).toHaveLength(1);
     expect(result.pagination.totalRecords).toBe(1);
     expect(userRepository.findAllPaginated).toHaveBeenCalledWith(
       { page: 1, limit: 10 },
-      { name: 'Rafael' },
+      { name: 'Lucas' },
     );
   });
 

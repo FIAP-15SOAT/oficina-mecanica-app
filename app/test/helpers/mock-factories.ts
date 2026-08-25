@@ -10,8 +10,8 @@ export function createMockUser(overrides: Partial<User> = {}): User {
 
   return User.reconstitute({
     id: 'user-uuid-123',
-    name: 'Rafael Neves',
-    email: Email.create('rafael@email.com'),
+    name: 'Admin User',
+    email: Email.create('admin@email.com'),
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ADMIN,
     isActive: true,
@@ -51,7 +51,7 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     signTokenPair: jest.fn().mockReturnValue(pair),
     verifyRefreshToken: jest
       .fn()
-      .mockReturnValue({ sub: 'user-uuid-123', email: 'rafael@email.com', role: UserRole.ADMIN }),
+      .mockReturnValue({ sub: 'user-uuid-123', email: 'admin@email.com', role: UserRole.ADMIN }),
     signWithSecret: jest.fn().mockReturnValue('signed-token'),
     verifyWithSecret: jest.fn().mockReturnValue({ any: 'payload' }),
   };

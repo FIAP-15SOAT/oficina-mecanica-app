@@ -96,8 +96,8 @@ Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em container
 
 ```bash
 # Clonar o repositório e entrar na pasta da aplicação
-git clone https://github.com/FIAP-15SOAT/oficina_mecanica_grupo39
-cd oficina_mecanica_grupo39/app
+git clone https://github.com/FIAP-15SOAT/oficina-mecanica-app.git
+cd oficina-mecanica-app/app
 
 # (Opcional) Copiar e ajustar variáveis de ambiente
 cp .env.example .env
@@ -159,6 +159,16 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 
 ➡️ Detalhes completos em **[Arquitetura](docs/architecture.md)**.
 
+## 🌐 Ecossistema de Repositórios
+
+O projeto está dividido em repositórios especializados e desacoplados:
+
+| Repositório | Papel | Tecnologias |
+|---|---|---|
+| **[oficina-mecanica-app](https://github.com/FIAP-15SOAT/oficina-mecanica-app)** *(este repositório)* | Aplicação NestJS, APIs, Domínio DDD e Manifestos K8s da aplicação | NestJS, TypeScript, Prisma, Jest, Docker |
+| **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede na AWS (VPC, Subnets públicas/privadas, Gateways) | Terraform, AWS VPC, NAT Gateway, Route Tables |
+| **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Postgres, Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR, PostgreSQL 16 |
+
 ## 📚 Documentação
 
 | Documento | Conteúdo |
@@ -168,9 +178,9 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 | 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
 | 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
 | 🔒 [Segurança](docs/security.md) | Mitigações no código, proteção de dados nos logs e relatórios (ZAP, SonarQube) |
-| 🏗️ [Infra · Visão Geral](docs/infra/overview.md) | Arquitetura da infra como sistema: componentes, ownership, fluxos e trade-offs |
-| 🌍 [Infra · Terraform](docs/infra/terraform.md) | Infraestrutura AWS e Kubernetes (IaC) |
-| ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests, storage, probes, deploy |
+| 🏗️ [Infra · Visão Geral](docs/infra/overview.md) | Arquitetura da infra como sistema: componentes, ownership e fluxos |
+| 🌍 [Infra · Terraform](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) | Infraestrutura AWS e Kubernetes (IaC nos repositórios dedicados) |
+| ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests de aplicação (`k8s/`), probes, HPA e deploy |
 | 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
 | 📐 [ADRs](docs/adr) | Decisões arquiteturais |
 | 🧩 [Modelo C4](docs/c4) | Diagramas de Contexto, Container e Componente |
@@ -180,7 +190,6 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 
 - [Guilherme da Rocha Salvador](https://github.com/guilhermesalvador404)
 - [Lucas Almeida da Silva](https://github.com/lucas-almeida-silva)
-- [Rafael Neves de Oliveira](https://github.com/RafaelNevesdeOliveira)
 - [Ramoon Lincoln Barros Camacho](https://github.com/ramooncamacho)
 - [Renan Santana Camacho](https://github.com/renancamacho)
 
