@@ -7,9 +7,12 @@ import { createMockQuote } from '../../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('RejectQuoteUseCase', () => {
   let useCase: RejectQuoteUseCase;
+  let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
 
@@ -17,7 +20,8 @@ describe('RejectQuoteUseCase', () => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
-    useCase = new RejectQuoteUseCase(mockUow);
+    logger = createMockLogger();
+    useCase = new RejectQuoteUseCase(mockUow, logger);
   });
 
   it('should reject quote and update work order status to REJECTED', async () => {

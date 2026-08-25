@@ -80,6 +80,30 @@ spec:
                   name: api-config
                   key: TZ
 
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: LOG_LEVEL
+
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: OTEL_SERVICE_NAME
+
+            - name: OTEL_SERVICE_NAMESPACE
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: OTEL_SERVICE_NAMESPACE
+
+            - name: TRUSTED_PROXY_CIDRS
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: TRUSTED_PROXY_CIDRS
+
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

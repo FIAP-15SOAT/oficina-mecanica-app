@@ -4,12 +4,17 @@ import { StockMovement } from '@domain/entities/stock-movement.entity';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { UpdateStockDto } from '@application/ports/input/part-supply/dto/update-stock.dto';
 import { IUpdateStockUseCase } from '@application/ports/input/part-supply/update-stock.use-case.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 
 export class UpdateStockUseCase implements IUpdateStockUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) {}
+  constructor(
+    private readonly unitOfWork: IUnitOfWork,
+    private readonly logger: ILogger,
+  ) {}
 
   async execute(id: string, input: UpdateStockDto): Promise<PartSupply> {
-    return this.unitOfWork.executeTransaction(async (repos) => {
+    const partSupply = await this.unitOfWork.executeTransaction(async (repos) => {
       const partSupply = await repos.partSupply.findById(id);
 
       if (!partSupply) {
@@ -33,5 +38,16 @@ export class UpdateStockUseCase implements IUpdateStockUseCase {
 
       return partSupply;
     });
+
+    this.logger.event(BUSINESS_EVENTS.STOCK_UPDATED, {
+      partSupplyId: partSupply.id,
+      partSupplyName: partSupply.name,
+      movementType: input.type,
+      movementQuantity: input.quantity,
+      currentQuantity: partSupply.stock,
+      workOrderId: input.workOrderId ?? undefined,
+    });
+
+    return partSupply;
   }
 }

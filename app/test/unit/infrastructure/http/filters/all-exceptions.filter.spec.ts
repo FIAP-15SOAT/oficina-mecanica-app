@@ -1,10 +1,15 @@
-import { ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 import { AllExceptionsFilter } from '@infrastructure/http/filters/all-exceptions.filter';
+import { TECHNICAL_EVENTS } from '@infrastructure/logging/technical-event.catalog';
+import { getRequestLogContext } from '@infrastructure/logging/request-log-context';
 
 function createMockHost() {
   const jsonFn = jest.fn();
   const statusFn = jest.fn().mockReturnValue({ json: jsonFn });
-  const mockResponse = { status: statusFn };
+  const mockResponse = { status: statusFn, locals: {} };
 
   const host = {
     switchToHttp: () => ({
@@ -19,20 +24,16 @@ function createMockHost() {
     getType: jest.fn(),
   } satisfies ArgumentsHost;
 
-  return { host, statusFn, jsonFn };
+  return { host, statusFn, jsonFn, mockResponse };
 }
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
-  let loggerErrorSpy: jest.SpyInstance;
+  let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
-    filter = new AllExceptionsFilter();
-    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    loggerErrorSpy.mockRestore();
+    logger = createMockLogger();
+    filter = new AllExceptionsFilter(logger);
   });
 
   it('should return the HttpException status and message for 4xx errors', () => {
@@ -48,7 +49,7 @@ describe('AllExceptionsFilter', () => {
       message: 'Recurso não encontrado',
     });
 
-    expect(loggerErrorSpy).not.toHaveBeenCalled();
+    expect(logger.event).not.toHaveBeenCalled();
   });
 
   it('should return correct error name for 401 Unauthorized', () => {
@@ -121,7 +122,8 @@ describe('AllExceptionsFilter', () => {
       error: 'Internal Server Error',
       message: 'An unexpected error occurred',
     });
-    expect(loggerErrorSpy).toHaveBeenCalledWith('Erro inesperado no sistema', exception.stack);
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event).toHaveBeenCalledWith(TECHNICAL_EVENTS.HTTP_REQUEST_FAILED, {}, exception);
   });
 
   it('should return 500 and log "Unexpected error" when a non-Error value is thrown', () => {
@@ -135,7 +137,12 @@ describe('AllExceptionsFilter', () => {
       error: 'Internal Server Error',
       message: 'An unexpected error occurred',
     });
-    expect(loggerErrorSpy).toHaveBeenCalledWith('Unexpected error', undefined);
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event).toHaveBeenCalledWith(
+      TECHNICAL_EVENTS.HTTP_REQUEST_FAILED,
+      {},
+      'string thrown as exception',
+    );
   });
 
   it('should return 400 for SyntaxError with body property (malformed JSON body)', () => {
@@ -150,7 +157,89 @@ describe('AllExceptionsFilter', () => {
       error: 'Bad Request',
       message: 'Bad request',
     });
-    expect(loggerErrorSpy).not.toHaveBeenCalled();
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  /**
+   * O `body-parser` roda antes do pipeline do Nest e lança instâncias de
+   * `http-errors`: carregam `status`/`statusCode`, mas não são `HttpException`.
+   * Sem reconhecê-las, um corpo acima de 100 kB virava `500` — o cliente recebia
+   * "erro inesperado" por um erro dele, e o filtro ainda emitia uma linha
+   * `ERROR` com stack, sem autenticação e sem access log irmão.
+   */
+  describe('erros do body parser (http-errors, não HttpException)', () => {
+    function createPayloadTooLarge(): Error {
+      return Object.assign(new Error('request entity too large'), {
+        status: 413,
+        statusCode: 413,
+        type: 'entity.too.large',
+        expose: true,
+      });
+    }
+
+    it('should resolve an oversized body to 413 instead of 500', () => {
+      const { host, statusFn, jsonFn } = createMockHost();
+
+      filter.catch(createPayloadTooLarge(), host);
+
+      expect(statusFn).toHaveBeenCalledWith(HttpStatus.PAYLOAD_TOO_LARGE);
+      expect(jsonFn).toHaveBeenCalledWith({
+        statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+        error: 'Payload Too Large',
+        message: 'request entity too large',
+      });
+    });
+
+    it('should not emit a dedicated error line for an oversized body', () => {
+      const { host } = createMockHost();
+
+      filter.catch(createPayloadTooLarge(), host);
+
+      expect(logger.event).not.toHaveBeenCalled();
+    });
+
+    it('should recognize an unsupported charset as 415', () => {
+      const { host, statusFn } = createMockHost();
+
+      filter.catch(
+        Object.assign(new Error('unsupported charset'), { status: 415, expose: true }),
+        host,
+      );
+
+      expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    });
+
+    it('should keep an ordinary error at 500 when it carries no usable status', () => {
+      const { host, statusFn } = createMockHost();
+
+      filter.catch(Object.assign(new Error('quebrou'), { status: 'nope' }), host);
+
+      expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(logger.event).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore a carried status outside the http error range', () => {
+      const { host, statusFn } = createMockHost();
+
+      filter.catch(Object.assign(new Error('quebrou'), { status: 200 }), host);
+
+      expect(statusFn).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+
+    it('should not expose the message of an error that is not marked as exposable', () => {
+      const { host, jsonFn } = createMockHost();
+
+      filter.catch(
+        Object.assign(new Error('detalhe interno'), { status: 400, expose: false }),
+        host,
+      );
+
+      expect(jsonFn).toHaveBeenCalledWith({
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: 'Bad Request',
+        message: 'Bad request',
+      });
+    });
   });
 
   it('should return the message array from HttpException response object (e.g. validation errors)', () => {
@@ -172,6 +261,46 @@ describe('AllExceptionsFilter', () => {
       error: 'Bad Request',
       message: ['name must not be empty', 'email must be an email'],
     });
-    expect(loggerErrorSpy).not.toHaveBeenCalled();
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  it('should record the resolved error type and message in the request-local context on a 4xx', () => {
+    const { host, mockResponse } = createMockHost();
+
+    filter.catch(new HttpException('Recurso não encontrado', HttpStatus.NOT_FOUND), host);
+
+    expect(getRequestLogContext(mockResponse)).toEqual({
+      errorType: 'HttpException',
+      errorMessage: 'Recurso não encontrado',
+    });
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  it('should record the resolved error type and message in the request-local context on a 5xx', () => {
+    const { host, mockResponse } = createMockHost();
+
+    filter.catch(new Error('Erro inesperado no sistema'), host);
+
+    expect(getRequestLogContext(mockResponse)).toEqual({
+      errorType: 'Error',
+      errorMessage: 'Erro inesperado no sistema',
+    });
+  });
+
+  it('should not throw when the response carries no locals', () => {
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => ({ status: () => ({ json: jest.fn() }) }),
+        getRequest: jest.fn(),
+        getNext: jest.fn(),
+      }),
+      getArgs: jest.fn(),
+      getArgByIndex: jest.fn(),
+      switchToRpc: jest.fn(),
+      switchToWs: jest.fn(),
+      getType: jest.fn(),
+    } as unknown as ArgumentsHost;
+
+    expect(() => filter.catch(new Error('boom'), host)).not.toThrow();
   });
 });

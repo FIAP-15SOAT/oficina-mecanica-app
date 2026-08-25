@@ -139,6 +139,7 @@ jobs:
             ${{ steps.login_ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
           build-args: |
             DATABASE_URL=${{ vars.PRISMA_GENERATE_DATABASE_URL || 'postgresql://prisma:prisma@localhost:5432/prisma?schema=public' }}
+            SERVICE_VERSION=${{ github.sha }}
 
   db-migrate:
     name: DB Migrate & Seed

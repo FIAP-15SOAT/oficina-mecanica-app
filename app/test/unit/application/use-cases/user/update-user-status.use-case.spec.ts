@@ -2,14 +2,18 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/user-mock.factory';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('UpdateUserStatusUseCase', () => {
   let useCase: UpdateUserStatusUseCase;
+  let logger: jest.Mocked<ILogger>;
   let userRepository: jest.Mocked<IUserRepository>;
 
   beforeEach(() => {
     userRepository = createMockUserRepository();
-    useCase = new UpdateUserStatusUseCase(userRepository);
+    logger = createMockLogger();
+    useCase = new UpdateUserStatusUseCase(userRepository, logger);
   });
 
   it('should activate an inactive user', async () => {

@@ -8,14 +8,34 @@ import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { UpdateWorkOrderServiceStatusDto } from '@application/ports/input/work-order/dto/update-work-order-service-status.dto';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
+interface StockConsumptionSummary {
+  consumedItemCount: number;
+  consumedQuantity: number;
+}
+
+const NO_CONSUMPTION: StockConsumptionSummary = { consumedItemCount: 0, consumedQuantity: 0 };
+
 export class UpdateWorkOrderServiceStatusUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) {}
+  constructor(
+    private readonly unitOfWork: IUnitOfWork,
+    private readonly logger: ILogger,
+  ) {}
 
   async execute(dto: UpdateWorkOrderServiceStatusDto): Promise<WorkOrderService> {
-    return this.unitOfWork.executeTransaction(async (repos) => {
+    const {
+      item,
+      workOrderId,
+      workOrderNumber,
+      previousStatus,
+      currentStatus,
+      previousServiceStatus,
+      consumption,
+    } = await this.unitOfWork.executeTransaction(async (repos) => {
       const workOrder = await repos.workOrder.findByIdWithDetails(dto.workOrderId);
 
       if (!workOrder) {
@@ -23,6 +43,10 @@ export class UpdateWorkOrderServiceStatusUseCase {
       }
 
       const previousStatus = workOrder.status;
+
+      const previousServiceStatus = workOrder.services.find(
+        (service) => service.serviceId === dto.serviceId,
+      )?.status;
 
       if (dto.status === WorkOrderServiceStatus.IN_PROGRESS) {
         workOrder.startServiceItem(dto.serviceId);
@@ -32,9 +56,10 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
       const statusChanged = workOrder.status !== previousStatus;
 
-      if (dto.status === WorkOrderServiceStatus.IN_PROGRESS && statusChanged) {
-        await this.updateStockFromReservations(repos, workOrder);
-      }
+      const consumption =
+        dto.status === WorkOrderServiceStatus.IN_PROGRESS && statusChanged
+          ? await this.updateStockFromReservations(repos, workOrder)
+          : NO_CONSUMPTION;
 
       const item = workOrder.services.find((s) => s.serviceId === dto.serviceId)!;
 
@@ -52,14 +77,46 @@ export class UpdateWorkOrderServiceStatusUseCase {
         );
       }
 
-      return item;
+      return {
+        item,
+        workOrderId: workOrder.id,
+        workOrderNumber: workOrder.number.toString(),
+        previousStatus,
+        currentStatus: workOrder.status,
+        previousServiceStatus,
+        consumption,
+      };
     });
+
+    if (consumption.consumedItemCount > 0) {
+      this.logger.event(BUSINESS_EVENTS.STOCK_CONSUMED, {
+        workOrderId,
+        workOrderNumber,
+        ...consumption,
+      });
+    }
+
+    this.logger.event(BUSINESS_EVENTS.WORK_ORDER_SERVICE_STATUS_UPDATED, {
+      workOrderId,
+      workOrderNumber,
+      workOrderServiceId: item.serviceId,
+      workOrderServiceName: item.service?.name,
+      previousWorkOrderServiceStatus: previousServiceStatus,
+      currentWorkOrderServiceStatus: item.status,
+      previousWorkOrderStatus: previousStatus,
+      currentWorkOrderStatus: currentStatus,
+    });
+
+    return item;
   }
 
-  private async updateStockFromReservations(repos: IRepositories, workOrder: WorkOrder) {
+  private async updateStockFromReservations(
+    repos: IRepositories,
+    workOrder: WorkOrder,
+  ): Promise<StockConsumptionSummary> {
     const reservations = await repos.stockReservation.findByWorkOrderId(workOrder.id);
 
-    if (reservations.length === 0) return;
+    if (reservations.length === 0) return NO_CONSUMPTION;
 
     const partSupplyIds = reservations.map((r) => r.partSupplyId);
     const partSupplies = await repos.partSupply.findByIds(partSupplyIds);
@@ -88,5 +145,10 @@ export class UpdateWorkOrderServiceStatusUseCase {
     await Promise.all([repos.stockMovement.createMany(movements), ...updates]);
 
     await repos.stockReservation.deleteByWorkOrderId(workOrder.id);
+
+    return {
+      consumedItemCount: reservations.length,
+      consumedQuantity: reservations.reduce((total, item) => total + item.quantity, 0),
+    };
   }
 }

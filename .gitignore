@@ -33,6 +33,7 @@ crash.*.log
 
 .codex
 .agent
+.agents
 .github/*
 !.github/workflows/
 !.github/actions/

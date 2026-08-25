@@ -5,16 +5,20 @@ import {
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('RefreshTokenUseCase', () => {
   let useCase: RefreshTokenUseCase;
+  let logger: jest.Mocked<ILogger>;
   let userRepository: ReturnType<typeof createMockUserRepository>;
   let tokenService: ReturnType<typeof createMockTokenService>;
 
   beforeEach(() => {
     userRepository = createMockUserRepository();
     tokenService = createMockTokenService();
-    useCase = new RefreshTokenUseCase(userRepository, tokenService);
+    logger = createMockLogger();
+    useCase = new RefreshTokenUseCase(userRepository, tokenService, logger);
   });
 
   it('should renew tokens successfully', async () => {
@@ -48,7 +52,7 @@ describe('RefreshTokenUseCase', () => {
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
-      'Usuário inválido ou desativado',
+      'Refresh token inválido ou expirado',
     );
   });
 
@@ -57,7 +61,45 @@ describe('RefreshTokenUseCase', () => {
     userRepository.findById.mockResolvedValue(user);
 
     await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
-      'Usuário inválido ou desativado',
+      'Refresh token inválido ou expirado',
     );
+  });
+
+  it('should report a distinct cause for each failure while throwing an identical message', async () => {
+    tokenService.verifyRefreshToken.mockImplementationOnce(() => {
+      throw new Error('expired');
+    });
+    await expect(useCase.execute({ refreshToken: 'bad' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
+    userRepository.findById.mockResolvedValueOnce(null);
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
+    userRepository.findById.mockResolvedValueOnce(createMockUser({ isActive: false }));
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
+    expect(logger.event.mock.calls.map((call) => call[1])).toEqual([
+      { failureReason: 'invalid_token' },
+      { failureReason: 'unknown_user', subjectId: 'user-uuid-123' },
+      {
+        failureReason: 'inactive_user',
+        subjectId: 'user-uuid-123',
+        subjectName: 'Rafael Neves',
+        subjectEmail: 'rafael@email.com',
+      },
+    ]);
+  });
+
+  it('should not emit a business event on a successful refresh', async () => {
+    userRepository.findById.mockResolvedValue(createMockUser());
+
+    await useCase.execute({ refreshToken: 'valid-token' });
+
+    expect(logger.event).not.toHaveBeenCalled();
   });
 });

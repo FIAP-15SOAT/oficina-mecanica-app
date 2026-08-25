@@ -12,9 +12,12 @@ import { TokenType } from '@domain/enums/token-type.enum';
 
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';
 import { createMockTokenService } from '../../../../helpers/mock-factories';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('EmailDecisionQuoteUseCase', () => {
   let useCase: EmailDecisionQuoteUseCase;
+  let logger: jest.Mocked<ILogger>;
   let tokenService: jest.Mocked<ITokenService>;
   let approveUseCase: jest.Mocked<IApproveQuoteUseCase>;
   let rejectUseCase: jest.Mocked<IRejectQuoteUseCase>;
@@ -29,11 +32,13 @@ describe('EmailDecisionQuoteUseCase', () => {
       execute: jest.fn(),
     };
 
+    logger = createMockLogger();
     useCase = new EmailDecisionQuoteUseCase(
       tokenService,
       approveUseCase,
       rejectUseCase,
       decisionSecret,
+      logger,
     );
   });
 
@@ -105,5 +110,79 @@ describe('EmailDecisionQuoteUseCase', () => {
     tokenService.verifyWithSecret.mockReturnValue(payload);
 
     await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+  });
+
+  it('should emit no business event of its own when it delegates the decision', async () => {
+    tokenService.verifyWithSecret.mockReturnValue({
+      quoteId,
+      action: QuoteDecisionAction.APPROVE,
+      type: TokenType.QUOTE_EMAIL_DECISION,
+    });
+    approveUseCase.execute.mockResolvedValue(createMockQuote({ id: quoteId }));
+
+    await useCase.execute(quoteId, token);
+
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  it('should emit exactly one warning when the capability token cannot be verified', async () => {
+    tokenService.verifyWithSecret.mockImplementation(() => {
+      throw new Error('invalid signature');
+    });
+
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event.mock.calls[0][1]).toEqual({
+      quoteDecisionFailureReason: 'invalid_token',
+      quoteId,
+    });
+  });
+
+  /**
+   * A razão registrada tem de descrever a checagem que realmente falhou. Antes,
+   * as duas divergências saíam como `token_action_mismatch` — e `action` nunca
+   * chega a ser comparada.
+   */
+  it('should report a quote mismatch when the token points at another quote', async () => {
+    tokenService.verifyWithSecret.mockReturnValue({
+      quoteId: 'different-id',
+      action: QuoteDecisionAction.APPROVE,
+      type: TokenType.QUOTE_EMAIL_DECISION,
+    });
+
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event.mock.calls[0][1]).toEqual({
+      quoteDecisionFailureReason: 'quote_id_mismatch',
+      quoteId,
+    });
+  });
+
+  it('should report a type mismatch when the token was minted for another purpose', async () => {
+    tokenService.verifyWithSecret.mockReturnValue({
+      quoteId,
+      action: QuoteDecisionAction.APPROVE,
+      type: 'access' as TokenType,
+    });
+
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event.mock.calls[0][1]).toEqual({
+      quoteDecisionFailureReason: 'token_type_mismatch',
+      quoteId,
+    });
+  });
+
+  it('should never emit the capability token itself', async () => {
+    tokenService.verifyWithSecret.mockImplementation(() => {
+      throw new Error('invalid signature');
+    });
+
+    await expect(useCase.execute(quoteId, token)).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(JSON.stringify(logger.event.mock.calls)).not.toContain(token);
   });
 });

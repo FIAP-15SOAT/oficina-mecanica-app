@@ -1,15 +1,24 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import type { Server } from 'http';
 import { execSync } from 'child_process';
+import type { DestinationStream } from 'pino';
 
 import { AppModule } from '../../src/app.module';
-import { DateSerializerInterceptor } from '../../src/infrastructure/http/interceptors/date-serializer.interceptor';
-import { SanitizeStringsPipe } from '../../src/infrastructure/http/pipes/sanitize-strings.pipe';
+import { configureApp } from '../../src/config/app-bootstrap';
 import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
+import { LOGGER_DESTINATION, LOGGER_LEVEL } from '../../src/infrastructure/logging/logging.module';
+
+export interface LogCapture {
+  lines(): Record<string, unknown>[];
+  bootstrapLines(): Record<string, unknown>[];
+  clear(): void;
+}
 
 export interface TestContext {
   app: INestApplication;
@@ -17,9 +26,51 @@ export interface TestContext {
   prisma: PrismaService;
   postgresContainer: StartedPostgreSqlContainer;
   mailhogContainer: StartedTestContainer;
+  logCapture?: LogCapture;
 }
 
-export async function setupTestApp(): Promise<TestContext> {
+export interface SetupTestAppOptions {
+  captureLogs?: boolean;
+  captureBootstrap?: boolean;
+  withSwagger?: boolean;
+}
+
+interface LogCaptureSeam {
+  destination: DestinationStream;
+  capture: LogCapture;
+  snapshotBootstrap(): void;
+}
+
+function createLogCapture(): LogCaptureSeam {
+  let raw: string[] = [];
+  let bootstrap: Record<string, unknown>[] = [];
+
+  const parse = (lines: string[]): Record<string, unknown>[] =>
+    lines
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+
+  return {
+    destination: {
+      write: (line: string) => {
+        raw.push(line);
+      },
+    },
+    capture: {
+      lines: () => parse(raw),
+      bootstrapLines: () => bootstrap,
+      clear: () => {
+        raw = [];
+      },
+    },
+    snapshotBootstrap: () => {
+      bootstrap = parse(raw);
+    },
+  };
+}
+
+export async function setupTestApp(options: SetupTestAppOptions = {}): Promise<TestContext> {
   const postgresContainer = await new PostgreSqlContainer('postgres:16-alpine')
     .withDatabase('test_db')
     .withUsername('test')
@@ -47,29 +98,45 @@ export async function setupTestApp(): Promise<TestContext> {
     stdio: 'pipe',
   });
 
-  const moduleFixture = await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  });
 
-  const app = moduleFixture.createNestApplication();
+  const captureLogs = options.captureLogs === true || options.captureBootstrap === true;
+  const logCaptureSeam = captureLogs ? createLogCapture() : undefined;
 
-  app.setGlobalPrefix('api');
-  app.useGlobalPipes(
-    new SanitizeStringsPipe(),
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-  app.useGlobalInterceptors(new DateSerializerInterceptor());
+  if (logCaptureSeam) {
+    builder.overrideProvider(LOGGER_DESTINATION).useValue(logCaptureSeam.destination);
+    builder.overrideProvider(LOGGER_LEVEL).useValue('trace');
+  }
+
+  const moduleFixture = await builder.compile();
+
+  const app = moduleFixture.createNestApplication<NestExpressApplication>({
+    bufferLogs: options.captureBootstrap === true,
+  });
+
+  if (options.captureBootstrap === true) {
+    app.useLogger(app.get(Logger));
+  }
+
+  configureApp(app, { allowedOrigins: true, withSwagger: options.withSwagger === true });
 
   await app.init();
 
-  const prisma = moduleFixture.get(PrismaService);
-  const httpServer = app.getHttpServer() as Server;
+  logCaptureSeam?.snapshotBootstrap();
 
-  return { app, httpServer, prisma, postgresContainer, mailhogContainer };
+  const prisma = moduleFixture.get(PrismaService);
+  const httpServer = app.getHttpServer();
+
+  return {
+    app,
+    httpServer,
+    prisma,
+    postgresContainer,
+    mailhogContainer,
+    logCapture: logCaptureSeam?.capture,
+  };
 }
 
 export async function teardownTestApp(ctx: TestContext): Promise<void> {

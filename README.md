@@ -76,6 +76,7 @@ Substitui o controle manual (anotações e planilhas) de uma oficina de médio p
 - **Autenticação**: JWT (access + refresh token) com bcrypt — `passport-jwt`
 - **E-mail**: Nodemailer + `@nestjs-modules/mailer` (SMTP via MailHog em desenvolvimento)
 - **Segurança HTTP**: Helmet, CORS configurável via `ALLOWED_ORIGINS`, `SanitizeStringsPipe` global, `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`)
+- **Observabilidade**: logs estruturados em JSON no stdout com `pino` + `nestjs-pino` (nomenclatura OpenTelemetry, correlação por `request.id`, redação de dados sensíveis) — ver [ADR 0002](docs/adr/0002-logging-estruturado.md)
 - **Documentação**: Swagger/OpenAPI (`@nestjs/swagger`) — disponível em `/api/docs`
 - **Testes**: Jest + ts-jest (unitários com mocks tipados e E2E com **Testcontainers** + PostgreSQL real)
 - **Qualidade**: SonarQube Cloud (Sonar Scan via GitHub Actions)
@@ -162,11 +163,11 @@ Execute todos os comandos a partir de `app/` (`cd app`) — não há `package.js
 
 | Documento | Conteúdo |
 |---|---|
-| 🏛️ [Arquitetura](docs/architecture.md) | Clean Architecture, DDD, ciclos de vida, UoW, exceções |
+| 🏛️ [Arquitetura](docs/architecture.md) | Clean Architecture, DDD, ciclos de vida, UoW, exceções, logs estruturados |
 | 🔌 [Referência da API](docs/api.md) | Endpoints por domínio, perfis (RBAC), formato de resposta |
 | 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
 | 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
-| 🔒 [Segurança](docs/security.md) | Mitigações no código e relatórios (ZAP, SonarQube) |
+| 🔒 [Segurança](docs/security.md) | Mitigações no código, proteção de dados nos logs e relatórios (ZAP, SonarQube) |
 | 🏗️ [Infra · Visão Geral](docs/infra/overview.md) | Arquitetura da infra como sistema: componentes, ownership, fluxos e trade-offs |
 | 🌍 [Infra · Terraform](docs/infra/terraform.md) | Infraestrutura AWS e Kubernetes (IaC) |
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests, storage, probes, deploy |

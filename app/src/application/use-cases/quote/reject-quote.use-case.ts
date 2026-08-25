@@ -4,51 +4,83 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
-export class RejectQuoteUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) {}
+export class RejectQuoteUseCase implements IRejectQuoteUseCase {
+  constructor(
+    private readonly unitOfWork: IUnitOfWork,
+    private readonly logger: ILogger,
+  ) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
-    return this.unitOfWork.executeTransaction(async (repos) => {
-      const quote = await repos.quote.findById(quoteId);
+    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus } =
+      await this.unitOfWork.executeTransaction(async (repos) => {
+        const quote = await repos.quote.findById(quoteId);
 
-      if (!quote) {
-        throw new ResourceNotFoundException('Orçamento', quoteId);
-      }
+        if (!quote) {
+          throw new ResourceNotFoundException('Orçamento', quoteId);
+        }
 
-      quote.reject();
+        const previousQuoteStatus = quote.status;
 
-      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
-      const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
+        quote.reject();
 
-      const hasOtherSentQuote = workOrderQuotes.some(
-        (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
-      );
+        const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+        const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
 
-      if (hasOtherSentQuote) {
-        return repos.quote.update(quote);
-      }
+        const hasOtherSentQuote = workOrderQuotes.some(
+          (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
+        );
 
-      const previousStatus = workOrder.status;
-
-      workOrder.changeStatus(WorkOrderStatus.REJECTED);
-
-      const [updatedQuote] = await Promise.all([
-        repos.quote.update(quote),
-        repos.workOrder.update(workOrder),
-        repos.statusHistory.create(
-          StatusHistory.create({
+        if (hasOtherSentQuote) {
+          return {
+            quote: await repos.quote.update(quote),
             workOrderId: workOrder.id,
-            changedById: userId ?? null,
-            previousStatus,
-            newStatus: WorkOrderStatus.REJECTED,
-            notes: notes ?? `Orçamento ${quoteId} rejeitado`,
-          }),
-        ),
-      ]);
+            workOrderNumber: workOrder.number.toString(),
+            previousQuoteStatus,
+            previousStatus: undefined,
+          };
+        }
 
-      return updatedQuote;
+        const previousStatus = workOrder.status;
+
+        workOrder.changeStatus(WorkOrderStatus.REJECTED);
+
+        const [updatedQuote] = await Promise.all([
+          repos.quote.update(quote),
+          repos.workOrder.update(workOrder),
+          repos.statusHistory.create(
+            StatusHistory.create({
+              workOrderId: workOrder.id,
+              changedById: userId ?? null,
+              previousStatus,
+              newStatus: WorkOrderStatus.REJECTED,
+              notes: notes ?? `Orçamento ${quoteId} rejeitado`,
+            }),
+          ),
+        ]);
+
+        return {
+          quote: updatedQuote,
+          workOrderId: workOrder.id,
+          workOrderNumber: workOrder.number.toString(),
+          previousQuoteStatus,
+          previousStatus,
+        };
+      });
+
+    this.logger.event(BUSINESS_EVENTS.QUOTE_REJECTED, {
+      quoteId: quote.id,
+      previousQuoteStatus,
+      workOrderId,
+      workOrderNumber,
+      previousWorkOrderStatus: previousStatus,
+      workOrderStatusChanged: previousStatus !== undefined,
     });
+
+    return quote;
   }
 }

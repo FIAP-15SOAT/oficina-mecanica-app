@@ -8,6 +8,7 @@ import { ApplicationExceptionFilter } from './infrastructure/http/filters/applic
 import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exception.filter';
 import { InfrastructureExceptionFilter } from './infrastructure/http/filters/infrastructure-exception.filter';
 
+import { LoggingModule } from './infrastructure/logging/logging.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
 import { AuthModule } from './infrastructure/http/controllers/auth/auth.module';
@@ -39,6 +40,7 @@ import { StockModule } from './infrastructure/http/controllers/stock/stock.modul
         },
       }),
     }),
+    LoggingModule,
     PrismaModule,
     RepositoriesModule,
     AuthModule,
