@@ -89,8 +89,8 @@ describe('RefreshTokenUseCase', () => {
       {
         failureReason: 'inactive_user',
         subjectId: 'user-uuid-123',
-        subjectName: 'Rafael Neves',
-        subjectEmail: 'rafael@email.com',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
       },
     ]);
   });

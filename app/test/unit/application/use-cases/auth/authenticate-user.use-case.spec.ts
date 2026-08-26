@@ -67,9 +67,9 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(user);
     hashService.compare.mockResolvedValue(false);
 
-    await expect(
-      useCase.execute({ email: 'admin@email.com', password: 'errada' }),
-    ).rejects.toThrow('Credenciais inválidas');
+    await expect(useCase.execute({ email: 'admin@email.com', password: 'errada' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
   });
 
   it('não deve gerar tokens se autenticação falhar', async () => {
@@ -104,14 +104,14 @@ describe('AuthenticateUserUseCase', () => {
       {
         failureReason: 'inactive_user',
         subjectId: 'user-uuid-123',
-        subjectName: 'Rafael Neves',
-        subjectEmail: 'rafael@email.com',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
       },
       {
         failureReason: 'wrong_password',
         subjectId: 'user-uuid-123',
-        subjectName: 'Rafael Neves',
-        subjectEmail: 'rafael@email.com',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
       },
     ]);
   });
@@ -125,8 +125,8 @@ describe('AuthenticateUserUseCase', () => {
     expect(logger.event).toHaveBeenCalledTimes(1);
     expect(logger.event.mock.calls[0][1]).toEqual({
       subjectId: 'user-uuid-123',
-      subjectName: 'Rafael Neves',
-      subjectEmail: 'rafael@email.com',
+      subjectName: 'Admin User',
+      subjectEmail: 'admin@email.com',
     });
   });
 
@@ -135,7 +135,7 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(false);
 
     await expect(
-      useCase.execute({ email: 'rafael@email.com', password: 'Tech@2026' }),
+      useCase.execute({ email: 'admin@email.com', password: 'Tech@2026' }),
     ).rejects.toThrow(UnauthorizedAccessException);
 
     expect(JSON.stringify(logger.event.mock.calls)).not.toContain('Tech@2026');
@@ -146,12 +146,12 @@ describe('AuthenticateUserUseCase', () => {
     hashService.compare.mockResolvedValue(false);
 
     await expect(
-      useCase.execute({ email: 'rafael@email.com', password: 'Tech@2026' }),
+      useCase.execute({ email: 'admin@email.com', password: 'Tech@2026' }),
     ).rejects.toThrow(UnauthorizedAccessException);
 
     expect(logger.event.mock.calls[0][1]).toMatchObject({
-      subjectName: 'Rafael Neves',
-      subjectEmail: 'rafael@email.com',
+      subjectName: 'Admin User',
+      subjectEmail: 'admin@email.com',
     });
   });
 });
