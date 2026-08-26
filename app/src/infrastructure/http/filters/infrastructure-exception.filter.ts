@@ -1,5 +1,8 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Inject } from '@nestjs/common';
+import { Request, Response } from 'express';
+
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { recordHttpFailure } from '@infrastructure/logging/http-failure.recorder';
 import { InfrastructureException } from '../../exceptions/infrastructure.exception';
 import { AuthenticationFailedException } from '../../exceptions/authentication-failed.exception';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
@@ -8,15 +11,20 @@ import { DatabaseOperationException } from '@infrastructure/exceptions/database-
 
 @Catch(InfrastructureException)
 export class InfrastructureExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(InfrastructureExceptionFilter.name);
+  private readonly logger: ILogger;
+
+  constructor(@Inject('ILogger') logger: ILogger) {
+    this.logger = logger.forContext(InfrastructureExceptionFilter.name);
+  }
 
   catch(exception: InfrastructureException, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
-    this.logger.error(exception.message, exception.stack);
-
     const { status, error } = this.resolveHttpStatus(exception);
+
+    recordHttpFailure(this.logger, request, response, status, exception);
 
     response.status(status).json({
       statusCode: status,

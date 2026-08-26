@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { APP_FILTER } from '@nestjs/core';
 import request from 'supertest';
 import { AllExceptionsFilter } from '../../src/infrastructure/http/filters/all-exceptions.filter';
+import { createMockLogger } from '../helpers/logger-mock.factory';
 
 @Controller('_test-exceptions')
 class TestExceptionController {
@@ -14,7 +15,6 @@ class TestExceptionController {
 
   @Get('non-error-throw')
   throwNonError(): never {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw 'a plain string exception';
   }
 
@@ -43,7 +43,10 @@ describe('AllExceptionsFilter (E2E)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       controllers: [TestExceptionController],
-      providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+      providers: [
+        { provide: 'ILogger', useValue: createMockLogger() },
+        { provide: APP_FILTER, useClass: AllExceptionsFilter },
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();

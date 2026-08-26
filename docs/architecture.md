@@ -15,6 +15,7 @@ Clean Architecture + DDD do backend da Oficina Mecânica — camadas estritas, e
 - [Estoque, reservas e movimentações](#estoque-reservas-e-movimentações)
 - [Aprovação de orçamento por e-mail](#aprovação-de-orçamento-por-e-mail)
 - [Exceções por Camada](#exceções-por-camada)
+- [Logs estruturados](#logs-estruturados)
 - [Decisões de Arquitetura (ADRs)](#decisões-de-arquitetura-adrs)
 - [Modelo C4](#modelo-c4)
 
@@ -47,7 +48,10 @@ app/src/
 ├── application/                     # Camada de aplicação (orquestração de casos de uso, sem framework)
 │   ├── ports/
 │   │   ├── input/<domínio>/         # I<Nome>UseCase (input ports) + DTOs de entrada
-│   │   └── output/                  # IEmailSenderService, IHashService, ITokenService (output ports)
+│   │   └── output/                  # IEmailSenderService, IHashService, ITokenService,
+│   │                                # ILogger (output ports)
+│   ├── logging/                     # LogEventDefinition + catálogo tipado e fechado
+│   │                                # de eventos de NEGÓCIO (nomes lógicos, sem chave física)
 │   ├── use-cases/
 │   │   ├── auth/                    # Authenticate, RefreshToken, GetCurrentUser
 │   │   ├── user/                    # CRUD + atualização de status
@@ -82,7 +86,8 @@ app/src/
 │   │   ├── strategies/              # JwtStrategy (Passport)
 │   │   ├── filters/                 # Exception Filters: Domain, Application,
 │   │   │                            # Infrastructure, AllExceptions
-│   │   ├── interceptors/            # DateSerializerInterceptor (ISO 8601 com timezone)
+│   │   ├── interceptors/            # DateSerializerInterceptor (ISO 8601 com timezone),
+│   │   │                            # RequestContextInterceptor (handler → contexto de log)
 │   │   ├── pipes/                   # SanitizeStringsPipe (global, antes do ValidationPipe)
 │   │   ├── validators/              # IsValidCpfCnpj (adapter class-validator)
 │   │   └── common/dto/              # PaginationDto, PaginatedResponseDto compartilhados
@@ -91,16 +96,30 @@ app/src/
 │   │   │                            # RepositoriesModule (@Global) — única pasta a importar @generated/client
 │   │   ├── mappers/                 # Conversão Prisma model → Entidade de domínio (14 mappers)
 │   │   └── helpers/                 # Helpers de paginação, existência e ordenação (Prisma)
+│   ├── logging/                     # LoggingModule (@Global) + PinoLoggerAdapter,
+│   │   │                            # logger.config (config + trust proxy),
+│   │   │                            # field-registry (campos lógicos → chaves físicas +
+│   │   │                            #   dicionário derivado),
+│   │   │                            # technical-event.catalog, access-log.builder
+│   │   │                            #   (atributos HTTP + desfecho + resolvedor de nível),
+│   │   │                            # url-attributes (sanitizeUrlPath + buildQueryString),
+│   │   │                            # http-error-message (404 do framework + detalhe de validação),
+│   │   │                            # request-log-context, error-serializer,
+│   │   │                            # log-record-normalizer, logging-diagnostics,
+│   │   │                            # http-failure.recorder, process-lifecycle.service
+│   │   └── redaction/               # field-classifier (tokenizador + regras),
+│   │                                # pii-masker, text-sanitizer,
+│   │                                # payload-sanitizer (valores E nomes de propriedade)
 │   ├── services/                    # BcryptHashService, JwtTokenService,
 │   │                                # MailerEmailSenderService + InfrastructureServicesModule
 │   └── exceptions/                  # InfrastructureException, AuthenticationFailedException,
 │                                    # DatabaseOperationException, ServiceIntegrationException,
 │                                    # ConcurrencyException
 │
-├── config/                          # Configurações (Swagger)
+├── config/                          # swagger.config + app-bootstrap (composição da borda HTTP,
+│                                    #   compartilhada entre main.ts e o helper de E2E)
 ├── app.module.ts
-└── main.ts                          # helmet, CORS (ALLOWED_ORIGINS), SanitizeStringsPipe,
-                                     # ValidationPipe, DateSerializerInterceptor, prefixo /api
+└── main.ts                          # bufferLogs + useLogger, configureApp(), shutdown hooks, listen
 
 app/test/
 ├── helpers/                         # Mock factories reutilizáveis (incluindo
@@ -113,10 +132,11 @@ app/test/
 │   ├── interface-adapters/          # Clean Controllers + Presenters por domínio
 │   └── infrastructure/              # http/ (controllers, filters, interceptors, pipes,
 │                                    # validators, auth), persistence/prisma, services
-└── e2e/                             # 10 suites de testes E2E (Testcontainers + PostgreSQL real)
+└── e2e/                             # 11 suites de testes E2E (Testcontainers + PostgreSQL real)
     ├── all-exceptions.filter.e2e-spec.ts
     ├── auth.e2e-spec.ts
     ├── customer.e2e-spec.ts
+    ├── logging.e2e-spec.ts
     ├── part-supply.e2e-spec.ts
     ├── quote.e2e-spec.ts
     ├── service.e2e-spec.ts
@@ -279,11 +299,134 @@ Cada camada tem sua própria hierarquia de exceções, sem dependência de frame
 
 Erros de validação de DTO são cobertos pelo `ValidationPipe` global do NestJS (HTTP 400). Demais exceções não mapeadas são capturadas pelo `AllExceptionsFilter` e devolvidas como **HTTP 500**.
 
+## Logs estruturados
+
+A aplicação emite **um objeto JSON por linha em stdout** e nada mais — sem transport de fornecedor, sem arquivo, sem destino de rede. O formato é idêntico em desenvolvimento e em produção; a saída legível vem de um pipe (`pino-pretty`) no `start:dev`, nunca de configuração no código. Os nomes **e os tipos** dos atributos seguem as Semantic Conventions do OpenTelemetry como chaves planas pontilhadas, com o namespace próprio `oficina.*` apenas onde a convenção não define nada. Ver [ADR 0002](./adr/0002-logging-estruturado.md).
+
+### As três partes que não se sobrepõem
+
+```
+requisição
+   │
+   ├─ middleware pino-http ──── abre o contexto ALS, semeia request.id
+   │
+   ├─ GUARDS ────────────────── 401 termina AQUI; 403 termina AQUI
+   │                             ↑ req.user já está populado no 403
+   │                             ↓ nenhum interceptor roda para os dois
+   ├─ RequestContextInterceptor  escreve o handler — NÃO emite linha
+   ├─ pipes → handler → caso de uso ─── ILogger, só eventos de negócio
+   │
+   ├─ exception filters ─────── escrevem o erro resolvido no contexto;
+   │                             emitem UMA linha só quando status >= 500
+   │
+   └─ res.finish ───────────── pino-http monta A linha de access log, lendo
+                               o contexto da requisição E o req.user final
+```
+
+| Evento | Responsável | Emite | Por quê |
+|---|---|---|---|
+| Access log (≤1/requisição) | hook de encerramento do `pino-http` | 1 linha | É o único componente que vê toda requisição que alcança o middleware do módulo, inclusive as que os guards recusam. As que terminam antes são a fronteira declarada |
+| Metadados do handler | `RequestContextInterceptor` | 0 linhas | É o único lugar com `ExecutionContext` (controller + método) |
+| Atributos de autor | hook de encerramento, a partir do `req.user` final | 0 linhas | **Não** o interceptor — ver abaixo |
+| Detalhe de `5xx` com stack | Exception filter | 1 linha | É o único lugar que segura o objeto de exceção |
+| `4xx` | Exception filter | 0 linhas | Escreve `error.type`/`oficina.error.message` no contexto da requisição |
+| Evento de negócio | Caso de uso via `ILogger` | 1 linha | Um fato pós-commit que a camada HTTP não tem como saber |
+
+### Correlação
+
+`genReqId` lê `x-request-id`, depois `x-correlation-id` (precedência declarada), **valida** o valor contra um charset e um comprimento máximo, e gera um UUID v4 quando ausente ou malformado. O valor é devolvido no cabeçalho `x-request-id` e exposto via `exposedHeaders` do CORS. O `nestjs-pino` liga um logger filho ao `AsyncLocalStorage`, então um caso de uso que loga já nasce correlacionado sem receber o id.
+
+> **Armadilha:** o adaptador **nunca** pode chamar `pino.child()`. `child()` liga no momento da construção e descarta a referência ao `AsyncLocalStorage`, fazendo `request.id` sumir de toda linha emitida por aquela instância. `forContext()` mescla o escopo **por chamada** e emite `otel.scope.name`. É uma falha silenciosa, não um crash — e tem spec dedicado.
+
+### Desfecho da requisição, quando não houve resposta
+
+O nível vem do status, mas só depois de o **desfecho** ser resolvido pelo estado do socket — não pela presença de um `err`, porque o `pino-http` fabrica um `Error` sintético em todo `5xx` concluído e registra o mesmo handler em `close` e em `error`. São dois valores estáveis e distintos em `error.type`, e a distinção importa porque a ação do operador difere: `client_aborted` quando a leitura foi interrompida (o cliente desligou), e `transport_error` quando a resposta não se concluiu **e** o transporte reportou erro (a conexão quebrou do nosso lado). Em ambos, `http.response.status_code` e o corpo são omitidos: não houve entrega para descrever.
+
+### Por que o autor é resolvido no encerramento
+
+`JwtAuthGuard` popula `req.user`, e então `RolesGuard` pode retornar `false` — um `403`. O interceptor nunca roda, então um autor vinculado ao interceptor estaria ausente exatamente no evento mais digno de auditoria: um usuário autenticado recusado por RBAC. Ler `req.user` no encerramento cobre 200, 403 e tudo entre eles. O mapeamento vem do payload real do `JwtStrategy`: `sub → user.id`, `[role] → user.roles`. O `email` nunca é emitido.
+
+### Porta `ILogger` e os dois catálogos
+
+```
+application/ports/output/logger.service.interface.ts   ILogger — TS puro, exigido pela cerca do ESLint
+application/logging/business-event.catalog.ts          catálogo tipado e fechado dos eventos de negócio
+
+infrastructure/logging/pino-logger.adapter.ts          implementa ILogger
+infrastructure/logging/technical-event.catalog.ts      eventos de HTTP, bootstrap, banco e integrações
+infrastructure/logging/field-registry.ts               nome lógico → chave física, tipo e sensibilidade
+infrastructure/logging/access-log.builder.ts           atributos da linha de acesso + status → nível
+infrastructure/logging/url-attributes.ts               caminho canonicalizado + query classificada
+infrastructure/logging/http-error-message.ts           mensagem de erro do log (404 do framework, validação)
+```
+
+`ILogger` expõe **apenas** `debug`/`info`/`warn`/`error`/`event`/`forContext`. Deliberadamente **não tem `assign()`**: enriquecimento de contexto de requisição é responsabilidade da infraestrutura. `error` aceita `unknown`, não `Error`, porque quem chama normalmente segura um binding de `catch` de tipo desconhecido.
+
+Os métodos por nível recebem **só a mensagem** — não existe parâmetro de contexto livre. A saída é um esquema fechado e o `normalizeLogRecord` descarta toda chave que o dicionário não declara, então um contexto solto sumiria **em silêncio** a caminho do stdout. `event()` é o único caminho estruturado, e sua assinatura (`NoExtraFields`) rejeita campo não declarado inclusive quando o objeto é montado numa variável antes da chamada — situação em que a checagem de excesso do TypeScript sozinha não vale.
+
+Eventos de **negócio** vivem em `application/`; eventos **técnicos** e o resolvedor de nível por status HTTP vivem em `infrastructure/`, porque 2xx/4xx/5xx é política de apresentação HTTP e não pertence a uma camada proibida de importar `@nestjs/*`.
+
+Casos de uso declaram **nomes lógicos** (`quoteId`) no tipo da entrada do catálogo, e o adaptador faz o mapeamento exaustivo para a chave física (`oficina.quote.id`). A aplicação nunca nomeia uma chave de telemetria — o que é melhor camada e o que torna a regra de namespace reservado à prova de fuga em ambas as direções.
+
+O vocabulário lógico (`application/logging/log-field.ts`) e o registro em `infrastructure/logging/field-registry.ts` são a **única** declaração de um campo: dele saem a chave física, a entrada do dicionário e a sensibilidade que decide o mascaramento. O registro é um `Record<LogicalFieldName, …>`, então esquecer uma entrada é erro de compilação — e um teste de tipo em `field-registry.spec.ts` fecha a outra direção, falhando quando um campo declarado não é emitido por nenhum evento.
+
+A sensibilidade declarada é o que mascara: `subjectName`/`subjectEmail` saem mascarados sem que o caso de uso faça nada, e `partSupplyName`/`workOrderServiceName` — nome de catálogo, não de pessoa — saem em claro por declaração explícita, não por acidente.
+
+### Sucesso transacional é registrado depois do commit
+
+O Prisma só pede o COMMIT quando o callback de `$transaction` retorna, então a última linha dentro de `executeTransaction` ainda roda *antes* do commit. O padrão é retornar um **composto**, desestruturá-lo depois do `await` e só então emitir:
+
+```ts
+const { quote, workOrderId, previousStatus } = await this.unitOfWork.executeTransaction(
+  async (repos) => {
+    // ...
+    return { quote, workOrderId: workOrder.id, previousStatus };
+  },
+);
+
+this.logger.event(BUSINESS_EVENTS.QUOTE_APPROVED, { quoteId: quote.id, workOrderId, ... });
+```
+
+Nenhum tipo de retorno público muda, nenhuma regra de negócio é duplicada, e um rollback lança antes do emit — então uma operação revertida nunca produz log de sucesso.
+
+**O caso inverso, dito explicitamente para ninguém "consertar":** `SubmitQuoteUseCase` chama `emailSender.send` *dentro* da transação, e o log técnico do mailer é portanto emitido pré-commit — e isso está **correto**: o e-mail foi realmente enviado, e um rollback não o desenvia. A regra pós-commit governa afirmações de sucesso *de negócio*, não registros de efeito colateral irreversível.
+
+### A régua para dar um logger a um caso de uso
+
+*Este log responde a uma pergunta que o access log não responde?* Método, rota, status, duração e autor já estão lá — `logger.info('entrando em FindAllCustomers')` é ruído puro. Só **10 dos 57** casos de uso recebem um logger: `AuthenticateUser`, `RefreshToken`, `EmailDecisionQuote`, `ApproveQuote`, `RejectQuote`, `SubmitQuote`, `UpdateWorkOrderStatus`, `UpdateWorkOrderServiceStatus`, `UpdateStock` e `UpdateUserStatus`. Os outros 47 não recebem nada, deliberadamente.
+
+`EmailDecisionQuoteUseCase` delega a `ApproveQuote`/`RejectQuote`: o delegado é dono da transição de negócio; o delegante emite **apenas** o WARN de rejeição do token de capacidade — o sinal de maior valor, e o único que nenhum outro componente observa. O canal da decisão **não** é campo de log: os dois canais são duas rotas distintas, então `http.route` já os separa e `request.id` junta as duas linhas.
+
+### Fronteira de cobertura — o que **não** é registrado, e por quê
+
+O `pino-http` é instalado como middleware de módulo, e middleware de módulo não é a primeira coisa da cadeia. `NestApplication.init()` registra o body parser **antes** de `registerModules()`, e `setupSwagger(app)` registra handlers do Express à frente de ambos. A cadeia efetiva é `Helmet → CORS → Swagger → body parser → middleware do LoggerModule → router`.
+
+| Requisição | Chega ao logger? |
+|---|---|
+| Rotas de negócio após leitura bem-sucedida do corpo — inclusive recusas de guard, falhas de validação, filtros e 404 do Nest | **Sim** |
+| Corpo malformado ou acima do limite (rejeitado pelo parser) | Não — o `AllExceptionsFilter` ainda responde (`400` no corpo malformado, `413` acima do limite), sem access log |
+| `OPTIONS` de preflight | Não — o middleware de CORS encerra com 204 |
+| Swagger UI, assets, `/api/docs-json`, `/api/docs-yaml` | Não — registrados diretamente no `main.ts`, antes do `init()` |
+| HTTP malformado recusado pelo Node | Não — nunca entra no Express |
+
+Isso é uma **decisão registrada, não um bug**. Uma consequência bem-vinda: as probes do k8s batem em `/api/docs`, que pertence ao Swagger, então as ≈13 000 linhas de probe por dia nunca chegam ao logger — o mecanismo de supressão de ruído foi deletado em vez de construído. Um endpoint `/health` dedicado é o próximo passo natural.
+
+### Logging degrada, nunca quebra
+
+Uma fronteira compartilhada e não-lançante (`logging-diagnostics.ts`) absorve falhas de sanitização e de serialização, escrevendo no máximo **uma** linha fixa de diagnóstico em **stderr** — a única exceção declarada ao contrato de "JSON em stdout". Ela é usada pelo adaptador, pelo access log e pelo bootstrap. Toda função de personalização entregue à biblioteca (`genReqId`, `customLogLevel`, `customSuccessObject`, `customErrorObject`) é não-lançante, porque essas rodam dentro dos callbacks da própria biblioteca e um throw ali não é pego por um try/catch no adaptador.
+
+O destino é o stdout **síncrono**, e a promessa é declarada na força certa: *com o logging habilitado e o stdout gravável, o registro de encerramento é escrito de forma síncrona antes de o hook de ciclo de vida retornar.* Nada afirma durabilidade além do descritor de saída, e nada espera um flush. Na primeira falha de escrita, a política declarada é **continuar em modo degradado** com uma linha de diagnóstico em stderr — o pino transforma `EPIPE` em no-op silencioso a menos que a aplicação diga o contrário, e esse é exatamente o modo de falha "rodando cego e ninguém percebe".
+
+**Os dois descritores precisam do mesmo cuidado.** Um evento `'error'` sem listener em stream do Node derruba o processo, então o destino de stdout registra o seu — sem isso, um coletor caindo faria o logging matar a aplicação que ele existe para observar. O `stderr` tem o mesmo problema por um caminho menos óbvio: ele **aceita** a escrita e emite o erro **depois**, de forma assíncrona, fora do `try/catch` do escritor. Medido em processo filho, um `EPIPE` no stderr encerrava a aplicação com exceção não capturada — o oposto exato da política acima. O listener é simétrico, e pelo mesmo motivo.
+
+A linha de diagnóstico carrega o envelope, os atributos de recurso e o estágio que falhou — nunca o valor. Os atributos de recurso estão ali porque, num destino compartilhado, é a linha que sobra quando o stdout falhou: sem `service.*` ela seria impossível de atribuir.
+
 ## Decisões de Arquitetura (ADRs)
 
 Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no formato Markdown:
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
+- [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md)
 
 ## Modelo C4
 

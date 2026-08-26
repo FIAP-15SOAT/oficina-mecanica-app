@@ -22,6 +22,7 @@ import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interf
 
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
 import { QuoteController } from './quote.controller';
@@ -38,6 +39,7 @@ import { QuoteController } from './quote.controller';
         emailSender: IEmailSenderService,
         tokenService: ITokenService,
         configService: ConfigService,
+        logger: ILogger,
       ) => {
         const quoteDecisionTokenSecret = configService.getOrThrow<string>(
           'QUOTE_DECISION_TOKEN_SECRET',
@@ -46,8 +48,14 @@ import { QuoteController } from './quote.controller';
           configService.get<string>('QUOTE_DECISION_BASE_URL') ??
           `http://localhost:${configService.get<string>('PORT') ?? '3000'}/api`;
 
-        const approveQuoteUseCase = new ApproveQuoteUseCase(unitOfWork);
-        const rejectQuoteUseCase = new RejectQuoteUseCase(unitOfWork);
+        const approveQuoteUseCase = new ApproveQuoteUseCase(
+          unitOfWork,
+          logger.forContext(ApproveQuoteUseCase.name),
+        );
+        const rejectQuoteUseCase = new RejectQuoteUseCase(
+          unitOfWork,
+          logger.forContext(RejectQuoteUseCase.name),
+        );
 
         return new QuoteCleanController(
           new CreateQuoteUseCase(unitOfWork),
@@ -64,12 +72,14 @@ import { QuoteController } from './quote.controller';
             tokenService,
             quoteDecisionTokenSecret,
             quoteDecisionBaseUrl,
+            logger.forContext(SubmitQuoteUseCase.name),
           ),
           new EmailDecisionQuoteUseCase(
             tokenService,
             approveQuoteUseCase,
             rejectQuoteUseCase,
             quoteDecisionTokenSecret,
+            logger.forContext(EmailDecisionQuoteUseCase.name),
           ),
           new UpdateQuoteStatusUseCase(approveQuoteUseCase, rejectQuoteUseCase),
           new FindAllQuotesPaginatedUseCase(quoteRepository),
@@ -81,6 +91,7 @@ import { QuoteController } from './quote.controller';
         'IEmailSenderService',
         'ITokenService',
         ConfigService,
+        'ILogger',
       ],
     },
   ],

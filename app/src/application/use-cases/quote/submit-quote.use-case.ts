@@ -8,6 +8,8 @@ import { TokenType } from '@domain/enums/token-type.enum';
 import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 
 import { ITokenService } from '@application/ports/output/token.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import {
   IEmailSenderService,
@@ -29,10 +31,16 @@ export class SubmitQuoteUseCase {
     private readonly tokenService: ITokenService,
     private readonly decisionSecret: string,
     private readonly apiBaseUrl: string,
+    private readonly logger: ILogger,
   ) {}
 
   async execute(quoteId: string): Promise<Quote> {
-    return await this.unitOfWork.executeTransaction(async (repos) => {
+    const {
+      quote: submittedQuote,
+      workOrderId,
+      workOrderNumber,
+      previousQuoteStatus,
+    } = await this.unitOfWork.executeTransaction(async (repos) => {
       const quote = await repos.quote.findByIdWithDetails(quoteId);
 
       if (!quote) {
@@ -42,6 +50,8 @@ export class SubmitQuoteUseCase {
       const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
 
       workOrder.ensureCanSubmitQuote();
+
+      const previousQuoteStatus = quote.status;
 
       quote.submit();
 
@@ -56,8 +66,22 @@ export class SubmitQuoteUseCase {
 
       await this.sendEmailNotification(quote, customer, workOrder.number.toString());
 
-      return updatedQuote;
+      return {
+        quote: updatedQuote,
+        workOrderId: workOrder.id,
+        workOrderNumber: workOrder.number.toString(),
+        previousQuoteStatus,
+      };
     });
+
+    this.logger.event(BUSINESS_EVENTS.QUOTE_SUBMITTED, {
+      quoteId: submittedQuote.id,
+      previousQuoteStatus,
+      workOrderId,
+      workOrderNumber,
+    });
+
+    return submittedQuote;
   }
 
   private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder): Promise<void> {

@@ -87,9 +87,32 @@ ALLOWED_ORIGINS=http://localhost:3000
 MAIL_HOST=localhost
 MAIL_PORT=1025
 MAIL_FROM="Oficina Mecânica <noreply@oficina.local>"
+
+# Observabilidade — todas opcionais; nenhuma variável ausente ou inválida impede o boot
+# Níveis aceitos: fatal | error | warn | info | debug | trace | silent (default: info)
+LOG_LEVEL=info
+OTEL_SERVICE_NAME=oficina-mecanica-api
+OTEL_SERVICE_NAMESPACE=oficina-mecanica
+# Lista separada por vírgula (ex.: 10.0.0.0/8,loopback). Ausente ou inválida =
+# nenhum proxy confiável e cabeçalhos X-Forwarded-For ignorados (falha fechada).
+# TRUSTED_PROXY_CIDRS=
 ```
 
+`SERVICE_VERSION` **não** é configurada por env em desenvolvimento: ela é assada na imagem (`ARG SERVICE_VERSION` no `Dockerfile`, alimentado pelo `github.sha` no `cd.yml`) e cai para `dev` fora do contêiner. `deployment.environment.name` reaproveita o `NODE_ENV` já existente — não há variável nova para ambiente.
+
 > **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
+
+### Logs legíveis em desenvolvimento
+
+O processo **sempre** emite JSON em stdout — o formato nunca varia por ambiente (ver [ADR 0002](./adr/0002-logging-estruturado.md)). A saída legível vem de um pipe já embutido no `start:dev`:
+
+```
+"start:dev": "nest start --watch | pino-pretty --timestampKey timestamp --messageKey message"
+```
+
+As duas flags são **obrigatórias**: o envelope renomeia `time` → `timestamp` e `msg` → `message`, então um pipe sem elas não renderiza nem o horário nem a mensagem. (`pino-pretty` já lida com rótulos textuais de nível, então `level` não precisa de flag.) `pino-pretty` é `devDependency` e **nunca** deve ser importado de `src/` nem declarado como `transport` no código.
+
+Para silenciar completamente a saída em uma execução local, use `LOG_LEVEL=silent`.
 
 ## Seed
 

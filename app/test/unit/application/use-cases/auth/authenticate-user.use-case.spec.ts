@@ -6,9 +6,12 @@ import {
   createMockUserRepository,
 } from '../../../../helpers/mock-factories';
 import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('AuthenticateUserUseCase', () => {
   let useCase: AuthenticateUserUseCase;
+  let logger: jest.Mocked<ILogger>;
   let userRepository: ReturnType<typeof createMockUserRepository>;
   let hashService: ReturnType<typeof createMockHashService>;
   let tokenService: ReturnType<typeof createMockTokenService>;
@@ -17,7 +20,8 @@ describe('AuthenticateUserUseCase', () => {
     userRepository = createMockUserRepository();
     hashService = createMockHashService();
     tokenService = createMockTokenService();
-    useCase = new AuthenticateUserUseCase(userRepository, hashService, tokenService);
+    logger = createMockLogger();
+    useCase = new AuthenticateUserUseCase(userRepository, hashService, tokenService, logger);
   });
 
   it('should authenticate user successfully and return tokens', async () => {
@@ -63,9 +67,9 @@ describe('AuthenticateUserUseCase', () => {
     userRepository.findByEmail.mockResolvedValue(user);
     hashService.compare.mockResolvedValue(false);
 
-    await expect(
-      useCase.execute({ email: 'admin@email.com', password: 'errada' }),
-    ).rejects.toThrow('Credenciais inválidas');
+    await expect(useCase.execute({ email: 'admin@email.com', password: 'errada' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
   });
 
   it('não deve gerar tokens se autenticação falhar', async () => {
@@ -76,5 +80,78 @@ describe('AuthenticateUserUseCase', () => {
     ).rejects.toThrow();
 
     expect(tokenService.signTokenPair).not.toHaveBeenCalled();
+  });
+
+  it('should report a distinct cause for each failure while throwing an identical message', async () => {
+    userRepository.findByEmail.mockResolvedValueOnce(null);
+    await expect(useCase.execute({ email: 'a@b.com', password: 'x' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
+
+    userRepository.findByEmail.mockResolvedValueOnce(createMockUser({ isActive: false }));
+    await expect(useCase.execute({ email: 'a@b.com', password: 'x' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
+
+    userRepository.findByEmail.mockResolvedValueOnce(createMockUser());
+    hashService.compare.mockResolvedValueOnce(false);
+    await expect(useCase.execute({ email: 'a@b.com', password: 'x' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
+
+    expect(logger.event.mock.calls.map((call) => call[1])).toEqual([
+      { failureReason: 'unknown_user' },
+      {
+        failureReason: 'inactive_user',
+        subjectId: 'user-uuid-123',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
+      },
+      {
+        failureReason: 'wrong_password',
+        subjectId: 'user-uuid-123',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
+      },
+    ]);
+  });
+
+  it('should emit the success event with the authenticated subject', async () => {
+    userRepository.findByEmail.mockResolvedValue(createMockUser());
+    hashService.compare.mockResolvedValue(true);
+
+    await useCase.execute({ email: 'a@b.com', password: 'x' });
+
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event.mock.calls[0][1]).toEqual({
+      subjectId: 'user-uuid-123',
+      subjectName: 'Admin User',
+      subjectEmail: 'admin@email.com',
+    });
+  });
+
+  it('should never emit the password in the event fields', async () => {
+    userRepository.findByEmail.mockResolvedValue(createMockUser());
+    hashService.compare.mockResolvedValue(false);
+
+    await expect(
+      useCase.execute({ email: 'admin@email.com', password: 'Tech@2026' }),
+    ).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(JSON.stringify(logger.event.mock.calls)).not.toContain('Tech@2026');
+  });
+
+  it('should declare the subject identity under fields the registry masks', async () => {
+    userRepository.findByEmail.mockResolvedValue(createMockUser());
+    hashService.compare.mockResolvedValue(false);
+
+    await expect(
+      useCase.execute({ email: 'admin@email.com', password: 'Tech@2026' }),
+    ).rejects.toThrow(UnauthorizedAccessException);
+
+    expect(logger.event.mock.calls[0][1]).toMatchObject({
+      subjectName: 'Admin User',
+      subjectEmail: 'admin@email.com',
+    });
   });
 });

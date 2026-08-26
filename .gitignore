@@ -26,6 +26,7 @@ CLAUDE.md
 
 .codex
 .agent
+.agents
 .github/*
 !.github/workflows/
 !.github/actions/

@@ -1,16 +1,21 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+
 import { InfrastructureExceptionFilter } from '@infrastructure/http/filters/infrastructure-exception.filter';
 
 import { AuthenticationFailedException } from '@infrastructure/exceptions/authentication-failed.exception';
 import { DatabaseOperationException } from '@infrastructure/exceptions/database-operation.exception';
 import { InfrastructureException } from '@infrastructure/exceptions/infrastructure.exception';
 import { ConcurrencyException } from '@infrastructure/exceptions/concurrency.exception';
+import { TECHNICAL_EVENTS } from '@infrastructure/logging/technical-event.catalog';
+import { getRequestLogContext } from '@infrastructure/logging/request-log-context';
 
 function createMockHost() {
   const jsonFn = jest.fn();
   const statusFn = jest.fn().mockReturnValue({ json: jsonFn });
-  const mockResponse = { status: statusFn };
+  const mockResponse = { status: statusFn, locals: {} };
 
   const host = {
     switchToHttp: () => ({
@@ -25,7 +30,7 @@ function createMockHost() {
     getType: jest.fn(),
   } satisfies ArgumentsHost;
 
-  return { host, statusFn, jsonFn };
+  return { host, statusFn, jsonFn, mockResponse };
 }
 
 class GenericInfrastructureException extends InfrastructureException {
@@ -36,9 +41,11 @@ class GenericInfrastructureException extends InfrastructureException {
 
 describe('InfrastructureExceptionFilter', () => {
   let filter: InfrastructureExceptionFilter;
+  let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
-    filter = new InfrastructureExceptionFilter();
+    logger = createMockLogger();
+    filter = new InfrastructureExceptionFilter(logger);
   });
 
   it('should return 401 for AuthenticationFailedException', () => {
@@ -125,14 +132,45 @@ describe('InfrastructureExceptionFilter', () => {
     });
   });
 
-  it('should log exception with logger.error', () => {
-    const { host } = createMockHost();
-    const exception = new DatabaseOperationException('SELECT', 'timeout');
-
-    const loggerSpy = jest.spyOn(filter['logger'], 'error').mockImplementation(() => undefined);
+  it('should not emit an error line for a 401, and record no stack', () => {
+    const { host, mockResponse } = createMockHost();
+    const exception = new AuthenticationFailedException('Token inválido');
 
     filter.catch(exception, host);
 
-    expect(loggerSpy).toHaveBeenCalledWith(exception.message, exception.stack);
+    expect(logger.event).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(getRequestLogContext(mockResponse)).toEqual({
+      errorType: 'AuthenticationFailedException',
+      errorMessage: 'Token inválido',
+    });
+  });
+
+  it('should not emit an error line for a 409', () => {
+    const { host } = createMockHost();
+
+    filter.catch(new ConcurrencyException('Orçamento quote-1 foi alterado'), host);
+
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  it('should emit exactly one error line for a 503 with the exception attached', () => {
+    const { host, mockResponse } = createMockHost();
+    const exception = new DatabaseOperationException('SELECT', 'timeout');
+
+    filter.catch(exception, host);
+
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event).toHaveBeenCalledWith(TECHNICAL_EVENTS.HTTP_REQUEST_FAILED, {}, exception);
+    expect(getRequestLogContext(mockResponse).errorType).toBe('DatabaseOperationException');
+  });
+
+  it('should resolve the status before deciding whether to log', () => {
+    const { host, statusFn } = createMockHost();
+
+    filter.catch(new AuthenticationFailedException('Token inválido'), host);
+
+    expect(statusFn).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(logger.event).not.toHaveBeenCalled();
   });
 });

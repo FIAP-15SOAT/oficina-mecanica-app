@@ -7,9 +7,12 @@ import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit
 import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { createMockStockMovement } from '../../../../helpers/stock-movement-mock.factory';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('UpdateStockUseCase', () => {
   let useCase: UpdateStockUseCase;
+  let logger: jest.Mocked<ILogger>;
   let unitOfWork: jest.Mocked<IUnitOfWork>;
   let repos: jest.Mocked<IRepositories>;
 
@@ -17,7 +20,8 @@ describe('UpdateStockUseCase', () => {
     const uow = createMockUnitOfWorkWithRepos();
     unitOfWork = uow.unitOfWork;
     repos = uow.repos;
-    useCase = new UpdateStockUseCase(unitOfWork);
+    logger = createMockLogger();
+    useCase = new UpdateStockUseCase(unitOfWork, logger);
   });
 
   it('should register a Stock entry (ENTRY)', async () => {
