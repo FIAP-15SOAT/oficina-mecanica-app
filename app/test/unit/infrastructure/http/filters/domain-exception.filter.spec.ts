@@ -1,11 +1,15 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { DomainException } from '@domain/exceptions/domain.exception';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { EntityNotFoundException } from '@domain/exceptions/entity-not-found.exception';
 
 import { DomainExceptionFilter } from '@infrastructure/http/filters/domain-exception.filter';
+import { getRequestLogContext } from '@infrastructure/logging/request-log-context';
 
 class GenericDomainException extends DomainException {
   constructor(message: string) {
@@ -16,7 +20,7 @@ class GenericDomainException extends DomainException {
 function createMockHost() {
   const jsonFn = jest.fn();
   const statusFn = jest.fn().mockReturnValue({ json: jsonFn });
-  const mockResponse = { status: statusFn };
+  const mockResponse = { status: statusFn, locals: {} };
 
   const host = {
     switchToHttp: () => ({
@@ -31,14 +35,16 @@ function createMockHost() {
     getType: jest.fn(),
   } satisfies ArgumentsHost;
 
-  return { host, statusFn, jsonFn };
+  return { host, statusFn, jsonFn, mockResponse };
 }
 
 describe('DomainExceptionFilter', () => {
   let filter: DomainExceptionFilter;
+  let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
-    filter = new DomainExceptionFilter();
+    logger = createMockLogger();
+    filter = new DomainExceptionFilter(logger);
   });
 
   it('should return 422 for DomainValidationException', () => {
@@ -95,5 +101,26 @@ describe('DomainExceptionFilter', () => {
       error: 'Bad Request',
       message: 'Erro de domínio genérico',
     });
+  });
+
+  it('should record the resolved error in the request-local context without emitting a line on a 422', () => {
+    const { host, mockResponse } = createMockHost();
+
+    filter.catch(new DomainValidationException('Documento inválido.'), host);
+
+    expect(logger.event).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(getRequestLogContext(mockResponse)).toEqual({
+      errorType: 'DomainValidationException',
+      errorMessage: 'Documento inválido.',
+    });
+  });
+
+  it('should emit no extra line on a 409', () => {
+    const { host } = createMockHost();
+
+    filter.catch(new BusinessRuleViolationException('Transição inválida.'), host);
+
+    expect(logger.event).not.toHaveBeenCalled();
   });
 });

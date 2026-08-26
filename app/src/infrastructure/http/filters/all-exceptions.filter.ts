@@ -4,26 +4,29 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Logger,
+  Inject,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { recordHttpFailure } from '@infrastructure/logging/http-failure.recorder';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly logger: ILogger;
+
+  constructor(@Inject('ILogger') logger: ILogger) {
+    this.logger = logger.forContext(AllExceptionsFilter.name);
+  }
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
     const status: HttpStatus = this.resolveStatus(exception);
 
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(
-        exception instanceof Error ? exception.message : 'Unexpected error',
-        exception instanceof Error ? exception.stack : undefined,
-      );
-    }
+    recordHttpFailure(this.logger, request, response, status, exception);
 
     const message = this.resolveMessage(status, exception);
 
@@ -49,7 +52,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return exception.message;
     }
 
+    if (!(exception instanceof SyntaxError) && this.isExposedHttpError(exception)) {
+      return exception.message;
+    }
+
     return 'Bad request';
+  }
+
+  private isExposedHttpError(exception: unknown): exception is Error {
+    return (
+      exception instanceof Error &&
+      (exception as { expose?: unknown }).expose === true &&
+      this.resolveCarriedStatus(exception) !== undefined
+    );
   }
 
   private resolveErrorName(status: HttpStatus): string {
@@ -62,6 +77,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       [HttpStatus.METHOD_NOT_ALLOWED]: 'Method Not Allowed',
       [HttpStatus.CONFLICT]: 'Conflict',
       [HttpStatus.GONE]: 'Gone',
+      [HttpStatus.PAYLOAD_TOO_LARGE]: 'Payload Too Large',
+      [HttpStatus.UNSUPPORTED_MEDIA_TYPE]: 'Unsupported Media Type',
       [HttpStatus.UNPROCESSABLE_ENTITY]: 'Unprocessable Entity',
       [HttpStatus.TOO_MANY_REQUESTS]: 'Too Many Requests',
       [HttpStatus.INTERNAL_SERVER_ERROR]: 'Internal Server Error',
@@ -82,6 +99,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return HttpStatus.BAD_REQUEST;
     }
 
-    return HttpStatus.INTERNAL_SERVER_ERROR;
+    // O `body-parser` roda antes do pipeline do Nest e lança instâncias de
+    // `http-errors`, que carregam `status`/`statusCode` mas **não** são
+    // `HttpException`.
+    return this.resolveCarriedStatus(exception) ?? HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
+  private resolveCarriedStatus(exception: unknown): HttpStatus | undefined {
+    if (typeof exception !== 'object' || exception === null) {
+      return undefined;
+    }
+
+    const candidate = exception as { status?: unknown; statusCode?: unknown };
+    const carried = typeof candidate.status === 'number' ? candidate.status : candidate.statusCode;
+
+    if (typeof carried !== 'number' || !Number.isInteger(carried)) {
+      return undefined;
+    }
+
+    return carried >= 400 && carried <= 599 ? carried : undefined;
   }
 }

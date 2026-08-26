@@ -11,9 +11,12 @@ import { createMockPartSupply } from '../../../../helpers/part-supply-mock.facto
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { randomUUID } from 'node:crypto';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('UpdateWorkOrderServiceStatusUseCase', () => {
   let useCase: UpdateWorkOrderServiceStatusUseCase;
+  let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
 
@@ -21,7 +24,8 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
-    useCase = new UpdateWorkOrderServiceStatusUseCase(mockUow);
+    logger = createMockLogger();
+    useCase = new UpdateWorkOrderServiceStatusUseCase(mockUow, logger);
   });
 
   describe('transition to IN_PROGRESS', () => {

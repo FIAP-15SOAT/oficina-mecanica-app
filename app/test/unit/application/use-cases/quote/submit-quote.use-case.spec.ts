@@ -10,6 +10,8 @@ import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { SendEmailInput } from '@application/ports/output/email-sender.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),
@@ -27,6 +29,7 @@ const mockEmailSender = {
 
 describe('SubmitQuoteUseCase', () => {
   let useCase: SubmitQuoteUseCase;
+  let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
 
@@ -35,12 +38,14 @@ describe('SubmitQuoteUseCase', () => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    logger = createMockLogger();
     useCase = new SubmitQuoteUseCase(
       mockUow,
       mockEmailSender,
       mockTokenService,
       'test-secret',
       'http://localhost:3000/api',
+      logger,
     );
   });
 

@@ -1,18 +1,30 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
-import { Response } from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Inject } from '@nestjs/common';
+import { Request, Response } from 'express';
+
 import { ApplicationException } from '@application/exceptions/application.exception';
 import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { recordHttpFailure } from '@infrastructure/logging/http-failure.recorder';
 
 @Catch(ApplicationException)
 export class ApplicationExceptionFilter implements ExceptionFilter {
+  private readonly logger: ILogger;
+
+  constructor(@Inject('ILogger') logger: ILogger) {
+    this.logger = logger.forContext(ApplicationExceptionFilter.name);
+  }
+
   catch(exception: ApplicationException, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
     const { status, error } = this.resolveHttpStatus(exception);
+
+    recordHttpFailure(this.logger, request, response, status, exception);
 
     response.status(status).json({
       statusCode: status,

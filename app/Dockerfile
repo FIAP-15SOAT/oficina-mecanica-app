@@ -36,6 +36,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
+# Baked at build time and surfaced as service.version in every log line.
+ARG SERVICE_VERSION=dev
+ENV SERVICE_VERSION=${SERVICE_VERSION}
+
 EXPOSE 3000
 
 CMD ["node", "dist/src/main"]

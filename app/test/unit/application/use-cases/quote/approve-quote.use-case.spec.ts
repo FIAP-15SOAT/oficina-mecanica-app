@@ -14,9 +14,12 @@ import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory
 import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 
 describe('ApproveQuoteUseCase', () => {
   let useCase: ApproveQuoteUseCase;
+  let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
 
@@ -24,7 +27,8 @@ describe('ApproveQuoteUseCase', () => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
-    useCase = new ApproveQuoteUseCase(mockUow);
+    logger = createMockLogger();
+    useCase = new ApproveQuoteUseCase(mockUow, logger);
   });
 
   it('should approve quote, create WO services, WO parts, stock reservations and update work order', async () => {
@@ -149,5 +153,48 @@ describe('ApproveQuoteUseCase', () => {
     (mockRepos.partSupply.findByIds as jest.Mock).mockResolvedValue([partSupply]);
 
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
+  });
+
+  it('should emit no success event when the transaction rolls back', async () => {
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockRejectedValue(
+      new Error('deadlock detected'),
+    );
+
+    await expect(useCase.execute(randomUUID())).rejects.toThrow('deadlock detected');
+
+    expect(logger.event).not.toHaveBeenCalled();
+  });
+
+  it('should emit the business event only after the transaction resolves', async () => {
+    const quote = createMockQuote({ status: QuoteStatus.SENT, services: [], partsSupplies: [] });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.AWAITING_APPROVAL,
+    });
+
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+
+    let emittedDuringTransaction = false;
+    (mockRepos.quote.rejectPendingByWorkOrderId as jest.Mock).mockImplementation(() => {
+      emittedDuringTransaction = logger.event.mock.calls.length > 0;
+
+      return Promise.resolve();
+    });
+
+    await useCase.execute(quote.id, randomUUID());
+
+    expect(emittedDuringTransaction).toBe(false);
+    expect(logger.event).toHaveBeenCalledTimes(1);
+    expect(logger.event.mock.calls[0][1]).toEqual({
+      quoteId: quote.id,
+      previousQuoteStatus: QuoteStatus.SENT,
+      workOrderId: workOrder.id,
+      workOrderNumber: workOrder.number.toString(),
+      previousWorkOrderStatus: WorkOrderStatus.AWAITING_APPROVAL,
+    });
   });
 });

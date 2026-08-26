@@ -56,3 +56,5 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     verifyWithSecret: jest.fn().mockReturnValue({ any: 'payload' }),
   };
 }
+
+export { createMockLogger } from './logger-mock.factory';

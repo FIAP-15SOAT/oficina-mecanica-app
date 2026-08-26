@@ -1,4 +1,7 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+
+import { ILogger } from '@application/ports/output/logger.service.interface';
+import { createMockLogger } from '../../../../helpers/logger-mock.factory';
 import { ApplicationException } from '@application/exceptions/application.exception';
 
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
@@ -7,6 +10,7 @@ import { BadRequestException } from '@application/exceptions/bad-request.excepti
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 
 import { ApplicationExceptionFilter } from '@infrastructure/http/filters/application-exception.filter';
+import { getRequestLogContext } from '@infrastructure/logging/request-log-context';
 
 class GenericApplicationException extends ApplicationException {
   constructor(message: string) {
@@ -17,7 +21,7 @@ class GenericApplicationException extends ApplicationException {
 function createMockHost() {
   const jsonFn = jest.fn();
   const statusFn = jest.fn().mockReturnValue({ json: jsonFn });
-  const mockResponse = { status: statusFn };
+  const mockResponse = { status: statusFn, locals: {} };
 
   const host = {
     switchToHttp: () => ({
@@ -32,14 +36,16 @@ function createMockHost() {
     getType: jest.fn(),
   } satisfies ArgumentsHost;
 
-  return { host, statusFn, jsonFn };
+  return { host, statusFn, jsonFn, mockResponse };
 }
 
 describe('ApplicationExceptionFilter', () => {
   let filter: ApplicationExceptionFilter;
+  let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
-    filter = new ApplicationExceptionFilter();
+    logger = createMockLogger();
+    filter = new ApplicationExceptionFilter(logger);
   });
 
   it('should return 400 for BadRequestException', () => {
@@ -110,5 +116,23 @@ describe('ApplicationExceptionFilter', () => {
       error: 'Internal Server Error',
       message: 'Erro inesperado na aplicação',
     });
+  });
+
+  it('should record the resolved error in the request-local context without emitting a line on a 404', () => {
+    const { host, mockResponse } = createMockHost();
+
+    filter.catch(new ResourceNotFoundException('Orçamento', 'quote-1'), host);
+
+    expect(logger.event).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(getRequestLogContext(mockResponse).errorType).toBe('ResourceNotFoundException');
+  });
+
+  it('should emit no extra line on a 409', () => {
+    const { host } = createMockHost();
+
+    filter.catch(new ResourceConflictException('E-mail já cadastrado'), host);
+
+    expect(logger.event).not.toHaveBeenCalled();
   });
 });

@@ -26,6 +26,8 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | POST | `/refresh` | Renovar tokens com refresh token | Público |
 | GET | `/me` | Dados do usuário autenticado | JWT |
 
+> `POST /auth/refresh` responde **401** com a mensagem única `Refresh token inválido ou expirado` para todas as causas de falha — token inválido ou expirado, usuário inexistente e usuário desativado. A resposta é deliberadamente idêntica nos três casos para não revelar se o usuário existe; a causa fica registrada apenas no log (ver [Segurança](security.md#proteção-de-dados-nos-logs)).
+
 ---
 
 **Usuários** (`/api/users`) — *ADMIN*
