@@ -5,6 +5,7 @@ import { ITokenService, TokenPair } from '@application/ports/output/token.servic
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 export function createMockUser(overrides: Partial<User> = {}): User {
   const now = new Date();
@@ -13,7 +14,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     id: 'user-uuid-123',
     name: 'Admin User',
     email: Email.create('admin@email.com'),
-    document: Document.create('12345678909'),
+    document: Document.create('12345678909', PersonType.INDIVIDUAL),
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ADMIN,
     isActive: true,

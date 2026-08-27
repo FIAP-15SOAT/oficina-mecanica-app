@@ -8,15 +8,14 @@ export class Document {
     public readonly type: PersonType,
   ) {}
 
-  static create(value: string, type?: PersonType): Document {
+  static create(value: string, type: PersonType): Document {
     Document.validatePresence(value);
 
     const sanitized = Document.sanitize(value);
-    const resolvedType = type ?? Document.detectType(sanitized);
 
-    Document.validateMatchesType(sanitized, resolvedType);
+    Document.validateMatchesType(sanitized, type);
 
-    return new Document(sanitized, resolvedType);
+    return new Document(sanitized, type);
   }
 
   static sanitize(value: string): string {
@@ -24,13 +23,6 @@ export class Document {
       .replaceAll(/[.\-/]/g, '')
       .trim()
       .toUpperCase();
-  }
-
-  private static detectType(sanitized: string): PersonType {
-    if (sanitized.length === 11) return PersonType.INDIVIDUAL;
-    if (sanitized.length === 14) return PersonType.COMPANY;
-
-    throw new DomainValidationException('Documento inválido: informe um CPF ou CNPJ');
   }
 
   private static validatePresence(value: string | null | undefined): void {

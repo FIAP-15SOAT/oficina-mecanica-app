@@ -5,6 +5,7 @@ import { createMockUser, createMockUserRepository } from '../../../../helpers/mo
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 describe('UpdateUserUseCase', () => {
   let useCase: UpdateUserUseCase;
@@ -82,21 +83,25 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should update document checking uniqueness', async () => {
-    const user = createMockUser({ document: Document.create('12345678909') });
+    const user = createMockUser({
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
+    });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByDocument.mockResolvedValue(null);
     userRepository.update.mockImplementation((data) =>
       Promise.resolve(createMockUser({ document: data.document })),
     );
 
-    const result = await useCase.execute('user-uuid-123', { document: '12345678000195' });
+    const result = await useCase.execute('user-uuid-123', { document: '52998224725' });
 
-    expect(result.document).toBe('12345678000195');
-    expect(userRepository.findByDocument).toHaveBeenCalledWith('12345678000195');
+    expect(result.document).toBe('52998224725');
+    expect(userRepository.findByDocument).toHaveBeenCalledWith('52998224725');
   });
 
   it('should allow keeping the same document', async () => {
-    const user = createMockUser({ document: Document.create('12345678909') });
+    const user = createMockUser({
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
+    });
     userRepository.findById.mockResolvedValue(user);
     userRepository.update.mockImplementation(() => Promise.resolve(user));
 
@@ -106,11 +111,13 @@ describe('UpdateUserUseCase', () => {
   });
 
   it('should throw ResourceConflictException if new document already exists', async () => {
-    const user = createMockUser({ document: Document.create('12345678909') });
+    const user = createMockUser({
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
+    });
     userRepository.findById.mockResolvedValue(user);
     userRepository.findByDocument.mockResolvedValue(createMockUser({ id: 'outro-id' }));
 
-    await expect(useCase.execute('user-uuid-123', { document: '12345678000195' })).rejects.toThrow(
+    await expect(useCase.execute('user-uuid-123', { document: '52998224725' })).rejects.toThrow(
       ResourceConflictException,
     );
   });

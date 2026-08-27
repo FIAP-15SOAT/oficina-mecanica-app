@@ -3,6 +3,7 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
 import { Document } from '../value-objects/document.vo';
+import { PersonType } from '../enums/person-type.enum';
 import { PasswordValidator } from '../validators/password.validator';
 
 import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/user.constants';
@@ -68,7 +69,7 @@ export class User {
       id: randomUUID(),
       name: props.name.trim(),
       email: Email.create(props.email),
-      document: Document.create(props.document),
+      document: Document.create(props.document, PersonType.INDIVIDUAL),
       passwordHash: props.passwordHash,
       role: props.role,
       isActive: true,
@@ -95,7 +96,7 @@ export class User {
   }
 
   changeDocument(document: string): void {
-    this.document = Document.create(document);
+    this.document = Document.create(document, PersonType.INDIVIDUAL);
     this.updatedAt = new Date();
   }
 

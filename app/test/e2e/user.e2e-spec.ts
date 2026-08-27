@@ -238,8 +238,8 @@ describe('User (E2E)', () => {
         .expect(409);
     });
 
-    it('should create a user with a valid CNPJ as document', async () => {
-      const res = await request(httpServer)
+    it('should return 422 when document is a CNPJ (users are always natural persons)', async () => {
+      await request(httpServer)
         .post('/api/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({
@@ -249,9 +249,7 @@ describe('User (E2E)', () => {
           password: 'Senha@123',
           role: 'MECHANIC',
         })
-        .expect(201);
-
-      expect(res.body.data.document).toBe('12345678000195');
+        .expect(422);
     });
   });
 

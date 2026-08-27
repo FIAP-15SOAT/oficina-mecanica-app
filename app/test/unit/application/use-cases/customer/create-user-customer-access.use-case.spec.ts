@@ -37,7 +37,7 @@ describe('CreateUserCustomerAccessUseCase', () => {
   it('should create a SELF link when documents match', async () => {
     const user = createMockUser({
       role: UserRole.CUSTOMER,
-      document: Document.create('12345678909'),
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
     });
     const customer = createMockCustomer({
       type: PersonType.INDIVIDUAL,
@@ -61,7 +61,7 @@ describe('CreateUserCustomerAccessUseCase', () => {
   it('should throw DomainValidationException for SELF when documents differ', async () => {
     const user = createMockUser({
       role: UserRole.CUSTOMER,
-      document: Document.create('12345678909'),
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
     });
     const customer = createMockCustomer({
       document: Document.create('98765432100', PersonType.INDIVIDUAL),
@@ -83,7 +83,7 @@ describe('CreateUserCustomerAccessUseCase', () => {
   it('should create a REPRESENTATIVE link even when documents differ', async () => {
     const user = createMockUser({
       role: UserRole.CUSTOMER,
-      document: Document.create('12345678909'),
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
     });
     const customer = createMockCustomer({
       type: PersonType.COMPANY,

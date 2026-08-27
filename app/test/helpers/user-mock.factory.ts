@@ -4,6 +4,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 export function createMockPrismaUser(overrides: Record<string, unknown> = {}) {
   const now = new Date();
@@ -28,7 +29,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     id: randomUUID(),
     name: 'John Doe',
     email: Email.create('john.doe@example.com'),
-    document: Document.create('12345678909'),
+    document: Document.create('12345678909', PersonType.INDIVIDUAL),
     passwordHash: '$2b$10$hashedpassword',
     role: UserRole.ATTENDANT,
     isActive: true,

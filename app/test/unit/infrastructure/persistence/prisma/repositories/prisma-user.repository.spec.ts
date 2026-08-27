@@ -6,6 +6,7 @@ import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/repositories/prisma-user.repository';
 
@@ -53,7 +54,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
-          document: Document.create(prismaModel.document),
+          document: Document.create(prismaModel.document, PersonType.INDIVIDUAL),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -141,7 +142,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
-          document: Document.create(prismaModel.document),
+          document: Document.create(prismaModel.document, PersonType.INDIVIDUAL),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -179,7 +180,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
-          document: Document.create(prismaModel.document),
+          document: Document.create(prismaModel.document, PersonType.INDIVIDUAL),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -268,7 +269,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Updated Name',
         email: Email.create('updated@example.com'),
-        document: Document.create('12345678909'),
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
         passwordHash: '$2b$10$newhash',
         role: UserRole.ADMIN,
         isActive: false,
@@ -310,7 +311,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Test',
         email: Email.create('dup@example.com'),
-        document: Document.create('12345678909'),
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
         isActive: true,
@@ -331,7 +332,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Test',
         email: Email.create('test@example.com'),
-        document: Document.create('12345678909'),
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
         isActive: true,
@@ -371,7 +372,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
-          document: Document.create(prismaModel.document),
+          document: Document.create(prismaModel.document, PersonType.INDIVIDUAL),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,

@@ -4,6 +4,7 @@ import { DomainValidationException } from '@domain/exceptions/domain-validation.
 import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/password.constants';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 describe('User Entity', () => {
   const validProps = {
@@ -153,9 +154,9 @@ describe('User Entity', () => {
   describe('changeDocument', () => {
     it('should change document and sanitize it', () => {
       const user = User.create(validProps);
-      user.changeDocument('12.345.678/0001-95');
+      user.changeDocument('529.982.247-25');
 
-      expect(user.document.value).toBe('12345678000195');
+      expect(user.document.value).toBe('52998224725');
     });
 
     it('should throw error if new document is invalid', () => {
@@ -280,7 +281,7 @@ describe('User Entity', () => {
         id: 'uuid-123',
         name: 'Usuario Teste',
         email: Email.create('usuario@email.com'),
-        document: Document.create('12345678909'),
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
         passwordHash: 'secret-hash',
         role: UserRole.ADMIN,
         isActive: true,
