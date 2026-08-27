@@ -284,4 +284,79 @@ describe('UserCustomerAccess (E2E)', () => {
         .expect(200);
     });
   });
+
+  describe('full HTTP provisioning flow (admin creates customer + user, links access, customer logs in)', () => {
+    it('should provision a customer access link purely through public HTTP endpoints and let the customer see their work order', async () => {
+      const document = nextValidCpf();
+
+      const customerRes = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Empresa Provisionada',
+          document,
+          type: 'INDIVIDUAL',
+          email: `provisionado-${Date.now()}@e2e.test`,
+          phone: '11988887777',
+          address: { street: 'Rua B', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
+        })
+        .expect(201);
+      const customerId = customerRes.body.data.id as string;
+
+      const userRes = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Cliente Provisionado',
+          email: `usuario-provisionado-${Date.now()}@e2e.test`,
+          document,
+          password: 'Senha@123',
+          role: 'CUSTOMER',
+        })
+        .expect(201);
+      const userId = userRes.body.data.id as string;
+
+      await request(httpServer)
+        .post(`/api/customers/${customerId}/access`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ userId, relationship: 'SELF' })
+        .expect(201);
+
+      const loginRes = await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: document, password: 'Senha@123' })
+        .expect(200);
+      const customerAccessToken = loginRes.body.data.accessToken as string;
+
+      const vehicleRes = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId,
+          plate: `PRV${Math.floor(1000 + Math.random() * 9000)}`,
+          brand: 'Fiat',
+          model: 'Uno',
+          year: 2020,
+        })
+        .expect(201);
+
+      const workOrderRes = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId,
+          vehicleId: vehicleRes.body.data.id,
+          problemDescription: 'Revisão geral',
+        })
+        .expect(201);
+      const workOrderId = workOrderRes.body.data.id as string;
+
+      const res = await request(httpServer)
+        .get('/api/work-orders')
+        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .expect(200);
+
+      expect(res.body.data.map((wo: { id: string }) => wo.id)).toContain(workOrderId);
+    });
+  });
 });

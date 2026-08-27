@@ -34,15 +34,4 @@ export class PrismaUserCustomerAccessRepository implements IUserCustomerAccessRe
     const records = await this.prisma.userCustomerAccess.findMany({ where: { userId } });
     return records.map((record) => UserCustomerAccessMapper.toDomain(record));
   }
-
-  async findByUserIdAndCustomerId(
-    userId: string,
-    customerId: string,
-  ): Promise<UserCustomerAccess | null> {
-    const record = await this.prisma.userCustomerAccess.findUnique({
-      where: { userId_customerId: { userId, customerId } },
-    });
-
-    return record ? UserCustomerAccessMapper.toDomain(record) : null;
-  }
 }

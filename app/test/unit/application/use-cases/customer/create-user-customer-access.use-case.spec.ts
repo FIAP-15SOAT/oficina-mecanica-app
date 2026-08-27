@@ -18,7 +18,6 @@ describe('CreateUserCustomerAccessUseCase', () => {
   let accessRepository: {
     create: jest.Mock;
     findByUserId: jest.Mock;
-    findByUserIdAndCustomerId: jest.Mock;
   };
 
   beforeEach(() => {
@@ -27,7 +26,6 @@ describe('CreateUserCustomerAccessUseCase', () => {
     accessRepository = {
       create: jest.fn(),
       findByUserId: jest.fn(),
-      findByUserIdAndCustomerId: jest.fn(),
     };
     useCase = new CreateUserCustomerAccessUseCase(
       userRepository,

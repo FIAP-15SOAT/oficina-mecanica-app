@@ -11,7 +11,6 @@ describe('PrismaUserCustomerAccessRepository', () => {
       userCustomerAccess: {
         create: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn(),
       },
     };
     repository = new PrismaUserCustomerAccessRepository(prisma as never);
@@ -71,17 +70,6 @@ describe('PrismaUserCustomerAccessRepository', () => {
     });
     expect(result).toHaveLength(2);
     expect(result.map((r) => r.customerId)).toEqual(['customer-1', 'customer-2']);
-  });
-
-  it('should return null when no access link exists for the pair', async () => {
-    prisma.userCustomerAccess.findUnique.mockResolvedValue(null);
-
-    const result = await repository.findByUserIdAndCustomerId('user-1', 'customer-1');
-
-    expect(prisma.userCustomerAccess.findUnique).toHaveBeenCalledWith({
-      where: { userId_customerId: { userId: 'user-1', customerId: 'customer-1' } },
-    });
-    expect(result).toBeNull();
   });
 
   it('should throw ResourceConflictException when the pair already has a link', async () => {
