@@ -4518,119 +4518,24 @@
           "response": []
         },
         {
-          "name": "TC-CUST-21 — Redefinir senha do cliente sem autenticação (401)",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/password",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "customers",
-                "{{customerId}}",
-                "password"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            }
-          },
-          "response": [],
+          "name": "TC-CUST-19b — Criar usuário CUSTOMER (self, mesmo documento do cliente)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CUST-22 — Redefinir senha do cliente (admin, sucesso)",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/password",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "customers",
-                "{{customerId}}",
-                "password"
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Autoatendimento do Cliente",
-      "description": "Fluxo de autoatendimento do Cliente da Oficina: login próprio, dados da conta, renovação de token, troca da própria senha, isolamento entre os domínios de autenticação de Cliente e de Staff, e decisão (aprovação/rejeição) do próprio orçamento.\n\nPasso manual necessário: a senha do cliente é gerada pelo sistema e enviada por e-mail, nunca retornada pela API. Após executar TC-CLI-01, abra o MailHog (http://localhost:8025), copie a senha do e-mail recebido e cole-a na variável de ambiente `customerPassword` antes de executar TC-CLI-02.",
-      "item": [
-        {
-          "name": "TC-CLI-01 — Criar cliente para autoatendimento (sucesso)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/customers",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "customers"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Cliente Autoatendimento\",\r\n    \"document\": \"10000000280\",\r\n    \"type\": \"INDIVIDUAL\",\r\n    \"email\": \"autoatendimento.cliente@oficina.com\",\r\n    \"phone\": \"(11) 98888-7777\",\r\n    \"address\": {\r\n        \"street\": \"Rua Teste, 100\",\r\n        \"city\": \"São Paulo\",\r\n        \"state\": \"SP\",\r\n        \"zipCode\": \"01310-100\"\r\n    }\r\n}"
-            },
-            "description": "A senha não é retornada pela API — ela é gerada automaticamente e enviada por e-mail. Antes de executar o próximo passo (login), abra o MailHog em http://localhost:8025, localize o e-mail 'Sua conta foi criada — dados de acesso' enviado para autoatendimento.cliente@oficina.com, copie a senha do corpo do e-mail e cole-a na variável de ambiente `customerPassword`."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do cliente', () => {",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna usuário CUSTOMER criado', () => {",
                   "    const res = pm.response.json();",
                   "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
-                  "    pm.environment.set('selfServiceCustomerId', res.data.id);",
+                  "    pm.expect(res.data.role).to.equal('CUSTOMER');",
+                  "    pm.environment.set('customerSelfUserId', res.data.id);",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "TC-CLI-02 — Login do cliente (senha obtida no MailHog)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -4639,142 +4544,6 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "login"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"{{customerPassword}}\"\r\n}"
-            },
-            "description": "Requer que a variável `customerPassword` já tenha sido preenchida manualmente com a senha lida no MailHog (ver descrição do passo anterior)."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna tokens do cliente', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.expect(res.data.accessToken).to.be.a('string').and.not.empty;",
-                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
-                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-03 — Buscar dados do cliente autenticado (me)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "me"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerAccessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna dados do cliente logado', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.expect(res.data).to.have.property('id');",
-                  "    pm.expect(res.data.email).to.equal('autoatendimento.cliente@oficina.com');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-04 — Renovar tokens do cliente (sucesso)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/refresh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "refresh"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"refreshToken\": \"{{customerRefreshToken}}\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna novos tokens', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
-                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-05 — Cliente tenta acessar rota de staff com seu token (401)",
-          "request": {
-            "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{baseUrl}}/users",
               "host": [
@@ -4784,111 +4553,32 @@
                 "users"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerAccessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-06 — Staff tenta acessar rota exclusiva de cliente com token de staff (401)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "me"
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-07 — Cliente troca a própria senha (sucesso)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/password",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "password"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerAccessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"currentPassword\": \"{{customerPassword}}\",\r\n    \"newPassword\": \"NovaSenhaCliente@123\"\r\n}"
+              "raw": "{\r\n    \"name\": \"Cliente Autoatendimento\",\r\n    \"email\": \"cliente.selfservice@oficina-test.com\",\r\n    \"document\": \"929.362.770-19\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"CUSTOMER\"\r\n}"
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "TC-CUST-19c — Criar usuário CUSTOMER (representante, documento diferente)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna usuário CUSTOMER criado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.role).to.equal('CUSTOMER');",
+                  "    pm.environment.set('customerRepresentativeUserId', res.data.id);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "TC-CLI-08 — Login do cliente com senha antiga falha após troca (401)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -4898,490 +4588,309 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/customer/login",
+              "raw": "{{baseUrl}}/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
-                "customer",
-                "login"
+                "users"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Representante da Empresa\",\r\n    \"email\": \"representante.selfservice@oficina-test.com\",\r\n    \"document\": \"384.756.123-50\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"CUSTOMER\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-21 — Vincular usuário CUSTOMER ao cliente (SELF, sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna vínculo SELF criado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.userId).to.equal(pm.environment.get('customerSelfUserId'));",
+                  "    pm.expect(res.data.customerId).to.equal(pm.environment.get('customerId'));",
+                  "    pm.expect(res.data.relationship).to.equal('SELF');",
+                  "    pm.environment.set('userCustomerAccessId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerSelfUserId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-22 — Vincular com documentos diferentes em SELF (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerRepresentativeUserId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-23 — Vincular como REPRESENTATIVE com documentos diferentes (sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna vínculo REPRESENTATIVE criado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.relationship).to.equal('REPRESENTATIVE');",
+                  "    pm.expect(res.data.userId).to.equal(pm.environment.get('customerRepresentativeUserId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerRepresentativeUserId}}\",\r\n    \"relationship\": \"REPRESENTATIVE\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-24 — Vincular usuário sem role CUSTOMER (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{userId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-25 — Vincular o mesmo par novamente (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerSelfUserId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-26 — Vincular a cliente inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/00000000-0000-0000-0000-000000000000/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "00000000-0000-0000-0000-000000000000",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerSelfUserId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CUST-27 — Vincular sem autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "access"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\": \"{{customerSelfUserId}}\",\r\n    \"relationship\": \"SELF\"\r\n}"
             },
             "auth": {
               "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"{{customerPassword}}\"\r\n}"
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-09 — Login do cliente com a nova senha (sucesso)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/customer/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "customer",
-                "login"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"NovaSenhaCliente@123\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna tokens do cliente', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
-                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-10 — Criar veículo para o cliente (setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/vehicles",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "vehicles"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"customerId\": \"{{selfServiceCustomerId}}\",\r\n    \"plate\": \"SLF-1001\",\r\n    \"brand\": \"Fiat\",\r\n    \"model\": \"Uno\",\r\n    \"year\": 2020\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do veículo', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('selfServiceVehicleId', res.data.id);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-11 — Criar Ordem de Serviço para o cliente (setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/work-orders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "work-orders"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"customerId\": \"{{selfServiceCustomerId}}\",\r\n    \"vehicleId\": \"{{selfServiceVehicleId}}\",\r\n    \"problemDescription\": \"Barulho no motor\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados da OS', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('selfServiceWorkOrderId', res.data.id);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-12 — Atualizar status da OS para IN_DIAGNOSIS (setup)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/work-orders/{{selfServiceWorkOrderId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "work-orders",
-                "{{selfServiceWorkOrderId}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"status\": \"IN_DIAGNOSIS\",\r\n    \"notes\": \"Iniciando diagnóstico técnico\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-13 — Criar serviço para o orçamento (setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/services",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "services"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Troca de óleo (autoatendimento)\",\r\n    \"basePrice\": 150,\r\n    \"estimatedTimeMin\": 60\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do serviço', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('selfServiceServiceId', res.data.id);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-14 — Criar orçamento para a OS (setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/quotes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"workOrderId\": \"{{selfServiceWorkOrderId}}\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados do orçamento', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.environment.set('selfServiceQuoteId', res.data.id);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-15 — Adicionar serviço ao orçamento (setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/services",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{selfServiceQuoteId}}",
-                "services"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"serviceId\": \"{{selfServiceServiceId}}\",\r\n    \"quantity\": 1\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-16 — Submeter orçamento para aprovação (setup)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{selfServiceQuoteId}}",
-                "submissions"
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-17 — Cliente lista seus próprios orçamentos pendentes",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "me"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerAccessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Contém o orçamento criado para este cliente', () => {",
-                  "    const res = pm.response.json();",
-                  "    const ids = res.data.map((q) => q.id);",
-                  "    pm.expect(ids).to.include(pm.environment.get('selfServiceQuoteId'));",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-18 — Staff tenta decidir orçamento do cliente usando token de staff (401)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/decisions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{selfServiceQuoteId}}",
-                "decisions"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"action\": \"approve\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "TC-CLI-19 — Cliente aprova o próprio orçamento (sucesso)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/decisions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "quotes",
-                "{{selfServiceQuoteId}}",
-                "decisions"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerAccessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"action\": \"approve\"\r\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Orçamento aprovado', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.expect(res.data.status).to.equal('APPROVED');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -7305,6 +6814,363 @@
               "path": [
                 "work-orders",
                 "{{tempWorkOrderId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Autoatendimento do Cliente",
+      "description": "Fluxo de autoatendimento do Cliente da Oficina após a reformulação: o cliente loga pela MESMA rota de login de usuários (POST /auth/login, por e-mail ou CPF), pois agora é apenas um User com role CUSTOMER. O único acesso liberado é consultar as próprias ordens de serviço (GET /work-orders e GET /work-orders/:id, escopados automaticamente pelo vínculo UserCustomerAccess). Aprovação/rejeição de orçamento continua exclusivamente pelo link enviado por e-mail.",
+      "item": [
+        {
+          "name": "TC-CLI-01 — Login do usuário CUSTOMER (self) por CPF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna accessToken de um usuário CUSTOMER', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.user.role).to.equal('CUSTOMER');",
+                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"92936277019\",\r\n    \"password\": \"Senha@123\"\r\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-02 — Cliente consulta suas próprias ordens de serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Todas as OS retornadas pertencem ao próprio cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    const customerId = pm.environment.get('customerId');",
+                  "    pm.expect(res.data.length).to.be.above(0);",
+                  "    res.data.forEach((wo) => pm.expect(wo.customer.id).to.equal(customerId));",
+                  "    pm.expect(res.data.map((wo) => wo.id)).to.include(pm.environment.get('workOrderId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-03 — Cliente tenta forçar customerId de outro cliente via query (ignorado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Query customerId de outro cliente é ignorada (IDOR)', () => {",
+                  "    const res = pm.response.json();",
+                  "    const customerId = pm.environment.get('customerId');",
+                  "    const customerId2 = pm.environment.get('customerId2');",
+                  "    pm.expect(res.data.length).to.be.above(0);",
+                  "    res.data.forEach((wo) => {",
+                  "        pm.expect(wo.customer.id).to.equal(customerId);",
+                  "        pm.expect(wo.customer.id).to.not.equal(customerId2);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders?customerId={{customerId2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId2}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-04 — Cliente busca uma OS específica sua (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna a OS do próprio cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.equal(pm.environment.get('workOrderId'));",
+                  "    pm.expect(res.data.customer.id).to.equal(pm.environment.get('customerId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders",
+                "{{workOrderId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-05 — Criar veículo para outro cliente (setup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Salva otherCustomerVehicleId', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('otherCustomerVehicleId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"customerId\":\"{{customerId2}}\",\"plate\":\"CLI-4321\",\"brand\":\"Fiat\",\"model\":\"Uno\",\"year\":2019}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-06 — Criar Ordem de Serviço para outro cliente (setup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Salva otherCustomerWorkOrderId', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('otherCustomerWorkOrderId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"customerId\": \"{{customerId2}}\",\r\n    \"vehicleId\": \"{{otherCustomerVehicleId}}\",\r\n    \"problemDescription\": \"Troca de pastilhas de freio\"\r\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-07 — Cliente busca uma OS de outro cliente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{otherCustomerWorkOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders",
+                "{{otherCustomerWorkOrderId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-CLI-08 — Cliente tenta acessar rota de staff (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
               ]
             }
           },

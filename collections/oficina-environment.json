@@ -67,48 +67,6 @@
       "value": "",
       "type": "secret",
       "enabled": true
-    },
-    {
-      "key": "customerRefreshToken",
-      "value": "",
-      "type": "secret",
-      "enabled": true
-    },
-    {
-      "key": "customerPassword",
-      "value": "",
-      "type": "secret",
-      "enabled": true
-    },
-    {
-      "key": "selfServiceCustomerId",
-      "value": "",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "selfServiceVehicleId",
-      "value": "",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "selfServiceWorkOrderId",
-      "value": "",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "selfServiceServiceId",
-      "value": "",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "selfServiceQuoteId",
-      "value": "",
-      "type": "default",
-      "enabled": true
     }
   ],
   "_postman_variable_scope": "environment"
