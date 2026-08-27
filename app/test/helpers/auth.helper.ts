@@ -37,7 +37,7 @@ export async function registerAndLogin(
         email,
         document,
         passwordHash: hashedPassword,
-        role: role as 'ADMIN' | 'MECHANIC' | 'ATTENDANT',
+        role: role as 'ADMIN' | 'MECHANIC' | 'ATTENDANT' | 'CUSTOMER',
       },
     });
   } else {

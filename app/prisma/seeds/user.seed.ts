@@ -37,15 +37,28 @@ const users: UserSeed[] = [
     document: '85402763135',
     role: UserRole.ADMIN,
   },
+  {
+    name: 'João da Silva',
+    email: 'joao.silva.cliente@oficina.com',
+    document: '12345678909',
+    role: UserRole.CUSTOMER,
+  },
+  {
+    name: 'Carlos Mendes',
+    email: 'carlos.mendes@oficinarceira.com.br',
+    document: '39174062840',
+    role: UserRole.CUSTOMER,
+  },
 ];
 
-export async function seedUsers(prisma: PrismaClient): Promise<void> {
+export async function seedUsers(prisma: PrismaClient): Promise<Record<string, string>> {
   console.log('🌱 Seeding users...');
 
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
+  const ids: Record<string, string> = {};
 
   for (const user of users) {
-    await prisma.user.upsert({
+    const record = await prisma.user.upsert({
       where: { email: user.email },
       update: {
         name: user.name,
@@ -62,8 +75,11 @@ export async function seedUsers(prisma: PrismaClient): Promise<void> {
       },
     });
 
+    ids[user.document] = record.id;
     console.log(`  ✔ ${user.name} (${user.email})`);
   }
 
   console.log(`✅ ${users.length} users seeded (senha padrão: ${DEFAULT_PASSWORD})`);
+
+  return ids;
 }
