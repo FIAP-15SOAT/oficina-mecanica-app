@@ -1,7 +1,7 @@
 import { UpdateCustomerUseCase } from '@application/use-cases/customer/update-customer.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { UpdateCustomerDto } from '@application/ports/input/customer/dto/update-customer.dto';
 import {
@@ -18,7 +18,7 @@ describe('UpdateCustomerUseCase', () => {
   const validInput: UpdateCustomerDto = {
     name: 'João da Silva',
     document: '123.456.789-09',
-    type: CustomerType.INDIVIDUAL,
+    type: PersonType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
     address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },
@@ -55,11 +55,11 @@ describe('UpdateCustomerUseCase', () => {
   it('should throw ResourceConflictException when new document belongs to another customer', async () => {
     const existing = createMockCustomer({
       id: 'cust-1',
-      document: Document.create('11144477735', CustomerType.INDIVIDUAL),
+      document: Document.create('11144477735', PersonType.INDIVIDUAL),
     });
     const other = createMockCustomer({
       id: 'cust-2',
-      document: Document.create('123.456.789-09', CustomerType.INDIVIDUAL),
+      document: Document.create('123.456.789-09', PersonType.INDIVIDUAL),
     });
     customerRepository.findById.mockResolvedValue(existing);
     customerRepository.findByDocument.mockResolvedValue(other);
@@ -85,7 +85,7 @@ describe('UpdateCustomerUseCase', () => {
   it('should not check uniqueness when document/email are unchanged', async () => {
     const existing = createMockCustomer({
       id: 'cust-1',
-      document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
       email: Email.create(validInput.email),
     });
     customerRepository.findById.mockResolvedValue(existing);
@@ -100,12 +100,12 @@ describe('UpdateCustomerUseCase', () => {
   it('should update when document and email change without conflicts', async () => {
     const existing = createMockCustomer({
       id: 'cust-1',
-      document: Document.create('11144477735', CustomerType.INDIVIDUAL),
+      document: Document.create('11144477735', PersonType.INDIVIDUAL),
       email: Email.create('old@email.com'),
     });
     const updated = createMockCustomer({
       id: 'cust-1',
-      document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
       email: Email.create(validInput.email),
     });
     customerRepository.findById.mockResolvedValue(existing);

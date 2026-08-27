@@ -32,7 +32,7 @@ app/src/
 │   │                                # WorkOrder e Quote são Aggregate Roots
 │   ├── value-objects/               # Document (CPF/CNPJ), Email, Phone, Plate,
 │   │                                # ZipCode, Address, LineItemPrice, WorkOrderNumber
-│   ├── enums/                       # UserRole, CustomerType, WorkOrderStatus,
+│   ├── enums/                       # UserRole, PersonType, WorkOrderStatus,
 │   │                                # WorkOrderServiceStatus, QuoteStatus,
 │   │                                # QuoteDecisionAction, StockMovementType, Unit,
 │   │                                # PartSupplyCategory, TokenType, SortDirection

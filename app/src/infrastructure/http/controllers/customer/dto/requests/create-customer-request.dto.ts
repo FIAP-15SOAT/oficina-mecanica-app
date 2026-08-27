@@ -11,7 +11,7 @@ import {
   Length,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
 import { PHONE_REGEX } from '@domain/constants/regex/phone.regex';
 import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/customer.constants';
@@ -64,12 +64,12 @@ export class CreateCustomerRequestDto {
   document!: string;
 
   @ApiProperty({
-    enum: CustomerType,
+    enum: PersonType,
     description: 'Tipo de pessoa: INDIVIDUAL (Física) ou COMPANY (Jurídica)',
-    example: CustomerType.INDIVIDUAL,
+    example: PersonType.INDIVIDUAL,
   })
-  @IsEnum(CustomerType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
-  type!: CustomerType;
+  @IsEnum(PersonType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
+  type!: PersonType;
 
   @ApiProperty({ description: 'E-mail do Cliente', example: 'joao@email.com' })
   @IsString({ message: 'O e-mail deve ser um texto.' })

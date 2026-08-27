@@ -1,5 +1,5 @@
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -18,7 +18,7 @@ export interface StockPartSupplyResponse {
 export interface StockWorkOrderCustomerResponse {
   id: string;
   name: string;
-  type: CustomerType;
+  type: PersonType;
   document: string;
   phone: string;
   email: string;

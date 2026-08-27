@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -30,11 +30,11 @@ export class WorkOrderCustomerResponseDto implements WorkOrderCustomerResponse {
   name!: string;
 
   @ApiProperty({
-    enum: CustomerType,
+    enum: PersonType,
     description: 'Tipo de pessoa',
-    example: CustomerType.INDIVIDUAL,
+    example: PersonType.INDIVIDUAL,
   })
-  type!: CustomerType;
+  type!: PersonType;
 
   @ApiProperty({ description: 'CPF ou CNPJ', example: '123.456.789-09' })
   document!: string;

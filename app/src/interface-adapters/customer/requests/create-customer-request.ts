@@ -1,4 +1,4 @@
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 export interface AddressRequest {
   street: string;
@@ -10,7 +10,7 @@ export interface AddressRequest {
 export interface CreateCustomerRequest {
   name: string;
   document: string;
-  type: CustomerType;
+  type: PersonType;
   email: string;
   phone: string;
   address: AddressRequest;

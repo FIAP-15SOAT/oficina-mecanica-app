@@ -1,10 +1,10 @@
 import { Customer } from '@domain/entities/customer.entity';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination.interface';
 
 export interface CustomerFilters {
   name?: string;
-  type?: CustomerType;
+  type?: PersonType;
   document?: string;
 }
 

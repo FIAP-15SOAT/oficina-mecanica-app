@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { CustomerType } from '../enums/customer-type.enum';
+import { PersonType } from '../enums/person-type.enum';
 import { Address, AddressProps } from '../value-objects/address.vo';
 import { Email } from '../value-objects/email.vo';
 import { Phone } from '../value-objects/phone.vo';
@@ -10,7 +10,7 @@ import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/custom
 export interface CreateCustomerProps {
   name: string;
   document: string;
-  type: CustomerType;
+  type: PersonType;
   email: string;
   phone: string;
   address: AddressProps;
@@ -19,7 +19,7 @@ export interface CreateCustomerProps {
 export interface UpdateCustomerProps {
   name: string;
   document: string;
-  type: CustomerType;
+  type: PersonType;
   email: string;
   phone: string;
   address: AddressProps;
@@ -29,7 +29,7 @@ interface CustomerProps {
   id: string;
   name: string;
   document: Document;
-  type: CustomerType;
+  type: PersonType;
   email: Email;
   phone: Phone;
   address: Address | null;
@@ -41,7 +41,7 @@ export class Customer {
   readonly id: string;
   name: string;
   document: Document;
-  type: CustomerType;
+  type: PersonType;
   email: Email;
   phone: Phone;
   address: Address | null;

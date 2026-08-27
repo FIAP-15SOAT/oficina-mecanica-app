@@ -1,6 +1,6 @@
 import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { PaginationDto } from '@infrastructure/http/common/dto/pagination.dto';
 
 export class FilterCustomersDto {
@@ -10,12 +10,12 @@ export class FilterCustomersDto {
   name?: string;
 
   @ApiPropertyOptional({
-    enum: CustomerType,
+    enum: PersonType,
     description: 'Filtrar por tipo: INDIVIDUAL ou COMPANY',
   })
   @IsOptional()
-  @IsEnum(CustomerType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
-  type?: CustomerType;
+  @IsEnum(PersonType, { message: 'Tipo inválido. Use INDIVIDUAL ou COMPANY.' })
+  type?: PersonType;
 
   @ApiPropertyOptional({ description: 'Filtrar por documento (exato)', example: '123.456.789-09' })
   @IsOptional()

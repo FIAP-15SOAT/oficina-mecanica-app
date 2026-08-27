@@ -6,7 +6,7 @@ import { PrismaCustomerRepository } from '@infrastructure/persistence/prisma/rep
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 import { Customer } from '@domain/entities/customer.entity';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { Address } from '@domain/value-objects/address.vo';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -33,7 +33,7 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.create({
         name: 'John Doe',
         document: '12345678909',
-        type: CustomerType.INDIVIDUAL,
+        type: PersonType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
         address: {
@@ -58,7 +58,7 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.create({
         name: 'John Doe',
         document: '12345678909',
-        type: CustomerType.INDIVIDUAL,
+        type: PersonType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
         address: {
@@ -82,7 +82,7 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.create({
         name: 'John Doe',
         document: '12345678909',
-        type: CustomerType.INDIVIDUAL,
+        type: PersonType.INDIVIDUAL,
         email: 'john@example.com',
         phone: '11999999999',
         address: {
@@ -159,8 +159,8 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
         name: 'Updated Name',
-        document: Document.create('12345678000195', CustomerType.COMPANY),
-        type: CustomerType.COMPANY,
+        document: Document.create('12345678000195', PersonType.COMPANY),
+        type: PersonType.COMPANY,
         email: Email.create('updated@example.com'),
         phone: Phone.create('11999998888'),
         address: Address.create({
@@ -189,8 +189,8 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
         name: 'Test',
-        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
-        type: CustomerType.INDIVIDUAL,
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
+        type: PersonType.INDIVIDUAL,
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
@@ -213,8 +213,8 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
         name: 'Test',
-        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
-        type: CustomerType.INDIVIDUAL,
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
+        type: PersonType.INDIVIDUAL,
         email: Email.create('dup@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
@@ -234,8 +234,8 @@ describe('PrismaCustomerRepository', () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
         name: 'Test',
-        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
-        type: CustomerType.INDIVIDUAL,
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
+        type: PersonType.INDIVIDUAL,
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
@@ -279,7 +279,7 @@ describe('PrismaCustomerRepository', () => {
         { page: 1, limit: 10 },
         {
           name: 'John',
-          type: CustomerType.INDIVIDUAL,
+          type: PersonType.INDIVIDUAL,
           document: '12345678909',
         },
       );
@@ -288,7 +288,7 @@ describe('PrismaCustomerRepository', () => {
         expect.objectContaining({
           where: {
             name: { contains: 'John', mode: 'insensitive' },
-            type: CustomerType.INDIVIDUAL,
+            type: PersonType.INDIVIDUAL,
             document: '12345678909',
           },
         }),

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Customer } from '@domain/entities/customer.entity';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { Vehicle } from '@domain/entities/vehicle.entity';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
@@ -10,7 +10,7 @@ import { Plate } from '@domain/value-objects/plate.vo';
 
 export function createMockVehicleCustomer(overrides: Partial<Customer> = {}): Customer {
   const now = new Date();
-  const type = overrides.type ?? CustomerType.INDIVIDUAL;
+  const type = overrides.type ?? PersonType.INDIVIDUAL;
 
   return Customer.reconstitute({
     id: randomUUID(),

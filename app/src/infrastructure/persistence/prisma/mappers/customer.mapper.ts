@@ -1,7 +1,7 @@
 import { Customer as PrismaCustomer, Address as PrismaAddress } from '@generated/client';
 import { Customer } from '@domain/entities/customer.entity';
 import { Address } from '@domain/value-objects/address.vo';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
@@ -12,7 +12,7 @@ type PrismaCustomerWithAddress = PrismaCustomer & {
 
 export class CustomerMapper {
   static toDomain(prismaRecord: PrismaCustomerWithAddress): Customer {
-    const type = prismaRecord.type as CustomerType;
+    const type = prismaRecord.type as PersonType;
     return Customer.reconstitute({
       id: prismaRecord.id,
       name: prismaRecord.name,

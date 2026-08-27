@@ -1,5 +1,5 @@
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
@@ -9,7 +9,7 @@ import { PaginationMeta } from '@domain/interfaces/common/pagination.interface';
 export interface WorkOrderCustomerResponse {
   id: string;
   name: string;
-  type: CustomerType;
+  type: PersonType;
   document: string;
   email: string;
   phone: string;

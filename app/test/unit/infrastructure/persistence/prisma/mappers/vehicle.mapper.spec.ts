@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { VehicleMapper } from '@infrastructure/persistence/prisma/mappers/vehicle.mapper';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 describe('VehicleMapper', () => {
   describe('toDomain', () => {
@@ -22,7 +22,7 @@ describe('VehicleMapper', () => {
           id: randomUUID(),
           name: 'John Doe',
           document: '12345678909',
-          type: CustomerType.INDIVIDUAL,
+          type: PersonType.INDIVIDUAL,
           email: 'john@example.com',
           phone: '11999999999',
           passwordHash: '$2b$12$hashedpassword',

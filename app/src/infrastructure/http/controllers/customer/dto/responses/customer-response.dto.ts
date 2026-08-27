@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import {
   AddressResponse,
   CustomerDataResponse,
@@ -34,11 +34,11 @@ export class CustomerResponseDto implements CustomerResponse {
   document!: string;
 
   @ApiProperty({
-    enum: CustomerType,
+    enum: PersonType,
     description: 'Tipo de pessoa',
-    example: CustomerType.INDIVIDUAL,
+    example: PersonType.INDIVIDUAL,
   })
-  type!: CustomerType;
+  type!: PersonType;
 
   @ApiProperty({ description: 'E-mail', example: 'joao@email.com' })
   email!: string;

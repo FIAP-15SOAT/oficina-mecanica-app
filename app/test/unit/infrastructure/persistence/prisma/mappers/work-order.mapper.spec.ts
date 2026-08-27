@@ -5,7 +5,7 @@ import { WorkOrderMapper } from '@infrastructure/persistence/prisma/mappers/work
 
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { PartSupplyCategory } from '@domain/enums/part-supply-category.enum';
 import { Unit } from '@domain/enums/unit.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
@@ -120,7 +120,7 @@ describe('WorkOrderMapper', () => {
           id: customerId,
           name: 'Maria Silva',
           document: '98765432100',
-          type: CustomerType.INDIVIDUAL,
+          type: PersonType.INDIVIDUAL,
           email: 'maria@test.com',
           phone: '11988887777',
           passwordHash: '$2b$12$hashedpassword',

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Customer } from '@domain/entities/customer.entity';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -12,7 +12,7 @@ export function createMockPrismaCustomer(overrides: Record<string, unknown> = {}
     id: randomUUID(),
     name: 'João da Silva',
     document: '12345678909',
-    type: CustomerType.INDIVIDUAL,
+    type: PersonType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
     createdAt: now,
@@ -23,7 +23,7 @@ export function createMockPrismaCustomer(overrides: Record<string, unknown> = {}
 
 export function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
   const now = new Date();
-  const type = overrides.type ?? CustomerType.INDIVIDUAL;
+  const type = overrides.type ?? PersonType.INDIVIDUAL;
   const document = overrides.document ?? Document.create('12345678909', type);
 
   return Customer.reconstitute({

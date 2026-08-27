@@ -1,6 +1,6 @@
 import { CreateCustomerUseCase } from '@application/use-cases/customer/create-customer.use-case';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { Document } from '@domain/value-objects/document.vo';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -16,7 +16,7 @@ describe('CreateCustomerUseCase', () => {
   const validInput = {
     name: 'João da Silva',
     document: '123.456.789-09',
-    type: CustomerType.INDIVIDUAL,
+    type: PersonType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
     address: { street: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01310100' },

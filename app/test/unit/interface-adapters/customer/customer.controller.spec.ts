@@ -10,7 +10,7 @@ import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
 import { ICreateUserCustomerAccessUseCase } from '@application/ports/input/customer/create-user-customer-access.use-case.interface';
 
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { AccessRelationship } from '@domain/enums/access-relationship.enum';
 import { UserCustomerAccess } from '@domain/entities/user-customer-access.entity';
 import { Email } from '@domain/value-objects/email.vo';
@@ -51,7 +51,7 @@ describe('CustomerController', () => {
       const input = {
         name: 'João da Silva',
         document: '123.456.789-09',
-        type: CustomerType.INDIVIDUAL,
+        type: PersonType.INDIVIDUAL,
         email: 'joao@email.com',
         phone: '11999999999',
         address: {
@@ -129,7 +129,7 @@ describe('CustomerController', () => {
       const input: UpdateCustomerRequest = {
         name: 'Novo Nome',
         document: '123.456.789-09',
-        type: CustomerType.INDIVIDUAL,
+        type: PersonType.INDIVIDUAL,
         email: 'joao@email.com',
         phone: '11999999999',
         address: {

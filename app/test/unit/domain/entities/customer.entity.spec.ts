@@ -1,5 +1,5 @@
 import { Customer } from '@domain/entities/customer.entity';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
 describe('Customer Entity', () => {
@@ -13,7 +13,7 @@ describe('Customer Entity', () => {
   const validProps = {
     name: 'João da Silva',
     document: '123.456.789-09',
-    type: CustomerType.INDIVIDUAL,
+    type: PersonType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
     address: validAddress,
@@ -38,7 +38,7 @@ describe('Customer Entity', () => {
         const customer = Customer.create(validProps);
         expect(customer.name).toBe('João da Silva');
         expect(customer.document.value).toBe('12345678909');
-        expect(customer.type).toBe(CustomerType.INDIVIDUAL);
+        expect(customer.type).toBe(PersonType.INDIVIDUAL);
         expect(customer.email.value).toBe('joao@email.com');
         expect(customer.phone.value).toBe('11999999999');
         expect(customer.address).toBeDefined();
@@ -52,7 +52,7 @@ describe('Customer Entity', () => {
         const customer = Customer.create({
           ...validProps,
           document: '12.345.678/0001-95',
-          type: CustomerType.COMPANY,
+          type: PersonType.COMPANY,
         });
         expect(customer.document.value).toBe('12345678000195');
       });
@@ -122,14 +122,14 @@ describe('Customer Entity', () => {
         expect(() =>
           Customer.create({
             ...validProps,
-            type: CustomerType.INDIVIDUAL,
+            type: PersonType.INDIVIDUAL,
             document: '12.345.678/0001-95',
           }),
         ).toThrow(DomainValidationException);
         expect(() =>
           Customer.create({
             ...validProps,
-            type: CustomerType.INDIVIDUAL,
+            type: PersonType.INDIVIDUAL,
             document: '12.345.678/0001-95',
           }),
         ).toThrow('Pessoa física deve informar um CPF válido');
@@ -138,14 +138,14 @@ describe('Customer Entity', () => {
         expect(() =>
           Customer.create({
             ...validProps,
-            type: CustomerType.COMPANY,
+            type: PersonType.COMPANY,
             document: '123.456.789-09',
           }),
         ).toThrow(DomainValidationException);
         expect(() =>
           Customer.create({
             ...validProps,
-            type: CustomerType.COMPANY,
+            type: PersonType.COMPANY,
             document: '123.456.789-09',
           }),
         ).toThrow('Pessoa jurídica deve informar um CNPJ válido');
@@ -221,7 +221,7 @@ describe('Customer Entity', () => {
       expect(parsed.id).toBe(customer.id);
       expect(parsed.name).toBe('João da Silva');
       expect(parsed.email).toEqual(customer.email);
-      expect(parsed.type).toBe(CustomerType.INDIVIDUAL);
+      expect(parsed.type).toBe(PersonType.INDIVIDUAL);
       expect(parsed.createdAt).toBe(customer.createdAt.toISOString());
     });
   });

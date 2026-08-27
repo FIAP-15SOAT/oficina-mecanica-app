@@ -1,4 +1,4 @@
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { PaginationMeta } from '@domain/interfaces/common/pagination.interface';
 
 export interface AddressResponse {
@@ -12,7 +12,7 @@ export interface CustomerResponse {
   id: string;
   name: string;
   document: string;
-  type: CustomerType;
+  type: PersonType;
   email: string;
   phone: string;
   createdAt: Date;

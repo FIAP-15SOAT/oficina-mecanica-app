@@ -1,7 +1,7 @@
 import { CreateUserCustomerAccessUseCase } from '@application/use-cases/customer/create-user-customer-access.use-case';
 import { AccessRelationship } from '@domain/enums/access-relationship.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/mock-factories';
@@ -40,8 +40,8 @@ describe('CreateUserCustomerAccessUseCase', () => {
       document: Document.create('12345678909'),
     });
     const customer = createMockCustomer({
-      type: CustomerType.INDIVIDUAL,
-      document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      type: PersonType.INDIVIDUAL,
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
     });
 
     userRepository.findById.mockResolvedValue(user);
@@ -64,7 +64,7 @@ describe('CreateUserCustomerAccessUseCase', () => {
       document: Document.create('12345678909'),
     });
     const customer = createMockCustomer({
-      document: Document.create('98765432100', CustomerType.INDIVIDUAL),
+      document: Document.create('98765432100', PersonType.INDIVIDUAL),
     });
 
     userRepository.findById.mockResolvedValue(user);
@@ -86,8 +86,8 @@ describe('CreateUserCustomerAccessUseCase', () => {
       document: Document.create('12345678909'),
     });
     const customer = createMockCustomer({
-      type: CustomerType.COMPANY,
-      document: Document.create('12345678000195', CustomerType.COMPANY),
+      type: PersonType.COMPANY,
+      document: Document.create('12345678000195', PersonType.COMPANY),
     });
 
     userRepository.findById.mockResolvedValue(user);

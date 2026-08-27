@@ -5,7 +5,7 @@ import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
 import { Address } from '@domain/value-objects/address.vo';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
 
@@ -26,8 +26,8 @@ describe('CustomerPresenter', () => {
     return Customer.reconstitute({
       id: customerId,
       name: 'João da Silva',
-      document: Document.create('12345678909', CustomerType.INDIVIDUAL),
-      type: CustomerType.INDIVIDUAL,
+      document: Document.create('12345678909', PersonType.INDIVIDUAL),
+      type: PersonType.INDIVIDUAL,
       email: Email.create('joao@email.com'),
       phone: Phone.create('11999999999'),
       address,
@@ -44,7 +44,7 @@ describe('CustomerPresenter', () => {
       expect(result.id).toBe(customerId);
       expect(result.name).toBe('João da Silva');
       expect(result.document).toBe('12345678909');
-      expect(result.type).toBe(CustomerType.INDIVIDUAL);
+      expect(result.type).toBe(PersonType.INDIVIDUAL);
       expect(result.email).toBe('joao@email.com');
       expect(result.phone).toBe('11999999999');
       expect(result.address).toBeNull();

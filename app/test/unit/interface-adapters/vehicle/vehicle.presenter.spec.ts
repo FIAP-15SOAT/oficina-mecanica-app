@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Plate } from '@domain/value-objects/plate.vo';
 import { Document } from '@domain/value-objects/document.vo';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 
 import { VehiclePresenter } from '@interface-adapters/vehicle/vehicle.presenter';
 
@@ -41,7 +41,7 @@ describe('VehiclePresenter', () => {
       const customer = createMockVehicleCustomer({
         id: randomUUID(),
         name: 'Maria Souza',
-        document: Document.create('98765432100', CustomerType.INDIVIDUAL),
+        document: Document.create('98765432100', PersonType.INDIVIDUAL),
       });
 
       const vehicle = createMockVehicle({ customer });
@@ -123,7 +123,7 @@ describe('VehiclePresenter', () => {
     it('should include customer summary for each vehicle', () => {
       const customer = createMockVehicleCustomer({
         name: 'Carlos Lima',
-        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        document: Document.create('12345678909', PersonType.INDIVIDUAL),
       });
 
       const vehicle = createMockVehicle({ customer });

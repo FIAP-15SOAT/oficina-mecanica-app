@@ -8,7 +8,7 @@ import { FindAllCustomersQueryDto } from '@infrastructure/http/controllers/custo
 import { CreateUserCustomerAccessRequestDto } from '@infrastructure/http/controllers/customer/dto/requests/create-user-customer-access-request.dto';
 
 import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
-import { CustomerType } from '@domain/enums/customer-type.enum';
+import { PersonType } from '@domain/enums/person-type.enum';
 import { AccessRelationship } from '@domain/enums/access-relationship.enum';
 import { UserCustomerAccess } from '@domain/entities/user-customer-access.entity';
 
@@ -21,7 +21,7 @@ describe('CustomerController', () => {
   const customerRequestStub: CreateCustomerRequestDto = {
     name: 'João da Silva',
     document: '123.456.789-09',
-    type: CustomerType.INDIVIDUAL,
+    type: PersonType.INDIVIDUAL,
     email: 'joao@email.com',
     phone: '11999999999',
     address: {
