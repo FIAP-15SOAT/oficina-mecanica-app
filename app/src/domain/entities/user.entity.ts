@@ -6,6 +6,7 @@ import { Document } from '../value-objects/document.vo';
 import { PasswordValidator } from '../validators/password.validator';
 
 import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/user.constants';
+import { PASSWORD_REQUIREMENTS_MESSAGE } from '../constants/validation/password.constants';
 
 const VALID_ROLES = Object.values(UserRole);
 
@@ -77,7 +78,9 @@ export class User {
   }
 
   static validatePasswordStrength(password: string): void {
-    PasswordValidator.validateStrength(password);
+    if (!PasswordValidator.validateStrength(password)) {
+      throw new DomainValidationException(PASSWORD_REQUIREMENTS_MESSAGE);
+    }
   }
 
   changeName(name: string): void {
