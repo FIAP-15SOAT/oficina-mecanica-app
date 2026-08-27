@@ -1009,14 +1009,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/me/password",
+              "raw": "{{baseUrl}}/users/me/passwords",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
                 "me",
-                "password"
+                "passwords"
               ]
             },
             "auth": {
@@ -1139,14 +1139,14 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/password",
+              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/passwords",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
                 "{{mechanicUserId}}",
-                "password"
+                "passwords"
               ]
             },
             "auth": {
@@ -1179,14 +1179,14 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/password",
+              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/passwords",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
                 "{{mechanicUserId}}",
-                "password"
+                "passwords"
               ]
             }
           },

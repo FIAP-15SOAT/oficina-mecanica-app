@@ -124,8 +124,8 @@ export class UserController {
     return this.controller.updateStatus(id, request);
   }
 
-  @Patch('me/password')
-  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @Patch('me/passwords')
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT, UserRole.CUSTOMER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Trocar a própria senha' })
   @ApiNoContentResponse({ description: 'Senha alterada com sucesso' })
@@ -137,7 +137,7 @@ export class UserController {
     await this.controller.changeOwnPassword(user.sub, request);
   }
 
-  @Patch(':id/password')
+  @Patch(':id/passwords')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

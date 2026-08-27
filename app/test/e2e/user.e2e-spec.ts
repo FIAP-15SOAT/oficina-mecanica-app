@@ -609,9 +609,9 @@ describe('User (E2E)', () => {
     });
   });
 
-  // ─── PATCH /api/users/me/password ────────────────────────────────────────
+  // ─── PATCH /api/users/me/passwords ────────────────────────────────────────
 
-  describe('PATCH /api/users/me/password', () => {
+  describe('PATCH /api/users/me/passwords', () => {
     it('should change own password and allow login with the new password', async () => {
       const auth = await registerAndLogin(
         httpServer,
@@ -620,7 +620,7 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch('/api/users/me/password')
+        .patch('/api/users/me/passwords')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .send({ currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' })
         .expect(204);
@@ -644,7 +644,7 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch('/api/users/me/password')
+        .patch('/api/users/me/passwords')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .send({ currentPassword: 'ErradaMesmo', newPassword: 'NovaSenha@456' })
         .expect(401);
@@ -658,7 +658,7 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch('/api/users/me/password')
+        .patch('/api/users/me/passwords')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .send({ currentPassword: 'Senha@123', newPassword: 'fraca' })
         .expect(400);
@@ -672,16 +672,30 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch('/api/users/me/password')
+        .patch('/api/users/me/passwords')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' })
+        .expect(204);
+    });
+
+    it('should be usable by a CUSTOMER changing their own password', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { email: 'customer-password@e2e.test', password: 'Senha@123', role: 'CUSTOMER' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch('/api/users/me/passwords')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .send({ currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' })
         .expect(204);
     });
   });
 
-  // ─── PATCH /api/users/:id/password ────────────────────────────────────────
+  // ─── PATCH /api/users/:id/passwords ────────────────────────────────────────
 
-  describe('PATCH /api/users/:id/password', () => {
+  describe('PATCH /api/users/:id/passwords', () => {
     it('should let an admin reset another user password (old password stops working)', async () => {
       const target = await registerAndLogin(
         httpServer,
@@ -690,7 +704,7 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/users/${target.user.id}/password`)
+        .patch(`/api/users/${target.user.id}/passwords`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
 
@@ -713,14 +727,14 @@ describe('User (E2E)', () => {
       );
 
       await request(httpServer)
-        .patch(`/api/users/${target.user.id}/password`)
+        .patch(`/api/users/${target.user.id}/passwords`)
         .set('Authorization', `Bearer ${attendant.accessToken}`)
         .expect(403);
     });
 
     it('should return 404 for a non-existent user', async () => {
       await request(httpServer)
-        .patch('/api/users/00000000-0000-0000-0000-000000000000/password')
+        .patch('/api/users/00000000-0000-0000-0000-000000000000/passwords')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
