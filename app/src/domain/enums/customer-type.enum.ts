@@ -1,4 +1,1 @@
-export enum CustomerType {
-  INDIVIDUAL = 'INDIVIDUAL',
-  COMPANY = 'COMPANY',
-}
+export { PersonType as CustomerType } from './person-type.enum';

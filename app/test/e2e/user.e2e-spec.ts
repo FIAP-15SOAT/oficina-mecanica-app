@@ -3,6 +3,9 @@ import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
+import { nextValidCpf } from '../helpers/document.helper';
+
+const nextDocument = nextValidCpf;
 
 describe('User (E2E)', () => {
   let ctx: TestContext;
@@ -41,6 +44,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Novo Usuário',
           email: 'novo@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -51,6 +55,7 @@ describe('User (E2E)', () => {
           id: expect.any(String),
           name: 'Novo Usuário',
           email: 'novo@e2e.test',
+          document: expect.any(String),
           role: 'MECHANIC',
           isActive: true,
         }),
@@ -64,6 +69,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'User A',
           email: 'dup@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -75,6 +81,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'User B',
           email: 'dup@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -188,6 +195,64 @@ describe('User (E2E)', () => {
         })
         .expect(403);
     });
+
+    it('should return 400 when document is not a valid CPF/CNPJ', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Documento Inválido',
+          email: 'docinvalido@e2e.test',
+          document: '111.111.111-11',
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(400);
+    });
+
+    it('should return 409 when creating user with duplicate document', async () => {
+      const document = nextDocument();
+
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'User A',
+          email: 'usera@e2e.test',
+          document,
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'User B',
+          email: 'userb@e2e.test',
+          document,
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(409);
+    });
+
+    it('should create a user with a valid CNPJ as document', async () => {
+      const res = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Pessoa Jurídica',
+          email: 'pj@e2e.test',
+          document: '12.345.678/0001-95',
+          password: 'Senha@123',
+          role: 'MECHANIC',
+        })
+        .expect(201);
+
+      expect(res.body.data.document).toBe('12345678000195');
+    });
   });
 
   // ─── GET /api/users ───────────────────────────────────────────────────────
@@ -221,6 +286,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Mechanic Test',
           email: 'mech@test.com',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -245,6 +311,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'UniqueName Search',
           email: 'unique@test.com',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -291,6 +358,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Find Me',
           email: 'findme@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -334,6 +402,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Update Me',
           email: 'updateme@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'ATTENDANT',
         })
@@ -383,6 +452,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Other',
           email: 'other@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -414,7 +484,7 @@ describe('User (E2E)', () => {
 
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'updateme@e2e.test', password: 'NewPassword@123' })
+        .send({ identifier: 'updateme@e2e.test', password: 'NewPassword@123' })
         .expect(200);
     });
 
@@ -456,6 +526,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Status User',
           email: 'status@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })
@@ -538,6 +609,7 @@ describe('User (E2E)', () => {
         .send({
           name: 'Delete Me',
           email: 'deleteme@e2e.test',
+          document: nextDocument(),
           password: 'Senha@123',
           role: 'MECHANIC',
         })

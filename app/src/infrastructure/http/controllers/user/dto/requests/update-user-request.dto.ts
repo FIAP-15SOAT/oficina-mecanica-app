@@ -8,7 +8,9 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { IsValidCpfCnpj } from '@infrastructure/http/validators/document.validator';
 import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
 import {
   MIN_NAME_LENGTH,
@@ -32,6 +34,21 @@ export class UpdateUserRequestDto {
   @IsOptional()
   @IsEmail({}, { message: 'E-mail inválido' })
   email?: string;
+
+  @ApiPropertyOptional({
+    description: 'CPF (000.000.000-00) ou CNPJ válido, único',
+    example: '123.456.789-09',
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: string }) =>
+    value
+      ?.trim()
+      .replaceAll(/[.\-/]/g, '')
+      .toUpperCase(),
+  )
+  @IsString({ message: 'O documento deve ser um texto.' })
+  @IsValidCpfCnpj()
+  document?: string;
 
   @ApiPropertyOptional({
     example: 'NovaSenha@123',

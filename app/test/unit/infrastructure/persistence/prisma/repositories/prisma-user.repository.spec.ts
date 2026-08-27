@@ -5,6 +5,7 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/repositories/prisma-user.repository';
 
@@ -29,6 +30,7 @@ describe('PrismaUserRepository', () => {
       const user = User.create({
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
+        document: '12345678909',
         passwordHash: '$2b$10$hashedpassword',
         role: UserRole.MECHANIC,
       });
@@ -36,6 +38,7 @@ describe('PrismaUserRepository', () => {
       const prismaModel = createMockPrismaUser({
         name: user.name,
         email: user.email.value,
+        document: user.document.value,
         passwordHash: user.passwordHash,
         role: user.role,
         isActive: user.isActive,
@@ -50,6 +53,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
+          document: Document.create(prismaModel.document),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -62,6 +66,7 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
+          document: user.document.value,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -73,6 +78,7 @@ describe('PrismaUserRepository', () => {
       const user = User.create({
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
+        document: '12345678909',
         passwordHash: '$2b$10$hashedpassword',
         role: UserRole.MECHANIC,
       });
@@ -86,10 +92,30 @@ describe('PrismaUserRepository', () => {
       await expect(repository.create(user)).rejects.toThrow(ResourceConflictException);
     });
 
+    it('should mention document in the conflict message when document is the P2002 target', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        document: '12345678909',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate document', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['document'] },
+      });
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow('Documento já cadastrado');
+    });
+
     it('should rethrow unexpected errors', async () => {
       const user = User.create({
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
+        document: '12345678909',
         passwordHash: '$2b$10$hashedpassword',
         role: UserRole.MECHANIC,
       });
@@ -115,6 +141,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
+          document: Document.create(prismaModel.document),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -152,6 +179,7 @@ describe('PrismaUserRepository', () => {
           id: prismaModel.id,
           name: prismaModel.name,
           email: Email.create(prismaModel.email),
+          document: Document.create(prismaModel.document),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
           isActive: prismaModel.isActive,
@@ -240,6 +268,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Updated Name',
         email: Email.create('updated@example.com'),
+        document: Document.create('12345678909'),
         passwordHash: '$2b$10$newhash',
         role: UserRole.ADMIN,
         isActive: false,
@@ -251,6 +280,7 @@ describe('PrismaUserRepository', () => {
         id: user.id,
         name: user.name,
         email: user.email.value,
+        document: user.document.value,
         passwordHash: user.passwordHash,
         role: user.role,
         isActive: user.isActive,
@@ -267,6 +297,7 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
+          document: user.document.value,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -279,6 +310,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Test',
         email: Email.create('dup@example.com'),
+        document: Document.create('12345678909'),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
         isActive: true,
@@ -299,6 +331,7 @@ describe('PrismaUserRepository', () => {
         id: randomUUID(),
         name: 'Test',
         email: Email.create('test@example.com'),
+        document: Document.create('12345678909'),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
         isActive: true,
@@ -321,6 +354,41 @@ describe('PrismaUserRepository', () => {
       await repository.delete(id);
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id } });
+    });
+  });
+
+  describe('findByDocument', () => {
+    it('should find a user by document and return domain entity', async () => {
+      const document = '12345678909';
+      const prismaModel = createMockPrismaUser({ document });
+
+      prisma.user.findUnique.mockResolvedValue(prismaModel);
+
+      const result = await repository.findByDocument(document);
+
+      expect(result).toEqual(
+        User.reconstitute({
+          id: prismaModel.id,
+          name: prismaModel.name,
+          email: Email.create(prismaModel.email),
+          document: Document.create(prismaModel.document),
+          passwordHash: prismaModel.passwordHash,
+          role: prismaModel.role,
+          isActive: prismaModel.isActive,
+          createdAt: prismaModel.createdAt,
+          updatedAt: prismaModel.updatedAt,
+        }),
+      );
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { document } });
+    });
+
+    it('should return null when user is not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findByDocument('00000000000');
+
+      expect(result).toBeNull();
     });
   });
 });

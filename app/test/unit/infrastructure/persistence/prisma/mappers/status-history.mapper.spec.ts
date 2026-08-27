@@ -64,6 +64,7 @@ describe('StatusHistoryMapper', () => {
           id: userId,
           name: 'Tech User',
           email: 'tech@test.com',
+          document: '12345678909',
           passwordHash: 'hash',
           role: UserRole.MECHANIC,
           isActive: true,

@@ -1,4 +1,5 @@
 import { User } from '@domain/entities/user.entity';
+import { Document } from '@domain/value-objects/document.vo';
 
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -18,12 +19,20 @@ export class CreateUserUseCase {
   async execute(createUserDto: CreateUserDto): Promise<CreateUserOutputDto> {
     User.validatePasswordStrength(createUserDto.password);
 
-    const existing = await this.userRepository.findByEmail(
+    const existingEmail = await this.userRepository.findByEmail(
       createUserDto.email.trim().toLowerCase(),
     );
 
-    if (existing) {
+    if (existingEmail) {
       throw new ResourceConflictException('E-mail já cadastrado no sistema');
+    }
+
+    const existingDocument = await this.userRepository.findByDocument(
+      Document.sanitize(createUserDto.document),
+    );
+
+    if (existingDocument) {
+      throw new ResourceConflictException('Documento já cadastrado no sistema');
     }
 
     const passwordHash = await this.hashService.hash(createUserDto.password);
@@ -31,6 +40,7 @@ export class CreateUserUseCase {
     const user = User.create({
       name: createUserDto.name,
       email: createUserDto.email,
+      document: createUserDto.document,
       passwordHash,
       role: createUserDto.role,
     });

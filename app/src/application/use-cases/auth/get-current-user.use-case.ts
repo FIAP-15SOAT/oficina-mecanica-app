@@ -16,6 +16,7 @@ export class GetCurrentUserUseCase {
       id: user.id,
       name: user.name,
       email: user.email.value,
+      document: user.document.value,
       role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,

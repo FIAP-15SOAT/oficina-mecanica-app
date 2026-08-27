@@ -1,3 +1,6 @@
+import { User } from '@domain/entities/user.entity';
+import { Document } from '@domain/value-objects/document.vo';
+
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
@@ -22,7 +25,7 @@ export class AuthenticateUserUseCase {
   ) {}
 
   async execute(input: AuthenticateUserInputDto): Promise<AuthenticateUserOutputDto> {
-    const user = await this.userRepository.findByEmail(input.email);
+    const user = await this.findUserByIdentifier(input.identifier);
 
     if (!user) {
       this.logger.event(BUSINESS_EVENTS.AUTHENTICATION_FAILED, { failureReason: 'unknown_user' });
@@ -70,8 +73,17 @@ export class AuthenticateUserUseCase {
         id: user.id,
         name: user.name,
         email: user.email.value,
+        document: user.document.value,
         role: user.role,
       },
     };
+  }
+
+  private async findUserByIdentifier(identifier: string): Promise<User | null> {
+    if (identifier.includes('@')) {
+      return this.userRepository.findByEmail(identifier);
+    }
+
+    return this.userRepository.findByDocument(Document.sanitize(identifier));
   }
 }

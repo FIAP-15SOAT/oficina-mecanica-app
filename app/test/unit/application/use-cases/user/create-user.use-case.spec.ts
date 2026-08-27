@@ -21,11 +21,13 @@ describe('CreateUserUseCase', () => {
 
   it('should create user successfully', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
+    userRepository.findByDocument.mockResolvedValue(null);
     userRepository.create.mockImplementation((user) =>
       Promise.resolve(
         createMockUser({
           name: user.name,
           email: user.email,
+          document: user.document,
           role: user.role,
           isActive: user.isActive,
         }),
@@ -35,6 +37,7 @@ describe('CreateUserUseCase', () => {
     const result = await useCase.execute({
       name: 'Lucas Almeida',
       email: 'lucas@email.com',
+      document: '12345678909',
       password: 'Senha@123',
       role: UserRole.MECHANIC,
     });
@@ -49,6 +52,7 @@ describe('CreateUserUseCase', () => {
       useCase.execute({
         name: 'Lucas Almeida',
         email: 'lucas@email.com',
+        document: '12345678909',
         password: '123456',
         role: UserRole.MECHANIC,
       }),
@@ -65,7 +69,25 @@ describe('CreateUserUseCase', () => {
     await expect(
       useCase.execute({
         name: 'Duplicado',
-        email: 'admin@email.com',
+        email: 'rafael@email.com',
+        document: '12345678909',
+        password: 'Senha@123',
+        role: UserRole.ATTENDANT,
+      }),
+    ).rejects.toThrow(ResourceConflictException);
+
+    expect(userRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw ResourceConflictException if document already exists', async () => {
+    userRepository.findByEmail.mockResolvedValue(null);
+    userRepository.findByDocument.mockResolvedValue(createMockUser());
+
+    await expect(
+      useCase.execute({
+        name: 'Duplicado',
+        email: 'novo@email.com',
+        document: '12345678909',
         password: 'Senha@123',
         role: UserRole.ATTENDANT,
       }),

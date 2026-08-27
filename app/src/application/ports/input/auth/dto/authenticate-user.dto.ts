@@ -1,7 +1,7 @@
 import { UserRole } from '@domain/enums/user-role.enum';
 
 export interface AuthenticateUserInputDto {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -12,6 +12,7 @@ export interface AuthenticateUserOutputDto {
     id: string;
     name: string;
     email: string;
+    document: string;
     role: UserRole;
   };
 }

@@ -3,11 +3,13 @@ import { User } from '@domain/entities/user.entity';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 import { PASSWORD_REQUIREMENTS_MESSAGE } from '@domain/constants/validation/user.constants';
 import { Email } from '@domain/value-objects/email.vo';
+import { Document } from '@domain/value-objects/document.vo';
 
 describe('User Entity', () => {
   const validProps = {
     name: 'Usuario Teste',
     email: 'usuario@email.com',
+    document: '12345678909',
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ATTENDANT,
   };
@@ -78,6 +80,20 @@ describe('User Entity', () => {
       );
     });
 
+    it('should create user with a valid document', () => {
+      const user = User.create(validProps);
+      expect(user.document.value).toBe('12345678909');
+    });
+
+    it('should throw error if document is invalid', () => {
+      expect(() => User.create({ ...validProps, document: '111.111.111-11' })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => User.create({ ...validProps, document: '111.111.111-11' })).toThrow(
+        'Pessoa física deve informar um CPF válido',
+      );
+    });
+
     it('should throw error if passwordHash is empty', () => {
       expect(() => User.create({ ...validProps, passwordHash: '' })).toThrow(
         DomainValidationException,
@@ -131,6 +147,21 @@ describe('User Entity', () => {
       const user = User.create(validProps);
 
       expect(() => user.changeEmail('invalido')).toThrow(DomainValidationException);
+    });
+  });
+
+  describe('changeDocument', () => {
+    it('should change document and sanitize it', () => {
+      const user = User.create(validProps);
+      user.changeDocument('12.345.678/0001-95');
+
+      expect(user.document.value).toBe('12345678000195');
+    });
+
+    it('should throw error if new document is invalid', () => {
+      const user = User.create(validProps);
+
+      expect(() => user.changeDocument('12345')).toThrow(DomainValidationException);
     });
   });
 
@@ -249,6 +280,7 @@ describe('User Entity', () => {
         id: 'uuid-123',
         name: 'Usuario Teste',
         email: Email.create('usuario@email.com'),
+        document: Document.create('12345678909'),
         passwordHash: 'secret-hash',
         role: UserRole.ADMIN,
         isActive: true,
@@ -262,6 +294,7 @@ describe('User Entity', () => {
         id: 'uuid-123',
         name: 'Usuario Teste',
         email: 'usuario@email.com',
+        document: '12345678909',
         role: UserRole.ADMIN,
         isActive: true,
         createdAt: now,

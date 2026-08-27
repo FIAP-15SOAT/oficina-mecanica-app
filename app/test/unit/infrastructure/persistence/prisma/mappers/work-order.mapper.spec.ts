@@ -144,6 +144,7 @@ describe('WorkOrderMapper', () => {
           id: userId,
           name: 'Mecânico João',
           email: 'joao@workshop.com',
+          document: '12345678909',
           passwordHash: 'hash',
           role: UserRole.MECHANIC,
           isActive: true,

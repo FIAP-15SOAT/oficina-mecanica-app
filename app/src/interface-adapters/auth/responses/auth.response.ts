@@ -4,6 +4,7 @@ export interface AuthUserSummaryResponse {
   id: string;
   name: string;
   email: string;
+  document: string;
   role: UserRole;
 }
 
@@ -21,6 +22,7 @@ export interface MeResponse {
   id: string;
   name: string;
   email: string;
+  document: string;
   role: UserRole;
   isActive: boolean;
   createdAt: Date;

@@ -11,6 +11,7 @@ export interface RefreshTokenOutputDto {
     id: string;
     name: string;
     email: string;
+    document: string;
     role: UserRole;
   };
 }

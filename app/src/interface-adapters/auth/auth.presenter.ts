@@ -25,6 +25,7 @@ export class AuthPresenter {
         id: result.user.id,
         name: result.user.name,
         email: result.user.email,
+        document: result.user.document,
         role: result.user.role,
       },
     };
@@ -39,6 +40,7 @@ export class AuthPresenter {
       id: result.id,
       name: result.name,
       email: result.email,
+      document: result.document,
       role: result.role,
       isActive: result.isActive,
       createdAt: result.createdAt,

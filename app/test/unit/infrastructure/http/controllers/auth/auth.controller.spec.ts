@@ -29,12 +29,18 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should delegate to the clean controller and return its result', async () => {
-      const dto: LoginRequestDto = { email: 'joao@email.com', password: 'SecurePass123!' };
+      const dto: LoginRequestDto = { identifier: 'joao@email.com', password: 'SecurePass123!' };
 
       const authResult: AuthenticateUserOutputDto = {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        user: { id: randomUUID(), name: 'João', email: dto.email, role: UserRole.ATTENDANT },
+        user: {
+          id: randomUUID(),
+          name: 'João',
+          email: 'joao@email.com',
+          document: '12345678909',
+          role: UserRole.ATTENDANT,
+        },
       };
 
       const response = AuthPresenter.toAuthDataResponse(authResult);
@@ -55,7 +61,13 @@ describe('AuthController', () => {
       const refreshResult: AuthenticateUserOutputDto = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        user: { id: randomUUID(), name: 'João', email: 'joao@email.com', role: UserRole.ATTENDANT },
+        user: {
+          id: randomUUID(),
+          name: 'João',
+          email: 'joao@email.com',
+          document: '12345678909',
+          role: UserRole.ATTENDANT,
+        },
       };
 
       const response = AuthPresenter.toAuthDataResponse(refreshResult);
@@ -81,6 +93,7 @@ describe('AuthController', () => {
         id: authenticatedUser.sub,
         name: 'João',
         email: authenticatedUser.email,
+        document: '12345678909',
         role: authenticatedUser.role,
         isActive: true,
         createdAt: new Date(),

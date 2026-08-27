@@ -1,28 +1,36 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { CustomerType } from '../enums/customer-type.enum';
+import { PersonType } from '../enums/person-type.enum';
 import { DocumentValidator } from '../validators/document.validator';
 
 export class Document {
   private constructor(
     public readonly value: string,
-    public readonly type: CustomerType,
+    public readonly type: PersonType,
   ) {}
 
-  static create(value: string, type: CustomerType): Document {
+  static create(value: string, type?: PersonType): Document {
     Document.validatePresence(value);
 
     const sanitized = Document.sanitize(value);
+    const resolvedType = type ?? Document.detectType(sanitized);
 
-    Document.validateMatchesType(sanitized, type);
+    Document.validateMatchesType(sanitized, resolvedType);
 
-    return new Document(sanitized, type);
+    return new Document(sanitized, resolvedType);
   }
 
-  private static sanitize(value: string): string {
+  static sanitize(value: string): string {
     return value
       .replaceAll(/[.\-/]/g, '')
       .trim()
       .toUpperCase();
+  }
+
+  private static detectType(sanitized: string): PersonType {
+    if (sanitized.length === 11) return PersonType.INDIVIDUAL;
+    if (sanitized.length === 14) return PersonType.COMPANY;
+
+    throw new DomainValidationException('Documento inválido: informe um CPF ou CNPJ');
   }
 
   private static validatePresence(value: string | null | undefined): void {
@@ -31,12 +39,12 @@ export class Document {
     }
   }
 
-  private static validateMatchesType(value: string, type: CustomerType): void {
-    if (type === CustomerType.INDIVIDUAL && !DocumentValidator.validateCpf(value)) {
+  private static validateMatchesType(value: string, type: PersonType): void {
+    if (type === PersonType.INDIVIDUAL && !DocumentValidator.validateCpf(value)) {
       throw new DomainValidationException('Pessoa física deve informar um CPF válido');
     }
 
-    if (type === CustomerType.COMPANY && !DocumentValidator.validateCnpj(value)) {
+    if (type === PersonType.COMPANY && !DocumentValidator.validateCnpj(value)) {
       throw new DomainValidationException('Pessoa jurídica deve informar um CNPJ válido');
     }
   }

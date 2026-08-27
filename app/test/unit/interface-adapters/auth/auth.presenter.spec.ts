@@ -17,6 +17,7 @@ describe('AuthPresenter', () => {
           id: randomUUID(),
           name: 'João da Silva',
           email: 'joao@email.com',
+          document: '12345678909',
           role: UserRole.MECHANIC,
         },
       };
@@ -36,6 +37,7 @@ describe('AuthPresenter', () => {
         id: randomUUID(),
         name: 'João da Silva',
         email: 'joao@email.com',
+        document: '12345678909',
         role: UserRole.ADMIN,
         isActive: true,
         createdAt: now,

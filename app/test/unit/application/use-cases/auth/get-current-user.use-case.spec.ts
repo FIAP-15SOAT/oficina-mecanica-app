@@ -17,11 +17,16 @@ describe('GetCurrentUserUseCase', () => {
 
     const result = await useCase.execute('user-uuid-123');
 
-    expect(result.id).toBe(user.id);
-    expect(result.name).toBe(user.name);
-    expect(result.email).toBe(user.email.value);
-    expect(result.role).toBe(user.role);
-    expect(result.isActive).toBe(true);
+    expect(result).toEqual({
+      id: user.id,
+      name: user.name,
+      email: user.email.value,
+      document: user.document.value,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
     expect(userRepository.findById).toHaveBeenCalledWith('user-uuid-123');
   });
 

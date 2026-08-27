@@ -3,6 +3,7 @@ import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { registerAndLogin } from '../helpers/auth.helper';
+import { generateValidCpf } from '../helpers/document.helper';
 
 describe('Auth (E2E)', () => {
   let ctx: TestContext;
@@ -40,7 +41,7 @@ describe('Auth (E2E)', () => {
     it('should login successfully and return tokens', async () => {
       const res = await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'login@e2e.test', password: 'Senha@123' })
+        .send({ identifier: 'login@e2e.test', password: 'Senha@123' })
         .expect(200);
 
       expect(res.body.data).toEqual(
@@ -60,21 +61,21 @@ describe('Auth (E2E)', () => {
     it('should return 401 with wrong password', async () => {
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'login@e2e.test', password: 'WrongPassword' })
+        .send({ identifier: 'login@e2e.test', password: 'WrongPassword' })
         .expect(401);
     });
 
     it('should return 401 with non-existent email', async () => {
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'nope@e2e.test', password: 'Senha@123' })
+        .send({ identifier: 'nope@e2e.test', password: 'Senha@123' })
         .expect(401);
     });
 
     it('should return 400 with missing fields', async () => {
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'login@e2e.test' })
+        .send({ identifier: 'login@e2e.test' })
         .expect(400);
     });
 
@@ -86,7 +87,42 @@ describe('Auth (E2E)', () => {
 
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'login@e2e.test', password: 'Senha@123' })
+        .send({ identifier: 'login@e2e.test', password: 'Senha@123' })
+        .expect(401);
+    });
+  });
+
+  // ─── POST /api/auth/login (by document) ──────────────────────────────────
+
+  describe('POST /api/auth/login (by document)', () => {
+    it('should login successfully using the document as identifier', async () => {
+      const cpf = generateValidCpf(Date.now());
+
+      await registerAndLogin(
+        httpServer,
+        { name: 'Doc Login User', email: 'doclogin@e2e.test', document: cpf },
+        ctx.prisma,
+      );
+
+      const res = await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: cpf, password: 'Test@2026' })
+        .expect(200);
+
+      expect(res.body.data.user.email).toBe('doclogin@e2e.test');
+    });
+
+    it('should return 401 for a well-formed but unregistered document', async () => {
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: generateValidCpf(Date.now() + 1), password: 'Senha@123' })
+        .expect(401);
+    });
+
+    it('should return 401 for a malformed identifier that is neither an e-mail nor a document', async () => {
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: 'not-an-email-or-document', password: 'Senha@123' })
         .expect(401);
     });
   });
