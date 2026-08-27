@@ -53,7 +53,7 @@ export type MockPrismaService = {
 } & PrismaService;
 
 export function createMockPrismaClient(): MockPrismaService {
-  return {
+  const client = {
     service: createMockDelegate(),
     user: createMockDelegate(),
     customer: createMockDelegate(),
@@ -71,14 +71,17 @@ export function createMockPrismaClient(): MockPrismaService {
     statusHistory: createMockDelegate(),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
-    $transaction: jest
-      .fn()
-      .mockImplementation((arg: ((client: MockPrismaService) => unknown) | unknown[]) => {
-        if (typeof arg === 'function') {
-          return arg(createMockPrismaClient());
-        }
-        return Promise.all(arg);
-      }),
     $queryRaw: jest.fn(),
   } as unknown as MockPrismaService;
+
+  client.$transaction = jest
+    .fn()
+    .mockImplementation((arg: ((client: MockPrismaService) => unknown) | unknown[]) => {
+      if (typeof arg === 'function') {
+        return arg(client);
+      }
+      return Promise.all(arg);
+    });
+
+  return client;
 }

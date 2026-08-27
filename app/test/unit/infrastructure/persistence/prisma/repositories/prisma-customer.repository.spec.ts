@@ -185,7 +185,7 @@ describe('PrismaCustomerRepository', () => {
       );
     });
 
-    it('should send delete for address when customer has no address', async () => {
+    it('should delete the orphan address (if any) and update without touching the relation when customer has no address', async () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
         name: 'Test',
@@ -202,9 +202,12 @@ describe('PrismaCustomerRepository', () => {
 
       await repository.update(customer);
 
+      expect(prisma.address.deleteMany).toHaveBeenCalledWith({
+        where: { customerId: customer.id },
+      });
       expect(prisma.customer.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ address: { delete: true } }),
+          data: expect.not.objectContaining({ address: expect.anything() }),
         }),
       );
     });
