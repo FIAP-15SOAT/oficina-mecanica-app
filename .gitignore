@@ -31,3 +31,7 @@ CLAUDE.md
 !.github/workflows/
 !.github/actions/
 openspec/
+
+# Artefatos de planejamento/processo do superpowers (specs, plans) — não são
+# documentação do produto, não precisam ser versionados.
+docs/superpowers/

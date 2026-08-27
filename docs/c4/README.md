@@ -56,6 +56,8 @@ Um zoom para dentro da fronteira do sistema: os blocos executáveis/implantávei
 
 <p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a API REST (NestJS/Node.js/TypeScript) e o Banco de Dados (PostgreSQL); os funcionários acessam a API por HTTP/JSON autenticado via JWT Bearer e o Cliente da Oficina por link assinado; a API lê e escreve no PostgreSQL via Prisma ORM e envia e-mails ao Servidor SMTP externo (MailHog), que os entrega ao cliente" width="100%"></p>
 
+> ⚠️ Esta imagem está desatualizada: hoje o Cliente da Oficina também acessa a API autenticado via JWT Bearer (para consultar suas próprias ordens de serviço), além de decidir o orçamento por link assinado. O texto abaixo já reflete o comportamento atual; a imagem precisa ser regerada (os fontes `.puml` do C4-PlantUML foram removidos do repositório).
+
 Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API REST** e o **Banco de Dados** —, além do **Servidor SMTP** externo (aqui já com o nome técnico, MailHog). É neste nível que aparecem **tecnologia e protocolo** nas setas, como recomendado. Confirmado por análise de código e infraestrutura que **não há workers, filas ou cache** separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e por isso **não é modelado como container à parte**.
 
 | Container | Tecnologia | Responsabilidade |
@@ -64,7 +66,7 @@ Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API R
 | **Banco de Dados** | PostgreSQL | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); auto-hospedado no mesmo cluster/infra do time |
 | **Servidor SMTP** | MailHog (externo) | Recebe e entrega os e-mails de orçamento (sink SMTP de desenvolvimento) |
 
-Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **link assinado, sem login**; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
+Os protocolos nas setas: funcionários e o Cliente da Oficina autenticado (role `CUSTOMER`) chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; a decisão do orçamento (aprovar/rejeitar) continua exclusivamente por **link assinado, sem login**; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
 
 ## Nível 3 — Componente da API REST
 
@@ -72,7 +74,9 @@ O zoom mais interno: as peças que compõem o container **API REST**.
 
 <p align="center"><img src="images/c4-component.png" alt="Diagrama de Componente C4 da API REST: nove módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque) e dois componentes transversais (Guards/Segurança e Repositories/Prisma); Ordens de Serviço e Orçamentos se relacionam nos dois sentidos, os Orçamentos criam reservas no Estoque e enviam e-mail pelo Servidor SMTP, o Cliente da Oficina conecta-se direto ao componente Orçamentos, e os Repositories persistem no PostgreSQL" width="100%"></p>
 
-São **nove módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** conecta-se **diretamente** ao componente **Orçamentos** (aprovação por link, sem login) — é a única pessoa que interage com um componente específico em vez de passar pela API como um todo.
+> ⚠️ Esta imagem está desatualizada: hoje o Cliente da Oficina também se conecta ao módulo **Ordens de Serviço** (autenticado via **Auth**, role `CUSTOMER`) para consultar suas próprias ordens. O texto abaixo já reflete o comportamento atual; a imagem precisa ser regerada (os fontes `.puml` do C4-PlantUML foram removidos do repositório).
+
+São **nove módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** tem dois pontos de contato distintos: decide o orçamento por link assinado, conectando-se **diretamente** ao componente **Orçamentos** (sem login); e, autenticado como `User` de role `CUSTOMER` através do componente **Auth**, consulta suas próprias ordens de serviço pelo módulo **Ordens de Serviço**, como qualquer outro usuário da API.
 
 As dependências de quase todos os módulos em relação a **Guards / Segurança** e **Repositories** estão descritas no texto desses dois componentes, e **não desenhadas como setas** — isso evita cerca de 18 setas repetidas que poluiriam o diagrama sem agregar informação. Como no exemplo oficial (Figura 3 do material da aula), as setas entre componentes do mesmo container não levam rótulo de tecnologia; a tecnologia só aparece quando a seta cruza para o Banco de Dados ou o Servidor SMTP.
 
@@ -81,7 +85,7 @@ As dependências de quase todos os módulos em relação a **Guards / Segurança
 | Componente | Tecnologia | Responsabilidade |
 |---|---|---|
 | **Auth** | NestJS Module | Login, refresh de token e dados do usuário autenticado (JWT) |
-| **Usuários** | NestJS Module | CRUD de usuários (perfis ADMIN, MECHANIC, ATTENDANT) |
+| **Usuários** | NestJS Module | CRUD de usuários (perfis ADMIN, MECHANIC, ATTENDANT, CUSTOMER) |
 | **Clientes** | NestJS Module | CRUD de clientes (pessoa física/jurídica) |
 | **Veículos** | NestJS Module | CRUD de veículos e listagem de veículos por cliente |
 | **Serviços** | NestJS Module | CRUD de tipos de serviço e métricas |
