@@ -27,6 +27,7 @@ import { createMockQuote } from '../../../../../helpers/quote-mock.factory';
 describe('WorkOrderController', () => {
   let httpController: WorkOrderController;
   let cleanController: WorkOrderCleanController;
+  let findAccessibleCustomerIdsForUserUseCase: { execute: jest.Mock };
 
   const customer = createMockCustomer();
   const vehicle = createMockVehicle({ customerId: customer.id });
@@ -52,7 +53,11 @@ describe('WorkOrderController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
     );
-    httpController = new WorkOrderController(cleanController);
+    findAccessibleCustomerIdsForUserUseCase = { execute: jest.fn() };
+    httpController = new WorkOrderController(
+      cleanController,
+      findAccessibleCustomerIdsForUserUseCase,
+    );
   });
 
   describe('create', () => {
@@ -71,7 +76,7 @@ describe('WorkOrderController', () => {
   });
 
   describe('findAll', () => {
-    it('should pass the query straight to the clean controller and return its result', async () => {
+    it('should pass the query straight to the clean controller for staff roles', async () => {
       const query: FindAllWorkOrdersPaginatedQueryDto = { page: 1, limit: 10 };
 
       const response = WorkOrderPresenter.toPaginatedResponse({
@@ -81,24 +86,70 @@ describe('WorkOrderController', () => {
 
       jest.spyOn(cleanController, 'findAll').mockResolvedValue(response);
 
-      const result = await httpController.findAll(query);
+      const result = await httpController.findAll(query, currentUser);
 
       expect(result).toBe(response);
-      expect(cleanController.findAll).toHaveBeenCalledWith(query);
+      expect(cleanController.findAll).toHaveBeenCalledWith(query, undefined);
+      expect(findAccessibleCustomerIdsForUserUseCase.execute).not.toHaveBeenCalled();
+    });
+
+    it('should resolve and forward accessibleCustomerIds for a CUSTOMER caller, ignoring any customerId filter', async () => {
+      const customerUser: AuthenticatedUser = {
+        sub: randomUUID(),
+        email: 'cliente@email.com',
+        role: UserRole.CUSTOMER,
+      };
+      const allowedIds = [randomUUID(), randomUUID()];
+      const query: FindAllWorkOrdersPaginatedQueryDto = { customerId: randomUUID() };
+
+      const response = WorkOrderPresenter.toPaginatedResponse({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
+
+      findAccessibleCustomerIdsForUserUseCase.execute.mockResolvedValue(allowedIds);
+      jest.spyOn(cleanController, 'findAll').mockResolvedValue(response);
+
+      const result = await httpController.findAll(query, customerUser);
+
+      expect(result).toBe(response);
+      expect(findAccessibleCustomerIdsForUserUseCase.execute).toHaveBeenCalledWith(
+        customerUser.sub,
+      );
+      expect(cleanController.findAll).toHaveBeenCalledWith(query, allowedIds);
     });
   });
 
   describe('findOne', () => {
-    it('should delegate to the clean controller and return its result', async () => {
+    it('should delegate to the clean controller without scoping for staff roles', async () => {
       const workOrder = createMockWorkOrder({ customer, vehicle });
       const response = WorkOrderPresenter.toDataResponse(workOrder);
 
       jest.spyOn(cleanController, 'findOne').mockResolvedValue(response);
 
-      const result = await httpController.findOne(workOrder.id);
+      const result = await httpController.findOne(workOrder.id, currentUser);
 
       expect(result).toBe(response);
-      expect(cleanController.findOne).toHaveBeenCalledWith(workOrder.id);
+      expect(cleanController.findOne).toHaveBeenCalledWith(workOrder.id, undefined);
+    });
+
+    it('should resolve and forward accessibleCustomerIds for a CUSTOMER caller', async () => {
+      const customerUser: AuthenticatedUser = {
+        sub: randomUUID(),
+        email: 'cliente@email.com',
+        role: UserRole.CUSTOMER,
+      };
+      const workOrder = createMockWorkOrder({ customer, vehicle });
+      const allowedIds = [workOrder.customerId];
+      const response = WorkOrderPresenter.toDataResponse(workOrder);
+
+      findAccessibleCustomerIdsForUserUseCase.execute.mockResolvedValue(allowedIds);
+      jest.spyOn(cleanController, 'findOne').mockResolvedValue(response);
+
+      const result = await httpController.findOne(workOrder.id, customerUser);
+
+      expect(result).toBe(response);
+      expect(cleanController.findOne).toHaveBeenCalledWith(workOrder.id, allowedIds);
     });
   });
 

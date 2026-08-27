@@ -475,31 +475,6 @@ describe('User (E2E)', () => {
       expect(res.body.data.email).toBe('newemail@e2e.test');
     });
 
-    it('should update user password and allow login with new password', async () => {
-      await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'NewPassword@123' })
-        .expect(200);
-
-      await request(httpServer)
-        .post('/api/auth/login')
-        .send({ identifier: 'updateme@e2e.test', password: 'NewPassword@123' })
-        .expect(200);
-    });
-
-    it('should return 400 when updating to a password that does not meet the strength policy', async () => {
-      const res = await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'fraquinha' })
-        .expect(400);
-
-      expect(res.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('caractere especial')]),
-      );
-    });
-
     it('should update with the same email, skipping the duplicate check', async () => {
       // Sending the user's current e-mail means it equals the stored one, so the
       // uniqueness lookup is skipped (the `!newEmail.equals(...)` false branch).
@@ -631,6 +606,123 @@ describe('User (E2E)', () => {
     it('should return 404 for non-existent user', async () => {
       await request(httpServer)
         .delete('/api/users/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+  });
+
+  // ─── PATCH /api/users/me/password ────────────────────────────────────────
+
+  describe('PATCH /api/users/me/password', () => {
+    it('should change own password and allow login with the new password', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { name: 'Self Password', email: 'self-password@e2e.test', password: 'Senha@123' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch('/api/users/me/password')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' })
+        .expect(204);
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: 'self-password@e2e.test', password: 'NovaSenha@456' })
+        .expect(200);
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: 'self-password@e2e.test', password: 'Senha@123' })
+        .expect(401);
+    });
+
+    it('should return 401 if current password is wrong', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { email: 'self-password-wrong@e2e.test', password: 'Senha@123' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch('/api/users/me/password')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'ErradaMesmo', newPassword: 'NovaSenha@456' })
+        .expect(401);
+    });
+
+    it('should return 400 if new password is weak', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { email: 'self-password-weak@e2e.test', password: 'Senha@123' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch('/api/users/me/password')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'Senha@123', newPassword: 'fraca' })
+        .expect(400);
+    });
+
+    it('should be usable by a MECHANIC changing their own password', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { email: 'mechanic-password@e2e.test', password: 'Senha@123', role: 'MECHANIC' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch('/api/users/me/password')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'Senha@123', newPassword: 'NovaSenha@456' })
+        .expect(204);
+    });
+  });
+
+  // ─── PATCH /api/users/:id/password ────────────────────────────────────────
+
+  describe('PATCH /api/users/:id/password', () => {
+    it('should let an admin reset another user password (old password stops working)', async () => {
+      const target = await registerAndLogin(
+        httpServer,
+        { email: 'reset-target@e2e.test', password: 'Senha@123' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch(`/api/users/${target.user.id}/password`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ identifier: 'reset-target@e2e.test', password: 'Senha@123' })
+        .expect(401);
+    });
+
+    it('should return 403 when a non-admin tries to reset someone else password', async () => {
+      const attendant = await registerAndLogin(
+        httpServer,
+        { email: 'attendant-reset@e2e.test', role: 'ATTENDANT' },
+        ctx.prisma,
+      );
+      const target = await registerAndLogin(
+        httpServer,
+        { email: 'reset-target-2@e2e.test' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .patch(`/api/users/${target.user.id}/password`)
+        .set('Authorization', `Bearer ${attendant.accessToken}`)
+        .expect(403);
+    });
+
+    it('should return 404 for a non-existent user', async () => {
+      await request(httpServer)
+        .patch('/api/users/00000000-0000-0000-0000-000000000000/password')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });

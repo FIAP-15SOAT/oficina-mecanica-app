@@ -16,25 +16,25 @@ const users: UserSeed[] = [
   {
     name: 'Guilherme da Rocha Salvador',
     email: 'guilhermedarochasalvador@gmail.com',
-    document: '11144477735',
+    document: '48216539070',
     role: UserRole.ADMIN,
   },
   {
     name: 'Lucas Almeida da Silva',
     email: 'lucas.almeida-silva@hotmail.com',
-    document: '00000000191',
+    document: '60729384187',
     role: UserRole.ADMIN,
   },
   {
     name: 'Ramoon Lincoln Barros Camacho',
     email: 'ramooncamacho@hotmail.com',
-    document: '00000000604',
+    document: '73941825682',
     role: UserRole.ADMIN,
   },
   {
     name: 'Renan Santana Camacho',
     email: 'camacho.renan@gmail.com',
-    document: '00000001910',
+    document: '85402763135',
     role: UserRole.ADMIN,
   },
 ];

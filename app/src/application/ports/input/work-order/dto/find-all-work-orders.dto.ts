@@ -4,6 +4,7 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 export interface FindAllWorkOrdersFilters extends PaginationInput {
   number?: string;
   customerId?: string;
+  customerIdIn?: string[];
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;

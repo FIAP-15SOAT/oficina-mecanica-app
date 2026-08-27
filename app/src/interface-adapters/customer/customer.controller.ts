@@ -3,13 +3,16 @@ import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
+import { ICreateUserCustomerAccessUseCase } from '@application/ports/input/customer/create-user-customer-access.use-case.interface';
 
 import { CreateCustomerRequest } from './requests/create-customer-request';
 import { UpdateCustomerRequest } from './requests/update-customer-request';
 import { FindAllCustomersQuery } from './requests/find-all-customers-query';
+import { CreateUserCustomerAccessRequest } from './requests/create-user-customer-access-request';
 
 import { CustomerPresenter } from './customer.presenter';
 import { CustomerDataResponse, CustomerPaginatedResponse } from './responses/customer.response';
+import { UserCustomerAccessDataResponse } from './responses/user-customer-access.response';
 
 export class CustomerController {
   constructor(
@@ -18,6 +21,7 @@ export class CustomerController {
     private readonly findCustomerByIdUseCase: IFindCustomerByIdUseCase,
     private readonly updateCustomerUseCase: IUpdateCustomerUseCase,
     private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
+    private readonly createUserCustomerAccessUseCase: ICreateUserCustomerAccessUseCase,
   ) {}
 
   async create(input: CreateCustomerRequest): Promise<CustomerDataResponse> {
@@ -47,5 +51,17 @@ export class CustomerController {
 
   async remove(id: string): Promise<void> {
     await this.deleteCustomerUseCase.execute(id);
+  }
+
+  async createAccess(
+    customerId: string,
+    input: CreateUserCustomerAccessRequest,
+  ): Promise<UserCustomerAccessDataResponse> {
+    const access = await this.createUserCustomerAccessUseCase.execute({
+      customerId,
+      userId: input.userId,
+      relationship: input.relationship,
+    });
+    return CustomerPresenter.toAccessDataResponse(access);
   }
 }

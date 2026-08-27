@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 
 import { PrismaUserRepository } from './prisma-user.repository';
 import { PrismaCustomerRepository } from './prisma-customer.repository';
+import { PrismaUserCustomerAccessRepository } from './prisma-user-customer-access.repository';
 import { PrismaVehicleRepository } from './prisma-vehicle.repository';
 import { PrismaPartSupplyRepository } from './prisma-part-supply.repository';
 import { PrismaServiceRepository } from './prisma-service.repository';
@@ -15,6 +16,7 @@ import { PrismaUnitOfWork } from './prisma-unit-of-work';
 const REPOSITORY_PROVIDERS = [
   { provide: 'IUserRepository', useClass: PrismaUserRepository },
   { provide: 'ICustomerRepository', useClass: PrismaCustomerRepository },
+  { provide: 'IUserCustomerAccessRepository', useClass: PrismaUserCustomerAccessRepository },
   { provide: 'IVehicleRepository', useClass: PrismaVehicleRepository },
   { provide: 'IPartSupplyRepository', useClass: PrismaPartSupplyRepository },
   { provide: 'IServiceRepository', useClass: PrismaServiceRepository },

@@ -5,9 +5,12 @@ import { CustomerController as CustomerCleanController } from '@interface-adapte
 
 import { CreateCustomerRequestDto } from '@infrastructure/http/controllers/customer/dto/requests/create-customer-request.dto';
 import { FindAllCustomersQueryDto } from '@infrastructure/http/controllers/customer/dto/requests/filter-customers.dto';
+import { CreateUserCustomerAccessRequestDto } from '@infrastructure/http/controllers/customer/dto/requests/create-user-customer-access-request.dto';
 
 import { CustomerPresenter } from '@interface-adapters/customer/customer.presenter';
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { AccessRelationship } from '@domain/enums/access-relationship.enum';
+import { UserCustomerAccess } from '@domain/entities/user-customer-access.entity';
 
 import { createMockCustomer } from '../../../../../helpers/customer-mock.factory';
 
@@ -31,6 +34,7 @@ describe('CustomerController', () => {
 
   beforeEach(() => {
     cleanController = new CustomerCleanController(
+      { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
@@ -102,6 +106,24 @@ describe('CustomerController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('createAccess', () => {
+    it('should delegate to the clean controller and return its result', async () => {
+      const customerId = randomUUID();
+      const request: CreateUserCustomerAccessRequestDto = {
+        userId: randomUUID(),
+        relationship: AccessRelationship.SELF,
+      };
+      const created = UserCustomerAccess.create({ customerId, ...request });
+      const response = CustomerPresenter.toAccessDataResponse(created);
+      jest.spyOn(cleanController, 'createAccess').mockResolvedValue(response);
+
+      const result = await httpController.createAccess(customerId, request);
+
+      expect(result).toBe(response);
+      expect(cleanController.createAccess).toHaveBeenCalledWith(customerId, request);
     });
   });
 });

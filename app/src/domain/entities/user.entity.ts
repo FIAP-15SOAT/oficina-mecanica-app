@@ -3,13 +3,9 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
 import { Document } from '../value-objects/document.vo';
+import { PasswordValidator } from '../validators/password.validator';
 
-import { PASSWORD_REGEX } from '../constants/regex/password.regex';
-import {
-  MIN_NAME_LENGTH,
-  MAX_NAME_LENGTH,
-  PASSWORD_REQUIREMENTS_MESSAGE,
-} from '../constants/validation/user.constants';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../constants/validation/user.constants';
 
 const VALID_ROLES = Object.values(UserRole);
 
@@ -81,9 +77,7 @@ export class User {
   }
 
   static validatePasswordStrength(password: string): void {
-    if (!PASSWORD_REGEX.test(password)) {
-      throw new DomainValidationException(PASSWORD_REQUIREMENTS_MESSAGE);
-    }
+    PasswordValidator.validateStrength(password);
   }
 
   changeName(name: string): void {

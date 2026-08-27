@@ -1,8 +1,6 @@
-import { User } from '@domain/entities/user.entity';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
 
-import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 import {
@@ -14,10 +12,7 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 export class UpdateUserUseCase {
-  constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly hashService: IHashService,
-  ) {}
+  constructor(private readonly userRepository: IUserRepository) {}
 
   async execute(id: string, updateUserDto: UpdateUserDto): Promise<UpdateUserOutputDto> {
     const user = await this.userRepository.findById(id);
@@ -60,14 +55,6 @@ export class UpdateUserUseCase {
 
     if (updateUserDto.role !== undefined) {
       user.changeRole(updateUserDto.role);
-    }
-
-    if (updateUserDto.password !== undefined) {
-      User.validatePasswordStrength(updateUserDto.password);
-
-      const passwordHash = await this.hashService.hash(updateUserDto.password);
-
-      user.changePassword(passwordHash);
     }
 
     const updated = await this.userRepository.update(user);

@@ -5,10 +5,14 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 export class FindWorkOrderByIdUseCase {
   constructor(private readonly workOrderRepository: IWorkOrderRepository) {}
 
-  async execute(id: string): Promise<WorkOrder> {
+  async execute(id: string, accessibleCustomerIds?: string[]): Promise<WorkOrder> {
     const workOrder = await this.workOrderRepository.findByIdWithDetails(id);
 
-    if (!workOrder) {
+    const outOfScope =
+      accessibleCustomerIds !== undefined &&
+      (!workOrder || !accessibleCustomerIds.includes(workOrder.customerId));
+
+    if (!workOrder || outOfScope) {
       throw new ResourceNotFoundException('Ordem de serviço', id);
     }
 

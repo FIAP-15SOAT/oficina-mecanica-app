@@ -179,4 +179,14 @@ describe('AuthenticateUserUseCase', () => {
 
     expect(userRepository.findByDocument).toHaveBeenCalledWith('12345678909');
   });
+
+  it('should still perform a password comparison even when the identifier is not found (timing-safety)', async () => {
+    userRepository.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({ identifier: 'naoexiste@email.com', password: 'x' }),
+    ).rejects.toThrow();
+
+    expect(hashService.compare).toHaveBeenCalled();
+  });
 });

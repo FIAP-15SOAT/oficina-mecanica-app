@@ -4,6 +4,9 @@ import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-use
 import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
 import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
 import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
+import { ChangeOwnUserPasswordUseCase } from '@application/use-cases/user/change-own-user-password.use-case';
+import { ResetUserPasswordUseCase } from '@application/use-cases/user/reset-user-password.use-case';
+import { ChangeOwnPasswordDto } from '@application/ports/input/user/dto/change-own-password.dto';
 
 import { CreateUserRequest } from './requests/create-user-request';
 import { UpdateUserRequest } from './requests/update-user-request';
@@ -21,6 +24,8 @@ export class UserController {
     private readonly updateUserUseCase: IUpdateUserUseCase,
     private readonly updateUserStatusUseCase: IUpdateUserStatusUseCase,
     private readonly deleteUserUseCase: IDeleteUserUseCase,
+    private readonly changeOwnUserPasswordUseCase: ChangeOwnUserPasswordUseCase,
+    private readonly resetUserPasswordUseCase: ResetUserPasswordUseCase,
   ) {}
 
   async create(input: CreateUserRequest): Promise<UserDataResponse> {
@@ -55,5 +60,13 @@ export class UserController {
 
   async remove(id: string): Promise<void> {
     await this.deleteUserUseCase.execute(id);
+  }
+
+  async changeOwnPassword(userId: string, input: ChangeOwnPasswordDto): Promise<void> {
+    await this.changeOwnUserPasswordUseCase.execute(userId, input);
+  }
+
+  async resetPassword(userId: string): Promise<void> {
+    await this.resetUserPasswordUseCase.execute(userId);
   }
 }

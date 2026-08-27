@@ -92,6 +92,20 @@ export class Customer {
     this.updatedAt = new Date();
   }
 
+  toJSON(): CustomerProps {
+    return {
+      id: this.id,
+      name: this.name,
+      document: this.document,
+      type: this.type,
+      email: this.email,
+      phone: this.phone,
+      address: this.address,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  }
+
   private static validateName(name: string): void {
     if (!name || name.trim().length === 0) {
       throw new DomainValidationException('Nome é obrigatório');

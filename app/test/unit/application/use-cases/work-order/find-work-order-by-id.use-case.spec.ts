@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { FindWorkOrderByIdUseCase } from '@application/use-cases/work-order/find-work-order-by-id.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
@@ -29,5 +30,30 @@ describe('FindWorkOrderByIdUseCase', () => {
     workOrderRepository.findByIdWithDetails.mockResolvedValue(null);
 
     await expect(useCase.execute('nonexistent-id')).rejects.toThrow(ResourceNotFoundException);
+  });
+
+  it('should return the work order when its customerId is within the accessible list', async () => {
+    const wo = createMockWorkOrder();
+    workOrderRepository.findByIdWithDetails.mockResolvedValue(wo);
+
+    const result = await useCase.execute(wo.id, [wo.customerId, randomUUID()]);
+
+    expect(result).toBe(wo);
+  });
+
+  it('should throw ResourceNotFoundException when the work order exists but is outside the accessible list', async () => {
+    const wo = createMockWorkOrder();
+    workOrderRepository.findByIdWithDetails.mockResolvedValue(wo);
+
+    await expect(useCase.execute(wo.id, [randomUUID()])).rejects.toThrow(ResourceNotFoundException);
+  });
+
+  it('should not restrict when accessibleCustomerIds is not provided', async () => {
+    const wo = createMockWorkOrder();
+    workOrderRepository.findByIdWithDetails.mockResolvedValue(wo);
+
+    const result = await useCase.execute(wo.id);
+
+    expect(result).toBe(wo);
   });
 });

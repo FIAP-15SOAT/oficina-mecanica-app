@@ -81,7 +81,7 @@ As dependências de quase todos os módulos em relação a **Guards / Segurança
 | Componente | Tecnologia | Responsabilidade |
 |---|---|---|
 | **Auth** | NestJS Module | Login, refresh de token e dados do usuário autenticado (JWT) |
-| **Usuários** | NestJS Module | CRUD de usuários e mecânicos (perfis ADMIN, MECHANIC, ATTENDANT) |
+| **Usuários** | NestJS Module | CRUD de usuários (perfis ADMIN, MECHANIC, ATTENDANT) |
 | **Clientes** | NestJS Module | CRUD de clientes (pessoa física/jurídica) |
 | **Veículos** | NestJS Module | CRUD de veículos e listagem de veículos por cliente |
 | **Serviços** | NestJS Module | CRUD de tipos de serviço e métricas |

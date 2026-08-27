@@ -115,42 +115,58 @@ export class PrismaCustomerRepository implements ICustomerRepository {
   }
 
   async update(customer: Customer): Promise<Customer> {
-    try {
-      const addressData = customer.address
-        ? {
-            upsert: {
-              create: {
-                street: customer.address.street,
-                city: customer.address.city,
-                state: customer.address.state,
-                zipCode: customer.address.zipCode.value,
-              },
-              update: {
-                street: customer.address.street,
-                city: customer.address.city,
-                state: customer.address.state,
-                zipCode: customer.address.zipCode.value,
-              },
-            },
-          }
-        : { delete: true };
+    const baseData = {
+      name: customer.name,
+      document: customer.document.value,
+      type: customer.type,
+      email: customer.email.value,
+      phone: customer.phone.value,
+    };
 
+    const addressData = customer.address
+      ? {
+          upsert: {
+            create: {
+              street: customer.address.street,
+              city: customer.address.city,
+              state: customer.address.state,
+              zipCode: customer.address.zipCode.value,
+            },
+            update: {
+              street: customer.address.street,
+              city: customer.address.city,
+              state: customer.address.state,
+              zipCode: customer.address.zipCode.value,
+            },
+          },
+        }
+      : { delete: true };
+
+    try {
       const record = await this.prisma.customer.update({
         where: { id: customer.id },
-        data: {
-          name: customer.name,
-          document: customer.document.value,
-          type: customer.type,
-          email: customer.email.value,
-          phone: customer.phone.value,
-          address: addressData,
-        },
+        data: { ...baseData, address: addressData },
         include: ADDRESS_INCLUDE,
       });
       return CustomerMapper.toDomain(record);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ResourceConflictException('E-mail ou documento já cadastrado para outro cliente');
+      }
+
+      // No address to delete (customer never had one): retry without touching
+      // the relation instead of failing the whole update.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025' &&
+        !customer.address
+      ) {
+        const record = await this.prisma.customer.update({
+          where: { id: customer.id },
+          data: baseData,
+          include: ADDRESS_INCLUDE,
+        });
+        return CustomerMapper.toDomain(record);
       }
 
       throw error;

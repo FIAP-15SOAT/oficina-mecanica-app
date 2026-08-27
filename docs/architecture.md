@@ -427,7 +427,9 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no f
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 - [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md)
+- [ADR 0004 — `User` como identidade única autenticável via `UserCustomerAccess`](./adr/0004-user-como-identidade-unica-autenticavel-via-usercustomeraccess.md)
 - [ADR 0005 — Generalização do Value Object `Document` compartilhado entre `User` e `Customer`](./adr/0005-document-value-object-compartilhado-entre-user-e-customer.md)
+- [ADR 0006 — `Customer` com autenticação própria, separada de `User` (substituído pelo ADR 0004)](./adr/0006-customer-com-autenticacao-propria-separada-de-user.md)
 
 ## Modelo C4
 

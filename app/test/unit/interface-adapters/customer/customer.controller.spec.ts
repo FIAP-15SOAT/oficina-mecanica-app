@@ -8,8 +8,11 @@ import { IFindAllCustomersUseCase } from '@application/ports/input/customer/find
 import { IFindCustomerByIdUseCase } from '@application/ports/input/customer/find-customer-by-id.use-case.interface';
 import { IUpdateCustomerUseCase } from '@application/ports/input/customer/update-customer.use-case.interface';
 import { IDeleteCustomerUseCase } from '@application/ports/input/customer/delete-customer.use-case.interface';
+import { ICreateUserCustomerAccessUseCase } from '@application/ports/input/customer/create-user-customer-access.use-case.interface';
 
 import { CustomerType } from '@domain/enums/customer-type.enum';
+import { AccessRelationship } from '@domain/enums/access-relationship.enum';
+import { UserCustomerAccess } from '@domain/entities/user-customer-access.entity';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
 import { Document } from '@domain/value-objects/document.vo';
@@ -24,6 +27,7 @@ describe('CustomerController', () => {
   let findByIdUseCase: jest.Mocked<IFindCustomerByIdUseCase>;
   let updateUseCase: jest.Mocked<IUpdateCustomerUseCase>;
   let deleteUseCase: jest.Mocked<IDeleteCustomerUseCase>;
+  let createAccessUseCase: jest.Mocked<ICreateUserCustomerAccessUseCase>;
 
   beforeEach(() => {
     createUseCase = { execute: jest.fn() };
@@ -31,12 +35,14 @@ describe('CustomerController', () => {
     findByIdUseCase = { execute: jest.fn() };
     updateUseCase = { execute: jest.fn() };
     deleteUseCase = { execute: jest.fn() };
+    createAccessUseCase = { execute: jest.fn() };
     controller = new CustomerController(
       createUseCase,
       findAllUseCase,
       findByIdUseCase,
       updateUseCase,
       deleteUseCase,
+      createAccessUseCase,
     );
   });
 
@@ -152,6 +158,21 @@ describe('CustomerController', () => {
       await controller.remove(id);
 
       expect(deleteUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('createAccess', () => {
+    it('should delegate to the create-access use case and return the link wrapped in data', async () => {
+      const customerId = randomUUID();
+      const input = { userId: randomUUID(), relationship: AccessRelationship.SELF };
+
+      const created = UserCustomerAccess.create({ customerId, ...input });
+      createAccessUseCase.execute.mockResolvedValue(created);
+
+      const result = await controller.createAccess(customerId, input);
+
+      expect(result).toEqual(CustomerPresenter.toAccessDataResponse(created));
+      expect(createAccessUseCase.execute).toHaveBeenCalledWith({ customerId, ...input });
     });
   });
 });

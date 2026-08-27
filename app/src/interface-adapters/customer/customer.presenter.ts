@@ -1,11 +1,16 @@
 import { Customer } from '@domain/entities/customer.entity';
 import { PaginatedResult } from '@domain/interfaces/common/pagination.interface';
+import { UserCustomerAccess } from '@domain/entities/user-customer-access.entity';
 import {
   AddressResponse,
   CustomerDataResponse,
   CustomerPaginatedResponse,
   CustomerResponse,
 } from './responses/customer.response';
+import {
+  UserCustomerAccessDataResponse,
+  UserCustomerAccessResponse,
+} from './responses/user-customer-access.response';
 
 export class CustomerPresenter {
   static toResponse(customer: Customer): CustomerResponse {
@@ -40,5 +45,19 @@ export class CustomerPresenter {
       data: result.items.map((c) => CustomerPresenter.toResponse(c)),
       pagination: result.pagination,
     };
+  }
+
+  static toAccessResponse(access: UserCustomerAccess): UserCustomerAccessResponse {
+    return {
+      id: access.id,
+      userId: access.userId,
+      customerId: access.customerId,
+      relationship: access.relationship,
+      createdAt: access.createdAt,
+    };
+  }
+
+  static toAccessDataResponse(access: UserCustomerAccess): UserCustomerAccessDataResponse {
+    return { data: CustomerPresenter.toAccessResponse(access) };
   }
 }

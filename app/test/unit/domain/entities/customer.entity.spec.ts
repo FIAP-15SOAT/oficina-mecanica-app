@@ -20,6 +20,19 @@ describe('Customer Entity', () => {
   };
 
   describe('create (factory method)', () => {
+    it('should create a customer without a password field', () => {
+      const customer = Customer.create(validProps);
+
+      expect(customer.name).toBe('João da Silva');
+      expect(customer).not.toHaveProperty('passwordHash');
+      expect(customer).not.toHaveProperty('changePassword');
+    });
+
+    it('should not expose passwordHash in toJSON', () => {
+      const customer = Customer.create(validProps);
+      expect(JSON.stringify(customer.toJSON())).not.toContain('passwordHash');
+    });
+
     describe('when valid', () => {
       it('should create a valid customer with all required fields', () => {
         const customer = Customer.create(validProps);
@@ -187,6 +200,29 @@ describe('Customer Entity', () => {
           'Telefone inválido. Use o formato (11) 99999-9999 ou 99999-9999',
         );
       });
+    });
+  });
+
+  describe('toJSON (serialization)', () => {
+    it('should not have passwordHash property', () => {
+      const customer = Customer.create(validProps);
+
+      expect(customer).not.toHaveProperty('passwordHash');
+      expect(JSON.stringify(customer)).not.toContain('passwordHash');
+    });
+
+    it('should include other fields in JSON serialization', () => {
+      const customer = Customer.create(validProps);
+
+      const serialized = JSON.stringify(customer);
+      const parsed = JSON.parse(serialized);
+
+      // Verify that essential fields are still present
+      expect(parsed.id).toBe(customer.id);
+      expect(parsed.name).toBe('João da Silva');
+      expect(parsed.email).toEqual(customer.email);
+      expect(parsed.type).toBe(CustomerType.INDIVIDUAL);
+      expect(parsed.createdAt).toBe(customer.createdAt.toISOString());
     });
   });
 });

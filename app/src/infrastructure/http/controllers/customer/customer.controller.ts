@@ -40,8 +40,10 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { CreateCustomerRequestDto } from './dto/requests/create-customer-request.dto';
 import { UpdateCustomerRequestDto } from './dto/requests/update-customer-request.dto';
 import { FindAllCustomersQueryDto } from './dto/requests/filter-customers.dto';
+import { CreateUserCustomerAccessRequestDto } from './dto/requests/create-user-customer-access-request.dto';
 import { CustomerDataResponseDto } from './dto/responses/customer-response.dto';
 import { CustomerPaginatedResponseDto } from './dto/responses/customer-paginated-response.dto';
+import { UserCustomerAccessDataResponseDto } from './dto/responses/user-customer-access-response.dto';
 
 @ApiTags('Gestão de Clientes')
 @ApiProduces('application/json')
@@ -111,6 +113,30 @@ export class CustomerController {
     @Body() request: UpdateCustomerRequestDto,
   ): Promise<CustomerDataResponseDto> {
     return this.controller.update(id, request);
+  }
+
+  @Post(':id/access')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @ApiOperation({ summary: 'Vincular um usuário (role CUSTOMER) a este cliente' })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do Cliente' })
+  @ApiCreatedResponse({
+    type: UserCustomerAccessDataResponseDto,
+    description: 'Vínculo criado com sucesso',
+  })
+  @ApiUnauthorizedResponse({ description: 'Não autenticado' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiNotFoundResponse({ description: 'Cliente ou usuário não encontrado' })
+  @ApiConflictResponse({ description: 'Usuário já vinculado a este cliente' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'Usuário não tem role CUSTOMER, ou documento não coincide com o do cliente para vínculo SELF',
+  })
+  createAccess(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() request: CreateUserCustomerAccessRequestDto,
+  ): Promise<UserCustomerAccessDataResponseDto> {
+    return this.controller.createAccess(id, request);
   }
 
   @Delete(':id')

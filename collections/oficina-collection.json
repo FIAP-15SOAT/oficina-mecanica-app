@@ -48,7 +48,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"{{adminEmail}}\",\r\n    \"password\": \"{{adminPassword}}\"\r\n}"
+              "raw": "{\r\n    \"identifier\": \"{{adminEmail}}\",\r\n    \"password\": \"{{adminPassword}}\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -89,7 +89,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"email\": \"naoexiste@email.com\", \"password\": \"senhaerrada\"}"
+              "raw": "{\"identifier\": \"naoexiste@email.com\", \"password\": \"senhaerrada\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -350,7 +350,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Atendente Teste\",\r\n    \"email\": \"atendente.teste@oficina.com\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"ATTENDANT\"\r\n}"
+              "raw": "{\r\n    \"name\": \"Atendente Teste\",\r\n    \"email\": \"atendente.teste@oficina.com\",\r\n    \"document\": \"11144477735\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"ATTENDANT\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -395,7 +395,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Mecânico Teste\",\r\n    \"email\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"MECHANIC\"\r\n}"
+              "raw": "{\r\n    \"name\": \"Mecânico Teste\",\r\n    \"email\": \"mecanico.teste@oficina.com\",\r\n    \"document\": \"10000000108\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"MECHANIC\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -622,7 +622,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Atendente Atualizado\", \"email\": \"atendente.atualizado@oficina.com\", \"password\": \"Senha@123\", \"role\": \"ATTENDANT\"}"
+              "raw": "{\r\n    \"name\": \"Atendente Atualizado\",\r\n    \"email\": \"atendente.atualizado@oficina.com\",\r\n    \"role\": \"ATTENDANT\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}",
@@ -900,7 +900,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mecânico Conflito\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"Senha@123\",\n  \"role\": \"MECHANIC\"\n}"
+              "raw": "{\r\n    \"name\": \"Mecânico Conflito\",\r\n    \"email\": \"{{adminEmail}}\",\r\n    \"role\": \"MECHANIC\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{mechanicUserId}}",
@@ -952,6 +952,297 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-USER-17 — Login como mecânico (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"Senha@123\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna accessToken', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('mechanicAuthToken', res.data.accessToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-18 — Mecânico troca a própria senha (sucesso)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "password"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mechanicAuthToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"currentPassword\": \"Senha@123\",\r\n    \"newPassword\": \"NovaSenha@789\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-19 — Login do mecânico com senha antiga falha após troca (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"Senha@123\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-20 — Login do mecânico com a nova senha (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"NovaSenha@789\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna accessToken', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('mechanicAuthToken', res.data.accessToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-21 — Redefinir senha de outro usuário sem permissão (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{mechanicUserId}}",
+                "password"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mechanicAuthToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-22 — Redefinir senha do mecânico (admin, sucesso)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{mechanicUserId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{mechanicUserId}}",
+                "password"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-USER-23 — Login do mecânico com senha antiga após redefinição pelo admin (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"NovaSenha@789\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     },
@@ -4225,6 +4516,872 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "TC-CUST-21 — Redefinir senha do cliente sem autenticação (401)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "password"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CUST-22 — Redefinir senha do cliente (admin, sucesso)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "password"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Autoatendimento do Cliente",
+      "description": "Fluxo de autoatendimento do Cliente da Oficina: login próprio, dados da conta, renovação de token, troca da própria senha, isolamento entre os domínios de autenticação de Cliente e de Staff, e decisão (aprovação/rejeição) do próprio orçamento.\n\nPasso manual necessário: a senha do cliente é gerada pelo sistema e enviada por e-mail, nunca retornada pela API. Após executar TC-CLI-01, abra o MailHog (http://localhost:8025), copie a senha do e-mail recebido e cole-a na variável de ambiente `customerPassword` antes de executar TC-CLI-02.",
+      "item": [
+        {
+          "name": "TC-CLI-01 — Criar cliente para autoatendimento (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Cliente Autoatendimento\",\r\n    \"document\": \"10000000280\",\r\n    \"type\": \"INDIVIDUAL\",\r\n    \"email\": \"autoatendimento.cliente@oficina.com\",\r\n    \"phone\": \"(11) 98888-7777\",\r\n    \"address\": {\r\n        \"street\": \"Rua Teste, 100\",\r\n        \"city\": \"São Paulo\",\r\n        \"state\": \"SP\",\r\n        \"zipCode\": \"01310-100\"\r\n    }\r\n}"
+            },
+            "description": "A senha não é retornada pela API — ela é gerada automaticamente e enviada por e-mail. Antes de executar o próximo passo (login), abra o MailHog em http://localhost:8025, localize o e-mail 'Sua conta foi criada — dados de acesso' enviado para autoatendimento.cliente@oficina.com, copie a senha do corpo do e-mail e cole-a na variável de ambiente `customerPassword`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.id).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('selfServiceCustomerId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-02 — Login do cliente (senha obtida no MailHog)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"{{customerPassword}}\"\r\n}"
+            },
+            "description": "Requer que a variável `customerPassword` já tenha sido preenchida manualmente com a senha lida no MailHog (ver descrição do passo anterior)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna tokens do cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
+                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-03 — Buscar dados do cliente autenticado (me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna dados do cliente logado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data.email).to.equal('autoatendimento.cliente@oficina.com');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-04 — Renovar tokens do cliente (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "refresh"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"refreshToken\": \"{{customerRefreshToken}}\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna novos tokens', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
+                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-05 — Cliente tenta acessar rota de staff com seu token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-06 — Staff tenta acessar rota exclusiva de cliente com token de staff (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-07 — Cliente troca a própria senha (sucesso)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "password"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"currentPassword\": \"{{customerPassword}}\",\r\n    \"newPassword\": \"NovaSenhaCliente@123\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-08 — Login do cliente com senha antiga falha após troca (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"{{customerPassword}}\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-09 — Login do cliente com a nova senha (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/customer/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "customer",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"identifier\": \"autoatendimento.cliente@oficina.com\",\r\n    \"password\": \"NovaSenhaCliente@123\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna tokens do cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('customerAccessToken', res.data.accessToken);",
+                  "    pm.environment.set('customerRefreshToken', res.data.refreshToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-10 — Criar veículo para o cliente (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"customerId\": \"{{selfServiceCustomerId}}\",\r\n    \"plate\": \"SLF-1001\",\r\n    \"brand\": \"Fiat\",\r\n    \"model\": \"Uno\",\r\n    \"year\": 2020\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do veículo', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('selfServiceVehicleId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-11 — Criar Ordem de Serviço para o cliente (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"customerId\": \"{{selfServiceCustomerId}}\",\r\n    \"vehicleId\": \"{{selfServiceVehicleId}}\",\r\n    \"problemDescription\": \"Barulho no motor\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados da OS', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('selfServiceWorkOrderId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-12 — Atualizar status da OS para IN_DIAGNOSIS (setup)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{selfServiceWorkOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-orders",
+                "{{selfServiceWorkOrderId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"status\": \"IN_DIAGNOSIS\",\r\n    \"notes\": \"Iniciando diagnóstico técnico\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-13 — Criar serviço para o orçamento (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "services"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Troca de óleo (autoatendimento)\",\r\n    \"basePrice\": 150,\r\n    \"estimatedTimeMin\": 60\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do serviço', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('selfServiceServiceId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-14 — Criar orçamento para a OS (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quotes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"workOrderId\": \"{{selfServiceWorkOrderId}}\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna dados do orçamento', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.environment.set('selfServiceQuoteId', res.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-15 — Adicionar serviço ao orçamento (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{selfServiceQuoteId}}",
+                "services"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serviceId\": \"{{selfServiceServiceId}}\",\r\n    \"quantity\": 1\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-16 — Submeter orçamento para aprovação (setup)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{selfServiceQuoteId}}",
+                "submissions"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-17 — Cliente lista seus próprios orçamentos pendentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Contém o orçamento criado para este cliente', () => {",
+                  "    const res = pm.response.json();",
+                  "    const ids = res.data.map((q) => q.id);",
+                  "    pm.expect(ids).to.include(pm.environment.get('selfServiceQuoteId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-18 — Staff tenta decidir orçamento do cliente usando token de staff (401)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/decisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{selfServiceQuoteId}}",
+                "decisions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"action\": \"approve\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-CLI-19 — Cliente aprova o próprio orçamento (sucesso)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{selfServiceQuoteId}}/decisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{selfServiceQuoteId}}",
+                "decisions"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"action\": \"approve\"\r\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Orçamento aprovado', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.status).to.equal('APPROVED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     },

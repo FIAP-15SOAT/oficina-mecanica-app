@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -37,6 +38,7 @@ import {
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { WorkOrderController as WorkOrderCleanController } from '@interface-adapters/work-order/work-order.controller';
+import { IFindAccessibleCustomerIdsForUserUseCase } from '@application/ports/input/work-order/find-accessible-customer-ids-for-user.use-case.interface';
 
 import { CreateWorkOrderRequestDto } from './dto/requests/create-work-order-request.dto';
 import { UpdateWorkOrderRequestDto } from './dto/requests/update-work-order-request.dto';
@@ -58,7 +60,11 @@ import { QuoteListResponseDto } from '@infrastructure/http/controllers/quote/dto
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class WorkOrderController {
-  constructor(private readonly controller: WorkOrderCleanController) {}
+  constructor(
+    private readonly controller: WorkOrderCleanController,
+    @Inject('IFindAccessibleCustomerIdsForUserUseCase')
+    private readonly findAccessibleCustomerIdsForUserUseCase: IFindAccessibleCustomerIdsForUserUseCase,
+  ) {}
 
   @Get(':id/quotes')
   @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
@@ -91,23 +97,39 @@ export class WorkOrderController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Listar Ordens de Serviço paginado' })
   @ApiOkResponse({ type: WorkOrderPaginatedResponseDto })
-  findAll(
+  async findAll(
     @Query() query: FindAllWorkOrdersPaginatedQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<WorkOrderPaginatedResponseDto> {
-    return this.controller.findAll(query);
+    const accessibleCustomerIds = await this.resolveAccessibleCustomerIds(user);
+    return this.controller.findAll(query, accessibleCustomerIds);
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT)
+  @Roles(UserRole.ADMIN, UserRole.MECHANIC, UserRole.ATTENDANT, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Buscar Ordem de Serviço por ID' })
   @ApiOkResponse({ type: WorkOrderDataResponseDto })
   @ApiNotFoundResponse()
   @ApiParam({ name: 'id', format: 'uuid' })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<WorkOrderDataResponseDto> {
-    return this.controller.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<WorkOrderDataResponseDto> {
+    const accessibleCustomerIds = await this.resolveAccessibleCustomerIds(user);
+    return this.controller.findOne(id, accessibleCustomerIds);
+  }
+
+  private async resolveAccessibleCustomerIds(
+    user: AuthenticatedUser,
+  ): Promise<string[] | undefined> {
+    if (user.role !== UserRole.CUSTOMER) {
+      return undefined;
+    }
+
+    return this.findAccessibleCustomerIdsForUserUseCase.execute(user.sub);
   }
 
   @Put(':id')

@@ -41,18 +41,22 @@ export class WorkOrderController {
     return WorkOrderPresenter.toDataResponse(workOrder);
   }
 
-  async findAll(query: FindAllWorkOrdersQuery): Promise<WorkOrderPaginatedResponse> {
+  async findAll(
+    query: FindAllWorkOrdersQuery,
+    accessibleCustomerIds?: string[],
+  ): Promise<WorkOrderPaginatedResponse> {
     const result = await this.findAllWorkOrdersPaginatedUseCase.execute({
       ...query,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
+      ...(accessibleCustomerIds !== undefined && { customerIdIn: accessibleCustomerIds }),
     });
 
     return WorkOrderPresenter.toPaginatedResponse(result);
   }
 
-  async findOne(id: string): Promise<WorkOrderDataResponse> {
-    const workOrder = await this.findWorkOrderByIdUseCase.execute(id);
+  async findOne(id: string, accessibleCustomerIds?: string[]): Promise<WorkOrderDataResponse> {
+    const workOrder = await this.findWorkOrderByIdUseCase.execute(id, accessibleCustomerIds);
     return WorkOrderPresenter.toDataResponse(workOrder);
   }
 

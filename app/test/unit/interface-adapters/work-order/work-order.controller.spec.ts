@@ -130,6 +130,33 @@ describe('WorkOrderController', () => {
         sort: 'createdAt:asc',
       });
     });
+
+    it('should scope by customerIdIn when accessibleCustomerIds is provided', async () => {
+      findAllPaginatedUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
+
+      const requestedCustomerId = randomUUID();
+      const allowedIds = [randomUUID(), randomUUID()];
+
+      await controller.findAll({ customerId: requestedCustomerId }, allowedIds);
+
+      const call = findAllPaginatedUseCase.execute.mock.calls[0][0];
+      expect(call.customerIdIn).toEqual(allowedIds);
+    });
+
+    it('should not scope by customerIdIn when accessibleCustomerIds is not provided', async () => {
+      findAllPaginatedUseCase.execute.mockResolvedValue({
+        items: [],
+        pagination: { totalRecords: 0, totalPages: 0, page: 1, limit: 10 },
+      });
+
+      await controller.findAll({ status: WorkOrderStatus.RECEIVED });
+
+      const call = findAllPaginatedUseCase.execute.mock.calls[0][0];
+      expect(call.customerIdIn).toBeUndefined();
+    });
   });
 
   describe('findOne', () => {
@@ -141,7 +168,18 @@ describe('WorkOrderController', () => {
       const result = await controller.findOne(workOrder.id);
 
       expect(result).toEqual(WorkOrderPresenter.toDataResponse(workOrder));
-      expect(findByIdUseCase.execute).toHaveBeenCalledWith(workOrder.id);
+      expect(findByIdUseCase.execute).toHaveBeenCalledWith(workOrder.id, undefined);
+    });
+
+    it('should forward accessibleCustomerIds to the use case', async () => {
+      const workOrder = createMockWorkOrder({ customer, vehicle });
+      const allowedIds = [workOrder.customerId];
+
+      findByIdUseCase.execute.mockResolvedValue(workOrder);
+
+      await controller.findOne(workOrder.id, allowedIds);
+
+      expect(findByIdUseCase.execute).toHaveBeenCalledWith(workOrder.id, allowedIds);
     });
   });
 

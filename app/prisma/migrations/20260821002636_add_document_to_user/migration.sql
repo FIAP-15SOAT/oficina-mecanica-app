@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "users" ADD COLUMN     "document" VARCHAR(18) NOT NULL;
+ALTER TABLE "users" ADD COLUMN     "document" VARCHAR(14) NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_document_key" ON "users"("document");

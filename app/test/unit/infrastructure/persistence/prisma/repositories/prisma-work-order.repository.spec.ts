@@ -132,6 +132,44 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
+    it('should filter by customerIdIn, taking precedence over customerId', async () => {
+      const allowedIds = [randomUUID(), randomUUID()];
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated(
+        { page: 1, limit: 10 },
+        { customerId: randomUUID(), customerIdIn: allowedIds },
+      );
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ customerId: { in: allowedIds } }),
+        }),
+      );
+    });
+
+    it('should restrict to nothing when customerIdIn is an empty array (no accessible customers)', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerIdIn: [] });
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ customerId: { in: [] } }) }),
+      );
+    });
+
+    it('should not restrict by customer when customerIdIn is not provided', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, {});
+
+      const call = prisma.workOrder.findMany.mock.calls[0][0];
+      expect(call.where.customerId).toBeUndefined();
+    });
+
     it('should filter by vehicleId', async () => {
       const vehicleId = randomUUID();
       prisma.workOrder.findMany.mockResolvedValue([]);

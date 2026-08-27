@@ -60,5 +60,7 @@ export async function seedCustomers(prisma: PrismaClient): Promise<Record<string
     console.log(`  ✓ Customer: ${customer.name}`);
   }
 
+  console.log(`✅ ${customers.length} customers seeded`);
+
   return ids;
 }

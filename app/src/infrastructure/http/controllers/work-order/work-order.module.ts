@@ -8,6 +8,7 @@ import { UpdateWorkOrderStatusUseCase } from '@application/use-cases/work-order/
 import { UpdateWorkOrderServiceStatusUseCase } from '@application/use-cases/work-order/update-work-order-service-status.use-case';
 import { FindWorkOrderStatusHistoryUseCase } from '@application/use-cases/work-order/find-work-order-status-history.use-case';
 import { FindWorkOrderQuotesUseCase } from '@application/use-cases/quote/find-work-order-quotes.use-case';
+import { FindAccessibleCustomerIdsForUserUseCase } from '@application/use-cases/work-order/find-accessible-customer-ids-for-user.use-case';
 
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -15,6 +16,7 @@ import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IUserCustomerAccessRepository } from '@domain/interfaces/repositories/user-customer-access.repository.interface';
 
 import { WorkOrderController as WorkOrderCleanController } from '@interface-adapters/work-order/work-order.controller';
 import { WorkOrderController } from './work-order.controller';
@@ -56,6 +58,12 @@ import { WorkOrderController } from './work-order.controller';
         'IQuoteRepository',
         'ILogger',
       ],
+    },
+    {
+      provide: 'IFindAccessibleCustomerIdsForUserUseCase',
+      useFactory: (accessRepository: IUserCustomerAccessRepository) =>
+        new FindAccessibleCustomerIdsForUserUseCase(accessRepository),
+      inject: ['IUserCustomerAccessRepository'],
     },
   ],
 })

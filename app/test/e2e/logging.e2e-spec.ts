@@ -127,7 +127,7 @@ describe('Structured logging (E2E)', () => {
 
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'admin.log@e2e.test', password: 'Test@2026' })
+        .send({ identifier: 'admin.log@e2e.test', password: 'Test@2026' })
         .expect(200);
 
       const [access] = accessLines(capture);
@@ -145,7 +145,7 @@ describe('Structured logging (E2E)', () => {
 
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'admin.log@e2e.test', password: 'Test@2026' })
+        .send({ identifier: 'admin.log@e2e.test', password: 'Test@2026' })
         .expect(200);
 
       const businessEvent = capture
@@ -303,7 +303,7 @@ describe('Structured logging (E2E)', () => {
     it('should not attribute an actor to an anonymous request', async () => {
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'admin.log@e2e.test', password: 'Test@2026' })
+        .send({ identifier: 'admin.log@e2e.test', password: 'Test@2026' })
         .expect(200);
 
       expect(accessLines(capture)[0]).not.toHaveProperty('user.id');
@@ -314,7 +314,7 @@ describe('Structured logging (E2E)', () => {
     it('should never log the password submitted on a failed login', async () => {
       await request(httpServer)
         .post('/api/auth/login')
-        .send({ email: 'admin.log@e2e.test', password: 'SenhaErrada@2026' })
+        .send({ identifier: 'admin.log@e2e.test', password: 'SenhaErrada@2026' })
         .expect(401);
 
       expect(JSON.stringify(capture.lines())).not.toContain('SenhaErrada@2026');

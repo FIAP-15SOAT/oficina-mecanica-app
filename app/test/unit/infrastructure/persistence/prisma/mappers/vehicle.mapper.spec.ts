@@ -25,6 +25,7 @@ describe('VehicleMapper', () => {
           type: CustomerType.INDIVIDUAL,
           email: 'john@example.com',
           phone: '11999999999',
+          passwordHash: '$2b$12$hashedpassword',
           createdAt: now,
           updatedAt: now,
         },

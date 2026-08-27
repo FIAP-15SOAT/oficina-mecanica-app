@@ -1,7 +1,6 @@
 import { CreateCustomerUseCase } from '@application/use-cases/customer/create-customer.use-case';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
-import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { Document } from '@domain/value-objects/document.vo';
 import { Email } from '@domain/value-objects/email.vo';
 import { Phone } from '@domain/value-objects/phone.vo';
@@ -12,7 +11,7 @@ import {
 
 describe('CreateCustomerUseCase', () => {
   let useCase: CreateCustomerUseCase;
-  let customerRepository: jest.Mocked<ICustomerRepository>;
+  let customerRepository: ReturnType<typeof createMockCustomerRepository>;
 
   const validInput = {
     name: 'João da Silva',
@@ -64,5 +63,16 @@ describe('CreateCustomerUseCase', () => {
 
     await expect(useCase.execute(validInput)).rejects.toThrow(ResourceConflictException);
     expect(customerRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should never generate or persist a password for the customer', async () => {
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.findByEmail.mockResolvedValue(null);
+    customerRepository.create.mockImplementation((customer) => Promise.resolve(customer));
+
+    const result = await useCase.execute(validInput);
+
+    expect(result).not.toHaveProperty('passwordHash');
+    expect(JSON.stringify(result)).not.toContain('passwordHash');
   });
 });

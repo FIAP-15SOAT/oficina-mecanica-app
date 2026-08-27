@@ -7,6 +7,7 @@ import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination
 export interface QuoteFilters {
   workOrderId?: string;
   status?: QuoteStatus;
+  customerId?: string;
 }
 
 export interface IQuoteRepository {

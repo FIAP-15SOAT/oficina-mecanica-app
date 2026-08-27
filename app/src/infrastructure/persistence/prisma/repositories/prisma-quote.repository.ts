@@ -103,12 +103,13 @@ export class PrismaQuoteRepository implements IQuoteRepository {
     pagination: PaginationInput,
     filters: QuoteFilters,
   ): Promise<PaginatedRepositoryResult<Quote>> {
-    const { workOrderId, status } = filters;
+    const { workOrderId, status, customerId } = filters;
 
     const where: Prisma.QuoteWhereInput = {};
 
     if (workOrderId) where.workOrderId = workOrderId;
     if (status) where.status = status;
+    if (customerId) where.workOrder = { customerId };
 
     const result = await paginate(
       this.prisma.quote,

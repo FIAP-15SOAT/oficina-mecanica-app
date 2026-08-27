@@ -13,6 +13,7 @@ import {
 
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { DUMMY_PASSWORD_HASH } from '@domain/constants/security/dummy-password-hash.constant';
 
 const INVALID_CREDENTIALS_MESSAGE = 'Credenciais inválidas';
 
@@ -26,6 +27,11 @@ export class AuthenticateUserUseCase {
 
   async execute(input: AuthenticateUserInputDto): Promise<AuthenticateUserOutputDto> {
     const user = await this.findUserByIdentifier(input.identifier);
+
+    const passwordMatches = await this.hashService.compare(
+      input.password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
 
     if (!user) {
       this.logger.event(BUSINESS_EVENTS.AUTHENTICATION_FAILED, { failureReason: 'unknown_user' });
@@ -43,8 +49,6 @@ export class AuthenticateUserUseCase {
 
       throw new UnauthorizedAccessException(INVALID_CREDENTIALS_MESSAGE);
     }
-
-    const passwordMatches = await this.hashService.compare(input.password, user.passwordHash);
 
     if (!passwordMatches) {
       this.logger.event(BUSINESS_EVENTS.AUTHENTICATION_FAILED, {

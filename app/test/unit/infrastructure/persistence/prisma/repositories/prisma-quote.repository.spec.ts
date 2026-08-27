@@ -608,5 +608,21 @@ describe('PrismaQuoteRepository', () => {
         }),
       );
     });
+
+    it('should filter by customerId through the workOrder relation', async () => {
+      prisma.quote.findMany.mockResolvedValue([]);
+      prisma.quote.count.mockResolvedValue(0);
+
+      const customerId = randomUUID();
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerId });
+
+      expect(prisma.quote.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            workOrder: { customerId },
+          },
+        }),
+      );
+    });
   });
 });
