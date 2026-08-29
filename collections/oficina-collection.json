@@ -8052,6 +8052,84 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "TC-HEALTH-01 — Vivacidade responde sem credencial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Corpo mínimo e fixo', () => pm.expect(pm.response.json()).to.eql({ status: 'ok' }));",
+                  "pm.test('Resposta não é cacheável', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-HEALTH-02 — Prontidão responde sem credencial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 503 também é resposta válida do contrato: banco inalcançável ou instância encerrando.",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Corpo mínimo e fixo', () => pm.expect(pm.response.json()).to.eql({ status: 'ok' }));",
+                  "pm.test('Resposta não é cacheável', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {

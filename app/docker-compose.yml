@@ -55,6 +55,16 @@ services:
       MAIL_HOST: mailhog
       MAIL_PORT: 1025
       TZ: America/Sao_Paulo
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    # > janela de drain (10 s) + fechamento do servidor + $disconnect() + margem.
+    # O default do Compose e 10 s, que expira exatamente na virada da janela e
+    # mata a API com SIGKILL antes de ela liberar o pool.
+    stop_grace_period: 40s
     depends_on:
       postgres:
         condition: service_healthy

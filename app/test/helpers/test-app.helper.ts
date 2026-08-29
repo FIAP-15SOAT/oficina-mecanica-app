@@ -10,7 +10,7 @@ import { execSync } from 'child_process';
 import type { DestinationStream } from 'pino';
 
 import { AppModule } from '../../src/app.module';
-import { configureApp } from '../../src/config/app-bootstrap';
+import { configureApp } from '../../src/infrastructure/config/app-bootstrap';
 import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
 import { LOGGER_DESTINATION, LOGGER_LEVEL } from '../../src/infrastructure/logging/logging.module';
 

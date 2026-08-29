@@ -61,7 +61,7 @@ Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API R
 | Container | Tecnologia | Responsabilidade |
 |---|---|---|
 | **API REST** | NestJS 11 · Node.js 22 · TypeScript | Expõe a API REST (prefixo `/api`), concentra a lógica de negócio em Clean Architecture, faz autenticação local via JWT e envia os e-mails de orçamento |
-| **Banco de Dados** | PostgreSQL | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); auto-hospedado no mesmo cluster/infra do time |
+| **Banco de Dados** | PostgreSQL 16 (Amazon RDS) | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); serviço **gerenciado, fora do cluster**, alcançado pela rede a partir das subnets privadas |
 | **Servidor SMTP** | MailHog (externo) | Recebe e entrega os e-mails de orçamento (sink SMTP de desenvolvimento) |
 
 Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **link assinado, sem login**; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.

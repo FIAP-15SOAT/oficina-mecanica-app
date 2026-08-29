@@ -3,6 +3,8 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { isIP } from 'node:net';
 import { Request, Response } from 'express';
 
+import { HEALTH_PATHS } from '@infrastructure/health/health.constants';
+
 import { ALLOWED_REQUEST_HEADERS } from './field-registry';
 import { runSafely } from './logging-diagnostics';
 import { extractResourceSegment } from './redaction/field-classifier';
@@ -107,12 +109,18 @@ function isReusableRequestId(inbound: string | undefined): inbound is string {
   return sanitizeText(inbound) === inbound;
 }
 
+/**
+ * A supressão das probes vive aqui, e não em `autoLogging.ignore`, porque o
+ * `ignore` é avaliado no **início** da requisição, e isso apagaria também a
+ * probe que *falha*, que é exatamente o evento que motiva o registro. O
+ * `customLogLevel` enxerga o `res` e silencia só o sucesso.
+ */
 export function resolveAccessLogLevel(
   request: IncomingMessage,
   response: ServerResponse,
   error?: Error,
-): HttpLogLevel {
-  return runSafely<HttpLogLevel>(
+): HttpLogLevel | 'silent' {
+  return runSafely<HttpLogLevel | 'silent'>(
     'level-resolution',
     () => {
       const outcome = resolveCompletionOutcome(request, response, error);
@@ -125,10 +133,26 @@ export function resolveAccessLogLevel(
         return 'warn' as const;
       }
 
+      if (isSuppressedHealthProbe(request, response)) {
+        return 'silent' as const;
+      }
+
       return resolveHttpLogLevel(response.statusCode);
     },
     'error',
   );
+}
+
+function isSuppressedHealthProbe(request: IncomingMessage, response: ServerResponse): boolean {
+  const status = response.statusCode;
+
+  if (status < 200 || status >= 300) {
+    return false;
+  }
+
+  const { path, url } = request as Request;
+
+  return HEALTH_PATHS.has(path ?? url ?? '');
 }
 
 export function buildAccessLogAttributes(

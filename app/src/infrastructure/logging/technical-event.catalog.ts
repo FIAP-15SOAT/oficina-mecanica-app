@@ -4,6 +4,14 @@ export type MailOutcome = 'sent' | 'failed';
 
 export type MailErrorCategory = 'transport' | 'unknown';
 
+export type HealthFailureCategory =
+  | 'timeout'
+  | 'connection'
+  | 'pool'
+  | 'authentication'
+  | 'query'
+  | 'unknown';
+
 type EmptyFields = Record<never, never>;
 
 export const TECHNICAL_EVENTS = {
@@ -12,11 +20,6 @@ export const TECHNICAL_EVENTS = {
     message: 'http server accepting connections',
     level: 'info',
   }),
-  // O hook `onApplicationShutdown` do Nest roda **depois** de `onModuleDestroy`,
-  // de `beforeApplicationShutdown` e do `dispose()` do servidor — então o
-  // `db.disconnected` sai antes desta linha. A mensagem descreve o encerramento
-  // como concluído porque é o que já aconteceu quando ela é emitida, e continua
-  // verdadeira quando `app.close()` é chamado sem nenhum sinal.
   APPLICATION_SHUTDOWN: defineLogEvent<{ signal?: string }>({
     name: 'app.shutdown',
     message: 'application shutdown completed',
@@ -29,12 +32,12 @@ export const TECHNICAL_EVENTS = {
   }),
   DATABASE_CONNECTED: defineLogEvent<EmptyFields>({
     name: 'db.connected',
-    message: 'database connection pool opened',
+    message: 'database connection pool initialized',
     level: 'info',
   }),
   DATABASE_CONNECTION_FAILED: defineLogEvent<EmptyFields>({
     name: 'db.connection.failed',
-    message: 'database connection could not be opened',
+    message: 'database connection pool could not be initialized',
     level: 'error',
   }),
   DATABASE_DISCONNECTED: defineLogEvent<EmptyFields>({
@@ -64,6 +67,22 @@ export const TECHNICAL_EVENTS = {
     name: 'mail.send.failed',
     message: 'email rejected by the smtp server',
     level: 'error',
+  }),
+  HEALTH_DEGRADED: defineLogEvent<{
+    dependencyName: string;
+    healthFailureCategory: HealthFailureCategory;
+  }>({
+    name: 'health.degraded',
+    message: 'dependency health check started failing',
+    level: 'warn',
+  }),
+  HEALTH_RECOVERED: defineLogEvent<{
+    dependencyName: string;
+    healthDegradedDurationMs: number;
+  }>({
+    name: 'health.recovered',
+    message: 'dependency health check recovered',
+    level: 'info',
   }),
   HTTP_REQUEST_FAILED: defineLogEvent<EmptyFields>({
     name: 'http.request.failed',

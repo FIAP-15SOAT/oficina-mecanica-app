@@ -5,6 +5,7 @@
 - [Unitários](#unitários)
 - [E2E](#e2e)
 - [Postman / Newman](#postman--newman)
+- [Indisponibilidade de dependência e encerramento gracioso](#indisponibilidade-de-dependência-e-encerramento-gracioso)
 - [Cobertura E2E — branches estruturalmente inalcançáveis](#cobertura-e2e--branches-estruturalmente-inalcançáveis)
 
 ## Unitários
@@ -25,7 +26,7 @@ npm run test:e2e      # executa os testes
 npm run test:e2e:cov  # com cobertura
 ```
 
-11 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais uma suite dedicada ao `AllExceptionsFilter` e outra ao logging estruturado. Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
+12 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais uma suite dedicada ao `AllExceptionsFilter`, outra ao logging estruturado e outra aos endpoints de saúde. Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
 
 O motivo de testar contra um Postgres real (em vez de mocks Prisma) é validar comportamentos que dependem do banco — constraints de unicidade, cascade deletes, sequences, conversões de tipos, índices e a corrida implícita de updates condicionados (`WHERE version = ?`) — e detectar regressões em migrations.
 
@@ -47,9 +48,9 @@ expect(line['http.response.status_code']).toBe(401);
 O seam é real: o `LoggingModule` é configurado com `LoggerModule.forRootAsync` e tokens de DI para o **destino** (`LOGGER_DESTINATION`) e o **nível efetivo** (`LOGGER_LEVEL`), que o helper sobrescreve antes de compilar o módulo. Um `forRoot()` estático não poderia ser redirecionado depois que o `AppModule` já foi importado, e `captureLogs` não capturaria nada. Trocar o módulo inteiro também não serviria — substituiria justamente o middleware e o comportamento de `AsyncLocalStorage` que estão sob teste.
 
 O helper **não** duplica a configuração de bootstrap: ele chama `configureApp()`
-(`src/config/app-bootstrap.ts`), a mesma função que o `main.ts` usa.
+(`src/infrastructure/config/app-bootstrap.ts`), a mesma função que o `main.ts` usa.
 
-Duas opções extras, usadas só pela suíte de logging para que as outras dez não paguem o custo:
+Duas opções extras, usadas só pela suíte de logging para que as outras onze não paguem o custo:
 
 | Opção | O que liga |
 | --- | --- |
@@ -57,6 +58,29 @@ Duas opções extras, usadas só pela suíte de logging para que as outras dez n
 | `withSwagger` | Registra o Swagger **antes** do `app.init()`. Sem ele, `/api/docs` é um 404 comum do router e a fronteira D19 não é verificável — era por isso que o teste da fronteira afirmava o oposto do próprio nome. |
 
 Shutdown hooks continuam desligados no E2E: ligá-los acumularia listeners de processo entre as suítes.
+
+### Indisponibilidade de dependência e encerramento gracioso
+
+A suíte `health.e2e-spec.ts` cobre três cenários que exigem manipular a infraestrutura do próprio teste.
+
+**Banco indisponível desde o boot.** Um `describe` sem infraestrutura alguma — sem containers e sem migration — aponta a `DATABASE_URL` para um endereço que recusa a conexão e sobe a aplicação por `configureApp()`, a mesma composição que o `main.ts` usa. Ele assere que a porta **abre**, que `/live` responde `200` e que `/ready` responde `503`: é a propriedade cloud-native de que o `$connect()` do adapter é preguiçoso, da qual o desenho depende sem implementar. Se uma versão futura do adapter passar a validar conectividade no `connect()`, isso viraria `CrashLoopBackOff` em produção — e falha aqui primeiro. O mesmo `describe` assere o **contrato publicado** em `/api/docs-json`: um schema por desfecho, para que o OpenAPI não afirme que `/live` pode responder `unavailable` nem que o `503` pode responder `ok`.
+
+**Dependência fora.** Um `describe` próprio sobe a stack, confirma `/api/health/ready` = `200`, **para o container do PostgreSQL** e então assere `/ready` = `503` **enquanto** `/live` continua `200`. É o teste que carrega o desenho: ele falha no instante em que alguém reintroduzir verificação de banco na vivacidade. `setupTestApp()` sobe um PostgreSQL **dedicado por chamada**, então não há container compartilhado a proteger — mas o teardown é ordenado à mão, porque depois do `stop()` o `app.close()` chama `$disconnect()` contra um servidor morto e essa espera não tem prazo. E como o `stop()` é memoizado pelo testcontainers, um `restart()` **não** é caminho de recuperação: a transição de volta para saudável fica coberta pelo unitário do detector, não pelo E2E.
+
+**Os dois testes de encerramento protegem coisas diferentes, e isso importa.**
+
+| Teste | O que prova |
+|---|---|
+| `/ready` = `503` e `/live` = `200` durante a janela de `close('SIGTERM')` | O **contrato de saúde** no encerramento |
+| Requisição de negócio em voo que usa o banco **conclui com sucesso** durante a janela | A **ordem de liberação dos recursos** |
+
+O primeiro **não** substitui o segundo, e é essa a armadilha: se o `$disconnect()` migrasse para `onModuleDestroy`, `/ready` responderia `503` pelo estado de `draining` e `/live` responderia `200` de qualquer forma — os dois status passariam e a regressão ficaria invisível. Quem a pega é a requisição em voo, que roda com `app.listen(0)`, é segurada por um gate no acesso ao banco e só executa a consulta **depois** de o encerramento começar. Somam-se a ela dois unitários: o de `PrismaService`, que assere que o `$disconnect()` não está em `onModuleDestroy` e está em `onApplicationShutdown`, e o de `ReadinessState`, que assere que um `close()` **sem sinal** marca `draining` e não sustenta a janela.
+
+O drain **é** alcançável neste harness: `enableShutdownHooks()` apenas registra listeners de sinais do processo, e `close(signal)` executa os hooks de qualquer forma — o servidor HTTP só fecha no `dispose()`, depois da janela. Por isso ele não aparece na lista de branches inalcançáveis abaixo. A janela, porém, só é sustentada no ambiente orquestrado (`NODE_ENV=production`), então o `describe` de encerramento declara esse ambiente no `beforeEach` e o restaura depois — é o que faz a suíte exercitar o comportamento real em vez de um caminho de teste próprio.
+
+As três `describe`s esperam a prontidão assentar em `200` antes de assertar o contrato. A primeira verificação depois do boot paga TCP + autenticação com o pool ainda vazio, e o prazo próprio do chamador é de 3,5 s — o `query_timeout` de 2 s vale só para a consulta e não cobre a aquisição da conexão: com doze suítes E2E em paralelo, cada uma subindo os próprios containers, esse caso frio estoura o prazo e a prontidão responde `503` uma vez — exatamente como responderia em produção antes de o `failureThreshold` ser atingido. A propriedade continua asserida (se a prontidão nunca ficar `200`, a suíte falha); o que a espera remove é a dependência de uma única amostra fria sob inanição de CPU.
+
+**Asserções de log.** Com `setupTestApp({ captureLogs: true })`, a suíte assere que uma probe saudável produz **zero** linhas de access log; que uma probe que falha produz **exatamente uma**, em `error`, **sem** stack trace e **sem** `error.type`/`oficina.error.message` (a resposta é deliberada e não lança, então não há exceção resolvida de onde derivá-los); e que a transição emite exatamente um `health.degraded` com a categoria da causa. Fecha com uma asserção **negativa**: o corpo do `503` não contém host, porta, cadeia de conexão nem stack.
 
 ## Postman / Newman
 
