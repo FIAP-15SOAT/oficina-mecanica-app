@@ -296,6 +296,27 @@ export const LOGICAL_FIELDS: Readonly<Record<LogicalFieldName, LogicalFieldDefin
     owner: 'infrastructure-service',
     sensitivity: 'clear',
   },
+  dependencyName: {
+    key: 'oficina.dependency.name',
+    type: 'string',
+    cardinality: 'fixed',
+    owner: 'infrastructure-service',
+    sensitivity: 'clear',
+  },
+  healthFailureCategory: {
+    key: 'oficina.health.failure.category',
+    type: 'string',
+    cardinality: 'fixed',
+    owner: 'infrastructure-service',
+    sensitivity: 'clear',
+  },
+  healthDegradedDurationMs: {
+    key: 'oficina.health.degraded.duration_ms',
+    type: 'number',
+    cardinality: 'high',
+    owner: 'infrastructure-service',
+    sensitivity: 'clear',
+  },
 };
 
 export function resolveLogicalField(logicalName: string): LogicalFieldDefinition | undefined {

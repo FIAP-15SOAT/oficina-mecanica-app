@@ -10,6 +10,7 @@ import {
   CLIENT_ABORTED_ERROR_TYPE,
   TRANSPORT_ERROR_ERROR_TYPE,
 } from '@infrastructure/logging/access-log.builder';
+import { LIVENESS_PATH, READINESS_PATH } from '@infrastructure/health/health.constants';
 import {
   MAX_HEADER_VALUE_LENGTH,
   MAX_URL_PATH_LENGTH,
@@ -196,6 +197,90 @@ describe('resolveAccessLogLevel', () => {
     expect(resolveAccessLogLevel(undefined as unknown as IncomingMessage, createResponse())).toBe(
       'error',
     );
+    expect(stderr.spy).toHaveBeenCalled();
+
+    stderr.restore();
+  });
+});
+
+describe('resolveAccessLogLevel — health routes', () => {
+  it.each([LIVENESS_PATH, READINESS_PATH])('should silence a healthy probe on %s', (path) => {
+    expect(resolveAccessLogLevel(createRequest({ path }), createResponse(200))).toBe('silent');
+  });
+
+  it('should preserve the line when a probe reports unavailability', () => {
+    expect(
+      resolveAccessLogLevel(createRequest({ path: READINESS_PATH }), createResponse(503)),
+    ).toBe('error');
+  });
+
+  it('should preserve the line when the client aborts a probe', () => {
+    const aborted = createRequest({ path: READINESS_PATH, readableAborted: true });
+
+    expect(resolveAccessLogLevel(aborted, createResponse(200, false))).toBe('warn');
+  });
+
+  it('should not change the level derived for a business route', () => {
+    expect(
+      resolveAccessLogLevel(createRequest({ path: '/api/customers' }), createResponse(200)),
+    ).toBe('info');
+  });
+
+  it.each(['/api/health-admin', '/api/health/liveness', '/api/healthy'])(
+    'should not silence the neighbouring path %s',
+    (path) => {
+      expect(resolveAccessLogLevel(createRequest({ path }), createResponse(200))).toBe('info');
+    },
+  );
+
+  it('should not silence a trailing-slash variant the router still accepts', () => {
+    expect(
+      resolveAccessLogLevel(createRequest({ path: `${LIVENESS_PATH}/` }), createResponse(200)),
+    ).toBe('info');
+  });
+
+  it('should silence a healthy probe carrying a query string', () => {
+    const request = createRequest({ path: LIVENESS_PATH });
+
+    (request as unknown as { url: string }).url = `${LIVENESS_PATH}?verbose=1`;
+
+    expect(resolveAccessLogLevel(request, createResponse(200))).toBe('silent');
+  });
+
+  /**
+   * `path` é propriedade do Express, e o predicado recebe o tipo do `node:http`.
+   * A queda para `url` cobre a requisição que não atravessou o Express — e como
+   * `url` carrega a query string, ela só casa o conjunto fechado quando não há
+   * nenhuma, o que erra para o lado de registrar.
+   */
+  it('should fall back to the raw url when the express path is absent', () => {
+    const request = createRequest({ path: LIVENESS_PATH });
+
+    delete (request as unknown as { path?: string }).path;
+
+    expect(resolveAccessLogLevel(request, createResponse(200))).toBe('silent');
+  });
+
+  it('should not silence a request carrying neither path nor url', () => {
+    const request = createRequest({ path: LIVENESS_PATH });
+
+    delete (request as unknown as { path?: string }).path;
+    delete (request as unknown as { url?: string }).url;
+
+    expect(resolveAccessLogLevel(request, createResponse(200))).toBe('info');
+  });
+
+  it('should log the line when the suppression predicate itself fails', () => {
+    const stderr = captureDiagnostics();
+    const request = createRequest({ path: LIVENESS_PATH });
+
+    Object.defineProperty(request, 'path', {
+      get: () => {
+        throw new Error('predicado quebrado');
+      },
+    });
+
+    expect(resolveAccessLogLevel(request, createResponse(200))).toBe('error');
     expect(stderr.spy).toHaveBeenCalled();
 
     stderr.restore();

@@ -78,7 +78,7 @@ A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A mig
 
 ## Seed dos dados de referência
 
-O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert`, sem duplicar; para usuários, a senha só é definida na criação e não é sobrescrita), ele roda junto com a migração no job `db-migrate` (`migrate deploy` + `db seed`) a cada deploy. Assim os dados de referência (incluindo os usuários Admin) são reafirmados sem apagar nada, e um ambiente com armazenamento efêmero (`emptyDir`) se auto-recupera no próximo deploy — sem passo manual.
+O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert`, sem duplicar; para usuários, a senha só é definida na criação e não é sobrescrita), ele roda junto com a migração no job `db-migrate` (`migrate deploy` + `db seed`) a cada deploy. Assim os dados de referência (incluindo os usuários Admin) são reafirmados sem apagar nada, e um ambiente cujo armazenamento tenha sido perdido se auto-recupera no próximo deploy, sem passo manual.
 
 ## 3) Workflow de SAST (`sast.yml`)
 
@@ -105,20 +105,19 @@ Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TO
 
 ## 4) Workflow de DAST (`dast.yml`)
 
-<p align="center"><img src="../diagrams/dast-workflow.png" alt="Diagrama do workflow de DAST: job único zap-scan com 8 steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()" width="100%"></p>
+<p align="center"><img src="../diagrams/dast-workflow.png" alt="Diagrama do workflow de DAST: job único zap-scan com steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()" width="100%"></p>
 
-> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama).
+> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. As caixas *Start stack* e *Wait API ready* correspondem ao step único que sobe a stack e espera o healthcheck do serviço `api`. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama).
 
 | # | Step | O que faz |
 |---|---|---|
 | 1 | Checkout | `actions/checkout` |
-| 2 | Start the target stack | `docker compose -p dast up -d --build` — sobe a stack prod-like (Postgres + `migrate` + MailHog + API) |
-| 3 | Wait for the API to be ready | `curl /api/docs` em loop (até 60×, 5s cada); não há `/health` |
-| 4 | Perform authentication | `POST /api/auth/login` com um admin do seed → JWT; injetado como `Authorization: Bearer` no _replacer_ do ZAP |
-| 5 | Prepare the ZAP work directory | `mkdir zap-work`, copia `.zap/rules.tsv`, `chmod` |
-| 6 | Run OWASP ZAP API scan | `zap-api-scan.py -t /api/docs-json -f openapi` — **scan ativo**, na rede `dast_default`; gera relatório HTML + JSON |
-| 7 | Upload the ZAP report | `if: always()` — sobe o artifact `zap-report` (HTML + JSON) mesmo se o job falhar |
-| 8 | Tear down the stack | `if: always()` — `docker compose down -v` |
+| 2 | Start the target stack and wait for it to become healthy | `docker compose -p dast up -d --build --wait --wait-timeout 180` — sobe a stack prod-like (Postgres + `migrate` + MailHog + API) e espera o **healthcheck do serviço `api`**; na expiração publica `compose ps --all` + `logs` e falha |
+| 3 | Perform authentication | `POST /api/auth/login` com um admin do seed → JWT; injetado como `Authorization: Bearer` no _replacer_ do ZAP |
+| 4 | Prepare the ZAP work directory | `mkdir zap-work`, copia `.zap/rules.tsv`, `chmod` |
+| 5 | Run OWASP ZAP API scan | `zap-api-scan.py -t /api/docs-json -f openapi` — **scan ativo**, na rede `dast_default`; gera relatório HTML + JSON |
+| 6 | Upload the ZAP report | `if: always()` — sobe o artifact `zap-report` (HTML + JSON) mesmo se o job falhar |
+| 7 | Tear down the stack | `if: always()` — `docker compose down -v` |
 | → | *resultado* | job fica **vermelho** se houver qualquer alerta ≠ `IGNORE` |
 
 Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicado — como o SAST, roda em paralelo ao CI/CD e não bloqueia nenhum deles. Diferente do SAST (separado por limitação do plano do Sonar), o DAST é separado por ter um **ciclo de gatilho próprio**:
@@ -128,7 +127,18 @@ Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicad
 
 Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o loop rápido; subir a stack inteira a cada push seria caro e redundante) nem em `push` → `master` (a `master` é protegida — só entra via PR —, então o scan do PR já cobriu aquele código).
 
-O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`), espera o app responder em `/api/docs` (não há `/health`; é o mesmo path do readinessProbe do k8s), faz login em `POST /api/auth/login` com um admin do seed e roda o `zap-api-scan.py` (`-f openapi`) contra a spec em `/api/docs-json`. Como quase toda rota está atrás do `JwtAuthGuard`, o token JWT é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`.
+O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`), faz login em `POST /api/auth/login` com um admin do seed e roda o `zap-api-scan.py` (`-f openapi`) contra a spec em `/api/docs-json`. Como quase toda rota está atrás do `JwtAuthGuard`, o token JWT é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`.
+
+**O portão de prontidão é o healthcheck do próprio serviço `api`**, declarado uma vez no `app/docker-compose.yml` (`wget` do BusyBox contra `/api/health/ready`) e consumido pelo `up --wait` — não um laço de espera mantido em paralelo no workflow, que divergiria do endpoint que o orquestrador de fato consulta.
+
+- **O que o portão prova.** Que a aplicação **alcança o banco** — é o mesmo endpoint que o `readinessProbe` do k8s consulta, e é a mesma definição de "pronto" nos dois lugares.
+- **O que o portão *não* prova.** Ele **não** garante que as migrations rodaram nem que o seed existe. Essa garantia vem do `depends_on: migrate: service_completed_successfully` do Compose, e as duas são **distintas**. Confundi-las convida a regressão em que a prontidão fica verde contra um schema vazio e as falhas do scan parecem achados em vez de artefato de ordem.
+
+O `--wait` sai com código diferente de zero na expiração, e o step seguinte não rodaria — por isso o diagnóstico (`compose ps --all` e `logs`) é publicado de dentro do próprio step, e uma stack que nunca fica pronta falha rápido e de forma diagnosticável em vez de pendurar. O serviço `migrate`, que sai com código 0 sob `service_completed_successfully`, **não** invalida o `--wait`. Todos os steps invocam `docker compose` sem `-f`/`-p`: `COMPOSE_FILE` e `COMPOSE_PROJECT_NAME` estão no `env` do workflow e são lidos nativamente pela CLI.
+
+O sink de e-mail é tratado do mesmo jeito: esperar a stack prova que o container do MailHog está rodando, não que a porta SMTP aceita conexões. Se o scan passar a depender de entrega de e-mail — e não apenas da ausência de recusa de conexão —, quem declara essa condição é o **próprio serviço MailHog**; a prontidão da API não é estendida para cobri-lo.
+
+As duas rotas de saúde são públicas e aparecem no `/api/docs-json`, então **são escaneadas ativamente como qualquer outra**. Escondê-las da spec para evitar o scan não é opção: são superfície não autenticada, e é exatamente isso que o scan existe para exercitar.
 
 O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`): alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, três flags de cookie de sessão) e o falso-positivo de XSS refletido em resposta JSON (`40014` — `Content-Type: application/json`, que o navegador nunca executa como HTML).
 

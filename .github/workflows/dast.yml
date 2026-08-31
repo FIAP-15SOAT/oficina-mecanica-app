@@ -15,11 +15,12 @@ permissions:
   contents: read
 
 env:
-  COMPOSE_PROJECT: dast
   COMPOSE_FILE: app/docker-compose.yml
+  COMPOSE_PROJECT_NAME: dast
   API_BASE_URL: http://localhost:3000
   SEED_ADMIN_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
   SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+  STACK_WAIT_TIMEOUT: 180
 
 jobs:
   zap-scan:
@@ -28,22 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Start the target stack
-        run: docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT" up -d --build
-
-      - name: Wait for the API to be ready
+      - name: Start the target stack and wait for it to become healthy
         run: |
-          for i in $(seq 1 60); do
-            if curl -fsS "$API_BASE_URL/api/docs" >/dev/null 2>&1; then
-              echo "API is ready after ${i} attempt(s)."
-              exit 0
-            fi
-            echo "Waiting for the API... (attempt ${i}/60)"
-            sleep 5
-          done
-          echo "::error::API did not become ready in time."
-          docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT" logs --no-color --tail 200
-          exit 1
+          if ! docker compose up -d --build --wait --wait-timeout "$STACK_WAIT_TIMEOUT"; then
+            echo "::error::The stack did not become healthy within ${STACK_WAIT_TIMEOUT}s."
+            docker compose ps --all
+            docker compose logs --no-color --tail 200
+            exit 1
+          fi
 
       - name: Perform authentication for the scan
         run: |
@@ -69,7 +62,7 @@ jobs:
         run: |
           # ZAP 2.17.0 (stable) pinned by digest — bump with: docker buildx imagetools inspect ghcr.io/zaproxy/zaproxy:stable
           docker run --rm \
-            --network "${COMPOSE_PROJECT}_default" \
+            --network "${COMPOSE_PROJECT_NAME}_default" \
             -v "$GITHUB_WORKSPACE/zap-work:/zap/wrk:rw" \
             -e ZAP_AUTH_HEADER=Authorization \
             -e ZAP_AUTH_HEADER_VALUE="$ZAP_AUTH_HEADER_VALUE" \
@@ -93,4 +86,4 @@ jobs:
 
       - name: Tear down the stack
         if: always()
-        run: docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT" down -v
+        run: docker compose down -v

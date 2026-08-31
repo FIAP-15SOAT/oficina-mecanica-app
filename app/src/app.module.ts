@@ -11,6 +11,7 @@ import { InfrastructureExceptionFilter } from './infrastructure/http/filters/inf
 import { LoggingModule } from './infrastructure/logging/logging.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
+import { HealthModule } from './infrastructure/http/controllers/health/health.module';
 import { AuthModule } from './infrastructure/http/controllers/auth/auth.module';
 import { UserModule } from './infrastructure/http/controllers/user/user.module';
 import { ServiceModule } from './infrastructure/http/controllers/service/service.module';
@@ -43,6 +44,7 @@ import { StockModule } from './infrastructure/http/controllers/stock/stock.modul
     LoggingModule,
     PrismaModule,
     RepositoriesModule,
+    HealthModule,
     AuthModule,
     UserModule,
     ServiceModule,

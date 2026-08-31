@@ -2,14 +2,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 
+import { GLOBAL_PREFIX } from '@infrastructure/http/http.constants';
 import { DateSerializerInterceptor } from '@infrastructure/http/interceptors/date-serializer.interceptor';
 import { SanitizeStringsPipe } from '@infrastructure/http/pipes/sanitize-strings.pipe';
 import { REQUEST_ID_HEADER } from '@infrastructure/logging/access-log.builder';
 import { applyTrustProxy, resolveLoggerConfig } from '@infrastructure/logging/logger.config';
 
 import { setupSwagger } from './swagger.config';
-
-export const GLOBAL_PREFIX = 'api';
 
 export const DEFAULT_ALLOWED_ORIGIN = 'http://localhost:3000';
 

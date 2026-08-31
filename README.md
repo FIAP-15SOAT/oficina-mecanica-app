@@ -77,6 +77,7 @@ Substitui o controle manual (anotações e planilhas) de uma oficina de médio p
 - **E-mail**: Nodemailer + `@nestjs-modules/mailer` (SMTP via MailHog em desenvolvimento)
 - **Segurança HTTP**: Helmet, CORS configurável via `ALLOWED_ORIGINS`, `SanitizeStringsPipe` global, `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`)
 - **Observabilidade**: logs estruturados em JSON no stdout com `pino` + `nestjs-pino` (nomenclatura OpenTelemetry, correlação por `request.id`, redação de dados sensíveis) — ver [ADR 0002](docs/adr/0002-logging-estruturado.md)
+- **Health checks**: endpoints dedicados de vivacidade (`/api/health/live`) e prontidão (`/api/health/ready`), consumidos pelas três probes do Kubernetes, com encerramento gracioso — ver [ADR 0003](docs/adr/0003-health-checks.md)
 - **Documentação**: Swagger/OpenAPI (`@nestjs/swagger`) — disponível em `/api/docs`
 - **Testes**: Jest + ts-jest (unitários com mocks tipados e E2E com **Testcontainers** + PostgreSQL real)
 - **Qualidade**: SonarQube Cloud (Sonar Scan via GitHub Actions)
@@ -118,13 +119,20 @@ Para acompanhar os logs em tempo real:
 docker compose logs -f api
 ```
 
+Para conferir que a aplicação subiu e alcança o banco:
+
+```bash
+curl -i http://localhost:3000/api/health/live   # 200 {"status":"ok"} — o processo responde
+curl -i http://localhost:3000/api/health/ready  # 200 {"status":"ok"} — e o banco está acessível
+```
+
 Para parar e remover os containers:
 
 ```bash
 docker compose down
 ```
 
-> O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e roda `prisma migrate deploy && prisma db seed && node dist/src/main` no `CMD` final.
+> O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e tem `CMD ["node", "dist/src/main"]` — **só a aplicação**. A migração e o seed rodam num passo próprio: o serviço `migrate` do Compose localmente, e o Job `k8s/00-db-migrate-job.yaml` no CD.
 
 > **Para testar:** faça login em `POST /api/auth/login` com um admin do seed (veja todos os usuários em [Como executar localmente › Seed](docs/local-setup.md#seed)). Para explorar os endpoints, use o **Swagger** em `/api/docs` ou importe a **collection do Postman** (`collections/oficina-collection.json` + `collections/oficina-environment.json`) — passo a passo em [Testes › Postman / Newman](docs/testing.md#postman--newman).
 
@@ -167,7 +175,8 @@ O projeto está dividido em repositórios especializados e desacoplados:
 |---|---|---|
 | **[oficina-mecanica-app](https://github.com/FIAP-15SOAT/oficina-mecanica-app)** *(este repositório)* | Aplicação NestJS, APIs, Domínio DDD e Manifestos K8s da aplicação | NestJS, TypeScript, Prisma, Jest, Docker |
 | **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede na AWS (VPC, Subnets públicas/privadas, Gateways) | Terraform, AWS VPC, NAT Gateway, Route Tables |
-| **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Postgres, Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR, PostgreSQL 16 |
+| **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR |
+| **[oficina-mecanica-database](https://github.com/FIAP-15SOAT/oficina-mecanica-database)** | Banco de dados relacional gerenciado, **fora do cluster** | Terraform, Amazon RDS, PostgreSQL 16 |
 
 ## 📚 Documentação
 
@@ -182,7 +191,7 @@ O projeto está dividido em repositórios especializados e desacoplados:
 | 🌍 [Infra · Terraform](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) | Infraestrutura AWS e Kubernetes (IaC nos repositórios dedicados) |
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests de aplicação (`k8s/`), probes, HPA e deploy |
 | 🔄 [Infra · CI/CD](docs/infra/ci-cd.md) | Workflows de CI, CD, SAST e DAST |
-| 📐 [ADRs](docs/adr) | Decisões arquiteturais |
+| 📐 [ADRs](docs/adr) | Decisões arquiteturais — [0001 PostgreSQL](docs/adr/0001-uso-do-postgresql-como-banco-de-dados.md), [0002 Logging estruturado](docs/adr/0002-logging-estruturado.md), [0003 Health checks](docs/adr/0003-health-checks.md) |
 | 🧩 [Modelo C4](docs/c4) | Diagramas de Contexto, Container e Componente |
 | 🎨 [Modelagem de Domínio (Miro)](https://miro.com/app/board/uXjVGvVPEOw=/?share_link_id=9196435429) | Domain Storytelling, Event Storming e Dicionário de Linguagem Ubíqua |
 

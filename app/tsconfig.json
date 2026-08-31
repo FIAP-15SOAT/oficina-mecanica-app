@@ -24,7 +24,6 @@
     "types": ["node", "jest"],
     "paths": {
       "@application/*": ["src/application/*"],
-      "@config/*": ["src/config/*"],
       "@domain/*": ["src/domain/*"],
       "@infrastructure/*": ["src/infrastructure/*"],
       "@interface-adapters/*": ["src/interface-adapters/*"],

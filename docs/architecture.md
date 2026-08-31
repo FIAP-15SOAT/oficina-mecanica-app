@@ -77,10 +77,21 @@ app/src/
 │   └── responses/                   # <Dom>Response / <Dom>DataResponse / <Dom>PaginatedResponse
 │
 ├── infrastructure/                  # Implementações concretas (framework e serviços externos)
+│   ├── config/                      # app-bootstrap (composição da borda HTTP, compartilhada
+│   │                                #   entre main.ts e o helper de E2E) + swagger.config
+│   ├── health/                      # Saúde operacional, agnóstica de transporte:
+│   │   │                            # health.constants (módulo folha: segmentos de rota e o
+│   │   │                            #   conjunto fechado de caminhos),
+│   │   │                            # postgres.health-check (SELECT 1 com query_timeout
+│   │   │                            #   próprio + prazo do chamador; categoria fechada),
+│   │   │                            # readiness-state (ready|draining, single-flight, transição)
 │   ├── http/                        # Borda NestJS — @Controller fino que delega ao Clean Controller
+│   │   ├── http.constants.ts        # Prefixo global (`api`) — módulo folha lido por
+│   │   │                            #   config/app-bootstrap e por health/health.constants
 │   │   ├── controllers/<domínio>/   # @Controller + module + dto/requests + dto/responses
 │   │   │                            # (@ApiProperty; *ResponseDto implements o tipo puro)
 │   │   │                            # domínios no singular; auth em controllers/auth/
+│   │   │                            # e as rotas de saúde em controllers/health/
 │   │   ├── guards/                  # JwtAuthGuard, RolesGuard
 │   │   ├── decorators/              # @CurrentUser, @Roles, @Public
 │   │   ├── strategies/              # JwtStrategy (Passport)
@@ -116,8 +127,6 @@ app/src/
 │                                    # DatabaseOperationException, ServiceIntegrationException,
 │                                    # ConcurrencyException
 │
-├── config/                          # swagger.config + app-bootstrap (composição da borda HTTP,
-│                                    #   compartilhada entre main.ts e o helper de E2E)
 ├── app.module.ts
 └── main.ts                          # bufferLogs + useLogger, configureApp(), shutdown hooks, listen
 
@@ -358,6 +367,7 @@ infrastructure/logging/field-registry.ts               nome lógico → chave f�
 infrastructure/logging/access-log.builder.ts           atributos da linha de acesso + status → nível
 infrastructure/logging/url-attributes.ts               caminho canonicalizado + query classificada
 infrastructure/logging/http-error-message.ts           mensagem de erro do log (404 do framework, validação)
+infrastructure/health/readiness-state.ts               emite health.degraded / health.recovered
 ```
 
 `ILogger` expõe **apenas** `debug`/`info`/`warn`/`error`/`event`/`forContext`. Deliberadamente **não tem `assign()`**: enriquecimento de contexto de requisição é responsabilidade da infraestrutura. `error` aceita `unknown`, não `Error`, porque quem chama normalmente segura um binding de `catch` de tipo desconhecido.
@@ -406,10 +416,34 @@ O `pino-http` é instalado como middleware de módulo, e middleware de módulo n
 | Rotas de negócio após leitura bem-sucedida do corpo — inclusive recusas de guard, falhas de validação, filtros e 404 do Nest | **Sim** |
 | Corpo malformado ou acima do limite (rejeitado pelo parser) | Não — o `AllExceptionsFilter` ainda responde (`400` no corpo malformado, `413` acima do limite), sem access log |
 | `OPTIONS` de preflight | Não — o middleware de CORS encerra com 204 |
+| Rotas de saúde (`/api/health/live`, `/api/health/ready`) | **Sim** — são rotas do router do Nest. O sucesso é suprimido; a falha, não (ver abaixo) |
 | Swagger UI, assets, `/api/docs-json`, `/api/docs-yaml` | Não — registrados diretamente no `main.ts`, antes do `init()` |
 | HTTP malformado recusado pelo Node | Não — nunca entra no Express |
 
-Isso é uma **decisão registrada, não um bug**. Uma consequência bem-vinda: as probes do k8s batem em `/api/docs`, que pertence ao Swagger, então as ≈13 000 linhas de probe por dia nunca chegam ao logger — o mecanismo de supressão de ruído foi deletado em vez de construído. Um endpoint `/health` dedicado é o próximo passo natural.
+Isso é uma **decisão registrada, não um bug**, e vale para o que o Swagger serve. As **rotas de saúde não escapam por acidente de ordem**: elas vivem no router do Nest e atravessam o `pino-http` como qualquer rota de negócio, então o silêncio delas em regime saudável é construído de propósito, nunca um efeito de posicionamento.
+
+#### Supressão seletiva das probes
+
+A supressão é feita por `customLogLevel → 'silent'` em `resolveAccessLogLevel`, e **nunca** por `autoLogging.ignore`. A diferença é o que cada mecanismo enxerga:
+
+| Mecanismo | Quando é avaliado | Enxerga o status? | Efeito numa probe que falha |
+|---|---|---|---|
+| `autoLogging.ignore` | no **início** da requisição | ✗ recebe só o `req` | Os listeners de `close`/`finish` nunca são registrados → **a falha também some** |
+| `customLogLevel → 'silent'` | no encerramento da resposta | ✓ recebe o `res` | Nenhum: a falha cai no nível derivado e mantém o contexto completo |
+
+Três garantias fecham o único ponto em que um defeito **esconde** falhas:
+
+- **Correspondência exata** contra um conjunto fechado de caminhos exportado por `infrastructure/health/health.constants.ts` — a **mesma** fonte que o controller usa nos decorators, e que compõe o prefixo global a partir do módulo folha `infrastructure/http/http.constants.ts`. `startsWith('/api/health')` silenciaria um `/api/health-admin` futuro, e um literal no decorator mais um conjunto no logger seriam duas verdades que derivam uma da outra.
+- **Só o sucesso é silenciado.** Uma probe com `503` sai em `error`; uma probe abortada pelo kubelet ao estourar o `timeoutSeconds` sai em `warn` — esse é o desfecho mais informativo dos três e a supressão por sucesso não o alcança de propósito. Barra final (`/api/health/live/`), que o router aceita por rodar com `strict: false`, **não** casa o conjunto fechado e é registrada: erra para o lado certo.
+- **O `runSafely` continua caindo em `'error'`.** Um defeito no próprio predicado falha alto; a ausência de registro nunca é o resultado de uma falha.
+
+#### O custo real, sem maquiagem
+
+Em regime saudável as probes custam **zero** linhas. Cada probe que falha custa uma: readiness a cada 10 s × 5 réplicas ≈ **1800 linhas/hora** durante uma indisponibilidade do banco. É o número que dimensiona retenção, e é o preço direto de nunca suprimir falha — suprimi-la zeraria a conta e é justamente o que a decisão recusa.
+
+É **taxa nominal, não teto**: o `periodSeconds` governa o regime estável, mas o kubelet também dispara readiness fora do ticker em transições de estado. O efeito sobre o número é desprezível; a ressalva existe para que ninguém o trate como limite superior estrito.
+
+Os dois eventos de transição (`health.degraded` / `health.recovered`) **não substituem** essas linhas: eles as tornam navegáveis. O access log repetido diz *que* está falhando; a transição diz *quando* mudou, *por quanto tempo* durou e — decisivo — **a causa**, numa categoria fechada (`timeout | connection | pool | authentication | query | unknown`). Sem ela nada distinguiria timeout de pool esgotado, porque o corpo do `503` é idêntico para toda causa por decisão de segurança e a linha de acesso de uma falha deliberada **sem exceção** não carrega atributos de erro.
 
 ### Logging degrada, nunca quebra
 
@@ -426,7 +460,8 @@ A linha de diagnóstico carrega o envelope, os atributos de recurso e o estágio
 Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no formato Markdown:
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
-- [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md)
+- [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md) *(parcialmente superado pelo 0003)*
+- [ADR 0003 — Health Checks: Liveness e Readiness como Endpoints Dedicados](./adr/0003-health-checks.md)
 
 ## Modelo C4
 

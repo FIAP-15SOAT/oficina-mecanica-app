@@ -4,6 +4,8 @@
 
 Aceito — 2026-08-22
 
+Parcialmente superado pelo [ADR 0003 — Health checks](0003-health-checks.md) na parte de supressão de ruído das probes. O corpo abaixo é o registro da decisão à época e não é reescrito; a descrição do comportamento corrente está em [`docs/architecture.md`](../architecture.md#supressão-seletiva-das-probes).
+
 ## Contexto
 
 A aplicação não tinha logging estruturado. O que existia eram cinco chamadas dispersas ao `Logger` do NestJS (`main.ts`, `prisma.service.ts`, `all-exceptions.filter.ts`, `infrastructure-exception.filter.ts` e `mailer-email-sender.service.ts`) emitindo **texto legível** em stdout. Não havia correlação por requisição, access log, redação de dados sensíveis nem qualquer forma de responder "o que aconteceu na requisição X?" depois do fato.

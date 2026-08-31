@@ -17,6 +17,11 @@ spec:
         app.kubernetes.io/name: oficina-api
         app.kubernetes.io/part-of: oficina-mecanica
     spec:
+      # > janela de drain (10 s) + fechamento do servidor + $disconnect() +
+      # margem. Estoura-lo e SIGKILL; mantido baixo de proposito, porque ele
+      # alonga node drain e eviccao. Nao consome o rollout gate do CD: pods com
+      # DeletionTimestamp saem da contagem de ativos do ReplicaSet.
+      terminationGracePeriodSeconds: 40
       containers:
         - name: api
           image: IMAGE_URI_PLACEHOLDER
@@ -127,17 +132,44 @@ spec:
                 secretKeyRef:
                   name: api-secret
                   key: QUOTE_DECISION_TOKEN_SECRET
-          readinessProbe:
+          startupProbe:
             httpGet:
-              path: /api/docs
+              path: /api/health/live
               port: 3000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            failureThreshold: 3
+            # 12 x 5 s = 60 s de orcamento, so para o boot da aplicacao: a
+            # conexao do Prisma e preguicosa, entao nada de banco entra aqui.
+            # Precisa continuar menor que o --timeout=180s do rollout gate do CD.
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+            successThreshold: 1
           livenessProbe:
             httpGet:
-              path: /api/docs
+              path: /api/health/live
               port: 3000
-            initialDelaySeconds: 30
+            # 3 x 20 s = 60 s de tolerancia antes de reiniciar: apertar esse
+            # produto converte soluco transitorio em reinicio. O
+            # timeout de 5 s e quanto bloqueio do event loop se tolera sob
+            # limits.cpu 500m, com o destino de log sincrono (ADR 0002).
+            initialDelaySeconds: 0
             periodSeconds: 20
+            timeoutSeconds: 5
             failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /api/health/ready
+              port: 3000
+            # timeoutSeconds > prazo proprio da verificacao (3,5 s) + margem de
+            # rede. O prazo proprio, por sua vez, e maior que o
+            # connectionTimeoutMillis do pool (3 s): um deadline menor mascararia
+            # saturacao de pool como 'timeout' e apagaria a categoria 'pool'.
+            # failureThreshold erra para o lado de demorar a retirar: como o RDS
+            # e compartilhado, um valor baixo tiraria as 5 replicas de uma vez
+            # numa oscilacao transitoria.
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1

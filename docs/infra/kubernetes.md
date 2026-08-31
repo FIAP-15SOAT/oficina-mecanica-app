@@ -11,18 +11,18 @@ Divisão de responsabilidade: base e plataforma via Terraform no repositório [`
 - [Convenções: labels e wiring de configuração](#convenções-labels-e-wiring-de-configuração)
 - [Recursos: CPU e memória (requests e limits)](#recursos-cpu-e-memória-requests-e-limits)
 - [Armazenamento do PostgreSQL: emptyDir vs EBS CSI](#armazenamento-do-postgresql-ausência-do-ebs-csi-driver-e-uso-de-emptydir)
-- [PostgreSQL no cluster (StatefulSet)](#postgresql-no-cluster-statefulset)
+- [Banco de Dados Relacional (Amazon RDS)](#banco-de-dados-relacional-amazon-rds)
 - [Manifestos da aplicação](#manifestos-da-aplicação)
 - [Job de migração do banco](#job-de-migração-do-banco)
 - [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
 - [Acesso à aplicação](#acesso-à-aplicação-em-kubernetes)
-- [Health probes](#health-probes-readinessprobe-e-livenessprobe)
+- [Health probes](#health-probes)
 - [Deploy manual](#deploy-em-kubernetes-manual)
 
 Os recursos em Kubernetes foram divididos por responsabilidade:
 
 - Base e dados críticos via Terraform ([`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s))
-  - cluster EKS, ECR, namespace `oficina`, PostgreSQL e metrics-server
+  - cluster EKS, ECR, namespace `oficina` e metrics-server (o banco relacional é **Amazon RDS**, provisionado em [stack própria](#banco-de-dados-relacional-amazon-rds), fora do cluster)
 - Aplicação via manifests YAML (`k8s/`)
   - Secret, ConfigMap, Deployments, Services e HPA
 
@@ -36,7 +36,8 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | Recurso | Ownership | Onde é definido/aplicado |
 |---|---|---|
 | Namespace `oficina` | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_namespace.tf`) |
-| PostgreSQL (Secret, Service, StatefulSet com `emptyDir`) | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_postgres.tf`) |
+| Banco de dados relacional (Amazon RDS PostgreSQL) | Terraform, em **stack própria** | [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database) — **fora do cluster**; nenhum manifesto em `k8s/` define workload de banco |
+| ~~PostgreSQL no cluster (Secret, Service, StatefulSet com `emptyDir`)~~ | Terraform | **Registro histórico da fase anterior**, não é recurso corrente — ver [Armazenamento do PostgreSQL](#armazenamento-do-postgresql-ausência-do-ebs-csi-driver-e-uso-de-emptydir) |
 | metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
@@ -69,11 +70,13 @@ Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto 
 | Workload | Requests (CPU / memória) | Limits (CPU / memória) | Fonte |
 |---|---|---|---|
 | API (`oficina-api`) | `200m` / `256Mi` | `500m` / `512Mi` | `k8s/03-api-deployment.yaml` |
-| PostgreSQL | `100m` / `256Mi` | `500m` / `512Mi` | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) |
+| ~~PostgreSQL~~ | `100m` / `256Mi` | `500m` / `512Mi` | 🕰️ **Registro histórico da fase anterior** — não há workload de banco no cluster; a persistência corrente é [Amazon RDS](#banco-de-dados-relacional-amazon-rds), cujo dimensionamento é `db.t4g.micro`, fora deste orçamento |
 | MailHog | `50m` / `64Mi` | `200m` / `256Mi` | `k8s/03-mailhog-deployment.yaml` |
 | Job `db-migrate` | — (não define) | — (não define) | `k8s/00-db-migrate-job.yaml` |
 
 ## Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`
+
+> 🕰️ **Registro histórico da fase anterior.** Esta seção documenta a tentativa de rodar o PostgreSQL **dentro** do cluster e por que ela não se sustentou. A persistência corrente é [Amazon RDS, fora do cluster](#banco-de-dados-relacional-amazon-rds): não existe StatefulSet, PVC nem `emptyDir` de banco entre os recursos atuais. O registro é mantido porque é ele que justifica a migração.
 
 ### O que foi tentado
 
@@ -152,7 +155,7 @@ Para um ambiente real, a solução correta seria uma das seguintes, em ordem de 
 
 1. **IRSA para o EBS CSI Driver**: criar uma IAM Role com trust policy para o OIDC provider do cluster e a policy gerenciada `AmazonEBSCSIDriverPolicy`, anotando o ServiceAccount `ebs-csi-controller-sa`. Isso isola as credenciais do driver sem conceder permissões ao node inteiro.
 2. **`AmazonEBSCSIDriverPolicy` no node role**: solução mais simples, porém concede permissões de EBS a todos os processos rodando nos nodes — menos seguro que IRSA.
-3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. Não foi aplicado neste projeto devido ao budget limitado do laboratório (créditos AWS Academy de US$ 50), insuficiente para cobrir o custo de uma instância RDS durante o período de desenvolvimento e avaliação.
+3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. À época esta opção foi descartada pelo budget do laboratório (créditos AWS Academy de US$ 50); **é o caminho adotado desde então** — ver [Banco de Dados Relacional (Amazon RDS)](#banco-de-dados-relacional-amazon-rds), com a menor instância disponível para caber no crédito.
 
 ## Banco de Dados Relacional (Amazon RDS)
 
@@ -236,28 +239,85 @@ A interface ficará disponível em:
 
 - MailHog: `http://localhost:8025`
 
-## Health probes (readinessProbe e livenessProbe)
+## Health probes
 
 Cada workload usa o **mecanismo de probe mais adequado ao que expõe**:
 
 | Workload | Mecanismo | Alvo |
 |---|---|---|
-| API (`oficina-api`) | HTTP `GET` | `/api/docs` (porta 3000) |
+| API (`oficina-api`) | HTTP `GET` | `/api/health/live` e `/api/health/ready` (porta 3000) |
 | MailHog | TCP socket | porta `1025` (SMTP) |
-| PostgreSQL | `exec` | `pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"` |
 
-O MailHog não tem um endpoint HTTP de health dedicado, então um **TCP check** na porta SMTP (`1025`) é suficiente para saber que o processo está de pé; o PostgreSQL usa **`pg_isready`** por ser uma checagem semântica de "o banco aceita conexões" (ver [PostgreSQL no cluster](#postgresql-no-cluster-statefulset)). A API expõe HTTP, então usa uma probe HTTP.
+O MailHog não tem endpoint HTTP de health dedicado, então um **TCP check** na porta SMTP (`1025`) basta para saber que o processo está de pé. A API expõe HTTP e tem endpoints de saúde próprios, então usa probes HTTP.
 
-O Deployment da API configura duas probes HTTP GET em `/api/docs` (porta 3000):
+**Não existe probe de banco de dados aqui.** A persistência relacional é [Amazon RDS, fora do cluster](#banco-de-dados-relacional-amazon-rds); nenhum manifesto em `k8s/` define workload de PostgreSQL, e portanto não há `pg_isready` a descrever. Quem reporta a capacidade da aplicação de **alcançar** o banco é a `readinessProbe` da API. Diagnóstico de `/ready` falhando em produção começa nos eventos do pod, no DNS e no Security Group da VPC, e nas métricas da instância RDS — não em `kubectl logs` de um pod de banco, que não existe.
 
-| Probe | Finalidade | `initialDelaySeconds` | `periodSeconds` | `failureThreshold` |
-|---|---|---|---|---|
-| `readinessProbe` | Indica ao Kubernetes quando o pod está pronto para receber tráfego. Enquanto falhar, o pod é retirado do balanceamento sem ser reiniciado. | 10 | 10 | 3 |
-| `livenessProbe` | Detecta pods travados que continuam vivos mas não respondem. Ao falhar, o Kubernetes reinicia o container automaticamente. | 30 | 20 | 3 |
+### Três probes, dois endpoints
 
-O endpoint `/api/docs` (Swagger UI) foi escolhido por ser a única rota pública que retorna HTTP 200 sem autenticação, confirmando que o servidor HTTP está operacional.
+A API expõe dois endpoints de saúde com semânticas **opostas e deliberadamente separadas** (contrato em [api.md](../api.md#health) e o registro da decisão em [ADR 0003](../adr/0003-health-checks.md)):
 
-O `initialDelaySeconds` da liveness é propositalmente maior (30 s) do que o da readiness (10 s): a readiness remove o pod do tráfego logo cedo se a aplicação ainda não subiu, enquanto a liveness aguarda mais para não reiniciar um pod que está apenas demorando para inicializar.
+- `GET /api/health/live` — não executa I/O algum. Responde à única pergunta cujo remédio é **reiniciar o processo**.
+- `GET /api/health/ready` — verifica o PostgreSQL (`SELECT 1`, com prazo próprio) e o estado de encerramento. Responde à pergunta de **roteamento de tráfego**.
+
+O `startupProbe` e o `livenessProbe` apontam ambos para `/live`; só o `readinessProbe` aponta para `/ready`.
+
+**Por que o `startupProbe` não aponta para readiness:** a falha de um `startupProbe` **mata o container**. Apontá-lo para uma verificação de dependência externa recriaria exatamente a armadilha que a separação existe para evitar — com o banco fora, toda a frota entraria em reinício sucessivo com espera crescente, somando indisponibilidade a um sistema já degradado. Startup é uma *probe*, não uma semântica de saúde distinta, e por isso reusa o endpoint de vivacidade em vez de exigir um terceiro.
+
+**O que o `startupProbe` cobre, e o que não cobre:** só a inicialização da própria aplicação. Com Prisma 7 + `@prisma/adapter-pg` o `$connect()` é preguiçoso — ele não abre conexão física —, então um pod criado com o banco indisponível **sobe normalmente**, passa no startup, responde `/live` = 200 e `/ready` = 503, e se recupera sozinho quando o banco volta, sem `CrashLoopBackOff` e sem reinício. Alcançabilidade do banco pertence ao orçamento da readiness, nunca ao do startup.
+
+### Parâmetros, e a característica que determina cada um
+
+| Parâmetro | `startupProbe` | `livenessProbe` | `readinessProbe` |
+|---|---|---|---|
+| Alvo | `/api/health/live` | `/api/health/live` | `/api/health/ready` |
+| `initialDelaySeconds` | `0` | `0` | `0` |
+| `periodSeconds` | `5` | `20` | `10` |
+| `timeoutSeconds` | `3` | `5` | `5` |
+| `failureThreshold` | `12` | `3` | `3` |
+| `successThreshold` | `1` | `1` | `1` |
+
+**Nenhum parâmetro fica implícito**, e isso é decisão, não estilo: o `timeoutSeconds` default do kubelet é **1 s**, menor que o prazo próprio de 3,5 s da verificação de prontidão — deixá-lo herdado faria a probe abortar antes de a aplicação responder, e o desfecho seria interrupção pelo cliente, sem categoria de causa.
+
+| Parâmetro | Derivado de |
+|---|---|
+| `startupProbe` `12 × 5 s` = **60 s de orçamento** | Boot da aplicação **só** — nada de banco entra aqui (ver acima). 60 s cobre com folga um boot de Nest + módulos, e o período curto faz o pod ficar `Ready` cedo no caminho feliz |
+| `initialDelaySeconds: 0` nas três | Com `startupProbe` presente, liveness e readiness não rodam antes de ele passar. Mas o kubelet conta `initialDelaySeconds` a partir de `container.State.Running.StartedAt`, **não** do sucesso do startup — um valor herdado seria parcialmente consumido em vez de somado, e a temporização real ficaria diferente da aparente. `0` é o único valor que não exige explicação |
+| `livenessProbe` `periodSeconds: 20`, `failureThreshold: 3` | 60 s de tolerância antes de reiniciar — a mais folgada das três, porque reiniciar destrói requisições em voo enquanto desregistrar é reversível |
+| `livenessProbe` `timeoutSeconds: 5` | Quanto bloqueio do laço de eventos se tolera antes de considerar o processo travado, sob `limits.cpu: 500m` — onde pausa de GC e throttling são plausíveis, **e** onde o destino de log é `pino.destination({ sync: true })`: se o coletor parar de drenar, o `sonic-boom` entra em espera bloqueante e segura o laço ([ADR 0002](../adr/0002-logging-estruturado.md)). Essa condição é **compartilhada por toda a frota**, como o banco, então apertar aqui converteria um soluço do coletor em restart loop geral |
+| `readinessProbe` `periodSeconds: 10` | Quanto tempo se aceita rotear tráfego para uma instância que já não atende |
+| `readinessProbe` `timeoutSeconds: 5` | Maior que o prazo próprio da verificação (3,5 s) somado à margem de rede. O prazo próprio, por sua vez, é maior que o `connectionTimeoutMillis` do pool (3 s): um prazo menor responderia **antes** de a falha de aquisição se manifestar e a classificaria como `timeout`, apagando a categoria `pool` justamente no caso que a readiness existe para detectar |
+| `readinessProbe` `failureThreshold: 3` | Compromisso explícito, e ele **erra para o lado de demorar a retirar**: 30 s de falha sustentada antes de sair do balanceamento. Como o RDS é compartilhado por todas as réplicas, um valor baixo faria uma oscilação transitória retirar as réplicas de uma vez; o custo do valor escolhido é servir erro por até 30 s numa falha por-réplica, que é o caso mais raro |
+| `successThreshold: 1` | O Kubernetes exige `1` em liveness e startup. A verificação é determinística, então `1` também na readiness — e recuperação rápida é desejável dado o `failureThreshold` alto |
+| `terminationGracePeriodSeconds: 40` | Ver [Encerramento gracioso](#encerramento-gracioso-e-terminationgraceperiodseconds) |
+
+### As sete relações que precisam continuar valendo
+
+Se qualquer número acima mudar, **estas relações são o que deve ser reverificado**:
+
+1. `prazo próprio da verificação (3,5 s) + margem de rede < readinessProbe.timeoutSeconds (5 s)`.
+2. `orçamento de startup = failureThreshold × periodSeconds = 12 × 5 = 60 s`.
+3. `image pull + scheduling + boot + orçamento de startup + 1ª readiness OK + propagação < rollout gate do CD` (`--timeout=180s`, em `.github/workflows/cd.yml`). Com 60 s de orçamento sobra margem folgada; um orçamento de 300 s — o exemplo canônico da documentação do Kubernetes, `30 × 10` — faria o CD desistir **antes** de a probe concluir que o container é irrecuperável, trocando um diagnóstico correto por uma falha de pipeline.
+4. `terminationGracePeriodSeconds (40 s) > janela de drain (10 s) + fechamento do servidor + $disconnect() + margem`.
+5. `tolerância da liveness até reinício = failureThreshold × periodSeconds = 3 × 20 = 60 s`. Apertar esse produto torna a liveness mais sensível e converte soluço transitório em reinício, pelo motivo registrado na tabela acima.
+6. `connectionTimeoutMillis do pool (3 s) < prazo próprio da verificação (3,5 s)`. Inverter isso volta a mascarar saturação de pool como `timeout` — a categoria de causa deixa de distinguir o que ela existe para distinguir.
+7. `connectionTimeoutMillis (3 s) + query_timeout da verificação (2 s) = 5 s < readinessProbe.periodSeconds (10 s)`. É o pior caso para a operação subjacente **assentar** e liberar o slot único; se ele passar do período, uma consulta presa atrasa a recuperação por mais de uma probe.
+
+### Encerramento gracioso e `terminationGracePeriodSeconds`
+
+O par `terminationGracePeriodSeconds` ↔ **janela de drain da aplicação** é o que faz um rollout drenar em vez de descartar requisições em voo:
+
+1. O pod é deletado; o endpoint correspondente no EndpointSlice é marcado **não pronto pela própria deleção**, sem depender de uma nova falha de probe.
+2. O kubelet envia `SIGTERM`. A aplicação marca o estado `draining` — `/ready` passa a responder `503` **antes** de o servidor parar de aceitar — e sustenta esse estado por **10 s**, dimensionados pela propagação da remoção no plano de dados (EndpointSlice → kube-proxy, tipicamente 1–5 s) somada a um orçamento para requisições já roteadas.
+3. Só depois da janela o servidor HTTP fecha e **só então** o pool do banco é liberado. Liberá-lo antes converteria "descartar requisição em voo" em "responder erro", que é pior do que não ter janela.
+4. `/live` continua respondendo `200` durante toda a janela: a instância está encerrando de forma ordenada, não travada, e reiniciá-la interromperia o próprio encerramento.
+
+Os 40 s do grace period são a relação 4 acima, e são mantidos baixos de propósito — ele alonga node drain e evicção. Estourá-lo é `SIGKILL`. A janela é declarada como **orçamento fixo e de melhor esforço**: enquanto houver operação sem prazo próprio no caminho de requisição (hoje o envio de e-mail dentro da transação, sem timeouts SMTP), não há garantia de que toda requisição em voo termine dentro dela.
+
+*Nota de mecânica:* o `kubectl rollout status` **não** espera o `terminationGracePeriodSeconds` — pods com `DeletionTimestamp` saem da contagem de ativos do ReplicaSet —, então subir o grace period não consome o gate do CD.
+
+### Custo em log
+
+As rotas de saúde ficam **dentro** da fronteira de cobertura do access log — são rotas do router do Nest e não escapam por ordem de middleware, como escapam as rotas servidas pelo Swagger. A supressão silencia **apenas o sucesso**; uma probe que falha preserva a linha completa. Ver [architecture.md](../architecture.md).
 
 ## Deploy em Kubernetes (manual)
 

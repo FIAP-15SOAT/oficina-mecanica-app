@@ -6,6 +6,7 @@
 
 - [Endpoints disponíveis](#endpoints-disponíveis)
 - [Formato de resposta](#formato-de-resposta)
+  - [Exceção: as rotas de saúde](#exceção-as-rotas-de-saúde)
 
 Após iniciar a aplicação:
 
@@ -162,6 +163,23 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 ---
 
+**Health** (`/api/health`)
+
+| Método | Rota | Descrição | Acesso |
+|---|---|---|---|
+| GET | `/live` | Vivacidade — não executa I/O algum. Alvo do `startupProbe` e do `livenessProbe` | Público |
+| GET | `/ready` | Prontidão — verifica o PostgreSQL (`SELECT 1`, com prazo próprio) e o estado de encerramento. Alvo do `readinessProbe` | Público |
+
+> **Estas duas rotas não usam o envelope `{ data }`** — é a única divergência deliberada do formato descrito abaixo. Ver [Formato de resposta › Exceção](#exceção-as-rotas-de-saúde).
+>
+> A decisão é comunicada pelo **status HTTP**: `200` saudável, `503` indisponível. O corpo é mínimo e **idêntico para toda causa de falha** — `{"status":"ok"}` ou `{"status":"unavailable"}` —, e ambos respondem com `Cache-Control: no-store`. Um consumidor decide lendo apenas o status; ignorar o corpo não altera o resultado.
+>
+> São **públicas por requisito**: um orquestrador não porta credencial de aplicação, e condicionar as probes a um token tornaria a saúde indisponível justamente quando a autenticação estiver comprometida. A proteção é de rede — o Service é `ClusterIP`, sem Ingress —, não por credencial. Detalhes da postura em [Segurança](security.md#endpoints-de-saúde-públicos-e-não-autenticados).
+>
+> `/live` **não tem** o desfecho `503`: ele não verifica dependência alguma. Com o banco fora, `/live` continua `200` e só `/ready` responde `503` — a instância está viva, apenas não consegue atender. Como o PostgreSQL é **compartilhado por todas as réplicas**, uma indisponibilidade dele deixa o Service sem endpoints em vez de desviar tráfego; isso é comportamento esperado, não defeito. O valor da readiness está na falha **por-réplica** (pool travado numa instância) e no encerramento gracioso.
+
+---
+
 ## Formato de resposta
 
 Recurso único — envolto em `{ data: ... }`:
@@ -185,6 +203,22 @@ Lista paginada — envolto em `{ data: [...], pagination: { ... } }`:
 ```
 
 `page` (default `1`, mínimo `1`) e `limit` (default `10`, mínimo `1`, máximo `100`) são padronizados no `PaginationDto` e aplicáveis a todos os endpoints paginados.
+
+### Exceção: as rotas de saúde
+
+`GET /api/health/live` e `GET /api/health/ready` **não** usam o envelope acima. O corpo é fixo e mínimo:
+
+```json
+{ "status": "ok" }
+```
+
+```json
+{ "status": "unavailable" }
+```
+
+O motivo é a postura de segurança de um endpoint público: o corpo não pode divulgar host, porta, cadeia de conexão, mensagem ou código do driver, stack trace, versão nem identificação da instância — e precisa ser **indistinguível** entre causas de falha, senão vira canal de reconhecimento. Um envelope `{ data }` acrescentaria estrutura sem acrescentar informação, e a decisão do orquestrador se toma pelo status. O diagnóstico da causa vive no log, que já é redigido e limitado: a categoria (`timeout | connection | pool | authentication | query | unknown`) sai no evento de transição `health.degraded`.
+
+A divergência é declarada aqui de propósito, para que o contrato universal desta seção não passe a ser contrariado em silêncio.
 
 Erros seguem o padrão NestJS com mensagens em português:
 

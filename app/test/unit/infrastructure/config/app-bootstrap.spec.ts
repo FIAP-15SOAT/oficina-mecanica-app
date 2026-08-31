@@ -4,13 +4,13 @@ import {
   configureApp,
   DEFAULT_ALLOWED_ORIGIN,
   DEFAULT_PORT,
-  GLOBAL_PREFIX,
   resolvePort,
-} from '@config/app-bootstrap';
-import { setupSwagger } from '@config/swagger.config';
+} from '@infrastructure/config/app-bootstrap';
+import { setupSwagger } from '@infrastructure/config/swagger.config';
+import { GLOBAL_PREFIX } from '@infrastructure/http/http.constants';
 import { TRUST_PROXY_REJECTED_WARNING } from '@infrastructure/logging/logger.config';
 
-jest.mock('@config/swagger.config', () => ({ setupSwagger: jest.fn() }));
+jest.mock('@infrastructure/config/swagger.config', () => ({ setupSwagger: jest.fn() }));
 
 interface FakeApp {
   app: NestExpressApplication;

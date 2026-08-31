@@ -6,6 +6,7 @@ Mitigações aplicadas no código e índice de relatórios de segurança.
 
 - [Relatórios](#relatórios)
 - [Mitigações aplicadas no código](#mitigações-aplicadas-no-código)
+- [Endpoints de saúde públicos e não autenticados](#endpoints-de-saúde-públicos-e-não-autenticados)
 - [Proteção de dados nos logs](#proteção-de-dados-nos-logs)
 
 ## Relatórios
@@ -30,6 +31,22 @@ Relatórios de segurança da aplicação ficam versionados em [`reports/`](../re
 - Registro de exceção decidido pelo **status resolvido**, não pelo tipo: um `401` não gera linha de erro nem stack trace, e portanto um scanner não vira tempestade de alertas
 - Mensagem de falha unificada em `POST /api/auth/refresh` (`'Refresh token inválido ou expirado'` para token inválido, usuário inexistente e usuário desativado), eliminando o oráculo de enumeração de usuários
 - Falha de envio de e-mail responde sem o endereço do destinatário
+
+## Endpoints de saúde públicos e não autenticados
+
+`GET /api/health/live` e `GET /api/health/ready` respondem **sem credencial**, por requisito: um orquestrador não porta credencial de aplicação, e condicionar as probes a um token tornaria a saúde indisponível justamente quando a autenticação estiver comprometida — no momento em que ela é mais necessária. Pelo mesmo motivo, **não existe configuração que desligue os endpoints**: um endpoint de saúde desligável é um endpoint em que o orquestrador não pode confiar.
+
+**A proteção é de rede, não por credencial.** O Service da API é `ClusterIP` e não há Ingress; o acesso externo é por `kubectl port-forward`. "Público" aqui significa público **dentro do cluster**, e é essa fronteira que limita quem alcança as rotas.
+
+**O que o corpo deliberadamente não revela.** A resposta é `{"status":"ok"}` ou `{"status":"unavailable"}`, e mais nada. Sem host, porta, cadeia de conexão, credencial, mensagem ou código de erro do driver, stack trace, versão da aplicação ou de biblioteca, ambiente de execução ou identificação da instância. O padrão que a maioria das bibliotecas de health check adota — um corpo detalhado por indicator — vaza exatamente isso: a mensagem de erro do driver PostgreSQL nomeia host e porta (`Can't reach database server at …:5432`), numa rota que responde a qualquer um.
+
+**O corpo é idêntico para toda causa de falha**, e essa uniformidade é a propriedade de segurança: duas indisponibilidades por motivos diferentes produzem respostas indistinguíveis para o chamador, de modo que a rota não vira canal de reconhecimento sobre a topologia interna.
+
+**A causa não se perde — ela muda de lugar.** O diagnóstico vai para o log, que já é redigido e limitado pela cadeia descrita abaixo. O evento de transição `health.degraded` carrega a categoria da falha (`timeout | connection | pool | authentication | query | unknown`), derivada da **forma** do erro — um SQLSTATE ou um código do `libuv`. Para as poucas falhas que o driver entrega sem código, a categoria é escolhida por igualdade exata contra uma allowlist fechada de mensagens constantes; o texto é **chave de consulta**, nunca conteúdo do registro. Em qualquer caminho o resultado é um conjunto fechado, de cardinalidade fixa, e nenhum campo do erro original — host, porta, mensagem — chega ao log.
+
+**A resposta declara `Cache-Control: no-store` nos dois status.** Uma resposta de saúde servida de um cache intermediário informa sobre um estado passado, que é precisamente o estado que a decisão não pode usar.
+
+*Consequência aceita, documentada para não ser diagnosticada como defeito:* como o PostgreSQL é compartilhado por todas as réplicas, uma indisponibilidade dele faz **todas** saírem do balanceamento e o Service ficar sem endpoints, em vez de desviar tráfego. O ganho da readiness está na falha por-réplica e no encerramento gracioso — ver [ADR 0003](./adr/0003-health-checks.md).
 
 ## Proteção de dados nos logs
 

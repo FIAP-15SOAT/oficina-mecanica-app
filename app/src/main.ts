@@ -3,7 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
-import { configureApp, resolvePort } from './config/app-bootstrap';
+import { configureApp, resolvePort } from './infrastructure/config/app-bootstrap';
 
 import { TECHNICAL_EVENTS } from './infrastructure/logging/technical-event.catalog';
 import { PinoLoggerAdapter } from './infrastructure/logging/pino-logger.adapter';
