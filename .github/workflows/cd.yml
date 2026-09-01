@@ -94,7 +94,7 @@ jobs:
           DB_NAME: ${{ vars.DB_NAME || 'techchallenge' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
+          CUSTOMER_JWT_PUBLIC_KEY: ${{ secrets.CUSTOMER_JWT_PUBLIC_KEY }}
         run: |
           DB_USER="${DB_USER}" \
           DB_PASSWORD="${DB_PASSWORD}" \
@@ -103,9 +103,9 @@ jobs:
           DB_NAME="${DB_NAME}" \
           JWT_SECRET="${JWT_SECRET}" \
           JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
-          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
+          CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" \
             envsubst \
-            '${DB_USER} ${DB_PASSWORD} ${DB_HOST} ${DB_PORT} ${DB_NAME} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
+            '${DB_USER} ${DB_PASSWORD} ${DB_HOST} ${DB_PORT} ${DB_NAME} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${CUSTOMER_JWT_PUBLIC_KEY}' \
             < k8s/01-api-secret.yaml \
             > k8s/01-api-secret.rendered.yaml
 

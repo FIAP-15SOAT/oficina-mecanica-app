@@ -34,7 +34,9 @@ export class CustomerJwtStrategy extends PassportStrategy(Strategy, 'customer-jw
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('CUSTOMER_JWT_PUBLIC_KEY'),
+      secretOrKey: configService
+        .getOrThrow<string>('CUSTOMER_JWT_PUBLIC_KEY')
+        .replaceAll(String.raw`\n`, '\n'),
       algorithms: ['RS256'],
       issuer: configService.getOrThrow<string>('CUSTOMER_JWT_ISSUER'),
       audience: configService.getOrThrow<string>('CUSTOMER_JWT_AUDIENCE'),

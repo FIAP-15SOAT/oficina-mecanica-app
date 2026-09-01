@@ -276,4 +276,39 @@ describe('CustomerJwtStrategy — real verification pipeline (via strategy.authe
     expect(result.outcome).toBe('fail');
     expect(userRepository.findById).not.toHaveBeenCalled();
   });
+
+  it('should accept a valid token when the configured public key has literal \\n escape sequences instead of real newlines', async () => {
+    const user = User.create({
+      name: 'Maria',
+      email: 'maria@example.com',
+      passwordHash: 'hash',
+      role: null,
+      cpf: '12345678909',
+    });
+    const userRepository = { findById: jest.fn().mockResolvedValue(user) };
+    const userCustomerRepository = {
+      findActiveCustomerIdsByUserId: jest.fn().mockResolvedValue([randomUUID()]),
+    };
+    const escapedKeyConfigService = {
+      getOrThrow: jest.fn((key: string) => {
+        const values: Record<string, string> = {
+          CUSTOMER_JWT_PUBLIC_KEY: CUSTOMER_JWT_TEST_PUBLIC_KEY.replaceAll('\n', '\\n'),
+          CUSTOMER_JWT_ISSUER: CUSTOMER_JWT_TEST_ISSUER,
+          CUSTOMER_JWT_AUDIENCE: CUSTOMER_JWT_TEST_AUDIENCE,
+        };
+        return values[key];
+      }),
+    };
+    const strategy = new CustomerJwtStrategy(
+      escapedKeyConfigService as never,
+      userRepository as never,
+      userCustomerRepository as never,
+    );
+
+    const token = signTestCustomerToken(user.id);
+    const result = await authenticateWithToken(strategy, token);
+
+    expect(result.outcome).toBe('success');
+    expect(result.value).toEqual({ sub: user.id, authFlow: 'CUSTOMER', email: user.email.value });
+  });
 });

@@ -95,7 +95,6 @@ export async function setupTestApp(options: SetupTestAppOptions = {}): Promise<T
   process.env.JWT_EXPIRATION = '15m';
   process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-for-e2e';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
-  process.env.QUOTE_DECISION_TOKEN_SECRET = 'test-jwt-secret-key-for-e2e';
   process.env.CUSTOMER_JWT_PUBLIC_KEY = CUSTOMER_JWT_TEST_PUBLIC_KEY;
   process.env.CUSTOMER_JWT_ISSUER = CUSTOMER_JWT_TEST_ISSUER;
   process.env.CUSTOMER_JWT_AUDIENCE = CUSTOMER_JWT_TEST_AUDIENCE;
