@@ -3,7 +3,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 export interface TokenPayload {
   sub: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
 }
 
 export interface TokenPair {

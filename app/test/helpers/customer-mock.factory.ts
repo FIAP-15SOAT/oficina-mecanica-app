@@ -33,6 +33,7 @@ export function createMockCustomer(overrides: Partial<Customer> = {}): Customer 
     email: Email.create('joao@email.com'),
     phone: Phone.create('11999999999'),
     address: null,
+    isActive: true,
     createdAt: now,
     updatedAt: now,
     ...overrides,

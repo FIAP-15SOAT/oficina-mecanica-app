@@ -169,6 +169,7 @@ describe('PrismaCustomerRepository', () => {
           state: 'ST',
           zipCode: '12345678',
         }),
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -194,6 +195,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -218,6 +220,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('dup@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -239,6 +242,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

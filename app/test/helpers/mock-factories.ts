@@ -14,6 +14,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     email: Email.create('admin@email.com'),
     passwordHash: '$2b$12$hashedpassword',
     role: UserRole.ADMIN,
+    cpf: null,
     isActive: true,
     createdAt: now,
     updatedAt: now,

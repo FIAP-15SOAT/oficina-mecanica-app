@@ -12,6 +12,6 @@ export interface AuthenticateUserOutputDto {
     id: string;
     name: string;
     email: string;
-    role: UserRole;
+    role: UserRole | null;
   };
 }
