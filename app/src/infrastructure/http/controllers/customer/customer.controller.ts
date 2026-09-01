@@ -33,6 +33,10 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '@infrastructure/http/decorators/current-user.decorator';
 
 import { CustomerController as CustomerCleanController } from '@interface-adapters/customer/customer.controller';
 import { UserRole } from '@domain/enums/user-role.enum';
@@ -66,8 +70,11 @@ export class CustomerController {
     description: 'Erro de validação de domínio (documento inválido)',
   })
   @ApiConflictResponse({ description: 'Documento ou e-mail já cadastrado' })
-  create(@Body() request: CreateCustomerRequestDto): Promise<CustomerDataResponseDto> {
-    return this.controller.create(request);
+  create(
+    @Body() request: CreateCustomerRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CustomerDataResponseDto> {
+    return this.controller.create(request, user.sub);
   }
 
   @Get()

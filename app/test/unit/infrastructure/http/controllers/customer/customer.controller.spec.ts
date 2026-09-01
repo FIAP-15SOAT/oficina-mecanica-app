@@ -44,11 +44,12 @@ describe('CustomerController', () => {
     it('should delegate to the clean controller and return its result', async () => {
       const response = CustomerPresenter.toDataResponse(createMockCustomer());
       jest.spyOn(cleanController, 'create').mockResolvedValue(response);
+      const userSub = randomUUID();
 
-      const result = await httpController.create(customerRequestStub);
+      const result = await httpController.create(customerRequestStub, { sub: userSub } as never);
 
       expect(result).toBe(response);
-      expect(cleanController.create).toHaveBeenCalledWith(customerRequestStub);
+      expect(cleanController.create).toHaveBeenCalledWith(customerRequestStub, userSub);
     });
   });
 

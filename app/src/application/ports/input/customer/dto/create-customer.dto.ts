@@ -8,4 +8,5 @@ export interface CreateCustomerDto {
   email: string;
   phone: string;
   address: AddressDto;
+  createAccess?: boolean;
 }

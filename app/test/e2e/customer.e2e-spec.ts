@@ -312,6 +312,57 @@ describe('Customer (E2E)', () => {
     it('should return 401 when no token is provided', async () => {
       await request(httpServer).post('/api/customers').send(validCustomer).expect(401);
     });
+
+    it('should grant customer access by default for INDIVIDUAL when createAccess is omitted', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validCustomer)
+        .expect(201);
+
+      const accessUsers = await request(httpServer)
+        .get(`/api/customers/${created.body.data.id}/access-users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(accessUsers.body.data).toHaveLength(1);
+    });
+
+    it('should not grant customer access when createAccess is false', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, createAccess: false })
+        .expect(201);
+
+      const accessUsers = await request(httpServer)
+        .get(`/api/customers/${created.body.data.id}/access-users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(accessUsers.body.data).toHaveLength(0);
+    });
+
+    it('should return 409 when createAccess is true combined with type COMPANY', async () => {
+      await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Empresa Parceira LTDA',
+          document: '11.222.333/0001-81',
+          type: 'COMPANY',
+          email: 'parceira@email.com',
+          phone: '(11) 93333-0000',
+          address: {
+            street: 'Av. Paulista, 2000',
+            city: 'São Paulo',
+            state: 'SP',
+            zipCode: '01310-100',
+          },
+          createAccess: true,
+        })
+        .expect(409);
+    });
   });
 
   // ─── GET /api/customers ───────────────────────────────────────────────────
@@ -500,7 +551,12 @@ describe('Customer (E2E)', () => {
       const second = await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ ...validCustomer, document: '987.654.321-00', email: 'outro@email.com' })
+        .send({
+          ...validCustomer,
+          document: '987.654.321-00',
+          email: 'outro@email.com',
+          createAccess: false,
+        })
         .expect(201);
 
       await request(httpServer)
@@ -538,10 +594,13 @@ describe('Customer (E2E)', () => {
     });
 
     it('should update document and email to new free values without conflict', async () => {
+      // createAccess: false avoids the identity-change lock (a customer with
+      // active access links cannot have its document changed), which is
+      // orthogonal to what this test exercises.
       const created = await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send(validCustomer)
+        .send({ ...validCustomer, createAccess: false })
         .expect(201);
 
       // Changing both document and email to brand-new values exercises the
