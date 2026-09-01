@@ -82,4 +82,8 @@ describe('field registry', () => {
 
     expect(outside).toEqual([]);
   });
+
+  it('should not declare a logical field named cpf (CPF must never be logged, masked or not)', () => {
+    expect(Object.keys(LOGICAL_FIELDS)).not.toContain('cpf');
+  });
 });
