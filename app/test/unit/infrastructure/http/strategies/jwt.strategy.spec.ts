@@ -5,6 +5,7 @@ import { JwtStrategy } from '@infrastructure/http/strategies/jwt.strategy';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { User } from '@domain/entities/user.entity';
 
 import { TokenPayload } from '@application/ports/output/token.service.interface';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/user-mock.factory';
@@ -45,10 +46,34 @@ describe('JwtStrategy', () => {
 
     expect(result).toEqual({
       sub: mockUser.id,
+      authFlow: 'INTERNAL',
       email: mockUser.email.value,
       role: mockUser.role,
     });
     expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
+  });
+
+  it('should tag the returned principal with authFlow INTERNAL', async () => {
+    const user = User.create({
+      name: 'Ana',
+      email: 'ana@example.com',
+      passwordHash: 'hash',
+      role: UserRole.ADMIN,
+    });
+    userRepository.findById.mockResolvedValue(user);
+
+    const result = await strategy.validate({
+      sub: user.id,
+      email: user.email.value,
+      role: user.role!,
+    });
+
+    expect(result).toEqual({
+      sub: user.id,
+      authFlow: 'INTERNAL',
+      email: user.email.value,
+      role: UserRole.ADMIN,
+    });
   });
 
   it('should throw UnauthorizedException when user does not exist', async () => {
@@ -84,6 +109,26 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate(payload)).rejects.toThrow('Usuário inválido ou desativado');
   });
 
+  it('should throw UnauthorizedException when the user has no internal role (external-only account)', async () => {
+    const mockUser = createMockUser({
+      id: 'user-uuid-external',
+      email: Email.create('external@example.com'),
+      role: null,
+      isActive: true,
+    });
+
+    userRepository.findById.mockResolvedValue(mockUser);
+
+    const payload: TokenPayload = {
+      sub: mockUser.id,
+      email: mockUser.email.value,
+      role: null,
+    };
+
+    await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+    await expect(strategy.validate(payload)).rejects.toThrow('Usuário inválido ou desativado');
+  });
+
   it('should return payload with user data from database', async () => {
     const mockUser = createMockUser({
       id: 'user-uuid-789',
@@ -103,8 +148,11 @@ describe('JwtStrategy', () => {
     const result = await strategy.validate(payload);
 
     // Should return data from database, not from token
+    expect(result.authFlow).toBe('INTERNAL');
     expect(result.email).toBe(mockUser.email.value);
-    expect(result.role).toBe(mockUser.role);
+    if (result.authFlow === 'INTERNAL') {
+      expect(result.role).toBe(mockUser.role);
+    }
     expect(result.sub).toBe(mockUser.id);
   });
 });

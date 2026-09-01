@@ -8,6 +8,7 @@ import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { JwtStrategy } from '@infrastructure/http/strategies/jwt.strategy';
+import { CustomerJwtStrategy } from '@infrastructure/http/strategies/customer-jwt.strategy';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IPasswordResetCodeRepository } from '@domain/interfaces/repositories/password-reset-code.repository.interface';
@@ -60,7 +61,8 @@ import { AuthController } from './auth.controller';
       ],
     },
     JwtStrategy,
+    CustomerJwtStrategy,
   ],
-  exports: [JwtStrategy],
+  exports: [JwtStrategy, CustomerJwtStrategy],
 })
 export class AuthModule {}

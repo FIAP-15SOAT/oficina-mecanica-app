@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { TokenPayload } from '@application/ports/output/token.service.interface';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 
 /**
  * Alias de conveniência para TokenPayload.
@@ -11,6 +12,13 @@ export type AuthenticatedUser = TokenPayload;
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): TokenPayload => {
     const request = ctx.switchToHttp().getRequest<{ user: TokenPayload }>();
+    return request.user;
+  },
+);
+
+export const CurrentPrincipal = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): AuthenticatedPrincipal => {
+    const request = ctx.switchToHttp().getRequest<{ user: AuthenticatedPrincipal }>();
     return request.user;
   },
 );

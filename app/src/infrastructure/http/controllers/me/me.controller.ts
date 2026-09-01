@@ -11,13 +11,9 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
-// TODO(Task 12, Step 6): swap JwtAuthGuard for AnyAuthGuard once the combined
-// internal/external auth guard exists, so this route accepts both flows.
-import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
+import { AnyAuthGuard } from '@infrastructure/http/guards/any-auth.guard';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-user.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 
 import { MeController as MeCleanController } from '@interface-adapters/me/me.controller';
 import { ChangeOwnPasswordRequestDto } from './dto/requests/change-own-password-request.dto';
@@ -31,7 +27,7 @@ export class MeController {
   constructor(private readonly controller: MeCleanController) {}
 
   @Patch('password')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AnyAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Trocar a própria senha (token interno ou externo)' })
   @ApiNoContentResponse()
@@ -40,8 +36,8 @@ export class MeController {
   @ApiConflictResponse({ description: 'Nova senha é igual à senha atual' })
   changePassword(
     @Body() request: ChangeOwnPasswordRequestDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<void> {
-    return this.controller.changePassword(user.sub, request);
+    return this.controller.changePassword(principal.sub, request);
   }
 }

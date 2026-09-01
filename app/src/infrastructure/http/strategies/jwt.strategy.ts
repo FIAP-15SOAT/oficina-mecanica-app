@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { TokenPayload } from '@application/ports/output/token.service.interface';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -20,13 +21,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: TokenPayload): Promise<TokenPayload> {
+  async validate(payload: TokenPayload): Promise<AuthenticatedPrincipal> {
     const user = await this.userRepository.findById(payload.sub);
 
-    if (!user?.isActive) {
+    if (!user?.isActive || !user.role) {
       throw new UnauthorizedException('Usuário inválido ou desativado');
     }
 
-    return { sub: user.id, email: user.email.value, role: user.role };
+    return { sub: user.id, authFlow: 'INTERNAL', email: user.email.value, role: user.role };
   }
 }
