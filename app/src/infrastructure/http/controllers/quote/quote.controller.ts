@@ -24,7 +24,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiProduces,
-  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -33,7 +32,6 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
-import { Public } from '@infrastructure/http/decorators/public.decorator';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -48,7 +46,6 @@ import { AddQuotePartSupplyRequestDto } from './dto/requests/add-quote-part-supp
 import { UpdateQuoteServiceItemRequestDto } from './dto/requests/update-quote-service-item-request.dto';
 import { UpdateQuotePartSupplyItemRequestDto } from './dto/requests/update-quote-part-supply-item-request.dto';
 import { UpdateQuoteStatusRequestDto } from './dto/requests/update-quote-status-request.dto';
-import { QuoteEmailDecisionRequestDto } from './dto/requests/quote-email-decision-request.dto';
 import { FindAllQuotesQueryDto } from './dto/requests/find-all-quotes-query.dto';
 import {
   QuoteDataResponseDto,
@@ -236,21 +233,5 @@ export class QuoteController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<QuoteDataResponseDto> {
     return this.controller.updateStatus(id, user.sub, request);
-  }
-
-  @Get(':id/decisions')
-  @Public()
-  @ApiOperation({ summary: 'Aprovar ou rejeitar orçamento via link de email' })
-  @ApiOkResponse({ type: QuoteDataResponseDto, description: 'Decisão registrada com sucesso' })
-  @ApiUnauthorizedResponse({ description: 'Token inválido ou expirado' })
-  @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
-  @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiQuery({ name: 'token', description: 'Token assinado para decisão do orçamento' })
-  emailDecision(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query() query: QuoteEmailDecisionRequestDto,
-  ): Promise<QuoteDataResponseDto> {
-    return this.controller.emailDecision(id, query.token);
   }
 }

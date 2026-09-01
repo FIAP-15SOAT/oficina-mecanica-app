@@ -4,10 +4,7 @@ import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrder } from '@domain/entities/work-order.entity';
 
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
-import { TokenType } from '@domain/enums/token-type.enum';
-import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 
-import { ITokenService } from '@application/ports/output/token.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
@@ -18,19 +15,10 @@ import {
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
-interface QuoteEmailDecisionTokenPayload extends Record<string, unknown> {
-  quoteId: string;
-  action: QuoteDecisionAction;
-  type: TokenType;
-}
-
 export class SubmitQuoteUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly emailSender: IEmailSenderService,
-    private readonly tokenService: ITokenService,
-    private readonly decisionSecret: string,
-    private readonly apiBaseUrl: string,
     private readonly logger: ILogger,
   ) {}
 
@@ -64,7 +52,7 @@ export class SubmitQuoteUseCase {
 
       updatedQuote.workOrder = workOrder;
 
-      await this.sendEmailNotification(quote, customer, workOrder.number.toString());
+      await this.sendQuoteNotification(repos, quote, customer, workOrder.number.toString());
 
       return {
         quote: updatedQuote,
@@ -107,61 +95,67 @@ export class SubmitQuoteUseCase {
     ]);
   }
 
-  private async sendEmailNotification(
+  private async sendQuoteNotification(
+    repos: IRepositories,
     quote: Quote,
     customer: Customer,
     workOrderNumber: string,
   ): Promise<void> {
-    const emailContent = this.buildEmailContent(quote, customer, workOrderNumber);
-    await this.emailSender.send(emailContent);
+    const recipients = await this.resolveRecipients(repos, customer);
+
+    await Promise.all(
+      recipients.map((recipient) =>
+        this.emailSender.send(this.buildEmailContent(quote, recipient, workOrderNumber)),
+      ),
+    );
+  }
+
+  private async resolveRecipients(
+    repos: IRepositories,
+    customer: Customer,
+  ): Promise<{ email: string; name: string }[]> {
+    const linkedUsers = await repos.userCustomer.findUsersByCustomerId(customer.id);
+    const activeLinkedUsers = linkedUsers.filter((user) => user.isActive);
+
+    if (activeLinkedUsers.length === 0) {
+      return [{ email: customer.email.value, name: customer.name }];
+    }
+
+    const seen = new Set<string>();
+    const recipients: { email: string; name: string }[] = [];
+
+    for (const user of activeLinkedUsers) {
+      if (seen.has(user.email.value)) continue;
+      seen.add(user.email.value);
+      recipients.push({ email: user.email.value, name: user.name });
+    }
+
+    return recipients;
   }
 
   private buildEmailContent(
     quote: Quote,
-    customer: Customer,
+    recipient: { email: string; name: string },
     workOrderNumber: string,
   ): SendEmailInput {
-    const approveToken = this.tokenService.signWithSecret(
-      {
-        quoteId: quote.id,
-        action: QuoteDecisionAction.APPROVE,
-        type: TokenType.QUOTE_EMAIL_DECISION,
-      } satisfies QuoteEmailDecisionTokenPayload,
-      this.decisionSecret,
-      '7d',
-    );
-
-    const rejectToken = this.tokenService.signWithSecret(
-      {
-        quoteId: quote.id,
-        action: QuoteDecisionAction.REJECT,
-        type: TokenType.QUOTE_EMAIL_DECISION,
-      } satisfies QuoteEmailDecisionTokenPayload,
-      this.decisionSecret,
-      '7d',
-    );
-
-    const approveLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?token=${encodeURIComponent(approveToken)}`;
-    const rejectLink = `${this.apiBaseUrl}/quotes/${quote.id}/decisions?token=${encodeURIComponent(rejectToken)}`;
-
     return {
-      toEmail: customer.email.value,
-      toName: customer.name,
+      toEmail: recipient.email,
+      toName: recipient.name,
       subject: `Orçamento para Ordem de Serviço ${workOrderNumber} - Aguardando sua aprovação`,
       message: {
         text:
-          `Olá ${customer.name},\n\n` +
-          `Seu orçamento para a Ordem de Serviço ${workOrderNumber} está pronto.\n` +
-          `Valor total: R$ ${quote.totalAmount.toFixed(2)}\n\n` +
-          `Para aprovar, acesse: ${approveLink}\n` +
-          `Para reprovar, acesse: ${rejectLink}\n\n` +
+          `Olá ${recipient.name},\n\n` +
+          `Um orçamento para a Ordem de Serviço ${workOrderNumber} está disponível para sua aprovação.\n` +
+          `Valor total: R$ ${quote.totalAmount.toFixed(2)}\n` +
+          `Identificador do orçamento: ${quote.id}\n\n` +
+          `Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.\n\n` +
           `Atenciosamente,\nEquipe da Oficina Mecânica`,
         html:
-          `<p>Olá <strong>${customer.name}</strong>,</p>` +
-          `<p>Seu orçamento para a Ordem de Serviço <strong>${workOrderNumber}</strong> está pronto.</p>` +
+          `<p>Olá <strong>${recipient.name}</strong>,</p>` +
+          `<p>Um orçamento para a Ordem de Serviço <strong>${workOrderNumber}</strong> está disponível para sua aprovação.</p>` +
           `<p><strong>Valor total:</strong> R$ ${quote.totalAmount.toFixed(2)}</p>` +
-          `<p><a href="${approveLink}">Aprovar orçamento</a></p>` +
-          `<p><a href="${rejectLink}">Reprovar orçamento</a></p>` +
+          `<p><strong>Identificador do orçamento:</strong> ${quote.id}</p>` +
+          `<p>Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.</p>` +
           `<p>Atenciosamente,<br/>Equipe da Oficina Mecânica</p>`,
       },
     };

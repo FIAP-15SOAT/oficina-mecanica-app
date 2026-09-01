@@ -500,9 +500,7 @@ describe('Structured logging (E2E)', () => {
     it('should never log a capability token carried in the query string', async () => {
       const token = 'eyJhbGciOiJIUzI1NiJ9.eyJxdW90ZUlkIjoiMSJ9.c2lnbmF0dXJlLXZhbHVlLWhlcmU';
 
-      await request(httpServer)
-        .get(`/api/quotes/00000000-0000-4000-8000-000000000000/decisions?token=${token}`)
-        .expect(401);
+      await request(httpServer).get(`/api/customers?token=${token}`).expect(401);
 
       const serialized = JSON.stringify(capture.lines());
 
