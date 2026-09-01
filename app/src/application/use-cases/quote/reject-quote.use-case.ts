@@ -16,7 +16,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
   ) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
-    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus } =
+    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus, customerId } =
       await this.unitOfWork.executeTransaction(async (repos) => {
         const quote = await repos.quote.findById(quoteId);
 
@@ -29,6 +29,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
         quote.reject();
 
         const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+        const customerId = workOrder.customerId;
         const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
 
         const hasOtherSentQuote = workOrderQuotes.some(
@@ -42,6 +43,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
             workOrderNumber: workOrder.number.toString(),
             previousQuoteStatus,
             previousStatus: undefined,
+            customerId,
           };
         }
 
@@ -69,6 +71,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
           workOrderNumber: workOrder.number.toString(),
           previousQuoteStatus,
           previousStatus,
+          customerId,
         };
       });
 
@@ -79,6 +82,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
       workOrderNumber,
       previousWorkOrderStatus: previousStatus,
       workOrderStatusChanged: previousStatus !== undefined,
+      customerId,
     });
 
     return quote;

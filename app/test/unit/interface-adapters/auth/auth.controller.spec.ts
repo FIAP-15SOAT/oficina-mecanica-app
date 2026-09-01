@@ -7,32 +7,27 @@ import { LoginRequest } from '@interface-adapters/auth/requests/login-request';
 import { RefreshTokenRequest } from '@interface-adapters/auth/requests/refresh-token-request';
 
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
-import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
 import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
-import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authenticateUseCase: jest.Mocked<IAuthenticateUserUseCase>;
-  let getCurrentUserUseCase: jest.Mocked<IGetCurrentUserUseCase>;
   let refreshTokenUseCase: jest.Mocked<IRefreshTokenUseCase>;
   let confirmPasswordResetUseCase: { execute: jest.Mock };
 
   beforeEach(() => {
     authenticateUseCase = { execute: jest.fn() };
-    getCurrentUserUseCase = { execute: jest.fn() };
     refreshTokenUseCase = { execute: jest.fn() };
     confirmPasswordResetUseCase = { execute: jest.fn() };
 
     controller = new AuthController(
       authenticateUseCase,
-      getCurrentUserUseCase,
       refreshTokenUseCase,
       confirmPasswordResetUseCase as unknown as ConfirmPasswordResetUseCase,
     );
@@ -86,29 +81,6 @@ describe('AuthController', () => {
 
       expect(result).toEqual(AuthPresenter.toAuthDataResponse(refreshResult));
       expect(refreshTokenUseCase.execute).toHaveBeenCalledWith(request);
-    });
-  });
-
-  describe('me', () => {
-    it('should return the current user data wrapped in data', async () => {
-      const userId = randomUUID();
-
-      const currentUser: GetCurrentUserOutputDto = {
-        id: userId,
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: UserRole.ATTENDANT,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      getCurrentUserUseCase.execute.mockResolvedValue(currentUser);
-
-      const result = await controller.me(userId);
-
-      expect(result).toEqual(AuthPresenter.toMeDataResponse(currentUser));
-      expect(getCurrentUserUseCase.execute).toHaveBeenCalledWith(userId);
     });
   });
 

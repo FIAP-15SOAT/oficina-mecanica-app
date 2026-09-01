@@ -59,6 +59,7 @@ export const BUSINESS_EVENTS = {
     workOrderId: string;
     workOrderNumber: string;
     previousWorkOrderStatus: string;
+    customerId: string;
   }>({
     name: 'quote.approved',
     message: 'quote approved and work order items applied',
@@ -71,6 +72,7 @@ export const BUSINESS_EVENTS = {
     workOrderNumber: string;
     previousWorkOrderStatus?: string;
     workOrderStatusChanged: boolean;
+    customerId: string;
   }>({
     name: 'quote.rejected',
     message: 'quote rejected by customer decision',

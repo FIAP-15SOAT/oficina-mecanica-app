@@ -132,6 +132,29 @@ describe('PrismaWorkOrderRepository', () => {
       );
     });
 
+    it('should filter by a set of customer ids when customerIdIn is provided', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+      const ids = [randomUUID(), randomUUID()];
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerIdIn: ids });
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { customerId: { in: ids } } }),
+      );
+    });
+
+    it('should filter to zero results when customerIdIn is an empty array, not skip the filter', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+      prisma.workOrder.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { customerIdIn: [] });
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { customerId: { in: [] } } }),
+      );
+    });
+
     it('should filter by vehicleId', async () => {
       const vehicleId = randomUUID();
       prisma.workOrder.findMany.mockResolvedValue([]);

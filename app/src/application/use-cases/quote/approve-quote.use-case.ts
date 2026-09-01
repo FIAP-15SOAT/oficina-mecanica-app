@@ -29,6 +29,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
       previousQuoteStatus,
       previousStatus,
       reservation,
+      customerId,
     } = await this.unitOfWork.executeTransaction(async (repos) => {
       const quote = await repos.quote.findByIdWithDetails(quoteId);
 
@@ -77,6 +78,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
         previousQuoteStatus,
         previousStatus,
         reservation,
+        customerId: workOrder.customerId,
       };
     });
 
@@ -95,6 +97,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
       workOrderId,
       workOrderNumber,
       previousWorkOrderStatus: previousStatus,
+      customerId,
     });
 
     return quote;

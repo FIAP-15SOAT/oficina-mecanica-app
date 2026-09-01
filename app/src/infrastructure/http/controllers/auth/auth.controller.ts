@@ -1,7 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -10,17 +9,11 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
-import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { Public } from '@infrastructure/http/decorators/public.decorator';
 
 import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 
 import { AuthDataResponseDto } from './dto/responses/auth-response.dto';
-import { MeDataResponseDto } from './dto/responses/me-response.dto';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
 import { ConfirmPasswordResetRequestDto } from './dto/requests/confirm-password-reset-request.dto';
@@ -50,16 +43,6 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido ou expirado' })
   refresh(@Body() request: RefreshTokenRequestDto): Promise<AuthDataResponseDto> {
     return this.controller.refresh(request);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Obter dados do usuário autenticado' })
-  @ApiOkResponse({ type: MeDataResponseDto, description: 'Dados do usuário' })
-  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
-  me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
-    return this.controller.me(user.sub);
   }
 
   @Post('password-reset-confirmations')

@@ -95,6 +95,7 @@ describe('PinoLoggerAdapter', () => {
       workOrderId: 'wo-1',
       workOrderNumber: 'OS-0001',
       previousWorkOrderStatus: 'AWAITING_APPROVAL',
+      customerId: 'customer-1',
     });
 
     expect(lines[0]).toMatchObject({

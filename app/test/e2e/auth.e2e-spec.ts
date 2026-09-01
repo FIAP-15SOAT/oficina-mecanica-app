@@ -184,10 +184,10 @@ describe('Auth (E2E)', () => {
     });
   });
 
-  // ─── GET /api/auth/me ─────────────────────────────────────────────────────
+  // ─── GET /api/me ──────────────────────────────────────────────────────────
 
-  describe('GET /api/auth/me', () => {
-    it('should return current user data', async () => {
+  describe('GET /api/me', () => {
+    it('should return current user data for an internal principal', async () => {
       const auth = await registerAndLogin(
         httpServer,
         { name: 'Me User', email: 'me@e2e.test' },
@@ -195,7 +195,7 @@ describe('Auth (E2E)', () => {
       );
 
       const res = await request(httpServer)
-        .get('/api/auth/me')
+        .get('/api/me')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .expect(200);
 
@@ -205,18 +205,18 @@ describe('Auth (E2E)', () => {
           name: 'Me User',
           email: 'me@e2e.test',
           role: 'ADMIN',
-          isActive: true,
+          customers: [],
         }),
       );
     });
 
     it('should return 401 without token', async () => {
-      await request(httpServer).get('/api/auth/me').expect(401);
+      await request(httpServer).get('/api/me').expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
       await request(httpServer)
-        .get('/api/auth/me')
+        .get('/api/me')
         .set('Authorization', 'Bearer invalid.token.here')
         .expect(401);
     });
@@ -237,28 +237,9 @@ describe('Auth (E2E)', () => {
       });
 
       await request(httpServer)
-        .get('/api/auth/me')
+        .get('/api/me')
         .set('Authorization', `Bearer ${auth.accessToken}`)
         .expect(401);
-    });
-
-    it('should return dates with Brazil timezone offset in response', async () => {
-      const auth = await registerAndLogin(
-        httpServer,
-        {
-          name: 'Date User',
-          email: 'date-user@e2e.test',
-        },
-        ctx.prisma,
-      );
-
-      const res = await request(httpServer)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${auth.accessToken}`)
-        .expect(200);
-
-      expect(res.body.data.createdAt).toMatch(/-03:00$/);
-      expect(res.body.data.updatedAt).toMatch(/-03:00$/);
     });
   });
 

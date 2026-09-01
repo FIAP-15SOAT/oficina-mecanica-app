@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
-import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
 import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
@@ -39,7 +38,6 @@ import { AuthController } from './auth.controller';
             tokenService,
             logger.forContext(AuthenticateUserUseCase.name),
           ),
-          new GetCurrentUserUseCase(userRepository),
           new RefreshTokenUseCase(
             userRepository,
             tokenService,
