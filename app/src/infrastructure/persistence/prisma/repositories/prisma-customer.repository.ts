@@ -144,6 +144,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
           type: customer.type,
           email: customer.email.value,
           phone: customer.phone.value,
+          isActive: customer.isActive,
           address: addressData,
         },
         include: ADDRESS_INCLUDE,

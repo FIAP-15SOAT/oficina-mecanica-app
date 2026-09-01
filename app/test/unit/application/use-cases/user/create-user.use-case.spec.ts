@@ -10,11 +10,13 @@ describe('CreateUserUseCase', () => {
     };
     const hashService = { hash: jest.fn().mockResolvedValue('hashed-generated-password') };
     const emailSender = { send: jest.fn().mockResolvedValue(undefined) };
+    const logger = { error: jest.fn() };
 
     const useCase = new CreateUserUseCase(
       userRepository as never,
       hashService as never,
-      emailSender as never,
+      emailSender,
+      logger as never,
     );
 
     const result = await useCase.execute({
@@ -38,11 +40,13 @@ describe('CreateUserUseCase', () => {
     };
     const hashService = { hash: jest.fn() };
     const emailSender = { send: jest.fn() };
+    const logger = { error: jest.fn() };
 
     const useCase = new CreateUserUseCase(
       userRepository as never,
       hashService as never,
-      emailSender as never,
+      emailSender,
+      logger as never,
     );
 
     await expect(
@@ -57,15 +61,43 @@ describe('CreateUserUseCase', () => {
     };
     const hashService = { hash: jest.fn().mockResolvedValue('hashed') };
     const emailSender = { send: jest.fn().mockRejectedValue(new Error('smtp down')) };
+    const logger = { error: jest.fn() };
 
     const useCase = new CreateUserUseCase(
       userRepository as never,
       hashService as never,
-      emailSender as never,
+      emailSender,
+      logger as never,
     );
 
     await expect(
       useCase.execute({ name: 'Novo', email: 'novo@example.com', role: UserRole.ATTENDANT }),
     ).resolves.toBeDefined();
+  });
+
+  it('should log the error when the initial password email fails to send', async () => {
+    const userRepository = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockImplementation((user) => Promise.resolve(user)),
+    };
+    const hashService = { hash: jest.fn().mockResolvedValue('hashed') };
+    const sendError = new Error('smtp down');
+    const emailSender = { send: jest.fn().mockRejectedValue(sendError) };
+    const logger = { error: jest.fn() };
+
+    const useCase = new CreateUserUseCase(
+      userRepository as never,
+      hashService as never,
+      emailSender,
+      logger as never,
+    );
+
+    await useCase.execute({
+      name: 'Novo',
+      email: 'novo@example.com',
+      role: UserRole.ATTENDANT,
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(expect.any(String), sendError);
   });
 });

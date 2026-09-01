@@ -33,7 +33,12 @@ import { UserController } from './user.controller';
         logger: ILogger,
       ) =>
         new UserCleanController(
-          new CreateUserUseCase(userRepository, hashService, emailSender),
+          new CreateUserUseCase(
+            userRepository,
+            hashService,
+            emailSender,
+            logger.forContext(CreateUserUseCase.name),
+          ),
           new FindUserByIdUseCase(userRepository),
           new FindAllUsersUseCase(userRepository),
           new UpdateUserUseCase(userRepository),

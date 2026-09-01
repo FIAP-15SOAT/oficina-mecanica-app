@@ -51,7 +51,9 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-in-production}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
       BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
-      QUOTE_DECISION_TOKEN_SECRET: ${QUOTE_DECISION_TOKEN_SECRET:-change-me-quote-decision-in-production}
+      CUSTOMER_JWT_PUBLIC_KEY: ${CUSTOMER_JWT_PUBLIC_KEY:------BEGIN PUBLIC KEY-----\nMIIB...\n-----END PUBLIC KEY-----}
+      CUSTOMER_JWT_ISSUER: ${CUSTOMER_JWT_ISSUER:-oficina-customer-auth}
+      CUSTOMER_JWT_AUDIENCE: ${CUSTOMER_JWT_AUDIENCE:-oficina-api}
       MAIL_HOST: mailhog
       MAIL_PORT: 1025
       TZ: America/Sao_Paulo

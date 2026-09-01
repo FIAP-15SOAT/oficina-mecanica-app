@@ -3,6 +3,7 @@ import { PasswordGenerator } from '@domain/services/password-generator';
 
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 
 import {
@@ -16,6 +17,7 @@ export class CreateUserUseCase {
     private readonly userRepository: IUserRepository,
     private readonly hashService: IHashService,
     private readonly emailSender: IEmailSenderService,
+    private readonly logger: ILogger,
   ) {}
 
   async execute(createUserDto: CreateUserDto): Promise<CreateUserOutputDto> {
@@ -70,9 +72,10 @@ export class CreateUserUseCase {
             `<p>Atenciosamente,<br/>Equipe da Oficina Mecânica</p>`,
         },
       });
-    } catch {
+    } catch (error) {
       // Falha de envio não deve reverter a criação já persistida (spec §8.1
       // aplica o mesmo princípio à concessão de acesso).
+      this.logger.error('Falha ao enviar e-mail de senha inicial', error);
     }
   }
 }

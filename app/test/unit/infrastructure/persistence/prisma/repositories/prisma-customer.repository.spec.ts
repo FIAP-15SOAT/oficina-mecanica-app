@@ -186,6 +186,31 @@ describe('PrismaCustomerRepository', () => {
       );
     });
 
+    it('should include isActive in the persisted data so status changes are not silently dropped', async () => {
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        type: CustomerType.INDIVIDUAL,
+        email: Email.create('test@example.com'),
+        phone: Phone.create('11999999999'),
+        address: null,
+        isActive: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.customer.update.mockResolvedValue(createMockPrismaCustomer({ id: customer.id }));
+
+      await repository.update(customer);
+
+      expect(prisma.customer.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ isActive: false }),
+        }),
+      );
+    });
+
     it('should send delete for address when customer has no address', async () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
