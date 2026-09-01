@@ -8,6 +8,8 @@ import { IStockMovementRepository } from './stock-movement.repository.interface'
 import { IPartSupplyRepository } from './part-supply.repository.interface';
 import { IServiceRepository } from './service.repository.interface';
 import { IUserRepository } from './user.repository.interface';
+import { IUserCustomerRepository } from './user-customer.repository.interface';
+import { IPasswordResetCodeRepository } from './password-reset-code.repository.interface';
 
 export interface IRepositories {
   customer: ICustomerRepository;
@@ -20,6 +22,8 @@ export interface IRepositories {
   partSupply: IPartSupplyRepository;
   service: IServiceRepository;
   user: IUserRepository;
+  userCustomer: IUserCustomerRepository;
+  passwordResetCode: IPasswordResetCodeRepository;
 }
 
 export interface IUnitOfWork {

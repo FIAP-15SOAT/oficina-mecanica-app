@@ -28,6 +28,7 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
+          cpf: user.cpf,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -37,7 +38,9 @@ export class PrismaUserRepository implements IUserRepository {
       return UserMapper.toDomain(created);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ResourceConflictException('E-mail já cadastrado');
+        throw new ResourceConflictException(
+          conflictingField(error) === 'cpf' ? 'CPF já cadastrado' : 'E-mail já cadastrado',
+        );
       }
       throw error;
     }
@@ -53,6 +56,14 @@ export class PrismaUserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!record) return null;
+
+    return UserMapper.toDomain(record);
+  }
+
+  async findByCpf(cpf: string): Promise<User | null> {
+    const record = await this.prisma.user.findUnique({ where: { cpf } });
 
     if (!record) return null;
 
@@ -95,6 +106,7 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
+          cpf: user.cpf,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
@@ -104,7 +116,11 @@ export class PrismaUserRepository implements IUserRepository {
       return UserMapper.toDomain(updated);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ResourceConflictException('E-mail já cadastrado para outro usuário');
+        throw new ResourceConflictException(
+          conflictingField(error) === 'cpf'
+            ? 'CPF já cadastrado para outro usuário'
+            : 'E-mail já cadastrado para outro usuário',
+        );
       }
       throw error;
     }
@@ -113,4 +129,13 @@ export class PrismaUserRepository implements IUserRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.user.delete({ where: { id } });
   }
+}
+
+function conflictingField(error: Prisma.PrismaClientKnownRequestError): string | undefined {
+  const target = error.meta?.target;
+
+  if (Array.isArray(target)) return target[0] as string | undefined;
+  if (typeof target === 'string') return target;
+
+  return undefined;
 }
