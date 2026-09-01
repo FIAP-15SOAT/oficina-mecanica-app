@@ -1,11 +1,24 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiProduces,
@@ -26,7 +39,10 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerAccessController as CustomerAccessCleanController } from '@interface-adapters/customer-access/customer-access.controller';
 
 import { GrantCustomerAccessRequestDto } from './dto/requests/grant-customer-access-request.dto';
-import { CustomerAccessDataResponseDto } from './dto/responses/customer-access-response.dto';
+import {
+  AccessUserListResponseDto,
+  CustomerAccessDataResponseDto,
+} from './dto/responses/customer-access-response.dto';
 
 @ApiTags('Acesso Externo de Clientes')
 @ApiProduces('application/json')
@@ -56,5 +72,33 @@ export class CustomerAccessController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CustomerAccessDataResponseDto> {
     return this.controller.grantAccess(customerId, user.sub, request);
+  }
+
+  @Get(':customerId/access-users')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @ApiOperation({ summary: 'Listar usuários com acesso a um cliente' })
+  @ApiParam({ name: 'customerId', format: 'uuid' })
+  @ApiOkResponse({ type: AccessUserListResponseDto })
+  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
+  listAccessUsers(
+    @Param('customerId', ParseUUIDPipe) customerId: string,
+  ): Promise<AccessUserListResponseDto> {
+    return this.controller.listAccessUsers(customerId);
+  }
+
+  @Delete(':customerId/access-users/:userId')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover acesso externo de um usuário a um cliente' })
+  @ApiParam({ name: 'customerId', format: 'uuid' })
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ description: 'Vínculo não encontrado' })
+  revokeAccess(
+    @Param('customerId', ParseUUIDPipe) customerId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    return this.controller.revokeAccess(customerId, userId, user.sub);
   }
 }
