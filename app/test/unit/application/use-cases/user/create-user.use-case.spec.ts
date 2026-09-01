@@ -1,76 +1,71 @@
-import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
-import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
-import { UserRole } from '@domain/enums/user-role.enum';
-import {
-  createMockHashService,
-  createMockUser,
-  createMockUserRepository,
-} from '../../../../helpers/mock-factories';
 import { CreateUserUseCase } from '@application/use-cases/user/create-user.use-case';
+import { UserRole } from '@domain/enums/user-role.enum';
+import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 
 describe('CreateUserUseCase', () => {
-  let useCase: CreateUserUseCase;
-  let userRepository: ReturnType<typeof createMockUserRepository>;
-  let hashService: ReturnType<typeof createMockHashService>;
+  it('should generate a password, hash it, and email it to the new user', async () => {
+    const userRepository = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockImplementation((user) => Promise.resolve(user)),
+    };
+    const hashService = { hash: jest.fn().mockResolvedValue('hashed-generated-password') };
+    const emailSender = { send: jest.fn().mockResolvedValue(undefined) };
 
-  beforeEach(() => {
-    userRepository = createMockUserRepository();
-    hashService = createMockHashService();
-    useCase = new CreateUserUseCase(userRepository, hashService);
-  });
-
-  it('should create user successfully', async () => {
-    userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.create.mockImplementation((user) =>
-      Promise.resolve(
-        createMockUser({
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isActive: user.isActive,
-        }),
-      ),
+    const useCase = new CreateUserUseCase(
+      userRepository as never,
+      hashService as never,
+      emailSender as never,
     );
 
     const result = await useCase.execute({
-      name: 'Lucas Almeida',
-      email: 'lucas@email.com',
-      password: 'Senha@123',
-      role: UserRole.MECHANIC,
+      name: 'Novo Funcionário',
+      email: 'novo@example.com',
+      role: UserRole.ATTENDANT,
     });
 
-    expect(result.name).toBe('Lucas Almeida');
-    expect(result.role).toBe(UserRole.MECHANIC);
-    expect(hashService.hash).toHaveBeenCalledWith('Senha@123');
+    expect(result.email).toBe('novo@example.com');
+    expect(hashService.hash).toHaveBeenCalledWith(expect.any(String));
+    expect(emailSender.send).toHaveBeenCalledWith(
+      expect.objectContaining({ toEmail: 'novo@example.com' }),
+    );
+    expect(result).not.toHaveProperty('password');
   });
 
-  it('should throw DomainValidationException if password is weak', async () => {
-    await expect(
-      useCase.execute({
-        name: 'Lucas Almeida',
-        email: 'lucas@email.com',
-        password: '123456',
-        role: UserRole.MECHANIC,
-      }),
-    ).rejects.toThrow(DomainValidationException);
+  it('should throw when the email is already registered', async () => {
+    const userRepository = {
+      findByEmail: jest.fn().mockResolvedValue({ id: 'existing' }),
+      create: jest.fn(),
+    };
+    const hashService = { hash: jest.fn() };
+    const emailSender = { send: jest.fn() };
 
-    expect(userRepository.findByEmail).not.toHaveBeenCalled();
-    expect(hashService.hash).not.toHaveBeenCalled();
-    expect(userRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw ResourceConflictException if email already exists', async () => {
-    userRepository.findByEmail.mockResolvedValue(createMockUser());
+    const useCase = new CreateUserUseCase(
+      userRepository as never,
+      hashService as never,
+      emailSender as never,
+    );
 
     await expect(
-      useCase.execute({
-        name: 'Duplicado',
-        email: 'admin@email.com',
-        password: 'Senha@123',
-        role: UserRole.ATTENDANT,
-      }),
+      useCase.execute({ name: 'Novo', email: 'existing@example.com', role: UserRole.ATTENDANT }),
     ).rejects.toThrow(ResourceConflictException);
+  });
 
-    expect(userRepository.create).not.toHaveBeenCalled();
+  it('should not fail the whole operation when the email fails to send', async () => {
+    const userRepository = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockImplementation((user) => Promise.resolve(user)),
+    };
+    const hashService = { hash: jest.fn().mockResolvedValue('hashed') };
+    const emailSender = { send: jest.fn().mockRejectedValue(new Error('smtp down')) };
+
+    const useCase = new CreateUserUseCase(
+      userRepository as never,
+      hashService as never,
+      emailSender as never,
+    );
+
+    await expect(
+      useCase.execute({ name: 'Novo', email: 'novo@example.com', role: UserRole.ATTENDANT }),
+    ).resolves.toBeDefined();
   });
 });

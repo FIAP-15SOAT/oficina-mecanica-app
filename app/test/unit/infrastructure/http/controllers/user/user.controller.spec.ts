@@ -21,7 +21,6 @@ describe('UserController', () => {
   const userRequestStub: CreateUserRequestDto = {
     name: 'Jane Smith',
     email: 'jane.smith@example.com',
-    password: 'SecurePass123!',
     role: UserRole.MECHANIC,
   };
 

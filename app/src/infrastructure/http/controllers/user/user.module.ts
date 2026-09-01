@@ -11,6 +11,7 @@ import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-c
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
+import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 
 import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
@@ -22,9 +23,14 @@ import { UserController } from './user.controller';
   providers: [
     {
       provide: UserCleanController,
-      useFactory: (userRepository: IUserRepository, hashService: IHashService, logger: ILogger) =>
+      useFactory: (
+        userRepository: IUserRepository,
+        hashService: IHashService,
+        emailSender: IEmailSenderService,
+        logger: ILogger,
+      ) =>
         new UserCleanController(
-          new CreateUserUseCase(userRepository, hashService),
+          new CreateUserUseCase(userRepository, hashService, emailSender),
           new FindUserByIdUseCase(userRepository),
           new FindAllUsersUseCase(userRepository),
           new UpdateUserUseCase(userRepository, hashService),
@@ -34,7 +40,7 @@ import { UserController } from './user.controller';
           ),
           new DeleteUserUseCase(userRepository),
         ),
-      inject: ['IUserRepository', 'IHashService', 'ILogger'],
+      inject: ['IUserRepository', 'IHashService', 'IEmailSenderService', 'ILogger'],
     },
   ],
 })
