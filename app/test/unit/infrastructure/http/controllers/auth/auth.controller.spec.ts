@@ -7,7 +7,9 @@ import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
 
 import { LoginRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-token-request.dto';
+import { ConfirmPasswordResetRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/confirm-password-reset-request.dto';
 import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
@@ -23,6 +25,7 @@ describe('AuthController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
+      { execute: jest.fn() } as unknown as ConfirmPasswordResetUseCase,
     );
     httpController = new AuthController(cleanController);
   });
@@ -95,6 +98,22 @@ describe('AuthController', () => {
 
       expect(result).toBe(response);
       expect(cleanController.me).toHaveBeenCalledWith(authenticatedUser.sub);
+    });
+  });
+
+  describe('confirmPasswordReset', () => {
+    it('should delegate to the clean controller with the request body', async () => {
+      const dto: ConfirmPasswordResetRequestDto = {
+        email: 'joao@email.com',
+        code: '042731',
+        newPassword: 'NewPass@456',
+      };
+
+      jest.spyOn(cleanController, 'confirmPasswordReset').mockResolvedValue(undefined);
+
+      await httpController.confirmPasswordReset(dto);
+
+      expect(cleanController.confirmPasswordReset).toHaveBeenCalledWith(dto);
     });
   });
 });

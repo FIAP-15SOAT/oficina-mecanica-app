@@ -33,6 +33,10 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from '@infrastructure/http/decorators/current-user.decorator';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
@@ -130,5 +134,23 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.controller.remove(id);
+  }
+
+  @Post(':userId/password-resets')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Emitir código de redefinição de senha para um usuário (somente Admin)',
+  })
+  @ApiParam({ name: 'userId', format: 'uuid', description: 'ID do usuário' })
+  @ApiNoContentResponse({ description: 'Código de redefinição emitido e enviado por e-mail' })
+  @ApiBadRequestResponse({ description: 'ID inválido (UUID esperado)' })
+  @ApiForbiddenResponse({ description: 'Acesso negado' })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
+  issuePasswordResetCode(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    return this.controller.issuePasswordResetCode(userId, user.sub);
   }
 }

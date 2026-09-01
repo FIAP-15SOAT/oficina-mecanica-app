@@ -352,6 +352,13 @@ export const LOGICAL_FIELDS: Readonly<Record<LogicalFieldName, LogicalFieldDefin
     owner: 'use-case',
     sensitivity: 'clear',
   },
+  resetOutcome: {
+    key: 'oficina.user.password_reset.outcome',
+    type: 'string',
+    cardinality: 'fixed',
+    owner: 'use-case',
+    sensitivity: 'clear',
+  },
 };
 
 export function resolveLogicalField(logicalName: string): LogicalFieldDefinition | undefined {

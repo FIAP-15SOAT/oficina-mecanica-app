@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
@@ -14,6 +15,7 @@ import {
   CurrentUser,
 } from '@infrastructure/http/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
+import { Public } from '@infrastructure/http/decorators/public.decorator';
 
 import { AuthController as AuthCleanController } from '@interface-adapters/auth/auth.controller';
 
@@ -21,6 +23,7 @@ import { AuthDataResponseDto } from './dto/responses/auth-response.dto';
 import { MeDataResponseDto } from './dto/responses/me-response.dto';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/requests/refresh-token-request.dto';
+import { ConfirmPasswordResetRequestDto } from './dto/requests/confirm-password-reset-request.dto';
 
 @ApiTags('Autenticação')
 @ApiProduces('application/json')
@@ -57,5 +60,16 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   me(@CurrentUser() user: AuthenticatedUser): Promise<MeDataResponseDto> {
     return this.controller.me(user.sub);
+  }
+
+  @Post('password-reset-confirmations')
+  @Public()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Confirmar redefinição de senha com código numérico' })
+  @ApiNoContentResponse({ description: 'Senha redefinida com sucesso' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiUnauthorizedResponse({ description: 'Código inválido ou expirado' })
+  confirmPasswordReset(@Body() request: ConfirmPasswordResetRequestDto): Promise<void> {
+    return this.controller.confirmPasswordReset(request);
   }
 }

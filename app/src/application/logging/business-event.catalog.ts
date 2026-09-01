@@ -176,4 +176,27 @@ export const BUSINESS_EVENTS = {
     message: 'external principal denied access to a customer-scoped resource',
     level: 'warn',
   }),
+  USER_PASSWORD_CHANGED: defineLogEvent<{ subjectId: string }>({
+    name: 'user.password.changed',
+    message: 'user changed their own password',
+    level: 'info',
+  }),
+  USER_PASSWORD_RESET_ISSUED: defineLogEvent<{ subjectId: string; targetUserId: string }>({
+    name: 'user.password_reset.issued',
+    message: 'admin issued a password reset code',
+    level: 'info',
+  }),
+  USER_PASSWORD_RESET_COMPLETED: defineLogEvent<{
+    targetUserId: string;
+    resetOutcome: string;
+  }>({
+    name: 'user.password_reset.completed',
+    message: 'password reset confirmed with a valid code',
+    level: 'info',
+  }),
+  USER_PASSWORD_RESET_REJECTED: defineLogEvent<{ resetOutcome: string }>({
+    name: 'user.password_reset.rejected',
+    message: 'password reset confirmation rejected',
+    level: 'warn',
+  }),
 } as const;

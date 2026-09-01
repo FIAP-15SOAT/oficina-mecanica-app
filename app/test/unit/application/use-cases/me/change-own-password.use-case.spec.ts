@@ -25,8 +25,13 @@ describe('ChangeOwnPasswordUseCase', () => {
       compare: jest.fn().mockResolvedValue(true),
       hash: jest.fn().mockResolvedValue('new-hash'),
     };
+    const logger = { event: jest.fn() };
 
-    const useCase = new ChangeOwnPasswordUseCase(userRepository as never, hashService);
+    const useCase = new ChangeOwnPasswordUseCase(
+      userRepository as never,
+      hashService,
+      logger as never,
+    );
 
     await useCase.execute(user.id, {
       currentPassword: 'CurrentPass@123',
@@ -36,14 +41,23 @@ describe('ChangeOwnPasswordUseCase', () => {
     expect(userRepository.update).toHaveBeenCalledWith(
       expect.objectContaining({ passwordHash: 'new-hash' }),
     );
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'user.password.changed' }),
+      { subjectId: user.id },
+    );
   });
 
   it('should reject when the current password does not match', async () => {
     const user = buildUser();
     const userRepository = { findById: jest.fn().mockResolvedValue(user), update: jest.fn() };
     const hashService = { compare: jest.fn().mockResolvedValue(false), hash: jest.fn() };
+    const logger = { event: jest.fn() };
 
-    const useCase = new ChangeOwnPasswordUseCase(userRepository as never, hashService);
+    const useCase = new ChangeOwnPasswordUseCase(
+      userRepository as never,
+      hashService,
+      logger as never,
+    );
 
     await expect(
       useCase.execute(user.id, { currentPassword: 'Wrong@123', newPassword: 'NewPass@456' }),
@@ -54,8 +68,13 @@ describe('ChangeOwnPasswordUseCase', () => {
     const user = buildUser();
     const userRepository = { findById: jest.fn().mockResolvedValue(user), update: jest.fn() };
     const hashService = { compare: jest.fn().mockResolvedValue(true), hash: jest.fn() };
+    const logger = { event: jest.fn() };
 
-    const useCase = new ChangeOwnPasswordUseCase(userRepository as never, hashService);
+    const useCase = new ChangeOwnPasswordUseCase(
+      userRepository as never,
+      hashService,
+      logger as never,
+    );
 
     await expect(
       useCase.execute(user.id, {
@@ -69,8 +88,13 @@ describe('ChangeOwnPasswordUseCase', () => {
     const user = buildUser();
     const userRepository = { findById: jest.fn().mockResolvedValue(user), update: jest.fn() };
     const hashService = { compare: jest.fn().mockResolvedValue(true), hash: jest.fn() };
+    const logger = { event: jest.fn() };
 
-    const useCase = new ChangeOwnPasswordUseCase(userRepository as never, hashService);
+    const useCase = new ChangeOwnPasswordUseCase(
+      userRepository as never,
+      hashService,
+      logger as never,
+    );
 
     await expect(
       useCase.execute(user.id, { currentPassword: 'CurrentPass@123', newPassword: 'weak' }),

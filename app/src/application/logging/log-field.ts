@@ -41,6 +41,7 @@ export type LogicalFieldName =
   | 'customerActive'
   | 'accessUserCreated'
   | 'initialPasswordSent'
-  | 'externalAccessFailureReason';
+  | 'externalAccessFailureReason'
+  | 'resetOutcome';
 
 export type LogFields = Partial<Record<LogicalFieldName, unknown>>;

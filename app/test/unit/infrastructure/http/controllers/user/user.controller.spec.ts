@@ -9,6 +9,7 @@ import { CreateUserRequestDto } from '@infrastructure/http/controllers/user/dto/
 import { UpdateUserRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-request.dto';
 import { UpdateUserStatusRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-status-request.dto';
 import { FindAllUsersQueryDto } from '@infrastructure/http/controllers/user/dto/requests/filter-users.dto';
+import { IssuePasswordResetCodeUseCase } from '@application/use-cases/auth/issue-password-reset-code.use-case';
 
 import { UserRole } from '@domain/enums/user-role.enum';
 
@@ -32,6 +33,7 @@ describe('UserController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
+      { execute: jest.fn() } as unknown as IssuePasswordResetCodeUseCase,
     );
     httpController = new UserController(cleanController);
   });
@@ -126,6 +128,19 @@ describe('UserController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('issuePasswordResetCode', () => {
+    it('should delegate to the clean controller with the acting user id', async () => {
+      const userId = randomUUID();
+      const actingUser = { sub: randomUUID(), email: 'admin@example.com', role: UserRole.ADMIN };
+
+      jest.spyOn(cleanController, 'issuePasswordResetCode').mockResolvedValue(undefined);
+
+      await httpController.issuePasswordResetCode(userId, actingUser);
+
+      expect(cleanController.issuePasswordResetCode).toHaveBeenCalledWith(userId, actingUser.sub);
     });
   });
 });

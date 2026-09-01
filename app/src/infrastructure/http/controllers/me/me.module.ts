@@ -6,6 +6,7 @@ import { ChangeOwnPasswordUseCase } from '@application/use-cases/me/change-own-p
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
 
 import { MeController as MeCleanController } from '@interface-adapters/me/me.controller';
 import { MeController } from './me.controller';
@@ -16,9 +17,15 @@ import { MeController } from './me.controller';
   providers: [
     {
       provide: MeCleanController,
-      useFactory: (userRepository: IUserRepository, hashService: IHashService) =>
-        new MeCleanController(new ChangeOwnPasswordUseCase(userRepository, hashService)),
-      inject: ['IUserRepository', 'IHashService'],
+      useFactory: (userRepository: IUserRepository, hashService: IHashService, logger: ILogger) =>
+        new MeCleanController(
+          new ChangeOwnPasswordUseCase(
+            userRepository,
+            hashService,
+            logger.forContext(ChangeOwnPasswordUseCase.name),
+          ),
+        ),
+      inject: ['IUserRepository', 'IHashService', 'ILogger'],
     },
   ],
 })

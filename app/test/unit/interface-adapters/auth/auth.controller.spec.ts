@@ -9,6 +9,7 @@ import { RefreshTokenRequest } from '@interface-adapters/auth/requests/refresh-t
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
 import { IGetCurrentUserUseCase } from '@application/ports/input/auth/get-current-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
+import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
@@ -21,16 +22,19 @@ describe('AuthController', () => {
   let authenticateUseCase: jest.Mocked<IAuthenticateUserUseCase>;
   let getCurrentUserUseCase: jest.Mocked<IGetCurrentUserUseCase>;
   let refreshTokenUseCase: jest.Mocked<IRefreshTokenUseCase>;
+  let confirmPasswordResetUseCase: { execute: jest.Mock };
 
   beforeEach(() => {
     authenticateUseCase = { execute: jest.fn() };
     getCurrentUserUseCase = { execute: jest.fn() };
     refreshTokenUseCase = { execute: jest.fn() };
+    confirmPasswordResetUseCase = { execute: jest.fn() };
 
     controller = new AuthController(
       authenticateUseCase,
       getCurrentUserUseCase,
       refreshTokenUseCase,
+      confirmPasswordResetUseCase as unknown as ConfirmPasswordResetUseCase,
     );
   });
 
@@ -105,6 +109,18 @@ describe('AuthController', () => {
 
       expect(result).toEqual(AuthPresenter.toMeDataResponse(currentUser));
       expect(getCurrentUserUseCase.execute).toHaveBeenCalledWith(userId);
+    });
+  });
+
+  describe('confirmPasswordReset', () => {
+    it('should call the confirm password reset use case with the input', async () => {
+      const input = { email: 'john.doe@example.com', code: '042731', newPassword: 'NewPass@456' };
+
+      confirmPasswordResetUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.confirmPasswordReset(input);
+
+      expect(confirmPasswordResetUseCase.execute).toHaveBeenCalledWith(input);
     });
   });
 });

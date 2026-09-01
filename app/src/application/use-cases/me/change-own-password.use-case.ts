@@ -3,7 +3,9 @@ import { BusinessRuleViolationException } from '@domain/exceptions/business-rule
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
+import { ILogger } from '@application/ports/output/logger.service.interface';
 
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { ChangeOwnPasswordDto } from '@application/ports/input/me/dto/change-own-password.dto';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
@@ -12,6 +14,7 @@ export class ChangeOwnPasswordUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly hashService: IHashService,
+    private readonly logger: ILogger,
   ) {}
 
   async execute(userId: string, dto: ChangeOwnPasswordDto): Promise<void> {
@@ -37,5 +40,7 @@ export class ChangeOwnPasswordUseCase {
     user.changePassword(newHash);
 
     await this.userRepository.update(user);
+
+    this.logger.event(BUSINESS_EVENTS.USER_PASSWORD_CHANGED, { subjectId: userId });
   }
 }

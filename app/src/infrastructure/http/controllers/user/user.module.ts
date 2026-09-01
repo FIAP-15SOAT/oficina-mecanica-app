@@ -8,8 +8,10 @@ import { FindAllUsersUseCase } from '@application/use-cases/user/find-all-users.
 import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
 import { UpdateUserStatusUseCase } from '@application/use-cases/user/update-user-status.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-case';
+import { IssuePasswordResetCodeUseCase } from '@application/use-cases/auth/issue-password-reset-code.use-case';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IPasswordResetCodeRepository } from '@domain/interfaces/repositories/password-reset-code.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
@@ -25,6 +27,7 @@ import { UserController } from './user.controller';
       provide: UserCleanController,
       useFactory: (
         userRepository: IUserRepository,
+        passwordResetCodeRepository: IPasswordResetCodeRepository,
         hashService: IHashService,
         emailSender: IEmailSenderService,
         logger: ILogger,
@@ -39,8 +42,21 @@ import { UserController } from './user.controller';
             logger.forContext(UpdateUserStatusUseCase.name),
           ),
           new DeleteUserUseCase(userRepository),
+          new IssuePasswordResetCodeUseCase(
+            userRepository,
+            passwordResetCodeRepository,
+            hashService,
+            emailSender,
+            logger.forContext(IssuePasswordResetCodeUseCase.name),
+          ),
         ),
-      inject: ['IUserRepository', 'IHashService', 'IEmailSenderService', 'ILogger'],
+      inject: [
+        'IUserRepository',
+        'IPasswordResetCodeRepository',
+        'IHashService',
+        'IEmailSenderService',
+        'ILogger',
+      ],
     },
   ],
 })
