@@ -74,11 +74,10 @@ JWT_REFRESH_SECRET=your-refresh-secret-key
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
 
-# Token assinado para o link público de decisão de orçamento (e-mail)
-QUOTE_DECISION_TOKEN_SECRET=your-quote-decision-secret-key
-# Opcional — base URL usada para montar os links enviados por e-mail
-# (default: http://localhost:${PORT}/api)
-# QUOTE_DECISION_BASE_URL=https://api.suaempresa.com/api
+# Autenticação do Cliente (via função serverless externa)
+CUSTOMER_JWT_PUBLIC_KEY=your-rs256-public-key-pem
+CUSTOMER_JWT_ISSUER=oficina-customer-auth
+CUSTOMER_JWT_AUDIENCE=oficina-api
 
 # CORS — separar múltiplas origens por vírgula
 ALLOWED_ORIGINS=http://localhost:3000
@@ -100,7 +99,7 @@ OTEL_SERVICE_NAMESPACE=oficina-mecanica
 
 `SERVICE_VERSION` **não** é configurada por env em desenvolvimento: ela é assada na imagem (`ARG SERVICE_VERSION` no `Dockerfile`, alimentado pelo `github.sha` no `cd.yml`) e cai para `dev` fora do contêiner. `deployment.environment.name` reaproveita o `NODE_ENV` já existente — não há variável nova para ambiente.
 
-> **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
+> **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `CUSTOMER_JWT_PUBLIC_KEY`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
 
 ### Logs legíveis em desenvolvimento
 

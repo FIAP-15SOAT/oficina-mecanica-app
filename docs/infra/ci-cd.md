@@ -144,6 +144,8 @@ O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:30
 
 O job **falha se o ZAP encontrar problemas** — qualquer alerta não marcado como `IGNORE` faz o `zap-api-scan.py` sair com código diferente de zero e o job fica **vermelho**, como acontece com o SAST. O relatório (HTML + JSON) **não se perde**: sobe como artifact do run mesmo quando o job falha (upload com `if: always()`). O `.zap/rules.tsv` é a alavanca de calibração — os primeiros runs provavelmente ficam vermelhos até você marcar os falsos-positivos como `IGNORE` (se falhar em todo WARN for agressivo demais, dá para usar `-I` e marcar como `FAIL` só as regras que devem bloquear). As credenciais do admin do seed vêm de **secrets do repositório** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`), nunca hardcoded, e são usadas só contra o banco descartável do job. O `zap-api-scan.py` roda por padrão um **scan ativo** afinado para APIs (importa a spec OpenAPI e exercita os endpoints) — como o alvo é sempre a stack efêmera do job, nunca um ambiente real, eventuais escritas são inofensivas.
 
+> **Follow-up fora do escopo deste plano — segunda passagem do DAST autenticada como Cliente da Oficina.** Hoje o `dast.yml` só autentica o ZAP como usuário interno (passo 4, `POST /api/auth/login`), então `/api/me/*` é escaneado sem `Authorization` e só exercita os caminhos `401`. Cobrir esses endpoints exigiria que o próprio job gerasse um par de chaves RS256 efêmero, injetasse a chave pública no serviço `api` (substituindo `CUSTOMER_JWT_PUBLIC_KEY` da stack) e rodasse um segundo `zap-api-scan.py` com um Bearer `customer-jwt` assinado pela chave privada correspondente. Isso é uma mudança no **workflow de CI/CD**, não no código da API, e está fora do escopo deste plano — detalhado em [Testes › Autenticação externa nos testes (customer-jwt)](../testing.md#autenticação-externa-nos-testes-customer-jwt).
+
 ## Secrets e Variables
 
 Para que os workflows e o provisionamento funcionem corretamente, é necessário configurar os secrets e variables do repositório no GitHub. A tabela abaixo é a referência prática de configuração, incluindo onde cada item é usado.
@@ -160,7 +162,7 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para renderizar a `DATABASE_URL` no Secret da aplicação (`01-api-secret.yaml`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
-| Secret | `QUOTE_DECISION_TOKEN_SECRET` | `cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
+| Secret | `CUSTOMER_JWT_PUBLIC_KEY` | `cd.yml` | Chave **pública** RS256 usada para verificar o token externo (`customer-jwt`) do Cliente da Oficina — a chave privada correspondente vive na função serverless externa, fora deste repositório |
 | Variable | `DB_HOST` | `cd.yml` | Endereço DNS do banco RDS (ex: `rds-oficina-mecanica.xxxx.us-east-1.rds.amazonaws.com`) |
 | Variable | `DB_USER` | `cd.yml` | Usuário do banco PostgreSQL (padrão: `techchallenge`) |
 | Variable | `DB_PORT` | `cd.yml` | Porta do PostgreSQL (padrão: `5432`) |
@@ -181,4 +183,4 @@ Os secrets ficam no nível do repositório ou organização porque são consumid
 - Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:
   - `JWT_SECRET`
   - `JWT_REFRESH_SECRET`
-  - `QUOTE_DECISION_TOKEN_SECRET`
+  - `CUSTOMER_JWT_PUBLIC_KEY`

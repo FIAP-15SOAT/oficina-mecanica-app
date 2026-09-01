@@ -4,6 +4,7 @@
 
 - [Unitários](#unitários)
 - [E2E](#e2e)
+- [Autenticação externa nos testes (customer-jwt)](#autenticação-externa-nos-testes-customer-jwt)
 - [Postman / Newman](#postman--newman)
 - [Indisponibilidade de dependência e encerramento gracioso](#indisponibilidade-de-dependência-e-encerramento-gracioso)
 - [Cobertura E2E — branches estruturalmente inalcançáveis](#cobertura-e2e--branches-estruturalmente-inalcançáveis)
@@ -26,7 +27,7 @@ npm run test:e2e      # executa os testes
 npm run test:e2e:cov  # com cobertura
 ```
 
-12 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais uma suite dedicada ao `AllExceptionsFilter`, outra ao logging estruturado e outra aos endpoints de saúde. Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
+13 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais `me` (rotas do Cliente da Oficina autenticado), uma suite dedicada ao `AllExceptionsFilter`, outra ao logging estruturado e outra aos endpoints de saúde. Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
 
 O motivo de testar contra um Postgres real (em vez de mocks Prisma) é validar comportamentos que dependem do banco — constraints de unicidade, cascade deletes, sequences, conversões de tipos, índices e a corrida implícita de updates condicionados (`WHERE version = ?`) — e detectar regressões em migrations.
 
@@ -59,7 +60,43 @@ Duas opções extras, usadas só pela suíte de logging para que as outras onze 
 
 Shutdown hooks continuam desligados no E2E: ligá-los acumularia listeners de processo entre as suítes.
 
-### Indisponibilidade de dependência e encerramento gracioso
+## Autenticação externa nos testes (customer-jwt)
+
+A função serverless que emite o token `customer-jwt` (RS256) fica **fora do escopo desta entrega** (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)) — não existe ainda um repositório/deploy real para consultar. Para exercitar `/api/me/*` sem depender dela, `test/helpers/customer-jwt.helper.ts` gera um **par de chaves RS256 em tempo de execução** (`generateKeyPairSync`, nunca um PEM comitado no repositório) e expõe `signTestCustomerToken(userId, expiresInSeconds?)`, que assina um token de teste com o mesmo formato de claims que a função serverless deverá emitir (`{ sub: userId }`, `iss`/`aud` fixos, RS256).
+
+`setupTestApp()` (`test/helpers/test-app.helper.ts`) injeta a chave **pública** gerada em `process.env.CUSTOMER_JWT_PUBLIC_KEY` antes de compilar o módulo — o mesmo caminho de configuração (`CustomerJwtStrategy` lendo `CUSTOMER_JWT_PUBLIC_KEY`/`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` via `ConfigService`) que roda em produção, só que com uma chave efêmera. Isso mantém o teste fiel à verificação real de assinatura/emissor/audiência, sem exigir a Lambda no ambiente de CI.
+
+```ts
+import { signTestCustomerToken } from '../helpers/customer-jwt.helper';
+
+const token = signTestCustomerToken(user.id);
+await request(ctx.httpServer)
+  .get('/api/me/work-orders')
+  .set('Authorization', `Bearer ${token}`)
+  .expect(200);
+```
+
+`test/e2e/me.e2e-spec.ts` é a suite que exercita esse caminho — identidade externa, troca de senha via `AnyAuthGuard`, listagem/consulta de OS e orçamentos vinculados por `CustomerAccessPolicy`, e decisão de orçamento (aprovação/rejeição) — incluindo o caso de um `sub` sem nenhum vínculo ativo (token assinado para um `userId` aleatório) para confirmar a rejeição em `CustomerJwtStrategy.validate()`.
+
+**Fora do escopo desta entrega — DAST de segunda passagem com o token externo.** O spec (§20.3) prevê que o workflow `dast.yml` gere um par de chaves RS256 efêmero **no próprio job de CI**, injete a chave pública no serviço `api` (substituindo a que a stack já usa para o primeiro passe autenticado como usuário interno) e rode um **segundo** `zap-api-scan.py` autenticado com um Bearer `customer-jwt`, para cobrir `/api/me/*` no scan dinâmico. Isso é uma mudança no **workflow de CI/CD** (`.github/workflows/dast.yml`), não no código da API — está fora do escopo deste plano, que cobre apenas a aplicação. Ver [Infra · CI/CD](infra/ci-cd.md#4-workflow-de-dast-dastyml) para o estado atual do workflow e a referência a este follow-up.
+
+## Postman / Newman
+
+A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+
+O environment já vem com `adminEmail` e `adminPassword` preenchidos com um dos usuários do seed; confira/ajuste essas variáveis caso queira autenticar com outro usuário criado pelo seed.
+
+Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Acesso Externo de Clientes → Minha Conta → Veículos → Ordens de Serviço → Orçamentos**.
+
+O grupo **Minha Conta** exercita `/api/me/*` com o token externo (`customer-jwt`) e por isso não usa o bearer padrão da collection (`{{authToken}}`) — cada requisição sobrescreve a autenticação para `Bearer {{customerJwtToken}}`. Como a função serverless de emissão ainda não existe (ver [ADR 0004](adr/0004-autenticacao-de-clientes.md)), `customerJwtToken` no `collections/oficina-environment.json` vem **vazio por padrão**: gere um token de teste manualmente (mesmo mecanismo de `test/helpers/customer-jwt.helper.ts`, descrito acima) e preencha a variável do environment antes de rodar esse grupo.
+
+Ou via linha de comando com a aplicação rodando:
+
+```bash
+npx newman run collections/oficina-collection.json -e collections/oficina-environment.json
+```
+
+## Indisponibilidade de dependência e encerramento gracioso
 
 A suíte `health.e2e-spec.ts` cobre três cenários que exigem manipular a infraestrutura do próprio teste.
 
@@ -81,20 +118,6 @@ O drain **é** alcançável neste harness: `enableShutdownHooks()` apenas regist
 As três `describe`s esperam a prontidão assentar em `200` antes de assertar o contrato. A primeira verificação depois do boot paga TCP + autenticação com o pool ainda vazio, e o prazo próprio do chamador é de 3,5 s — o `query_timeout` de 2 s vale só para a consulta e não cobre a aquisição da conexão: com doze suítes E2E em paralelo, cada uma subindo os próprios containers, esse caso frio estoura o prazo e a prontidão responde `503` uma vez — exatamente como responderia em produção antes de o `failureThreshold` ser atingido. A propriedade continua asserida (se a prontidão nunca ficar `200`, a suíte falha); o que a espera remove é a dependência de uma única amostra fria sob inanição de CPU.
 
 **Asserções de log.** Com `setupTestApp({ captureLogs: true })`, a suíte assere que uma probe saudável produz **zero** linhas de access log; que uma probe que falha produz **exatamente uma**, em `error`, **sem** stack trace e **sem** `error.type`/`oficina.error.message` (a resposta é deliberada e não lança, então não há exceção resolvida de onde derivá-los); e que a transição emite exatamente um `health.degraded` com a categoria da causa. Fecha com uma asserção **negativa**: o corpo do `503` não contém host, porta, cadeia de conexão nem stack.
-
-## Postman / Newman
-
-A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
-
-O environment já vem com `adminEmail` e `adminPassword` preenchidos com um dos usuários do seed; confira/ajuste essas variáveis caso queira autenticar com outro usuário criado pelo seed.
-
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Veículos → Ordens de Serviço → Orçamentos**.
-
-Ou via linha de comando com a aplicação rodando:
-
-```bash
-npx newman run collections/oficina-collection.json -e collections/oficina-environment.json
-```
 
 ## Cobertura E2E — branches estruturalmente inalcançáveis
 

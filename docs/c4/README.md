@@ -38,7 +38,7 @@ Convenções seguidas em todos os diagramas, para leitura consistente entre os n
 
 O nível mais macro, pensado para stakeholders **não técnicos**: mostra quem usa o sistema e com quais sistemas externos ele conversa, sem nenhum detalhe interno.
 
-<p align="center"><img src="images/c4-system-context.png" alt="Diagrama de Contexto C4: as pessoas Administrador, Mecânico e Atendente interagem com o Sistema da Oficina Mecânica; o Cliente da Oficina, como pessoa externa, aprova ou rejeita orçamentos; o sistema envia o orçamento por e-mail através de um Servidor SMTP externo, que o entrega ao cliente" width="100%"></p>
+<p align="center"><img src="images/c4-system-context.png" alt="Diagrama de Contexto C4: as pessoas Administrador, Mecânico e Atendente interagem com o Sistema da Oficina Mecânica; o Cliente da Oficina, como pessoa externa, autentica por CPF e senha e aprova ou rejeita orçamentos; o sistema envia o orçamento por e-mail através de um Servidor SMTP externo, que o entrega ao cliente" width="100%"></p>
 
 As caixas de pessoa descrevem **quem** cada ator é (não o que faz — a ação fica no rótulo da seta). Nenhuma seta menciona protocolo ou tecnologia, que são detalhe de nível mais baixo. Os nomes também evitam sufixo técnico: **"Sistema da Oficina Mecânica"** (não "...API") e **"Servidor SMTP"** (não "MailHog", que é apenas a implementação de desenvolvimento, revelada só no nível de Container). O **PostgreSQL não aparece** aqui por ser detalhe interno.
 
@@ -47,14 +47,14 @@ As caixas de pessoa descrevem **quem** cada ator é (não o que faz — a ação
 | **Administrador** | Pessoa | Responsável pela configuração geral e por tarefas administrativas; gerencia usuários, serviços, peças, clientes, veículos, ordens de serviço, orçamentos e estoque |
 | **Mecânico** | Pessoa | Executa e atualiza as ordens de serviço sob sua responsabilidade |
 | **Atendente** | Pessoa | Cadastra clientes e veículos; cria e gerencia ordens de serviço e orçamentos |
-| **Cliente da Oficina** | Pessoa externa | Dono do veículo levado para manutenção; aprova ou rejeita o orçamento recebido por e-mail |
+| **Cliente da Oficina** | Pessoa externa | Dono do veículo levado para manutenção; autentica por CPF e senha e aprova ou rejeita orçamentos |
 | **Servidor SMTP** | Sistema externo | Entrega aos clientes os e-mails de orçamento enviados pelo sistema |
 
 ## Nível 2 — Container
 
 Um zoom para dentro da fronteira do sistema: os blocos executáveis/implantáveis e como se comunicam.
 
-<p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a API REST (NestJS/Node.js/TypeScript) e o Banco de Dados (PostgreSQL); os funcionários acessam a API por HTTP/JSON autenticado via JWT Bearer e o Cliente da Oficina por link assinado; a API lê e escreve no PostgreSQL via Prisma ORM e envia e-mails ao Servidor SMTP externo (MailHog), que os entrega ao cliente" width="100%"></p>
+<p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a API REST (NestJS/Node.js/TypeScript) e o Banco de Dados (PostgreSQL); os funcionários acessam a API por HTTP/JSON autenticado via JWT Bearer e o Cliente da Oficina por HTTP/JSON autenticado via JWT Bearer emitido por uma função serverless externa; a API lê e escreve no PostgreSQL via Prisma ORM e envia e-mails ao Servidor SMTP externo (MailHog), que os entrega ao cliente" width="100%"></p>
 
 Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API REST** e o **Banco de Dados** —, além do **Servidor SMTP** externo (aqui já com o nome técnico, MailHog). É neste nível que aparecem **tecnologia e protocolo** nas setas, como recomendado. Confirmado por análise de código e infraestrutura que **não há workers, filas ou cache** separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e por isso **não é modelado como container à parte**.
 
@@ -64,15 +64,15 @@ Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API R
 | **Banco de Dados** | PostgreSQL 16 (Amazon RDS) | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); serviço **gerenciado, fora do cluster**, alcançado pela rede a partir das subnets privadas |
 | **Servidor SMTP** | MailHog (externo) | Recebe e entrega os e-mails de orçamento (sink SMTP de desenvolvimento) |
 
-Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **link assinado, sem login**; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
+Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **HTTP/JSON autenticado via JWT Bearer emitido por uma função serverless externa** — uma estratégia Passport (`customer-jwt`, RS256) inteiramente separada da usada pelos funcionários (`jwt`, HS256), nunca um único verificador aceitando os dois algoritmos; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
 
 ## Nível 3 — Componente da API REST
 
 O zoom mais interno: as peças que compõem o container **API REST**.
 
-<p align="center"><img src="images/c4-component.png" alt="Diagrama de Componente C4 da API REST: nove módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque) e dois componentes transversais (Guards/Segurança e Repositories/Prisma); Ordens de Serviço e Orçamentos se relacionam nos dois sentidos, os Orçamentos criam reservas no Estoque e enviam e-mail pelo Servidor SMTP, o Cliente da Oficina conecta-se direto ao componente Orçamentos, e os Repositories persistem no PostgreSQL" width="100%"></p>
+<p align="center"><img src="images/c4-component.png" alt="Diagrama de Componente C4 da API REST: dez módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque, Minha Conta) e dois componentes transversais (Guards/Segurança e Repositories/Prisma); Ordens de Serviço e Orçamentos se relacionam nos dois sentidos, os Orçamentos criam reservas no Estoque e enviam e-mail pelo Servidor SMTP, o Cliente da Oficina autentica-se e conecta-se ao componente Minha Conta passando por Guards/Segurança como os demais atores, e os Repositories persistem no PostgreSQL" width="100%"></p>
 
-São **nove módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** conecta-se **diretamente** ao componente **Orçamentos** (aprovação por link, sem login) — é a única pessoa que interage com um componente específico em vez de passar pela API como um todo.
+São **dez módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** conecta-se ao módulo **Minha Conta**, passando pelo componente **Guards/Segurança** como qualquer outro ator — não é mais a única pessoa que fura a fronteira de autenticação direto para dentro de um módulo de negócio, como acontecia quando a decisão de orçamento era por link assinado sem login.
 
 As dependências de quase todos os módulos em relação a **Guards / Segurança** e **Repositories** estão descritas no texto desses dois componentes, e **não desenhadas como setas** — isso evita cerca de 18 setas repetidas que poluiriam o diagrama sem agregar informação. Como no exemplo oficial (Figura 3 do material da aula), as setas entre componentes do mesmo container não levam rótulo de tecnologia; a tecnologia só aparece quando a seta cruza para o Banco de Dados ou o Servidor SMTP.
 
@@ -87,14 +87,15 @@ As dependências de quase todos os módulos em relação a **Guards / Segurança
 | **Serviços** | NestJS Module | CRUD de tipos de serviço e métricas |
 | **Peças/Insumos** | NestJS Module | CRUD de peças/insumos e ajuste manual de estoque |
 | **Ordens de Serviço** | NestJS Module | Criação e gestão de ordens de serviço, status e histórico |
-| **Orçamentos** | NestJS Module | Itens de orçamento, submissão e aprovação/rejeição por e-mail |
+| **Orçamentos** | NestJS Module | Itens de orçamento, submissão e notificação por e-mail (decisão via Minha Conta) |
 | **Estoque** | NestJS Module | Consulta de movimentações e reservas de estoque (somente leitura) |
+| **Minha Conta** | NestJS Module | Rotas autenticadas do usuário externo: identidade, senha, ordens e orçamentos vinculados, decisão de orçamento |
 
 **Componentes transversais**
 
 | Componente | Tecnologia | Responsabilidade |
 |---|---|---|
-| **Guards / Segurança** | NestJS Guards | `JwtAuthGuard` e `RolesGuard` — autenticação e autorização usadas pelos controllers HTTP de quase todos os módulos |
+| **Guards / Segurança** | NestJS Guards | `JwtAuthGuard` + `RolesGuard` (autenticação e RBAC internos) e `CustomerJwtAuthGuard`/`AnyAuthGuard` (autenticação externa do Cliente da Oficina, RS256, isolada da interna) — usados pelos controllers HTTP de quase todos os módulos, incluindo Minha Conta |
 | **Repositories** | Prisma | Acesso a dados centralizado e global; todos os módulos de negócio persistem através dele |
 
 ## Documentação relacionada
@@ -103,3 +104,5 @@ As dependências de quase todos os módulos em relação a **Guards / Segurança
 - 🏗️ [Infra · Visão Geral](../infra/overview.md) — a infraestrutura como sistema (inclui as vistas de deployment).
 - 📐 [ADRs](../adr) — decisões arquiteturais.
 - 🌐 [c4model.com](https://c4model.com) — referência oficial do modelo C4.
+
+> **Imagens desatualizadas.** As imagens (`images/c4-system-context.png`, `c4-container.png`, `c4-component.png`) precisam ser reexportadas manualmente a partir da ferramenta de diagramação de origem para refletir o texto acima — fora do escopo desta entrega de código.
