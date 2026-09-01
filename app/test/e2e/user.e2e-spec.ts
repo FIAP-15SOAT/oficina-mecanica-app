@@ -383,31 +383,6 @@ describe('User (E2E)', () => {
       expect(res.body.data.email).toBe('newemail@e2e.test');
     });
 
-    it('should update user password and allow login with new password', async () => {
-      await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'NewPassword@123' })
-        .expect(200);
-
-      await request(httpServer)
-        .post('/api/auth/login')
-        .send({ email: 'updateme@e2e.test', password: 'NewPassword@123' })
-        .expect(200);
-    });
-
-    it('should return 400 when updating to a password that does not meet the strength policy', async () => {
-      const res = await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'fraquinha' })
-        .expect(400);
-
-      expect(res.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('caractere especial')]),
-      );
-    });
-
     it('should update with the same email, skipping the duplicate check', async () => {
       // Sending the user's current e-mail means it equals the stored one, so the
       // uniqueness lookup is skipped (the `!newEmail.equals(...)` false branch).

@@ -33,7 +33,7 @@ import { UserController } from './user.controller';
           new CreateUserUseCase(userRepository, hashService, emailSender),
           new FindUserByIdUseCase(userRepository),
           new FindAllUsersUseCase(userRepository),
-          new UpdateUserUseCase(userRepository, hashService),
+          new UpdateUserUseCase(userRepository),
           new UpdateUserStatusUseCase(
             userRepository,
             logger.forContext(UpdateUserStatusUseCase.name),
