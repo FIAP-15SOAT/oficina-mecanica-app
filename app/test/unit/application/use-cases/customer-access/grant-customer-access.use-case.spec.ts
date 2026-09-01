@@ -60,7 +60,7 @@ describe('GrantCustomerAccessUseCase', () => {
     useCase = new GrantCustomerAccessUseCase(
       unitOfWork as never,
       hashService as never,
-      emailSender as never,
+      emailSender,
       logger as never,
     );
   });
