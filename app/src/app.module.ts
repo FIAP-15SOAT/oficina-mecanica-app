@@ -22,6 +22,7 @@ import { VehicleModule } from './infrastructure/http/controllers/vehicle/vehicle
 import { WorkOrderModule } from './infrastructure/http/controllers/work-order/work-order.module';
 import { QuoteModule } from './infrastructure/http/controllers/quote/quote.module';
 import { StockModule } from './infrastructure/http/controllers/stock/stock.module';
+import { MeModule } from './infrastructure/http/controllers/me/me.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { StockModule } from './infrastructure/http/controllers/stock/stock.modul
     WorkOrderModule,
     QuoteModule,
     StockModule,
+    MeModule,
   ],
   providers: [
     {
