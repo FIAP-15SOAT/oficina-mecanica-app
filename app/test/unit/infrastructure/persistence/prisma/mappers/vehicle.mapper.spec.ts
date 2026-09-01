@@ -27,6 +27,7 @@ describe('VehicleMapper', () => {
           phone: '11999999999',
           createdAt: now,
           updatedAt: now,
+          isActive: true,
         },
       };
 

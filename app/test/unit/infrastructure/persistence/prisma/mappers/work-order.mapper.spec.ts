@@ -126,6 +126,7 @@ describe('WorkOrderMapper', () => {
           address: null,
           createdAt: now,
           updatedAt: now,
+          isActive: true,
         },
         vehicle: {
           id: vehicleId,
@@ -144,6 +145,7 @@ describe('WorkOrderMapper', () => {
           id: userId,
           name: 'Mecânico João',
           email: 'joao@workshop.com',
+          cpf: null,
           passwordHash: 'hash',
           role: UserRole.MECHANIC,
           isActive: true,

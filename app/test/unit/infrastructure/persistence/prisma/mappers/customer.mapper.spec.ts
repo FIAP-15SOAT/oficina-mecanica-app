@@ -16,6 +16,7 @@ describe('CustomerMapper', () => {
         phone: '11999999999',
         createdAt: now,
         updatedAt: now,
+        isActive: true,
         address: {
           customerId: randomUUID(),
           street: 'Main St',
@@ -48,6 +49,7 @@ describe('CustomerMapper', () => {
         phone: '11999999999',
         createdAt: now,
         updatedAt: now,
+        isActive: true,
         address: null,
       };
 
