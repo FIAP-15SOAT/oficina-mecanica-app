@@ -36,6 +36,11 @@ export type LogicalFieldName =
   | 'mailErrorCategory'
   | 'dependencyName'
   | 'healthFailureCategory'
-  | 'healthDegradedDurationMs';
+  | 'healthDegradedDurationMs'
+  | 'customerId'
+  | 'customerActive'
+  | 'accessUserCreated'
+  | 'initialPasswordSent'
+  | 'externalAccessFailureReason';
 
 export type LogFields = Partial<Record<LogicalFieldName, unknown>>;

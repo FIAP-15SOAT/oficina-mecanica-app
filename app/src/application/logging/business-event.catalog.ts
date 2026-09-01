@@ -138,4 +138,42 @@ export const BUSINESS_EVENTS = {
     message: 'user account activation changed',
     level: 'info',
   }),
+  CUSTOMER_ACCESS_GRANTED: defineLogEvent<{
+    subjectId: string;
+    targetUserId: string;
+    customerId: string;
+    accessUserCreated: boolean;
+    initialPasswordSent: boolean;
+  }>({
+    name: 'customer.access.granted',
+    message: 'customer access granted to a user',
+    level: 'info',
+  }),
+  CUSTOMER_ACCESS_REVOKED: defineLogEvent<{
+    subjectId: string;
+    targetUserId: string;
+    customerId: string;
+  }>({
+    name: 'customer.access.revoked',
+    message: 'customer access revoked from a user',
+    level: 'info',
+  }),
+  CUSTOMER_STATUS_UPDATED: defineLogEvent<{
+    subjectId: string;
+    customerId: string;
+    customerActive: boolean;
+  }>({
+    name: 'customer.status.updated',
+    message: 'customer active flag changed',
+    level: 'info',
+  }),
+  PORTAL_ACCESS_DENIED: defineLogEvent<{
+    subjectId: string;
+    customerId: string;
+    externalAccessFailureReason: string;
+  }>({
+    name: 'portal.access.denied',
+    message: 'external principal denied access to a customer-scoped resource',
+    level: 'warn',
+  }),
 } as const;

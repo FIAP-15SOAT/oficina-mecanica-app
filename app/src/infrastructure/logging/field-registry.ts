@@ -317,6 +317,41 @@ export const LOGICAL_FIELDS: Readonly<Record<LogicalFieldName, LogicalFieldDefin
     owner: 'infrastructure-service',
     sensitivity: 'clear',
   },
+  customerId: {
+    key: 'oficina.customer.id',
+    type: 'string',
+    cardinality: 'high',
+    owner: 'use-case',
+    sensitivity: 'identifier',
+  },
+  customerActive: {
+    key: 'oficina.customer.active',
+    type: 'boolean',
+    cardinality: 'fixed',
+    owner: 'use-case',
+    sensitivity: 'clear',
+  },
+  accessUserCreated: {
+    key: 'oficina.customer.access.user_created',
+    type: 'boolean',
+    cardinality: 'fixed',
+    owner: 'use-case',
+    sensitivity: 'clear',
+  },
+  initialPasswordSent: {
+    key: 'oficina.user.initial_password_sent',
+    type: 'boolean',
+    cardinality: 'fixed',
+    owner: 'use-case',
+    sensitivity: 'clear',
+  },
+  externalAccessFailureReason: {
+    key: 'oficina.customer.access.failure.reason',
+    type: 'string',
+    cardinality: 'fixed',
+    owner: 'use-case',
+    sensitivity: 'clear',
+  },
 };
 
 export function resolveLogicalField(logicalName: string): LogicalFieldDefinition | undefined {
