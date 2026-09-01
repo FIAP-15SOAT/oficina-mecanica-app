@@ -1,6 +1,7 @@
 import { CreateVehicleUseCase } from '@application/use-cases/vehicle/create-vehicle.use-case';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import {
@@ -72,5 +73,13 @@ describe('CreateVehicleUseCase', () => {
     await useCase.execute({ ...validInput, plate: 'abc-1234' });
 
     expect(vehicleRepository.findByPlate).toHaveBeenCalledWith('ABC1234');
+  });
+
+  it('should reject creating a vehicle for an inactive customer', async () => {
+    const customer = createMockCustomer({ id: customerId });
+    customer.deactivate();
+    customerRepository.findById.mockResolvedValue(customer);
+
+    await expect(useCase.execute(validInput)).rejects.toThrow(BusinessRuleViolationException);
   });
 });

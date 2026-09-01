@@ -9,6 +9,7 @@ import { CreateVehicleDto } from '@application/ports/input/vehicle/dto/create-ve
 
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 export class CreateVehicleUseCase implements ICreateVehicleUseCase {
   constructor(
@@ -21,6 +22,12 @@ export class CreateVehicleUseCase implements ICreateVehicleUseCase {
 
     if (!customer) {
       throw new ResourceNotFoundException('Cliente', input.customerId);
+    }
+
+    if (!customer.isActive) {
+      throw new BusinessRuleViolationException(
+        'Não é possível cadastrar veículo para um cliente inativo.',
+      );
     }
 
     const plate = Plate.create(input.plate);

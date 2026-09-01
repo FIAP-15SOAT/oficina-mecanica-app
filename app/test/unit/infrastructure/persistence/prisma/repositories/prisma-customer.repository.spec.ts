@@ -298,6 +298,17 @@ describe('PrismaCustomerRepository', () => {
         }),
       );
     });
+
+    it('should filter by isActive when provided', async () => {
+      prisma.customer.findMany.mockResolvedValue([]);
+      prisma.customer.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { isActive: false });
+
+      expect(prisma.customer.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { isActive: false } }),
+      );
+    });
   });
 
   describe('isCustomerInUse', () => {

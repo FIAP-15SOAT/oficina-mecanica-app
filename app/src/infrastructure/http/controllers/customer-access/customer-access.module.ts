@@ -6,6 +6,7 @@ import { GrantCustomerAccessUseCase } from '@application/use-cases/customer-acce
 import { ListCustomerAccessUsersUseCase } from '@application/use-cases/customer-access/list-customer-access-users.use-case';
 import { ListUserCustomersUseCase } from '@application/use-cases/customer-access/list-user-customers.use-case';
 import { RevokeCustomerAccessUseCase } from '@application/use-cases/customer-access/revoke-customer-access.use-case';
+import { UpdateCustomerStatusUseCase } from '@application/use-cases/customer-access/update-customer-status.use-case';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
@@ -46,6 +47,10 @@ import { UserCustomersController } from './user-customers.controller';
           new RevokeCustomerAccessUseCase(
             userCustomerRepository,
             logger.forContext(RevokeCustomerAccessUseCase.name),
+          ),
+          new UpdateCustomerStatusUseCase(
+            customerRepository,
+            logger.forContext(UpdateCustomerStatusUseCase.name),
           ),
         ),
       inject: [

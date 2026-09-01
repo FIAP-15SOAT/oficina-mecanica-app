@@ -7,6 +7,7 @@ import { GrantCustomerAccessUseCase } from '@application/use-cases/customer-acce
 import { ListCustomerAccessUsersUseCase } from '@application/use-cases/customer-access/list-customer-access-users.use-case';
 import { ListUserCustomersUseCase } from '@application/use-cases/customer-access/list-user-customers.use-case';
 import { RevokeCustomerAccessUseCase } from '@application/use-cases/customer-access/revoke-customer-access.use-case';
+import { UpdateCustomerStatusUseCase } from '@application/use-cases/customer-access/update-customer-status.use-case';
 
 import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerType } from '@domain/enums/customer-type.enum';
@@ -17,18 +18,21 @@ describe('CustomerAccessController', () => {
   let listAccessUsersUseCase: { execute: jest.Mock };
   let listUserCustomersUseCase: { execute: jest.Mock };
   let revokeUseCase: { execute: jest.Mock };
+  let updateStatusUseCase: { execute: jest.Mock };
 
   beforeEach(() => {
     grantUseCase = { execute: jest.fn() };
     listAccessUsersUseCase = { execute: jest.fn() };
     listUserCustomersUseCase = { execute: jest.fn() };
     revokeUseCase = { execute: jest.fn() };
+    updateStatusUseCase = { execute: jest.fn() };
 
     controller = new CustomerAccessController(
       grantUseCase as unknown as GrantCustomerAccessUseCase,
       listAccessUsersUseCase as unknown as ListCustomerAccessUsersUseCase,
       listUserCustomersUseCase as unknown as ListUserCustomersUseCase,
       revokeUseCase as unknown as RevokeCustomerAccessUseCase,
+      updateStatusUseCase as unknown as UpdateCustomerStatusUseCase,
     );
   });
 
@@ -104,6 +108,19 @@ describe('CustomerAccessController', () => {
       await controller.revokeAccess(customerId, userId, actingUserId);
 
       expect(revokeUseCase.execute).toHaveBeenCalledWith(customerId, userId, actingUserId);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should forward to the use case', async () => {
+      const customerId = randomUUID();
+      const actingUserId = randomUUID();
+
+      updateStatusUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.updateStatus(customerId, false, actingUserId);
+
+      expect(updateStatusUseCase.execute).toHaveBeenCalledWith(customerId, false, actingUserId);
     });
   });
 });

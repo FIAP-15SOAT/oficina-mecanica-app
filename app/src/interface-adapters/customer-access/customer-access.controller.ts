@@ -2,6 +2,7 @@ import { GrantCustomerAccessUseCase } from '@application/use-cases/customer-acce
 import { ListCustomerAccessUsersUseCase } from '@application/use-cases/customer-access/list-customer-access-users.use-case';
 import { ListUserCustomersUseCase } from '@application/use-cases/customer-access/list-user-customers.use-case';
 import { RevokeCustomerAccessUseCase } from '@application/use-cases/customer-access/revoke-customer-access.use-case';
+import { UpdateCustomerStatusUseCase } from '@application/use-cases/customer-access/update-customer-status.use-case';
 import { GrantCustomerAccessDto } from '@application/ports/input/customer-access/dto/grant-customer-access.dto';
 
 import { CustomerAccessPresenter } from './customer-access.presenter';
@@ -17,6 +18,7 @@ export class CustomerAccessController {
     private readonly listCustomerAccessUsersUseCase: ListCustomerAccessUsersUseCase,
     private readonly listUserCustomersUseCase: ListUserCustomersUseCase,
     private readonly revokeCustomerAccessUseCase: RevokeCustomerAccessUseCase,
+    private readonly updateCustomerStatusUseCase: UpdateCustomerStatusUseCase,
   ) {}
 
   async grantAccess(
@@ -40,5 +42,9 @@ export class CustomerAccessController {
 
   async revokeAccess(customerId: string, userId: string, actingUserId: string): Promise<void> {
     await this.revokeCustomerAccessUseCase.execute(customerId, userId, actingUserId);
+  }
+
+  async updateStatus(customerId: string, isActive: boolean, actingUserId: string): Promise<void> {
+    await this.updateCustomerStatusUseCase.execute(customerId, isActive, actingUserId);
   }
 }

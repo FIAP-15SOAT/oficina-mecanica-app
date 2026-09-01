@@ -7,6 +7,7 @@ import { UpdateCustomerUseCase } from '@application/use-cases/customer/update-cu
 import { DeleteCustomerUseCase } from '@application/use-cases/customer/delete-customer.use-case';
 
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-customer.repository.interface';
 
 import { CustomerController as CustomerCleanController } from '@interface-adapters/customer/customer.controller';
 import { CustomerController } from './customer.controller';
@@ -16,15 +17,18 @@ import { CustomerController } from './customer.controller';
   providers: [
     {
       provide: CustomerCleanController,
-      useFactory: (customerRepository: ICustomerRepository) =>
+      useFactory: (
+        customerRepository: ICustomerRepository,
+        userCustomerRepository: IUserCustomerRepository,
+      ) =>
         new CustomerCleanController(
           new CreateCustomerUseCase(customerRepository),
           new FindAllCustomersUseCase(customerRepository),
           new FindCustomerByIdUseCase(customerRepository),
-          new UpdateCustomerUseCase(customerRepository),
+          new UpdateCustomerUseCase(customerRepository, userCustomerRepository),
           new DeleteCustomerUseCase(customerRepository),
         ),
-      inject: ['ICustomerRepository'],
+      inject: ['ICustomerRepository', 'IUserCustomerRepository'],
     },
   ],
 })

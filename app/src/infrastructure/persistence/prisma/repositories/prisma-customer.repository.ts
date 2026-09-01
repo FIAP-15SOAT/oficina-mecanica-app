@@ -90,13 +90,14 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     pagination: PaginationInput,
     filters: CustomerFilters,
   ): Promise<PaginatedRepositoryResult<Customer>> {
-    const { name, type, document } = filters;
+    const { name, type, document, isActive } = filters;
 
     const where: Prisma.CustomerWhereInput = {};
 
     if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
     if (type) where.type = type;
     if (document) where.document = document.replaceAll(/[.\-/]/g, '').trim();
+    if (isActive !== undefined) where.isActive = isActive;
 
     const result = await paginate(
       this.prisma.customer,

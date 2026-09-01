@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -39,6 +40,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerAccessController as CustomerAccessCleanController } from '@interface-adapters/customer-access/customer-access.controller';
 
 import { GrantCustomerAccessRequestDto } from './dto/requests/grant-customer-access-request.dto';
+import { UpdateCustomerStatusRequestDto } from './dto/requests/update-customer-status-request.dto';
 import {
   AccessUserListResponseDto,
   CustomerAccessDataResponseDto,
@@ -100,5 +102,20 @@ export class CustomerAccessController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     return this.controller.revokeAccess(customerId, userId, user.sub);
+  }
+
+  @Patch(':customerId/status')
+  @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Ativar ou desativar um cliente' })
+  @ApiParam({ name: 'customerId', format: 'uuid' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
+  updateStatus(
+    @Param('customerId', ParseUUIDPipe) customerId: string,
+    @Body() request: UpdateCustomerStatusRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    return this.controller.updateStatus(customerId, request.isActive, user.sub);
   }
 }

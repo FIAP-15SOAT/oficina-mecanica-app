@@ -6,6 +6,7 @@ export interface CustomerFilters {
   name?: string;
   type?: CustomerType;
   document?: string;
+  isActive?: boolean;
 }
 
 export interface ICustomerRepository {
