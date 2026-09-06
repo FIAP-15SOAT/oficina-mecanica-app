@@ -7,6 +7,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 
 function buildIndividualCustomer(): Customer {
   return Customer.create({
@@ -77,7 +78,15 @@ describe('GrantCustomerAccessUseCase', () => {
     const result = await useCase.execute(customer.id, randomUUID());
 
     expect(result.initialPasswordSent).toBe(true);
-    expect(result.customerId).toBe(customer.id);
+    expect(result.customer).toEqual({
+      id: customer.id,
+      name: customer.name,
+      type: customer.type,
+      isActive: customer.isActive,
+    });
+    expect(result.user).toEqual(
+      expect.objectContaining({ name: customer.name, email: customer.email.value }),
+    );
     expect(emailSender.send).toHaveBeenCalledWith(
       expect.objectContaining({ toEmail: customer.email.value }),
     );
@@ -110,11 +119,11 @@ describe('GrantCustomerAccessUseCase', () => {
     );
   });
 
-  it('should conflict when a user already exists with the given cpf', async () => {
+  it('should reuse an existing user found by cpf instead of creating a new one', async () => {
     const customer = buildIndividualCustomer();
     const existingUser = User.create({
-      name: 'Outra Pessoa',
-      email: 'outra@example.com',
+      name: 'João da Silva',
+      email: 'joao.antigo@example.com',
       passwordHash: 'existing-hash',
       role: null,
       cpf: '12345678909',
@@ -122,12 +131,40 @@ describe('GrantCustomerAccessUseCase', () => {
     repos.customer.findById.mockResolvedValue(customer);
     repos.user.findByCpf.mockResolvedValue(existingUser);
     repos.user.findByEmail.mockResolvedValue(null);
+    repos.userCustomer.create.mockImplementation((link) => Promise.resolve(link));
 
-    await expect(useCase.execute(customer.id, randomUUID())).rejects.toThrow(
-      ResourceConflictException,
-    );
+    const result = await useCase.execute(customer.id, randomUUID());
+
     expect(repos.user.create).not.toHaveBeenCalled();
-    expect(repos.userCustomer.create).not.toHaveBeenCalled();
+    expect(repos.userCustomer.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: existingUser.id, customerId: customer.id }),
+    );
+    expect(emailSender.send).not.toHaveBeenCalled();
+    expect(result.initialPasswordSent).toBe(false);
+    expect(result.user).toEqual(expect.objectContaining({ id: existingUser.id }));
+  });
+
+  it('should reuse the user without conflict when both cpf and email point to the same existing user', async () => {
+    const customer = buildIndividualCustomer();
+    const existingUser = User.create({
+      name: 'João da Silva',
+      email: customer.email.value,
+      passwordHash: 'existing-hash',
+      role: null,
+      cpf: customer.document.value,
+    });
+    repos.customer.findById.mockResolvedValue(customer);
+    repos.user.findByCpf.mockResolvedValue(existingUser);
+    repos.user.findByEmail.mockResolvedValue(existingUser);
+    repos.userCustomer.create.mockImplementation((link) => Promise.resolve(link));
+
+    const result = await useCase.execute(customer.id, randomUUID());
+
+    expect(repos.user.create).not.toHaveBeenCalled();
+    expect(repos.userCustomer.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: existingUser.id, customerId: customer.id }),
+    );
+    expect(result.initialPasswordSent).toBe(false);
   });
 
   it('should conflict when a user already exists with the given email, regardless of role', async () => {
@@ -162,5 +199,25 @@ describe('GrantCustomerAccessUseCase', () => {
     const result = await useCase.execute(customer.id, randomUUID());
 
     expect(result.initialPasswordSent).toBe(false);
+    expect(logger.event).toHaveBeenCalledWith(BUSINESS_EVENTS.USER_INITIAL_PASSWORD_SEND_FAILED, {
+      targetUserId: result.user.id,
+    });
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('should participate in a caller-supplied transaction instead of opening its own', async () => {
+    const customer = buildIndividualCustomer();
+    repos.customer.findById.mockResolvedValue(customer);
+    repos.user.findByCpf.mockResolvedValue(null);
+    repos.user.findByEmail.mockResolvedValue(null);
+    repos.user.create.mockImplementation((user: User) => Promise.resolve(user));
+    repos.userCustomer.exists.mockResolvedValue(false);
+    repos.userCustomer.create.mockImplementation((link) => Promise.resolve(link));
+
+    const result = await useCase.execute(customer.id, randomUUID(), undefined, repos as never);
+
+    expect(unitOfWork.executeTransaction).not.toHaveBeenCalled();
+    expect(repos.user.create).toHaveBeenCalledTimes(1);
+    expect(result.initialPasswordSent).toBe(true);
   });
 });

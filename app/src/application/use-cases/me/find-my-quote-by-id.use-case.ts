@@ -3,8 +3,9 @@ import { IQuoteRepository } from '@domain/interfaces/repositories/quote.reposito
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { CustomerAccessPolicy } from '@application/policies/customer-access.policy';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IFindMyQuoteByIdUseCase } from '@application/ports/input/me/find-my-quote-by-id.use-case.interface';
 
-export class GetMyQuoteUseCase {
+export class FindMyQuoteByIdUseCase implements IFindMyQuoteByIdUseCase {
   constructor(
     private readonly quoteRepository: IQuoteRepository,
     private readonly workOrderRepository: IWorkOrderRepository,

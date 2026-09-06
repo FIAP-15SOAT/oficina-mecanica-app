@@ -1106,7 +1106,7 @@ describe('Quote (E2E)', () => {
       expect(res.body.data.status).toBe('REJECTED');
     });
 
-    it('should return 409 when rejecting without reason', async () => {
+    it('should return 400 when rejecting without reason', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
       const createRes = await request(httpServer)
@@ -1129,11 +1129,14 @@ describe('Quote (E2E)', () => {
         .send({})
         .expect(200);
 
+      // Motivo ausente é entrada malformada, não conflito de estado — a
+      // combinação de parâmetros (status=REJECTED sem reason) é inválida em
+      // si, independentemente do estado atual do orçamento.
       await request(httpServer)
         .patch(`/api/quotes/${quoteId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'REJECTED' })
-        .expect(409);
+        .expect(400);
     });
 
     it('should return 400 with invalid status', async () => {
@@ -1414,7 +1417,7 @@ describe('Quote (E2E)', () => {
         .patch(`/api/quotes/${createRes.body.data.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'REJECTED' })
-        .expect(409); // BusinessRuleViolationException mapped to 409
+        .expect(400); // BadRequestException mapped to 400
     });
 
     it('should return 404 when quote does not exist', async () => {

@@ -1,3 +1,6 @@
+import { UserPublicView } from '@domain/entities/user.entity';
+import { LinkedCustomerOutputDto } from '@application/ports/input/customer-access/dto/list-user-customers.dto';
+
 export interface GrantCustomerAccessDto {
   name?: string;
   email?: string;
@@ -5,7 +8,7 @@ export interface GrantCustomerAccessDto {
 }
 
 export interface GrantCustomerAccessOutputDto {
-  userId: string;
-  customerId: string;
+  user: UserPublicView;
+  customer: LinkedCustomerOutputDto;
   initialPasswordSent: boolean;
 }

@@ -41,6 +41,15 @@ export class PrismaUserCustomerRepository implements IUserCustomerRepository {
     return record !== null;
   }
 
+  async existsActiveLink(userId: string, customerId: string): Promise<boolean> {
+    const record = await this.prisma.userCustomer.findFirst({
+      where: { userId, customerId, customer: { isActive: true } },
+      select: { userId: true },
+    });
+
+    return record !== null;
+  }
+
   async delete(userId: string, customerId: string): Promise<void> {
     await this.prisma.userCustomer.delete({
       where: { userId_customerId: { userId, customerId } },

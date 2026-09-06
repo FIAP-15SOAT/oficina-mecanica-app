@@ -1,6 +1,7 @@
 import { CreateUserUseCase } from '@application/use-cases/user/create-user.use-case';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 
 describe('CreateUserUseCase', () => {
   it('should generate a password, hash it, and email it to the new user', async () => {
@@ -61,7 +62,7 @@ describe('CreateUserUseCase', () => {
     };
     const hashService = { hash: jest.fn().mockResolvedValue('hashed') };
     const emailSender = { send: jest.fn().mockRejectedValue(new Error('smtp down')) };
-    const logger = { error: jest.fn() };
+    const logger = { error: jest.fn(), event: jest.fn() };
 
     const useCase = new CreateUserUseCase(
       userRepository as never,
@@ -75,15 +76,14 @@ describe('CreateUserUseCase', () => {
     ).resolves.toBeDefined();
   });
 
-  it('should log the error when the initial password email fails to send', async () => {
+  it('should log a business event, not the raw error, when the initial password email fails to send', async () => {
     const userRepository = {
       findByEmail: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation((user) => Promise.resolve(user)),
     };
     const hashService = { hash: jest.fn().mockResolvedValue('hashed') };
-    const sendError = new Error('smtp down');
-    const emailSender = { send: jest.fn().mockRejectedValue(sendError) };
-    const logger = { error: jest.fn() };
+    const emailSender = { send: jest.fn().mockRejectedValue(new Error('smtp down')) };
+    const logger = { error: jest.fn(), event: jest.fn() };
 
     const useCase = new CreateUserUseCase(
       userRepository as never,
@@ -92,12 +92,15 @@ describe('CreateUserUseCase', () => {
       logger as never,
     );
 
-    await useCase.execute({
+    const result = await useCase.execute({
       name: 'Novo',
       email: 'novo@example.com',
       role: UserRole.ATTENDANT,
     });
 
-    expect(logger.error).toHaveBeenCalledWith(expect.any(String), sendError);
+    expect(logger.event).toHaveBeenCalledWith(BUSINESS_EVENTS.USER_INITIAL_PASSWORD_SEND_FAILED, {
+      targetUserId: result.id,
+    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

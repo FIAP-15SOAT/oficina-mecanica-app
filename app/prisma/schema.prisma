@@ -72,15 +72,16 @@ enum PartSupplyCategory {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  name         String    @db.VarChar(150)
-  email        String    @unique @db.VarChar(150)
-  cpf          String?   @unique @db.VarChar(11)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         UserRole?
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  id                String    @id @default(uuid()) @db.Uuid
+  name              String    @db.VarChar(150)
+  email             String    @unique @db.VarChar(150)
+  cpf               String?   @unique @db.VarChar(11)
+  passwordHash      String    @map("password_hash") @db.VarChar(255)
+  role              UserRole?
+  isActive          Boolean   @default(true) @map("is_active")
+  passwordChangedAt DateTime  @default(now()) @map("password_changed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
 
   assignedWorkOrders WorkOrder[]        @relation("AssignedUser")
   statusChanges      StatusHistory[]
@@ -212,7 +213,7 @@ model WorkOrder {
   customer          Customer              @relation(fields: [customerId], references: [id])
   vehicle           Vehicle               @relation(fields: [vehicleId], references: [id])
   assignedUser      User?                 @relation("AssignedUser", fields: [assignedUserId], references: [id])
-  statusInfo        WorkOrderStatusInfo    @relation(fields: [status], references: [code])
+  statusInfo        WorkOrderStatusInfo   @relation(fields: [status], references: [code])
   services          WorkOrderService[]
   partSupplies      WorkOrderPartSupply[]
   quotes            Quote[]

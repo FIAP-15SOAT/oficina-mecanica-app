@@ -5,5 +5,5 @@ export interface FindAllCustomersQuery extends PaginationQuery {
   name?: string;
   type?: CustomerType;
   document?: string;
-  isActive?: boolean;
+  active?: boolean;
 }

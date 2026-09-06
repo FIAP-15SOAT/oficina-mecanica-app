@@ -181,7 +181,7 @@ Dois fluxos de autenticação **totalmente isolados** — nunca um único verifi
 | O que o token carrega | `sub` (userId) + `role` | Só `sub` (userId) — **nunca** `customerId`. Autorização é resolvida por vínculo (`UserCustomer`) a cada requisição, então revogar acesso ou desativar o cliente vale imediatamente, sem lista de revogação de token |
 | Superfície de rotas | Todas as rotas internas por perfil (ver matriz abaixo) | `/api/me/*` |
 
-A função serverless de autenticação externa **não está neste repositório** — o link para o repositório dela será adicionado aqui assim que existir. Ver [ADR 0004](docs/adr/0004-autenticacao-de-clientes.md) para o raciocínio completo por trás dessas decisões.
+A função serverless de autenticação externa **não está neste repositório** — vive em [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth). Ver [ADR 0004](docs/adr/0004-autenticacao-de-clientes.md) para o raciocínio completo por trás dessas decisões, e [docs/local-setup.md](docs/local-setup.md#variáveis-de-ambiente) para rodar os dois repositórios juntos localmente.
 
 <details>
 <summary><strong>Matriz completa de rotas e permissões</strong></summary>
@@ -212,10 +212,10 @@ A função serverless de autenticação externa **não está neste repositório*
 | `GET /api/customers/:id/vehicles` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `PUT /api/customers/:id` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `DELETE /api/customers/:id` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
-| `POST /api/customers/:customerId/access-users` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
-| `GET /api/customers/:customerId/access-users` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
-| `DELETE /api/customers/:customerId/access-users/:userId` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
-| `PATCH /api/customers/:customerId/status` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
+| `POST /api/customers/:customerId/users` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
+| `GET /api/customers/:customerId/users` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
+| `DELETE /api/customers/:customerId/users/:userId` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
+| `PATCH /api/customers/:customerId` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `POST /api/vehicles` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `GET /api/vehicles` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `GET /api/vehicles/:id` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |

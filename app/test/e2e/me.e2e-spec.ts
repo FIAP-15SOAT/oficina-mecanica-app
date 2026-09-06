@@ -139,7 +139,7 @@ describe('Me (E2E)', () => {
   /**
    * Cria diretamente via Prisma um usuário puramente externo (role null, com
    * CPF) já vinculado a um cliente ativo — equivalente ao resultado de
-   * `POST /api/customers/:customerId/access-users`, mas sem depender do fluxo
+   * `POST /api/customers/:customerId/users`, mas sem depender do fluxo
    * de e-mail de senha inicial, que é irrelevante para este teste.
    */
   async function createExternalUserLinkedTo(customerId: string, cpf: string) {
@@ -216,6 +216,88 @@ describe('Me (E2E)', () => {
     });
   });
 
+  // ─── PATCH /api/me/password ─────────────────────────────────────────────────
+
+  describe('PATCH /api/me/password', () => {
+    it('should let an externally authenticated user change their own password', async () => {
+      const customer = await createCustomer();
+      const user = await createExternalUserLinkedTo(customer.id, generateCPF(4000));
+      const token = signTestCustomerToken(user.id);
+
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'External@123', newPassword: 'NovaSenha@456' })
+        .expect(204);
+
+      const updated = await ctx.prisma.user.findUnique({ where: { id: user.id } });
+      expect(await bcrypt.compare('NovaSenha@456', updated!.passwordHash)).toBe(true);
+    });
+
+    it('rejects an external token issued before an authenticated password change', async () => {
+      const customer = await createCustomer();
+      const user = await createExternalUserLinkedTo(customer.id, generateCPF(4001));
+      const tokenIssuedBeforeChange = signTestCustomerToken(user.id);
+
+      // iat tem granularidade de segundo; garante que a troca cai num segundo
+      // seguinte ao da assinatura, para não colidir por arredondamento.
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${tokenIssuedBeforeChange}`)
+        .send({ currentPassword: 'External@123', newPassword: 'NovaSenha@456' })
+        .expect(204);
+
+      await request(httpServer)
+        .get('/api/me/work-orders')
+        .set('Authorization', `Bearer ${tokenIssuedBeforeChange}`)
+        .expect(401);
+    });
+
+    it('should let an internally authenticated user change their own password', async () => {
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ currentPassword: 'Test@2026', newPassword: 'NovaSenha@456' })
+        .expect(204);
+
+      const updated = await ctx.prisma.user.findUnique({ where: { id: adminAuth.user.id } });
+      expect(await bcrypt.compare('NovaSenha@456', updated!.passwordHash)).toBe(true);
+    });
+
+    it('should return 401 when the current password is wrong', async () => {
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ currentPassword: 'SenhaErrada@000', newPassword: 'NovaSenha@456' })
+        .expect(401);
+    });
+
+    it('should return 422 when the new password does not meet the policy', async () => {
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ currentPassword: 'Test@2026', newPassword: 'fracasenha' })
+        .expect(422);
+    });
+
+    it('should return 409 when the new password equals the current one', async () => {
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ currentPassword: 'Test@2026', newPassword: 'Test@2026' })
+        .expect(409);
+    });
+
+    it('should return 401 without any token', async () => {
+      await request(httpServer)
+        .patch('/api/me/password')
+        .send({ currentPassword: 'Test@2026', newPassword: 'NovaSenha@456' })
+        .expect(401);
+    });
+  });
+
   // ─── Full external customer flow: CPF login → /api/me → quote decision ───
 
   describe('Full external customer flow — CPF login → /api/me → quote decision', () => {
@@ -225,9 +307,16 @@ describe('Me (E2E)', () => {
       const otherCustomer = await createCustomer();
 
       const externalUser = await createExternalUserLinkedTo(customerA.id, generateCPF(2000));
-      await ctx.prisma.userCustomer.create({
-        data: { userId: externalUser.id, customerId: customerB.id },
-      });
+
+      // Segundo vínculo via API real (não Prisma direto): mesmo CPF de
+      // externalUser reaproveita o User existente em vez de criar um novo,
+      // provando o comportamento de GrantCustomerAccessUseCase de ponta a
+      // ponta — não só a leitura de /api/me sobre um estado montado à mão.
+      await request(httpServer)
+        .post(`/api/customers/${customerB.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: externalUser.name, email: externalUser.email, cpf: externalUser.cpf })
+        .expect(201);
 
       const vehicle = await ctx.prisma.vehicle.create({
         data: {
@@ -277,10 +366,9 @@ describe('Me (E2E)', () => {
 
       expect(meResponse.status).toBe(200);
       expect(meResponse.body.data.role).toBeNull();
-      expect(meResponse.body.data.customers).toHaveLength(2);
-      expect(meResponse.body.data.customers.map((c: { type: string }) => c.type).sort()).toEqual([
+      expect(meResponse.body.data.customers).toHaveLength(1);
+      expect(meResponse.body.data.customers.map((c: { type: string }) => c.type)).toEqual([
         'COMPANY',
-        'INDIVIDUAL',
       ]);
 
       // GET /api/me/work-orders — only the caller's own linked-customer work orders
@@ -292,6 +380,14 @@ describe('Me (E2E)', () => {
       const workOrderIds = workOrdersResponse.body.data.map((wo: { id: string }) => wo.id);
       expect(workOrderIds).toContain(workOrderA.id);
       expect(workOrderIds).not.toContain(notLinkedWorkOrder.id);
+
+      // Each work order identifies which of the caller's two linked customers
+      // it belongs to — the actual point of this fix: an operator representing
+      // more than one company can tell them apart without guessing from plate/model.
+      const ownWorkOrderInList = workOrdersResponse.body.data.find(
+        (wo: { id: string }) => wo.id === workOrderA.id,
+      );
+      expect(ownWorkOrderInList.customer.id).toBe(customerA.id);
 
       // Filtering by a customerId the caller is not authorized for yields an empty page, not an error
       const scopedFilterResponse = await request(httpServer)
@@ -308,6 +404,7 @@ describe('Me (E2E)', () => {
 
       expect(ownDetailResponse.status).toBe(200);
       expect(ownDetailResponse.body.data.id).toBe(workOrderA.id);
+      expect(ownDetailResponse.body.data.customer.id).toBe(customerA.id);
 
       // Cross-customer access to a work order the caller has no link to is a 404, not 403
       const crossAccessResponse = await request(httpServer)
@@ -347,6 +444,105 @@ describe('Me (E2E)', () => {
 
       expect(secondDecisionResponse.status).toBe(409);
     });
+
+    /**
+     * A listagem de orçamentos de uma OS (`findByWorkOrderId`) não carrega os
+     * itens de propósito — mas o detalhe (`GET /:quoteId`) e a decisão
+     * (`POST /:quoteId/decisions`, tanto approve quanto reject) precisam
+     * devolver os itens com o nome real do serviço/peça, nunca em branco.
+     */
+    it('returns quote items with real names on detail and on both decision outcomes, and omits items from the list', async () => {
+      const customer = await createCustomer();
+      const user = await createExternalUserLinkedTo(customer.id, generateCPF(2100));
+      const vehicle = await createVehicle(customer.id);
+      const workOrder = await ctx.prisma.workOrder.create({
+        data: {
+          number: '900101',
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          status: 'AWAITING_APPROVAL',
+        },
+      });
+
+      const serviceRes = await request(httpServer)
+        .post('/api/services')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Troca de óleo', basePrice: 100, estimatedTimeMin: 60 })
+        .expect(201);
+      const partSupplyRes = await request(httpServer)
+        .post('/api/parts-supplies')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Filtro de óleo',
+          sku: `FO-${Date.now()}`,
+          category: 'PART',
+          unit: 'UN',
+          costPrice: 10,
+          salePrice: 30,
+          stock: 10,
+          minStock: 2,
+        })
+        .expect(201);
+
+      const quote = await ctx.prisma.quote.create({
+        data: { workOrderId: workOrder.id, status: 'SENT', totalAmount: 130 },
+      });
+      await ctx.prisma.quoteService.create({
+        data: {
+          quoteId: quote.id,
+          serviceId: serviceRes.body.data.id,
+          quantity: 1,
+          unitPrice: 100,
+          totalPrice: 100,
+        },
+      });
+      await ctx.prisma.quotePartSupply.create({
+        data: {
+          quoteId: quote.id,
+          partSupplyId: partSupplyRes.body.data.id,
+          quantity: 1,
+          unitPrice: 30,
+          totalPrice: 30,
+        },
+      });
+
+      const token = signTestCustomerToken(user.id);
+
+      const listResponse = await request(httpServer)
+        .get(`/api/me/work-orders/${workOrder.id}/quotes`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(listResponse.body.data).toHaveLength(1);
+      expect(listResponse.body.data[0]).not.toHaveProperty('services');
+      expect(listResponse.body.data[0]).not.toHaveProperty('partsSupplies');
+
+      const detailResponse = await request(httpServer)
+        .get(`/api/me/quotes/${quote.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(detailResponse.body.data.services).toEqual([
+        expect.objectContaining({ name: 'Troca de óleo' }),
+      ]);
+      expect(detailResponse.body.data.partsSupplies).toEqual([
+        expect.objectContaining({ name: 'Filtro de óleo' }),
+      ]);
+
+      const rejectResponse = await request(httpServer)
+        .post(`/api/me/quotes/${quote.id}/decisions`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ action: 'reject', reason: 'Preço muito alto' })
+        .expect(200);
+
+      expect(rejectResponse.body.data.status).toBe('REJECTED');
+      expect(rejectResponse.body.data.services).toEqual([
+        expect.objectContaining({ name: 'Troca de óleo' }),
+      ]);
+      expect(rejectResponse.body.data.partsSupplies).toEqual([
+        expect.objectContaining({ name: 'Filtro de óleo' }),
+      ]);
+    });
   });
 
   // ─── Immediate revocation / deactivation with a still-valid JWT ────────────
@@ -363,7 +559,7 @@ describe('Me (E2E)', () => {
       expect(beforeRevoke.status).toBe(200);
 
       await request(httpServer)
-        .delete(`/api/customers/${customer.id}/access-users/${user.id}`)
+        .delete(`/api/customers/${customer.id}/users/${user.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
 
@@ -384,7 +580,7 @@ describe('Me (E2E)', () => {
       expect(beforeDeactivation.status).toBe(200);
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);

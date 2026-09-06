@@ -15,6 +15,12 @@ import {
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
+interface QuoteRecipient {
+  email: string;
+  name: string;
+  hasAccess: boolean;
+}
+
 export class SubmitQuoteUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
@@ -52,7 +58,7 @@ export class SubmitQuoteUseCase {
 
       updatedQuote.workOrder = workOrder;
 
-      await this.sendQuoteNotification(repos, quote, customer, workOrder.number.toString());
+      await this.sendEmailNotification(repos, quote, customer, workOrder.number.toString());
 
       return {
         quote: updatedQuote,
@@ -95,7 +101,7 @@ export class SubmitQuoteUseCase {
     ]);
   }
 
-  private async sendQuoteNotification(
+  private async sendEmailNotification(
     repos: IRepositories,
     quote: Quote,
     customer: Customer,
@@ -113,31 +119,34 @@ export class SubmitQuoteUseCase {
   private async resolveRecipients(
     repos: IRepositories,
     customer: Customer,
-  ): Promise<{ email: string; name: string }[]> {
+  ): Promise<QuoteRecipient[]> {
     const linkedUsers = await repos.userCustomer.findUsersByCustomerId(customer.id);
     const activeLinkedUsers = linkedUsers.filter((user) => user.isActive);
 
     if (activeLinkedUsers.length === 0) {
-      return [{ email: customer.email.value, name: customer.name }];
+      return [{ email: customer.email.value, name: customer.name, hasAccess: false }];
     }
 
-    const seen = new Set<string>();
-    const recipients: { email: string; name: string }[] = [];
-
-    for (const user of activeLinkedUsers) {
-      if (seen.has(user.email.value)) continue;
-      seen.add(user.email.value);
-      recipients.push({ email: user.email.value, name: user.name });
-    }
-
-    return recipients;
+    return activeLinkedUsers.map((user) => ({
+      email: user.email.value,
+      name: user.name,
+      hasAccess: true,
+    }));
   }
 
   private buildEmailContent(
     quote: Quote,
-    recipient: { email: string; name: string },
+    recipient: QuoteRecipient,
     workOrderNumber: string,
   ): SendEmailInput {
+    const instructionText = recipient.hasAccess
+      ? 'Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.'
+      : 'Você ainda não possui acesso ao sistema. Entre em contato com a oficina para solicitar a criação do seu acesso e poder aprovar ou rejeitar este orçamento.';
+
+    const instructionHtml = recipient.hasAccess
+      ? '<p>Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.</p>'
+      : '<p>Você ainda não possui acesso ao sistema. <strong>Entre em contato com a oficina</strong> para solicitar a criação do seu acesso e poder aprovar ou rejeitar este orçamento.</p>';
+
     return {
       toEmail: recipient.email,
       toName: recipient.name,
@@ -146,16 +155,14 @@ export class SubmitQuoteUseCase {
         text:
           `Olá ${recipient.name},\n\n` +
           `Um orçamento para a Ordem de Serviço ${workOrderNumber} está disponível para sua aprovação.\n` +
-          `Valor total: R$ ${quote.totalAmount.toFixed(2)}\n` +
-          `Identificador do orçamento: ${quote.id}\n\n` +
-          `Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.\n\n` +
+          `Valor total: R$ ${quote.totalAmount.toFixed(2)}\n\n` +
+          `${instructionText}\n\n` +
           `Atenciosamente,\nEquipe da Oficina Mecânica`,
         html:
           `<p>Olá <strong>${recipient.name}</strong>,</p>` +
           `<p>Um orçamento para a Ordem de Serviço <strong>${workOrderNumber}</strong> está disponível para sua aprovação.</p>` +
           `<p><strong>Valor total:</strong> R$ ${quote.totalAmount.toFixed(2)}</p>` +
-          `<p><strong>Identificador do orçamento:</strong> ${quote.id}</p>` +
-          `<p>Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.</p>` +
+          `${instructionHtml}` +
           `<p>Atenciosamente,<br/>Equipe da Oficina Mecânica</p>`,
       },
     };

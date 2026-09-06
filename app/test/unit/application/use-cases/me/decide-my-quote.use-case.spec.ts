@@ -5,12 +5,16 @@ import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
 describe('DecideMyQuoteUseCase', () => {
-  it('should approve via the shared UpdateQuoteStatusUseCase when authorized', async () => {
+  it('should approve via the shared UpdateQuoteStatusUseCase and return the quote reloaded with items', async () => {
     const userId = randomUUID();
     const workOrderId = randomUUID();
     const customerId = randomUUID();
     const quote = { id: randomUUID(), workOrderId };
-    const quoteRepository = { findById: jest.fn().mockResolvedValue(quote) };
+    const detailedQuote = { ...quote, services: [{ serviceId: randomUUID() }] };
+    const quoteRepository = {
+      findById: jest.fn().mockResolvedValue(quote),
+      findByIdWithDetails: jest.fn().mockResolvedValue(detailedQuote),
+    };
     const workOrderRepository = {
       findById: jest.fn().mockResolvedValue({ id: workOrderId, customerId }),
     };
@@ -29,7 +33,8 @@ describe('DecideMyQuoteUseCase', () => {
       reason: null,
     });
 
-    expect(result).toBe(quote);
+    expect(result).toBe(detailedQuote);
+    expect(quoteRepository.findByIdWithDetails).toHaveBeenCalledWith(quote.id);
     expect(updateQuoteStatusUseCase.execute).toHaveBeenCalledWith(quote.id, userId, {
       status: QuoteStatus.APPROVED,
       reason: null,
@@ -41,7 +46,11 @@ describe('DecideMyQuoteUseCase', () => {
     const workOrderId = randomUUID();
     const customerId = randomUUID();
     const quote = { id: randomUUID(), workOrderId };
-    const quoteRepository = { findById: jest.fn().mockResolvedValue(quote) };
+    const detailedQuote = { ...quote, services: [] };
+    const quoteRepository = {
+      findById: jest.fn().mockResolvedValue(quote),
+      findByIdWithDetails: jest.fn().mockResolvedValue(detailedQuote),
+    };
     const workOrderRepository = {
       findById: jest.fn().mockResolvedValue({ id: workOrderId, customerId }),
     };
@@ -64,6 +73,36 @@ describe('DecideMyQuoteUseCase', () => {
       status: QuoteStatus.REJECTED,
       reason: 'Preço muito alto',
     });
+  });
+
+  it('should fall back to the transaction result if the reload somehow finds nothing', async () => {
+    const userId = randomUUID();
+    const workOrderId = randomUUID();
+    const customerId = randomUUID();
+    const quote = { id: randomUUID(), workOrderId };
+    const quoteRepository = {
+      findById: jest.fn().mockResolvedValue(quote),
+      findByIdWithDetails: jest.fn().mockResolvedValue(null),
+    };
+    const workOrderRepository = {
+      findById: jest.fn().mockResolvedValue({ id: workOrderId, customerId }),
+    };
+    const policy = { assertCustomerAuthorized: jest.fn().mockResolvedValue(undefined) };
+    const updateQuoteStatusUseCase = { execute: jest.fn().mockResolvedValue(quote) };
+
+    const useCase = new DecideMyQuoteUseCase(
+      quoteRepository as never,
+      workOrderRepository as never,
+      policy as never,
+      updateQuoteStatusUseCase,
+    );
+
+    const result = await useCase.execute(userId, quote.id, {
+      action: QuoteDecisionAction.APPROVE,
+      reason: null,
+    });
+
+    expect(result).toBe(quote);
   });
 
   it('should throw 404 when the quote does not belong to an authorized customer', async () => {

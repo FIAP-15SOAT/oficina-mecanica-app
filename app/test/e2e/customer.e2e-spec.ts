@@ -321,7 +321,7 @@ describe('Customer (E2E)', () => {
         .expect(201);
 
       const accessUsers = await request(httpServer)
-        .get(`/api/customers/${created.body.data.id}/access-users`)
+        .get(`/api/customers/${created.body.data.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
@@ -336,7 +336,7 @@ describe('Customer (E2E)', () => {
         .expect(201);
 
       const accessUsers = await request(httpServer)
-        .get(`/api/customers/${created.body.data.id}/access-users`)
+        .get(`/api/customers/${created.body.data.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
@@ -441,6 +441,49 @@ describe('Customer (E2E)', () => {
         .expect(200);
 
       expect(res.body.pagination.totalRecords).toBe(1);
+    });
+
+    describe('active filter', () => {
+      beforeEach(async () => {
+        const list = await request(httpServer)
+          .get('/api/customers?document=11222333000181')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+        const companyId = list.body.data[0].id;
+
+        await request(httpServer)
+          .patch(`/api/customers/${companyId}`)
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .send({ isActive: false })
+          .expect(204);
+      });
+
+      it('should return only active customers when active=true', async () => {
+        const res = await request(httpServer)
+          .get('/api/customers?active=true')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+
+        expect(res.body.pagination.totalRecords).toBe(1);
+        expect(res.body.data[0].name).toBe('João da Silva');
+      });
+
+      it('should return only inactive customers when active=false', async () => {
+        const res = await request(httpServer)
+          .get('/api/customers?active=false')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(200);
+
+        expect(res.body.pagination.totalRecords).toBe(1);
+        expect(res.body.data[0].name).toBe('Empresa ABC');
+      });
+
+      it('should return 400 for a malformed active value instead of silently negating it', async () => {
+        await request(httpServer)
+          .get('/api/customers?active=1')
+          .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+          .expect(400);
+      });
     });
   });
 
@@ -594,9 +637,11 @@ describe('Customer (E2E)', () => {
     });
 
     it('should update document and email to new free values without conflict', async () => {
-      // createAccess: false avoids the identity-change lock (a customer with
-      // active access links cannot have its document changed), which is
-      // orthogonal to what this test exercises.
+      // createAccess: false avoids the identity-change lock: validCustomer is
+      // INDIVIDUAL, and for that type the document IS the linked user's CPF —
+      // changing it while an access link is active is still blocked. That
+      // lock is orthogonal to what this test exercises (COMPANY customers
+      // correcting their own CNPJ are exempt from it, but this fixture isn't one).
       const created = await request(httpServer)
         .post('/api/customers')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -616,6 +661,41 @@ describe('Customer (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.email).toBe('novo.endereco@email.com');
+    });
+
+    it('should let a COMPANY customer correct its own CNPJ even with an active access link', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          name: 'Oficina Parceira LTDA',
+          document: '12.345.678/0001-95',
+          type: 'COMPANY',
+          email: 'contato@parceira.com.br',
+          createAccess: false,
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/customers/${created.body.data.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Operador', email: 'operador@parceira.com.br', cpf: '123.456.789-09' })
+        .expect(201);
+
+      const res = await request(httpServer)
+        .put(`/api/customers/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          name: 'Oficina Parceira LTDA',
+          document: '11.222.333/0001-81',
+          type: 'COMPANY',
+          email: 'contato@parceira.com.br',
+        })
+        .expect(200);
+
+      expect(res.body.data.document).toBe('11222333000181');
     });
   });
 

@@ -4,10 +4,11 @@ import { MePresenter } from '@interface-adapters/me/me.presenter';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { GetMeOutputDto } from '@application/ports/input/me/dto/get-me.dto';
+import { FindUserByIdOutput } from '@application/ports/input/user/find-user-by-id.use-case.interface';
 
 import { createMockWorkOrder } from '../../../helpers/work-order-mock.factory';
 import { createMockVehicle } from '../../../helpers/vehicle-mock.factory';
+import { createMockCustomer } from '../../../helpers/customer-mock.factory';
 import {
   createMockQuote,
   createMockQuoteService,
@@ -18,25 +19,72 @@ import { createMockPartSupply } from '../../../helpers/part-supply-mock.factory'
 
 describe('MePresenter', () => {
   describe('toMeDataResponse', () => {
-    it('should wrap the result in a data property', () => {
-      const result: GetMeOutputDto = {
+    it('should not list the principal own INDIVIDUAL customer', () => {
+      const ownIndividual = createMockCustomer({ type: CustomerType.INDIVIDUAL });
+      const user: FindUserByIdOutput = {
         id: randomUUID(),
         name: 'João da Silva',
         email: 'joao@example.com',
-        role: UserRole.ATTENDANT,
-        customers: [
-          { id: randomUUID(), name: 'Oficina Parceira LTDA', type: CustomerType.COMPANY },
-        ],
+        role: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        customers: [ownIndividual],
       };
 
-      expect(MePresenter.toMeDataResponse(result)).toEqual({ data: result });
+      expect(MePresenter.toMeDataResponse(user)).toEqual({
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          customers: [],
+        },
+      });
+    });
+
+    it('should list only the COMPANY customers and omit isActive/createdAt/updatedAt', () => {
+      const ownIndividual = createMockCustomer({ type: CustomerType.INDIVIDUAL });
+      const company = createMockCustomer({
+        type: CustomerType.COMPANY,
+        name: 'Oficina Parceira LTDA',
+      });
+      const user: FindUserByIdOutput = {
+        id: randomUUID(),
+        name: 'Ana',
+        email: 'ana@example.com',
+        role: UserRole.ATTENDANT,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        customers: [ownIndividual, company],
+      };
+
+      const response = MePresenter.toMeDataResponse(user);
+
+      expect(response).toEqual({
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          customers: [{ id: company.id, name: company.name, type: CustomerType.COMPANY }],
+        },
+      });
+      expect(response.data).not.toHaveProperty('isActive');
+      expect(response.data).not.toHaveProperty('createdAt');
+      expect(response.data).not.toHaveProperty('updatedAt');
     });
   });
 
   describe('toWorkOrderResponse', () => {
     it('should map a work order with a vehicle', () => {
       const vehicle = createMockVehicle({ brand: 'Toyota', model: 'Corolla' });
-      const workOrder = createMockWorkOrder({ vehicle, problemDescription: 'Barulho no motor' });
+      const workOrder = createMockWorkOrder({
+        vehicle,
+        problemDescription: 'Barulho no motor',
+        customer: createMockCustomer(),
+      });
 
       const response = MePresenter.toWorkOrderResponse(workOrder);
 
@@ -51,17 +99,39 @@ describe('MePresenter', () => {
     });
 
     it('should map a work order without a vehicle as null', () => {
-      const workOrder = createMockWorkOrder({ vehicle: undefined });
+      const workOrder = createMockWorkOrder({ vehicle: undefined, customer: createMockCustomer() });
 
       const response = MePresenter.toWorkOrderResponse(workOrder);
 
       expect(response.vehicle).toBeNull();
     });
+
+    it('should map the customer owning the work order', () => {
+      const customer = createMockCustomer({
+        type: CustomerType.COMPANY,
+        name: 'Oficina Parceira LTDA',
+      });
+      const workOrder = createMockWorkOrder({ vehicle: undefined, customer });
+
+      const response = MePresenter.toWorkOrderResponse(workOrder);
+
+      expect(response.customer).toEqual({
+        id: customer.id,
+        name: customer.name,
+        type: CustomerType.COMPANY,
+      });
+    });
+
+    it('should throw when the customer was not loaded', () => {
+      const workOrder = createMockWorkOrder({ vehicle: undefined });
+
+      expect(() => MePresenter.toWorkOrderResponse(workOrder)).toThrow();
+    });
   });
 
   describe('toWorkOrderDataResponse', () => {
     it('should wrap the work order response in a data property', () => {
-      const workOrder = createMockWorkOrder({ vehicle: undefined });
+      const workOrder = createMockWorkOrder({ vehicle: undefined, customer: createMockCustomer() });
 
       expect(MePresenter.toWorkOrderDataResponse(workOrder)).toEqual({
         data: MePresenter.toWorkOrderResponse(workOrder),
@@ -71,7 +141,9 @@ describe('MePresenter', () => {
 
   describe('toWorkOrderPaginatedResponse', () => {
     it('should map items and build pagination metadata', () => {
-      const workOrders = [createMockWorkOrder({ vehicle: undefined })];
+      const workOrders = [
+        createMockWorkOrder({ vehicle: undefined, customer: createMockCustomer() }),
+      ];
 
       const response = MePresenter.toWorkOrderPaginatedResponse(
         { items: workOrders, total: 1 },
@@ -125,24 +197,47 @@ describe('MePresenter', () => {
       ]);
     });
 
-    it('should default the item name to an empty string when the reference is not loaded', () => {
+    /**
+     * `toQuoteResponse` só é chamado com um Quote carregado via
+     * `findByIdWithDetails` — a asserção `!` deve estourar, não silenciar,
+     * se essa premissa for violada (ver docs/testing.md).
+     */
+    it('should throw when an item reference was not loaded', () => {
       const quoteService = createMockQuoteService();
-      const quotePartSupply = createMockQuotePartSupply();
-      const quote = createMockQuote({
-        services: [quoteService],
-        partsSupplies: [quotePartSupply],
+      const quote = createMockQuote({ services: [quoteService], partsSupplies: [] });
+
+      expect(() => MePresenter.toQuoteResponse(quote)).toThrow();
+    });
+  });
+
+  describe('toQuoteSummaryResponse', () => {
+    it('should map the quote without its items', () => {
+      const quote = createMockQuote({ status: QuoteStatus.SENT });
+
+      const response = MePresenter.toQuoteSummaryResponse(quote);
+
+      expect(response).toEqual({
+        id: quote.id,
+        status: QuoteStatus.SENT,
+        servicesAmount: quote.servicesAmount,
+        partsAmount: quote.partsAmount,
+        totalAmount: quote.totalAmount,
+        notes: quote.notes,
+        sentAt: quote.sentAt,
+        approvedAt: quote.approvedAt,
+        rejectedAt: quote.rejectedAt,
       });
-
-      const response = MePresenter.toQuoteResponse(quote);
-
-      expect(response.services[0].name).toBe('');
-      expect(response.partsSupplies[0].name).toBe('');
+      expect(response).not.toHaveProperty('services');
+      expect(response).not.toHaveProperty('partsSupplies');
     });
   });
 
   describe('toQuoteDataResponse', () => {
     it('should wrap the quote response in a data property', () => {
-      const quote = createMockQuote();
+      const service = createMockService();
+      const quoteService = createMockQuoteService({ serviceId: service.id });
+      quoteService.service = service;
+      const quote = createMockQuote({ services: [quoteService], partsSupplies: [] });
 
       expect(MePresenter.toQuoteDataResponse(quote)).toEqual({
         data: MePresenter.toQuoteResponse(quote),
@@ -151,11 +246,11 @@ describe('MePresenter', () => {
   });
 
   describe('toQuoteListResponse', () => {
-    it('should map every quote and wrap them in a data property', () => {
+    it('should map every quote to its summary (no items) and wrap them in a data property', () => {
       const quotes = [createMockQuote(), createMockQuote()];
 
       expect(MePresenter.toQuoteListResponse(quotes)).toEqual({
-        data: quotes.map((quote) => MePresenter.toQuoteResponse(quote)),
+        data: quotes.map((quote) => MePresenter.toQuoteSummaryResponse(quote)),
       });
     });
   });

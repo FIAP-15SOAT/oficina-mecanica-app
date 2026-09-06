@@ -1,6 +1,6 @@
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
-import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
+import { IConfirmPasswordResetUseCase } from '@application/ports/input/auth/confirm-password-reset.use-case.interface';
 import { ConfirmPasswordResetDto } from '@application/ports/input/auth/dto/confirm-password-reset.dto';
 
 import { LoginRequest } from './requests/login-request';
@@ -13,7 +13,7 @@ export class AuthController {
   constructor(
     private readonly authenticateUseCase: IAuthenticateUserUseCase,
     private readonly refreshTokenUseCase: IRefreshTokenUseCase,
-    private readonly confirmPasswordResetUseCase: ConfirmPasswordResetUseCase,
+    private readonly confirmPasswordResetUseCase: IConfirmPasswordResetUseCase,
   ) {}
 
   async login(input: LoginRequest): Promise<AuthDataResponse> {

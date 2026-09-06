@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiInternalServerErrorResponse,
@@ -28,7 +29,7 @@ import {
 
 import { AnyAuthGuard } from '@infrastructure/http/guards/any-auth.guard';
 import { CustomerJwtAuthGuard } from '@infrastructure/http/guards/customer-jwt-auth.guard';
-import { CurrentPrincipal } from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-principal.decorator';
 import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 
 import { MeController as MeCleanController } from '@interface-adapters/me/me.controller';
@@ -138,6 +139,7 @@ export class MeController {
   @ApiParam({ name: 'quoteId', format: 'uuid' })
   @ApiOkResponse({ type: MyQuoteDataResponseDto })
   @ApiNotFoundResponse({ description: 'Orçamento inexistente ou não vinculado' })
+  @ApiBadRequestResponse({ description: 'Justificativa ausente na rejeição' })
   @ApiConflictResponse({ description: 'Transição de status inválida para o orçamento' })
   decideQuote(
     @Param('quoteId', ParseUUIDPipe) quoteId: string,

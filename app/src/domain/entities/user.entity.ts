@@ -3,7 +3,7 @@ import { DomainValidationException } from '../exceptions/domain-validation.excep
 import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
-import { DocumentValidator } from '../validators/document.validator';
+import { Cpf } from '../value-objects/cpf.vo';
 
 import { PASSWORD_REGEX } from '../constants/regex/password.regex';
 import {
@@ -28,8 +28,9 @@ interface UserProps {
   email: Email;
   passwordHash: string;
   role: UserRole | null;
-  cpf: string | null;
+  cpf: Cpf | null;
   isActive: boolean;
+  passwordChangedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,8 +41,9 @@ export class User {
   email: Email;
   passwordHash: string;
   role: UserRole | null;
-  cpf: string | null;
+  cpf: Cpf | null;
   isActive: boolean;
+  passwordChangedAt: Date;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -53,6 +55,7 @@ export class User {
     this.role = props.role;
     this.cpf = props.cpf;
     this.isActive = props.isActive;
+    this.passwordChangedAt = props.passwordChangedAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -67,10 +70,7 @@ export class User {
     User.validateRole(props.role);
 
     const hasCpfInput = typeof props.cpf === 'string' && props.cpf.trim().length > 0;
-    const normalizedCpf = hasCpfInput ? User.normalizeCpf(props.cpf as string) : null;
-    if (hasCpfInput) {
-      User.validateCpfFormat(normalizedCpf as string);
-    }
+    const cpf = hasCpfInput ? Cpf.create(props.cpf as string) : null;
 
     const now = new Date();
 
@@ -80,8 +80,9 @@ export class User {
       email: Email.create(props.email),
       passwordHash: props.passwordHash,
       role: props.role,
-      cpf: normalizedCpf,
+      cpf,
       isActive: true,
+      passwordChangedAt: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -113,12 +114,13 @@ export class User {
   changePassword(passwordHash: string): void {
     User.validatePasswordHash(passwordHash);
     this.passwordHash = passwordHash;
+    this.passwordChangedAt = new Date();
     this.updatedAt = new Date();
   }
 
   /**
    * A concessão de acesso pode preencher um CPF ainda nulo, mas nunca
-   * substituir um já cadastrado (spec §7.4) — correção exige rota administrativa
+   * substituir um já cadastrado — correção exige rota administrativa
    * fora desta entrega.
    */
   assignCpf(cpf: string): void {
@@ -126,10 +128,7 @@ export class User {
       throw new BusinessRuleViolationException('Usuário já possui CPF cadastrado');
     }
 
-    const normalized = User.normalizeCpf(cpf);
-    User.validateCpfFormat(normalized);
-
-    this.cpf = normalized;
+    this.cpf = Cpf.create(cpf);
     this.updatedAt = new Date();
   }
 
@@ -159,16 +158,6 @@ export class User {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
-  }
-
-  private static normalizeCpf(cpf: string): string {
-    return cpf.replaceAll(/\D/g, '');
-  }
-
-  private static validateCpfFormat(cpf: string): void {
-    if (!DocumentValidator.validateCpf(cpf)) {
-      throw new DomainValidationException('CPF inválido');
-    }
   }
 
   private static validateName(name: string): void {

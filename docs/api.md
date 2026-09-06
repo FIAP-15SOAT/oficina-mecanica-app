@@ -89,7 +89,7 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório). Aceita `createAccess?: boolean` — concede acesso externo automaticamente reaproveitando o caso de uso de `POST /customers/:id/access-users`. Default: `true` para `INDIVIDUAL`, sempre `false` para `COMPANY` (`createAccess: true` com `COMPANY` é rejeitado com **409**) | ADMIN, ATTENDANT |
+| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório). Aceita `createAccess?: boolean` — concede acesso externo automaticamente reaproveitando o caso de uso de `POST /customers/:id/users`. Default: `true` para `INDIVIDUAL`, sempre `false` para `COMPANY` (`createAccess: true` com `COMPANY` é rejeitado com **409**) | ADMIN, ATTENDANT |
 | GET | `/` | Listar (paginado; filtros: `name`, `type`, `document`) | ADMIN, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
 | GET | `/:id/vehicles` | Listar veículos do cliente | ADMIN, ATTENDANT |
@@ -98,14 +98,14 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 ---
 
-**Acesso Externo de Clientes** (`/api/customers/:customerId/access-users`, `/api/users/:userId/customers`) — *ADMIN, ATTENDANT*
+**Acesso Externo de Clientes** (`/api/customers/:customerId/users`, `/api/users/:userId/customers`) — *ADMIN, ATTENDANT*
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/customers/:customerId/access-users` | Conceder acesso externo a um cliente. Para `Customer.type = INDIVIDUAL`, vincula o próprio cliente (usa CPF/e-mail do cadastro); para `COMPANY`, exige `name` + `email` + `cpf` do operador que vai representar a empresa. Sempre cria um `User` novo e envia a senha inicial por e-mail; se o CPF ou e-mail já pertencer a qualquer usuário existente (interno ou externo), retorna **409** — ver [ADR 0004](adr/0004-autenticacao-de-clientes.md) | ADMIN, ATTENDANT |
-| GET | `/customers/:customerId/access-users` | Listar usuários com acesso a um cliente | ADMIN, ATTENDANT |
-| DELETE | `/customers/:customerId/access-users/:userId` | Revogar o vínculo de um usuário com um cliente — efeito imediato, sem lista de revogação de token | ADMIN, ATTENDANT |
-| PATCH | `/customers/:customerId/status` | Ativar (`isActive: true`) ou desativar (`isActive: false`) um cliente. Cliente inativo perde acesso a `/api/me/*` imediatamente | ADMIN, ATTENDANT |
+| POST | `/customers/:customerId/users` | Conceder acesso externo a um cliente. Para `Customer.type = INDIVIDUAL`, vincula o próprio cliente (usa CPF/e-mail do cadastro); para `COMPANY`, exige `name` + `email` + `cpf` do operador que vai representar a empresa. Se o CPF já pertence a um `User` existente, **reaproveita** essa conta (mesma pessoa física) e só cria o vínculo — sem senha inicial, sem alterar nome/e-mail/role da conta; caso contrário, cria um `User` novo e envia a senha inicial por e-mail. Se o e-mail já pertencer a **outro** usuário (interno ou externo) que não é o dono do CPF informado, retorna **409** — ver [ADR 0004](adr/0004-autenticacao-de-clientes.md) | ADMIN, ATTENDANT |
+| GET | `/customers/:customerId/users` | Listar usuários com acesso a um cliente | ADMIN, ATTENDANT |
+| DELETE | `/customers/:customerId/users/:userId` | Revogar o vínculo de um usuário com um cliente — efeito imediato, sem lista de revogação de token | ADMIN, ATTENDANT |
+| PATCH | `/customers/:customerId` | Ativar (`isActive: true`) ou desativar (`isActive: false`) um cliente. Cliente inativo perde acesso a `/api/me/*` imediatamente | ADMIN, ATTENDANT |
 | GET | `/users/:userId/customers` | Listar os clientes vinculados a um usuário | ADMIN, ATTENDANT |
 
 > Ver [Identidade externa, autenticação e autorização por vínculo](architecture.md#identidade-externa-autenticação-e-autorização-por-vínculo) para o modelo `User`/`Customer`/`UserCustomer`.
@@ -203,10 +203,10 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 | Método | Rota | Descrição | Acesso |
 |---|---|---|---|
-| GET | `/` | Identidade do sujeito autenticado — funciona com token interno **ou** externo | JWT interno OU `customer-jwt` |
+| GET | `/` | Identidade do sujeito autenticado — funciona com token interno **ou** externo. `customers` lista só as empresas (`COMPANY`) que o usuário representa; fica vazio para quem só acessa o próprio cadastro pessoa física (o cadastro `INDIVIDUAL` não aparece ali por ser o próprio usuário, não alguém que ele representa) | JWT interno OU `customer-jwt` |
 | PATCH | `/password` | Trocar a própria senha (`currentPassword`, `newPassword`) — funciona com token interno **ou** externo | JWT interno OU `customer-jwt` |
-| GET | `/work-orders` | Listar ordens de serviço dos clientes vinculados ao usuário autenticado (paginado; filtro opcional `customerId`) | `customer-jwt` |
-| GET | `/work-orders/:workOrderId` | Detalhe de uma ordem de serviço vinculada | `customer-jwt` |
+| GET | `/work-orders` | Listar ordens de serviço dos clientes vinculados ao usuário autenticado (paginado; filtro opcional `customerId`). Cada item traz `customer: { id, name, type }` — necessário para quem representa mais de uma empresa distinguir a qual cliente cada ordem pertence | `customer-jwt` |
+| GET | `/work-orders/:workOrderId` | Detalhe de uma ordem de serviço vinculada, incluindo `customer: { id, name, type }` | `customer-jwt` |
 | GET | `/work-orders/:workOrderId/quotes` | Orçamentos de uma ordem de serviço vinculada | `customer-jwt` |
 | GET | `/quotes/:quoteId` | Orçamento e itens de uma ordem vinculada | `customer-jwt` |
 | POST | `/quotes/:quoteId/decisions` | Aprovar (`{ "action": "approve" }`) ou rejeitar (`{ "action": "reject", "reason": "..." }`) um orçamento vinculado | `customer-jwt` |

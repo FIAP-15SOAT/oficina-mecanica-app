@@ -1,4 +1,5 @@
 import { Customer } from '@domain/entities/customer.entity';
+import { CustomerType } from '@domain/enums/customer-type.enum';
 import { Email } from '@domain/value-objects/email.vo';
 import { Document } from '@domain/value-objects/document.vo';
 
@@ -24,18 +25,9 @@ export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
       throw new ResourceNotFoundException('Cliente', id);
     }
 
+    await this.ensureIdentityCanChange(existing, input);
+
     const newDocument = Document.create(input.document, input.type);
-    const isIdentityChange = input.type !== existing.type || !newDocument.equals(existing.document);
-
-    if (isIdentityChange) {
-      const linkedUsers = await this.userCustomerRepository.findUsersByCustomerId(id);
-
-      if (linkedUsers.length > 0) {
-        throw new BusinessRuleViolationException(
-          'Não é possível alterar tipo ou documento de um cliente com vínculos de acesso ativos.',
-        );
-      }
-    }
 
     if (!newDocument.equals(existing.document)) {
       const existingByDocument = await this.customerRepository.findByDocument(newDocument.value);
@@ -58,5 +50,44 @@ export class UpdateCustomerUseCase implements IUpdateCustomerUseCase {
     existing.update(input);
 
     return this.customerRepository.update(existing);
+  }
+
+  /**
+   * Trocar o tipo sempre reescreve a semântica do vínculo. Trocar o documento
+   * só quebra a identidade quando o cliente é INDIVIDUAL, porque nesse caso o
+   * documento do cliente É o CPF do usuário titular — o CNPJ de uma COMPANY
+   * não identifica quem a representa, então corrigi-lo não deveria ser bloqueado.
+   */
+  private async ensureIdentityCanChange(
+    existing: Customer,
+    input: UpdateCustomerDto,
+  ): Promise<void> {
+    const newDocument = Document.create(input.document, input.type);
+
+    const isTypeChange = input.type !== existing.type;
+    const isDocumentChange = !newDocument.equals(existing.document);
+
+    const breaksAccessIdentity =
+      isTypeChange || (isDocumentChange && existing.type === CustomerType.INDIVIDUAL);
+
+    if (!breaksAccessIdentity) {
+      return;
+    }
+
+    const linkedUsers = await this.userCustomerRepository.findUsersByCustomerId(existing.id);
+
+    if (linkedUsers.length > 0) {
+      throw new BusinessRuleViolationException(
+        'Não é possível alterar o tipo do cliente, nem o documento de um cliente pessoa física, enquanto houver vínculos de acesso.',
+      );
+    }
+
+    const hasWorkOrders = await this.customerRepository.hasWorkOrders(existing.id);
+
+    if (hasWorkOrders) {
+      throw new BusinessRuleViolationException(
+        'Não é possível alterar o tipo do cliente, nem o documento de um cliente pessoa física, enquanto houver ordens de serviço vinculadas.',
+      );
+    }
   }
 }

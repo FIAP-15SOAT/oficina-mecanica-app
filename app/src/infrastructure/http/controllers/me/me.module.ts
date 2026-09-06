@@ -3,11 +3,11 @@ import { Module } from '@nestjs/common';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { ChangeOwnPasswordUseCase } from '@application/use-cases/me/change-own-password.use-case';
-import { GetMeUseCase } from '@application/use-cases/me/get-me.use-case';
-import { ListMyWorkOrdersUseCase } from '@application/use-cases/me/list-my-work-orders.use-case';
-import { GetMyWorkOrderUseCase } from '@application/use-cases/me/get-my-work-order.use-case';
-import { ListMyWorkOrderQuotesUseCase } from '@application/use-cases/me/list-my-work-order-quotes.use-case';
-import { GetMyQuoteUseCase } from '@application/use-cases/me/get-my-quote.use-case';
+import { FindUserByIdUseCase } from '@application/use-cases/user/find-user-by-id.use-case';
+import { FindAllMyWorkOrdersUseCase } from '@application/use-cases/me/find-all-my-work-orders.use-case';
+import { FindMyWorkOrderByIdUseCase } from '@application/use-cases/me/find-my-work-order-by-id.use-case';
+import { FindMyWorkOrdersQuotesUseCase } from '@application/use-cases/me/find-my-work-orders-quotes.use-case';
+import { FindMyQuoteByIdUseCase } from '@application/use-cases/me/find-my-quote-by-id.use-case';
 import { DecideMyQuoteUseCase } from '@application/use-cases/me/decide-my-quote.use-case';
 import { ApproveQuoteUseCase } from '@application/use-cases/quote/approve-quote.use-case';
 import { RejectQuoteUseCase } from '@application/use-cases/quote/reject-quote.use-case';
@@ -40,7 +40,10 @@ import { MeController } from './me.controller';
         unitOfWork: IUnitOfWork,
         logger: ILogger,
       ) => {
-        const customerAccessPolicy = new CustomerAccessPolicy(userCustomerRepository);
+        const customerAccessPolicy = new CustomerAccessPolicy(
+          userCustomerRepository,
+          logger.forContext(CustomerAccessPolicy.name),
+        );
         const approveQuoteUseCase = new ApproveQuoteUseCase(
           unitOfWork,
           logger.forContext(ApproveQuoteUseCase.name),
@@ -60,15 +63,15 @@ import { MeController } from './me.controller';
             hashService,
             logger.forContext(ChangeOwnPasswordUseCase.name),
           ),
-          new GetMeUseCase(userRepository, userCustomerRepository),
-          new ListMyWorkOrdersUseCase(customerAccessPolicy, workOrderRepository),
-          new GetMyWorkOrderUseCase(workOrderRepository, customerAccessPolicy),
-          new ListMyWorkOrderQuotesUseCase(
+          new FindUserByIdUseCase(userRepository, userCustomerRepository),
+          new FindAllMyWorkOrdersUseCase(customerAccessPolicy, workOrderRepository),
+          new FindMyWorkOrderByIdUseCase(workOrderRepository, customerAccessPolicy),
+          new FindMyWorkOrdersQuotesUseCase(
             workOrderRepository,
             quoteRepository,
             customerAccessPolicy,
           ),
-          new GetMyQuoteUseCase(quoteRepository, workOrderRepository, customerAccessPolicy),
+          new FindMyQuoteByIdUseCase(quoteRepository, workOrderRepository, customerAccessPolicy),
           new DecideMyQuoteUseCase(
             quoteRepository,
             workOrderRepository,

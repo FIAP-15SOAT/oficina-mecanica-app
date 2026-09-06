@@ -1,5 +1,6 @@
 import { User } from '@domain/entities/user.entity';
 import { UserCustomer } from '@domain/entities/user-customer.entity';
+import { Customer } from '@domain/entities/customer.entity';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
@@ -13,10 +14,12 @@ import {
   GrantCustomerAccessDto,
   GrantCustomerAccessOutputDto,
 } from '@application/ports/input/customer-access/dto/grant-customer-access.dto';
+import { LinkedCustomerOutputDto } from '@application/ports/input/customer-access/dto/list-user-customers.dto';
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { IGrantCustomerAccessUseCase } from '@application/ports/input/customer-access/grant-customer-access.use-case.interface';
 
 interface PersonData {
   name: string;
@@ -30,12 +33,16 @@ interface PendingPassword {
   password: string;
 }
 
-export interface GrantResult {
-  userId: string;
+interface GrantResult {
+  user: User;
   pendingPassword: PendingPassword | null;
 }
 
-export class GrantCustomerAccessUseCase {
+interface PendingGrant {
+  finish(actingUserId: string): Promise<GrantCustomerAccessOutputDto>;
+}
+
+export class GrantCustomerAccessUseCase implements IGrantCustomerAccessUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly hashService: IHashService,
@@ -43,27 +50,33 @@ export class GrantCustomerAccessUseCase {
     private readonly logger: ILogger,
   ) {}
 
+  /**
+   * `repos` is optional so this use case can run as a single, self-contained call either way:
+   * on its own (opens and commits its own transaction before sending the e-mail and auditing),
+   * or as a step inside a caller's transaction (e.g. `CreateCustomerUseCase` granting access in
+   * the same transaction as the `Customer` insert — passing its own `repos` through). Callers
+   * never need to know about the internal write/finish split; they only ever call `execute()`.
+   */
   async execute(
     customerId: string,
     actingUserId: string,
     input?: GrantCustomerAccessDto,
+    repos?: IRepositories,
   ): Promise<GrantCustomerAccessOutputDto> {
-    const result = await this.unitOfWork.executeTransaction((repos) =>
-      this.grantAccess(repos, customerId, input),
-    );
+    const pending = repos
+      ? await this.grantAccess(repos, customerId, input)
+      : await this.unitOfWork.executeTransaction((txRepos) =>
+          this.grantAccess(txRepos, customerId, input),
+        );
 
-    return this.finalize(result, customerId, actingUserId);
+    return pending.finish(actingUserId);
   }
 
-  /**
-   * Runs the DB-write portion within a caller-supplied transaction (e.g. `CreateCustomerUseCase`
-   * granting access in the same transaction as the `Customer` insert). Callers own `finalize()`.
-   */
-  async grantAccess(
+  private async grantAccess(
     repos: IRepositories,
     customerId: string,
     input?: GrantCustomerAccessDto,
-  ): Promise<GrantResult> {
+  ): Promise<PendingGrant> {
     const customer = await repos.customer.findById(customerId);
 
     if (!customer) {
@@ -74,21 +87,55 @@ export class GrantCustomerAccessUseCase {
       throw new BusinessRuleViolationException('Cliente inativo não pode receber novos acessos');
     }
 
-    const person = this.resolvePersonData(
-      customer.type,
-      customer.name,
-      customer.email.value,
-      customer.document.value,
-      input,
-    );
+    const person = this.resolvePersonData(customer, input);
+    const { user, pendingPassword } = await this.resolveUser(repos, customerId, person);
 
+    const customerSummary: LinkedCustomerOutputDto = {
+      id: customer.id,
+      name: customer.name,
+      type: customer.type,
+      isActive: customer.isActive,
+    };
+
+    return {
+      finish: (actingUserId: string) =>
+        this.sendInitialPasswordAndAudit(
+          user,
+          customerSummary,
+          pendingPassword,
+          customerId,
+          actingUserId,
+        ),
+    };
+  }
+
+  /**
+   * CPF batendo é a mesma pessoa física (User.cpf é @unique global; para
+   * INDIVIDUAL vem de Customer.document, já único e validado) — reaproveita
+   * o User e só cria o vínculo. E-mail batendo com OUTRA pessoa é o bug
+   * original (e-mail não é identidade: muda, se repete, é digitado à mão no
+   * cadastro do cliente) — continua conflito real, nunca reaproveita.
+   */
+  private async resolveUser(
+    repos: IRepositories,
+    customerId: string,
+    person: PersonData,
+  ): Promise<GrantResult> {
     const [userByCpf, userByEmail] = await Promise.all([
       repos.user.findByCpf(person.cpf),
       repos.user.findByEmail(person.email),
     ]);
 
-    if (userByCpf || userByEmail) {
-      throw new ResourceConflictException('CPF ou e-mail já cadastrado no sistema');
+    if (userByEmail && userByEmail.id !== userByCpf?.id) {
+      throw new ResourceConflictException(
+        'O e-mail informado já pertence a outro usuário. Verifique o cadastro do cliente.',
+      );
+    }
+
+    if (userByCpf) {
+      await repos.userCustomer.create(UserCustomer.create({ userId: userByCpf.id, customerId }));
+
+      return { user: userByCpf, pendingPassword: null };
     }
 
     const generatedPassword = PasswordGenerator.generate();
@@ -107,7 +154,7 @@ export class GrantCustomerAccessUseCase {
     await repos.userCustomer.create(UserCustomer.create({ userId: user.id, customerId }));
 
     return {
-      userId: user.id,
+      user,
       pendingPassword: {
         toEmail: user.email.value,
         toName: user.name,
@@ -116,36 +163,35 @@ export class GrantCustomerAccessUseCase {
     };
   }
 
-  /** Sends the initial-password e-mail and logs the business event after the transaction commits. */
-  async finalize(
-    result: GrantResult,
+  private async sendInitialPasswordAndAudit(
+    user: User,
+    customer: LinkedCustomerOutputDto,
+    pendingPassword: PendingPassword | null,
     customerId: string,
     actingUserId: string,
   ): Promise<GrantCustomerAccessOutputDto> {
-    const initialPasswordSent = result.pendingPassword
-      ? await this.sendInitialPasswordEmail(result.pendingPassword)
+    const initialPasswordSent = pendingPassword
+      ? await this.sendInitialPasswordEmail(user.id, pendingPassword)
       : false;
 
     this.logger.event(BUSINESS_EVENTS.CUSTOMER_ACCESS_GRANTED, {
       subjectId: actingUserId,
-      targetUserId: result.userId,
+      targetUserId: user.id,
       customerId,
-      accessUserCreated: true,
+      accessUserCreated: pendingPassword !== null,
       initialPasswordSent,
     });
 
-    return { userId: result.userId, customerId, initialPasswordSent };
+    return {
+      user: user.toPublicView(),
+      customer,
+      initialPasswordSent,
+    };
   }
 
-  private resolvePersonData(
-    type: CustomerType,
-    customerName: string,
-    customerEmail: string,
-    customerDocument: string,
-    input?: GrantCustomerAccessDto,
-  ): PersonData {
-    if (type === CustomerType.INDIVIDUAL) {
-      return { name: customerName, email: customerEmail, cpf: customerDocument };
+  private resolvePersonData(customer: Customer, input?: GrantCustomerAccessDto): PersonData {
+    if (customer.type === CustomerType.INDIVIDUAL) {
+      return { name: customer.name, email: customer.email.value, cpf: customer.document.value };
     }
 
     if (!input?.name || !input?.email || !input?.cpf) {
@@ -157,11 +203,10 @@ export class GrantCustomerAccessUseCase {
     return { name: input.name, email: input.email, cpf: input.cpf.replaceAll(/\D/g, '') };
   }
 
-  private async sendInitialPasswordEmail(pending: {
-    toEmail: string;
-    toName: string;
-    password: string;
-  }): Promise<boolean> {
+  private async sendInitialPasswordEmail(
+    userId: string,
+    pending: PendingPassword,
+  ): Promise<boolean> {
     try {
       await this.emailSender.send({
         toEmail: pending.toEmail,
@@ -184,8 +229,10 @@ export class GrantCustomerAccessUseCase {
       });
 
       return true;
-    } catch (error) {
-      this.logger.error('Falha ao enviar e-mail de senha inicial', error);
+    } catch {
+      this.logger.event(BUSINESS_EVENTS.USER_INITIAL_PASSWORD_SEND_FAILED, {
+        targetUserId: userId,
+      });
       return false;
     }
   }

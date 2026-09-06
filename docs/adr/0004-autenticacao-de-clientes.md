@@ -21,18 +21,29 @@ explicitamente.
 - **A role interna (`User.role`) torna-se opcional.** Não é criado um valor
   `CUSTOMER` no enum `UserRole`: esse enum descreve permissão *dentro* da
   oficina, e um cliente externo não possui nenhuma.
-- **Conceder acesso a um cliente sempre cria um `User` novo; nunca reaproveita
-  um existente.** Se o CPF ou e-mail informado já pertence a qualquer usuário
-  — interno ou externo, de qualquer outro cliente —, a operação retorna
-  conflito (409), o mesmo tratamento já usado na criação administrativa de
-  usuários (`POST /api/users`). Uma versão inicial deste desenho previa
-  reaproveitar automaticamente um `User` existente com o mesmo CPF (permitindo
-  que a mesma pessoa acessasse vários `Customer`, ou que um funcionário também
-  fosse cliente); a ideia foi descartada por criar um vínculo automático e
-  silencioso — sem uma ação explícita de criação — a partir de um dado público
-  como o CPF. A consequência aceita é que, hoje, uma mesma pessoa não pode ter
-  acesso a mais de um `Customer`, nem acumular role interna e vínculo externo,
-  ao mesmo tempo.
+- **Conceder acesso reaproveita um `User` existente quando o CPF bate; nunca
+  quando só o e-mail bate.** `User.cpf` é `@unique` global e, para um cliente
+  INDIVIDUAL, vem de `Customer.document` — já único e validado por
+  `DocumentValidator`. CPF batendo é garantidamente a mesma pessoa física, então
+  a operação apenas cria o vínculo `UserCustomer` sobre o `User` já existente
+  (sem tocar em nome, e-mail, senha ou role — nada da conta é alterado). Já o
+  e-mail não é identidade: muda, se repete em contexto familiar, e para
+  INDIVIDUAL é digitado à mão no cadastro do `Customer` — colidir com o e-mail
+  de **outra** pessoa (achado só por e-mail, com CPF diferente ou ausente) é o
+  cenário original que motivou o bloqueio total desta ADR, e continua sendo
+  conflito real (409): a operação nunca associa um CPF a uma conta encontrada
+  só pelo e-mail. Isso é o que a estrutura do PR já pedia — `UserCustomer` é
+  N:N, `GET /api/me` devolve `customers` como array, `AnyAuthGuard` serve os
+  dois fluxos na mesma rota, e a `role` é opcional — e habilita os casos que a
+  versão anterior desta decisão negava: a mesma pessoa física sendo cliente de
+  mais de um `Customer` (inclusive representando mais de uma empresa), e um
+  funcionário que também é cliente de si mesmo. Limitação aceita: um
+  funcionário com `cpf = null` não vira cliente por este caminho — não há rota
+  para preencher o CPF de um `User` existente (`assignCpf()` seguirá sem
+  chamador de produção), e criar uma abriria a lacuna que motivou o bloqueio
+  original: um atendente carimbando um CPF arbitrário numa conta existente sem
+  verificação de identidade. Resolve-se depois, com uma operação administrativa
+  dedicada.
 - **Não existe `accessType` no vínculo `UserCustomer`.** A semântica do
   vínculo (acesso próprio vs. representação de empresa) deriva de
   `Customer.type`, evitando um campo redundante e potencialmente
@@ -47,7 +58,7 @@ explicitamente.
   adotada é que "autenticação por CPF" significa CPF como identificador, à
   semelhança de qualquer banco brasileiro, não como credencial isolada. Este é
   o único ponto do desenho cuja validação dependeu de confirmação externa ao
-  time (ver §25.1 da especificação de referência).
+  time.
 - **A função de autenticação é serverless e autônoma**, consultando o banco
   diretamente — nunca um proxy do `POST /api/auth/login` interno. Ela assina
   um JWT assimétrico (RS256); a API principal possui apenas a chave pública
@@ -60,14 +71,21 @@ explicitamente.
   externo não carrega `customerId`: cada operação sensível consulta
   `UserCustomer` no banco, fazendo remoções de vínculo e desativações de
   cliente valerem imediatamente, sem lista de revogação.
+- **Trocar ou resetar a senha invalida imediatamente todos os tokens emitidos
+  antes da troca, sem lista de revogação de JWT.** `User.passwordChangedAt` é
+  atualizado no único ponto por onde a senha muda (`User.changePassword()`) e
+  as duas estratégias Passport, mais o refresh, comparam o `iat` do token com
+  esse campo — recarregado do banco a cada requisição, junto de `isActive` e
+  do vínculo. Sem essa checagem, "troquei a senha porque desconfio que ela
+  vazou" não fechava a janela pela qual o atacante entrou: o access token
+  continuava válido por até 15 minutos, e o refresh por até 7 dias, renovando
+  à vontade.
 
 ## Riscos aceitos
 
 - Senha inicial e código de reset trafegam por e-mail (mitigado por geração
   aleatória forte, armazenamento somente como hash, e reset administrativo
   disponível).
-- Troca ou reset de senha não revogam tokens já emitidos (mitigado pela
-  recarga de `isActive` e do vínculo a cada requisição).
 - Não há limitação de frequência de requisições nesta entrega (risco
   preexistente no login interno, não introduzido por esta mudança).
 

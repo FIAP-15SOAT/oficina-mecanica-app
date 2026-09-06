@@ -1,4 +1,5 @@
 import { PasswordResetCode } from '@domain/entities/password-reset-code.entity';
+import { User } from '@domain/entities/user.entity';
 import { ResetCodeGenerator } from '@domain/services/reset-code-generator';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -9,8 +10,9 @@ import { ILogger } from '@application/ports/output/logger.service.interface';
 
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IIssuePasswordResetCodeUseCase } from '@application/ports/input/auth/issue-password-reset-code.use-case.interface';
 
-export class IssuePasswordResetCodeUseCase {
+export class IssuePasswordResetCodeUseCase implements IIssuePasswordResetCodeUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly passwordResetCodeRepository: IPasswordResetCodeRepository,
@@ -29,9 +31,18 @@ export class IssuePasswordResetCodeUseCase {
     const plainCode = ResetCodeGenerator.generate();
     const codeHash = await this.hashService.hash(plainCode);
 
-    const code = PasswordResetCode.issue(user.id, codeHash);
+    const code = PasswordResetCode.create(user.id, codeHash);
     await this.passwordResetCodeRepository.upsert(code);
 
+    await this.sendResetCodeEmail(user, plainCode);
+
+    this.logger.event(BUSINESS_EVENTS.USER_PASSWORD_RESET_ISSUED, {
+      subjectId: actingUserId,
+      targetUserId: user.id,
+    });
+  }
+
+  private async sendResetCodeEmail(user: User, plainCode: string): Promise<void> {
     await this.emailSender.send({
       toEmail: user.email.value,
       toName: user.name,
@@ -48,11 +59,6 @@ export class IssuePasswordResetCodeUseCase {
           `<p style="font-size: 24px; font-weight: bold;">${plainCode}</p>` +
           `<p>Se você não solicitou este código, ignore este e-mail.</p>`,
       },
-    });
-
-    this.logger.event(BUSINESS_EVENTS.USER_PASSWORD_RESET_ISSUED, {
-      subjectId: actingUserId,
-      targetUserId: user.id,
     });
   }
 }

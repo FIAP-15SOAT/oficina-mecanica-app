@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { TokenPayload } from '@application/ports/output/token.service.interface';
 import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -28,6 +29,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuário inválido ou desativado');
     }
 
-    return { sub: user.id, authFlow: 'INTERNAL', email: user.email.value, role: user.role };
+    if (
+      typeof payload.iat !== 'number' ||
+      payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)
+    ) {
+      throw new UnauthorizedException('Sessão expirada. Autentique-se novamente.');
+    }
+
+    return { sub: user.id, authFlow: AuthFlow.INTERNAL, email: user.email.value, role: user.role };
   }
 }

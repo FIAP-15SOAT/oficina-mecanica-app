@@ -8,7 +8,6 @@ import { RefreshTokenRequest } from '@interface-adapters/auth/requests/refresh-t
 
 import { IAuthenticateUserUseCase } from '@application/ports/input/auth/authenticate-user.use-case.interface';
 import { IRefreshTokenUseCase } from '@application/ports/input/auth/refresh-token.use-case.interface';
-import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 import { RefreshTokenOutputDto } from '@application/ports/input/auth/dto/refresh-token.dto';
@@ -29,7 +28,7 @@ describe('AuthController', () => {
     controller = new AuthController(
       authenticateUseCase,
       refreshTokenUseCase,
-      confirmPasswordResetUseCase as unknown as ConfirmPasswordResetUseCase,
+      confirmPasswordResetUseCase,
     );
   });
 

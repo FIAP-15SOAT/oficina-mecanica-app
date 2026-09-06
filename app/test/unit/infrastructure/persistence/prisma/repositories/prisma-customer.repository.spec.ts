@@ -324,11 +324,11 @@ describe('PrismaCustomerRepository', () => {
       );
     });
 
-    it('should filter by isActive when provided', async () => {
+    it('should filter by active when provided', async () => {
       prisma.customer.findMany.mockResolvedValue([]);
       prisma.customer.count.mockResolvedValue(0);
 
-      await repository.findAllPaginated({ page: 1, limit: 10 }, { isActive: false });
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { active: false });
 
       expect(prisma.customer.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { isActive: false } }),
@@ -355,6 +355,20 @@ describe('PrismaCustomerRepository', () => {
       prisma.vehicle.findFirst.mockResolvedValue(null);
       prisma.workOrder.findFirst.mockResolvedValue(null);
       const result = await repository.isCustomerInUse(randomUUID());
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasWorkOrders', () => {
+    it('should return true if customer has work orders', async () => {
+      prisma.workOrder.findFirst.mockResolvedValue({ id: 'some-id' });
+      const result = await repository.hasWorkOrders(randomUUID());
+      expect(result).toBe(true);
+    });
+
+    it('should return false if customer has no work orders', async () => {
+      prisma.workOrder.findFirst.mockResolvedValue(null);
+      const result = await repository.hasWorkOrders(randomUUID());
       expect(result).toBe(false);
     });
   });

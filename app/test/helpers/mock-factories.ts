@@ -16,6 +16,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     role: UserRole.ADMIN,
     cpf: null,
     isActive: true,
+    passwordChangedAt: new Date(0),
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -51,11 +52,12 @@ export function createMockTokenService(): jest.Mocked<ITokenService> {
     signAccessToken: jest.fn().mockReturnValue('access-token-mock'),
     signRefreshToken: jest.fn().mockReturnValue('refresh-token-mock'),
     signTokenPair: jest.fn().mockReturnValue(pair),
-    verifyRefreshToken: jest
-      .fn()
-      .mockReturnValue({ sub: 'user-uuid-123', email: 'admin@email.com', role: UserRole.ADMIN }),
-    signWithSecret: jest.fn().mockReturnValue('signed-token'),
-    verifyWithSecret: jest.fn().mockReturnValue({ any: 'payload' }),
+    verifyRefreshToken: jest.fn().mockReturnValue({
+      sub: 'user-uuid-123',
+      email: 'admin@email.com',
+      role: UserRole.ADMIN,
+      iat: Math.floor(Date.now() / 1000),
+    }),
   };
 }
 

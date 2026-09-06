@@ -25,4 +25,16 @@ describe('UserCustomer Entity', () => {
       DomainValidationException,
     );
   });
+
+  it('should throw when userId is not a valid UUID', () => {
+    expect(() => UserCustomer.create({ userId: 'not-a-uuid', customerId: randomUUID() })).toThrow(
+      DomainValidationException,
+    );
+  });
+
+  it('should throw when customerId is not a valid UUID', () => {
+    expect(() => UserCustomer.create({ userId: randomUUID(), customerId: 'not-a-uuid' })).toThrow(
+      DomainValidationException,
+    );
+  });
 });

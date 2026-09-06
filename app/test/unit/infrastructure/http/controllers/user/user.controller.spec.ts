@@ -9,9 +9,9 @@ import { CreateUserRequestDto } from '@infrastructure/http/controllers/user/dto/
 import { UpdateUserRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-request.dto';
 import { UpdateUserStatusRequestDto } from '@infrastructure/http/controllers/user/dto/requests/update-user-status-request.dto';
 import { FindAllUsersQueryDto } from '@infrastructure/http/controllers/user/dto/requests/filter-users.dto';
-import { IssuePasswordResetCodeUseCase } from '@application/use-cases/auth/issue-password-reset-code.use-case';
 
 import { UserRole } from '@domain/enums/user-role.enum';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
 import { createMockUser } from '../../../../../helpers/user-mock.factory';
 
@@ -33,7 +33,7 @@ describe('UserController', () => {
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
-      { execute: jest.fn() } as unknown as IssuePasswordResetCodeUseCase,
+      { execute: jest.fn() },
     );
     httpController = new UserController(cleanController);
   });
@@ -134,7 +134,12 @@ describe('UserController', () => {
   describe('issuePasswordResetCode', () => {
     it('should delegate to the clean controller with the acting user id', async () => {
       const userId = randomUUID();
-      const actingUser = { sub: randomUUID(), email: 'admin@example.com', role: UserRole.ADMIN };
+      const actingUser = {
+        sub: randomUUID(),
+        authFlow: AuthFlow.INTERNAL,
+        email: 'admin@example.com',
+        role: UserRole.ADMIN,
+      };
 
       jest.spyOn(cleanController, 'issuePasswordResetCode').mockResolvedValue(undefined);
 

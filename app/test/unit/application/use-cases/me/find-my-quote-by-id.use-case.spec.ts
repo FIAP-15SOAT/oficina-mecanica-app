@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { GetMyQuoteUseCase } from '@application/use-cases/me/get-my-quote.use-case';
+import { FindMyQuoteByIdUseCase } from '@application/use-cases/me/find-my-quote-by-id.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
-describe('GetMyQuoteUseCase', () => {
+describe('FindMyQuoteByIdUseCase', () => {
   it('should return the quote when its work order customer is authorized', async () => {
     const userId = randomUUID();
     const workOrderId = randomUUID();
@@ -14,7 +14,7 @@ describe('GetMyQuoteUseCase', () => {
     };
     const policy = { assertCustomerAuthorized: jest.fn().mockResolvedValue(undefined) };
 
-    const useCase = new GetMyQuoteUseCase(
+    const useCase = new FindMyQuoteByIdUseCase(
       quoteRepository as never,
       workOrderRepository as never,
       policy as never,
@@ -31,7 +31,7 @@ describe('GetMyQuoteUseCase', () => {
     const workOrderRepository = { findById: jest.fn() };
     const policy = { assertCustomerAuthorized: jest.fn() };
 
-    const useCase = new GetMyQuoteUseCase(
+    const useCase = new FindMyQuoteByIdUseCase(
       quoteRepository as never,
       workOrderRepository as never,
       policy as never,

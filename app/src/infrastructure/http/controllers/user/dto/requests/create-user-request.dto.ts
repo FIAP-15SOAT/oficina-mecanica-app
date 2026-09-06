@@ -35,6 +35,6 @@ export class CreateUserRequestDto {
 
   @ApiPropertyOptional({ example: '123.456.789-09', description: 'CPF do usuário' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'O CPF deve ser um texto.' })
   cpf?: string;
 }

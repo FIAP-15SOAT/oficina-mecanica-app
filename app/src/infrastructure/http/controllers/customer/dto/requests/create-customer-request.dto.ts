@@ -94,9 +94,10 @@ export class CreateCustomerRequestDto {
   address!: AddressRequestDto;
 
   @ApiPropertyOptional({
+    example: true,
     description: 'Concede acesso externo automaticamente (padrão true para INDIVIDUAL)',
   })
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({ message: 'createAccess deve ser um booleano.' })
   createAccess?: boolean;
 }

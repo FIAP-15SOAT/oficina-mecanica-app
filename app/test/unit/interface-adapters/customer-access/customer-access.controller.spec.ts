@@ -3,12 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { CustomerAccessController } from '@interface-adapters/customer-access/customer-access.controller';
 import { CustomerAccessPresenter } from '@interface-adapters/customer-access/customer-access.presenter';
 
-import { GrantCustomerAccessUseCase } from '@application/use-cases/customer-access/grant-customer-access.use-case';
-import { ListCustomerAccessUsersUseCase } from '@application/use-cases/customer-access/list-customer-access-users.use-case';
-import { ListUserCustomersUseCase } from '@application/use-cases/customer-access/list-user-customers.use-case';
-import { RevokeCustomerAccessUseCase } from '@application/use-cases/customer-access/revoke-customer-access.use-case';
-import { UpdateCustomerStatusUseCase } from '@application/use-cases/customer-access/update-customer-status.use-case';
-
 import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 
@@ -28,11 +22,11 @@ describe('CustomerAccessController', () => {
     updateStatusUseCase = { execute: jest.fn() };
 
     controller = new CustomerAccessController(
-      grantUseCase as unknown as GrantCustomerAccessUseCase,
-      listAccessUsersUseCase as unknown as ListCustomerAccessUsersUseCase,
-      listUserCustomersUseCase as unknown as ListUserCustomersUseCase,
-      revokeUseCase as unknown as RevokeCustomerAccessUseCase,
-      updateStatusUseCase as unknown as UpdateCustomerStatusUseCase,
+      grantUseCase,
+      listAccessUsersUseCase,
+      listUserCustomersUseCase,
+      revokeUseCase,
+      updateStatusUseCase,
     );
   });
 
@@ -41,7 +35,24 @@ describe('CustomerAccessController', () => {
       const customerId = randomUUID();
       const actingUserId = randomUUID();
       const input = { name: 'Operador', email: 'operador@example.com', cpf: '12345678909' };
-      const result = { userId: randomUUID(), customerId, initialPasswordSent: true };
+      const result = {
+        user: {
+          id: randomUUID(),
+          name: 'Operador',
+          email: 'operador@example.com',
+          role: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        customer: {
+          id: customerId,
+          name: 'Oficina Parceira LTDA',
+          type: CustomerType.COMPANY,
+          isActive: true,
+        },
+        initialPasswordSent: true,
+      };
 
       grantUseCase.execute.mockResolvedValue(result);
 

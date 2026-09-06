@@ -36,13 +36,11 @@ export class PrismaPasswordResetCodeRepository implements IPasswordResetCodeRepo
     return record ? PasswordResetCodeMapper.toDomain(record) : null;
   }
 
-  async update(code: PasswordResetCode): Promise<PasswordResetCode> {
-    const record = await this.prisma.passwordResetCode.update({
-      where: { userId: code.userId },
-      data: { codeHash: code.codeHash, attempts: code.attempts },
+  async incrementAttempts(userId: string): Promise<void> {
+    await this.prisma.passwordResetCode.update({
+      where: { userId },
+      data: { attempts: { increment: 1 } },
     });
-
-    return PasswordResetCodeMapper.toDomain(record);
   }
 
   async delete(userId: string): Promise<void> {

@@ -88,6 +88,30 @@ describe('PrismaUserCustomerRepository', () => {
     });
   });
 
+  describe('existsActiveLink', () => {
+    it('should return true when the link exists and the customer is active', async () => {
+      const userId = randomUUID();
+      const customerId = randomUUID();
+      prisma.userCustomer.findFirst.mockResolvedValue({ userId });
+
+      const result = await repository.existsActiveLink(userId, customerId);
+
+      expect(result).toBe(true);
+      expect(prisma.userCustomer.findFirst).toHaveBeenCalledWith({
+        where: { userId, customerId, customer: { isActive: true } },
+        select: { userId: true },
+      });
+    });
+
+    it('should return false when no active link is found', async () => {
+      prisma.userCustomer.findFirst.mockResolvedValue(null);
+
+      const result = await repository.existsActiveLink(randomUUID(), randomUUID());
+
+      expect(result).toBe(false);
+    });
+  });
+
   describe('delete', () => {
     it('should delete the link by composite key', async () => {
       const userId = randomUUID();

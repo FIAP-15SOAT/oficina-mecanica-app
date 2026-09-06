@@ -12,6 +12,7 @@ export class FilterCustomersDto {
 
   @ApiPropertyOptional({
     enum: CustomerType,
+    example: CustomerType.INDIVIDUAL,
     description: 'Filtrar por tipo: INDIVIDUAL ou COMPANY',
   })
   @IsOptional()
@@ -23,11 +24,18 @@ export class FilterCustomersDto {
   @IsString({ message: 'O documento deve ser um texto.' })
   document?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar por status ativo/inativo' })
+  @ApiPropertyOptional({
+    description: 'Filtrar por clientes ativos (true) ou inativos (false). Omitido, retorna ambos.',
+    example: true,
+  })
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value;
+  })
   @IsBoolean({ message: 'O filtro de ativo deve ser true ou false.' })
-  isActive?: boolean;
+  active?: boolean;
 }
 
 export class FindAllCustomersQueryDto extends IntersectionType(PaginationDto, FilterCustomersDto) {}

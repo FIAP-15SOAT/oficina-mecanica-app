@@ -1,16 +1,10 @@
-import { CustomerType } from '@domain/enums/customer-type.enum';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
 import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-customer.repository.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { LinkedCustomerOutputDto } from '@application/ports/input/customer-access/dto/list-user-customers.dto';
+import { IListUserCustomersUseCase } from '@application/ports/input/customer-access/list-user-customers.use-case.interface';
 
-export interface LinkedCustomerOutputDto {
-  id: string;
-  name: string;
-  type: CustomerType;
-  isActive: boolean;
-}
-
-export class ListUserCustomersUseCase {
+export class ListUserCustomersUseCase implements IListUserCustomersUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly userCustomerRepository: IUserCustomerRepository,

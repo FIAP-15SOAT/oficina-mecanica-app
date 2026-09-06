@@ -1,13 +1,13 @@
-import { ChangeOwnPasswordUseCase } from '@application/use-cases/me/change-own-password.use-case';
-import { GetMeUseCase } from '@application/use-cases/me/get-me.use-case';
-import { ListMyWorkOrdersUseCase } from '@application/use-cases/me/list-my-work-orders.use-case';
-import { GetMyWorkOrderUseCase } from '@application/use-cases/me/get-my-work-order.use-case';
-import { ListMyWorkOrderQuotesUseCase } from '@application/use-cases/me/list-my-work-order-quotes.use-case';
-import { GetMyQuoteUseCase } from '@application/use-cases/me/get-my-quote.use-case';
-import { DecideMyQuoteUseCase } from '@application/use-cases/me/decide-my-quote.use-case';
+import { IChangeOwnPasswordUseCase } from '@application/ports/input/me/change-own-password.use-case.interface';
+import { IFindUserByIdUseCase } from '@application/ports/input/user/find-user-by-id.use-case.interface';
+import { IFindAllMyWorkOrdersUseCase } from '@application/ports/input/me/find-all-my-work-orders.use-case.interface';
+import { IFindMyWorkOrderByIdUseCase } from '@application/ports/input/me/find-my-work-order-by-id.use-case.interface';
+import { IFindMyWorkOrdersQuotesUseCase } from '@application/ports/input/me/find-my-work-orders-quotes.use-case.interface';
+import { IFindMyQuoteByIdUseCase } from '@application/ports/input/me/find-my-quote-by-id.use-case.interface';
+import { IDecideMyQuoteUseCase } from '@application/ports/input/me/decide-my-quote.use-case.interface';
 
 import { ChangeOwnPasswordDto } from '@application/ports/input/me/dto/change-own-password.dto';
-import { DecideMyQuoteDto } from '@application/ports/input/me/dto/decide-my-quote.dto';
+import { QuoteDecisionDto } from '@application/ports/input/me/dto/quote-decision.dto';
 import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { PaginationInput } from '@domain/interfaces/common/pagination.interface';
 
@@ -22,13 +22,13 @@ import {
 
 export class MeController {
   constructor(
-    private readonly changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
-    private readonly getMeUseCase: GetMeUseCase,
-    private readonly listMyWorkOrdersUseCase: ListMyWorkOrdersUseCase,
-    private readonly getMyWorkOrderUseCase: GetMyWorkOrderUseCase,
-    private readonly listMyWorkOrderQuotesUseCase: ListMyWorkOrderQuotesUseCase,
-    private readonly getMyQuoteUseCase: GetMyQuoteUseCase,
-    private readonly decideMyQuoteUseCase: DecideMyQuoteUseCase,
+    private readonly changeOwnPasswordUseCase: IChangeOwnPasswordUseCase,
+    private readonly findUserByIdUseCase: IFindUserByIdUseCase,
+    private readonly findAllMyWorkOrdersUseCase: IFindAllMyWorkOrdersUseCase,
+    private readonly findMyWorkOrderByIdUseCase: IFindMyWorkOrderByIdUseCase,
+    private readonly findMyWorkOrdersQuotesUseCase: IFindMyWorkOrdersQuotesUseCase,
+    private readonly findMyQuoteByIdUseCase: IFindMyQuoteByIdUseCase,
+    private readonly decideMyQuoteUseCase: IDecideMyQuoteUseCase,
   ) {}
 
   async changePassword(userId: string, input: ChangeOwnPasswordDto): Promise<void> {
@@ -36,7 +36,7 @@ export class MeController {
   }
 
   async getMe(principal: AuthenticatedPrincipal): Promise<MeDataResponse> {
-    const result = await this.getMeUseCase.execute(principal);
+    const result = await this.findUserByIdUseCase.execute(principal.sub);
     return MePresenter.toMeDataResponse(result);
   }
 
@@ -45,29 +45,29 @@ export class MeController {
     pagination: PaginationInput,
     customerId?: string,
   ): Promise<MyWorkOrderPaginatedResponse> {
-    const result = await this.listMyWorkOrdersUseCase.execute(userId, pagination, customerId);
+    const result = await this.findAllMyWorkOrdersUseCase.execute(userId, pagination, customerId);
     return MePresenter.toWorkOrderPaginatedResponse(result, pagination);
   }
 
   async getWorkOrder(userId: string, workOrderId: string): Promise<MyWorkOrderDataResponse> {
-    const workOrder = await this.getMyWorkOrderUseCase.execute(userId, workOrderId);
+    const workOrder = await this.findMyWorkOrderByIdUseCase.execute(userId, workOrderId);
     return MePresenter.toWorkOrderDataResponse(workOrder);
   }
 
   async listWorkOrderQuotes(userId: string, workOrderId: string): Promise<MyQuoteListResponse> {
-    const quotes = await this.listMyWorkOrderQuotesUseCase.execute(userId, workOrderId);
+    const quotes = await this.findMyWorkOrdersQuotesUseCase.execute(userId, workOrderId);
     return MePresenter.toQuoteListResponse(quotes);
   }
 
   async getQuote(userId: string, quoteId: string): Promise<MyQuoteDataResponse> {
-    const quote = await this.getMyQuoteUseCase.execute(userId, quoteId);
+    const quote = await this.findMyQuoteByIdUseCase.execute(userId, quoteId);
     return MePresenter.toQuoteDataResponse(quote);
   }
 
   async decideQuote(
     userId: string,
     quoteId: string,
-    input: DecideMyQuoteDto,
+    input: QuoteDecisionDto,
   ): Promise<MyQuoteDataResponse> {
     const quote = await this.decideMyQuoteUseCase.execute(userId, quoteId, input);
     return MePresenter.toQuoteDataResponse(quote);

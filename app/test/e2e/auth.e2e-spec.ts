@@ -1,5 +1,7 @@
 import type { Server } from 'http';
 import type { StartedTestContainer } from 'testcontainers';
+import * as bcrypt from 'bcrypt';
+import { sign } from 'jsonwebtoken';
 import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
@@ -130,6 +132,32 @@ describe('Auth (E2E)', () => {
         .send({ email: 'login@e2e.test', password: 'Senha@123' })
         .expect(401);
     });
+
+    /**
+     * Uma conta puramente externa (role null) usa o mesmo hash de senha nos
+     * dois fluxos — o login interno precisa recusar antes de emitir qualquer
+     * token, e não só depois, no primeiro uso (CustomerJwtStrategy/JwtStrategy
+     * já bloqueiam o token em si, mas o contrato de login não pode dizer "OK"
+     * para uma conta que não vai conseguir usar nada).
+     */
+    it('should return 401 for an externally-only account (role null), never issuing a token', async () => {
+      const passwordHash = await bcrypt.hash('External@123', 10);
+      await ctx.prisma.user.create({
+        data: {
+          name: 'Cliente Externo',
+          email: 'externo-login@e2e.test',
+          cpf: '11144477735',
+          passwordHash,
+          role: null,
+          isActive: true,
+        },
+      });
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ email: 'externo-login@e2e.test', password: 'External@123' })
+        .expect(401);
+    });
   });
 
   // ─── POST /api/auth/refresh ───────────────────────────────────────────────
@@ -181,6 +209,76 @@ describe('Auth (E2E)', () => {
         .post('/api/auth/refresh')
         .send({ refreshToken: auth.refreshToken })
         .expect(401);
+    });
+
+    /**
+     * Login já recusa contas role null (ver suite acima), então uma delas
+     * nunca tem, na prática, um refresh token legítimo em mãos. Este teste
+     * cobre o outro lado da defesa: se um token desses existisse (assinado
+     * manualmente aqui com o mesmo secret de teste, simulando um token
+     * emitido antes desta correção, ou por qualquer outro caminho), o refresh
+     * ainda assim tem que recusar — a barreira não pode depender só do login.
+     */
+    it('should return 401 for an externally-only account (role null), never renewing the token', async () => {
+      const passwordHash = await bcrypt.hash('External@123', 10);
+      const user = await ctx.prisma.user.create({
+        data: {
+          name: 'Cliente Externo Refresh',
+          email: 'externo-refresh@e2e.test',
+          cpf: '52998224725',
+          passwordHash,
+          role: null,
+          isActive: true,
+        },
+      });
+
+      const forgedRefreshToken = sign(
+        { sub: user.id, email: user.email, role: null },
+        process.env.JWT_REFRESH_SECRET!,
+        { expiresIn: '7d' },
+      );
+
+      await request(httpServer)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: forgedRefreshToken })
+        .expect(401);
+    });
+  });
+
+  // ─── Changing the password invalidates tokens issued before it ─────────────
+
+  describe('Password change invalidates previously issued tokens', () => {
+    it('rejects the old access and refresh tokens after PATCH /api/me/password, while the new password logs in fine', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { name: 'Password Rotation', email: 'password-rotation@e2e.test', password: 'Old@Pass1' },
+        ctx.prisma,
+      );
+
+      // iat tem granularidade de segundo; garante que a troca cai num segundo
+      // seguinte ao do login, para não colidir por arredondamento.
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+
+      await request(httpServer)
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .send({ currentPassword: 'Old@Pass1', newPassword: 'New@Pass2' })
+        .expect(204);
+
+      await request(httpServer)
+        .get('/api/me')
+        .set('Authorization', `Bearer ${auth.accessToken}`)
+        .expect(401);
+
+      await request(httpServer)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: auth.refreshToken })
+        .expect(401);
+
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({ email: 'password-rotation@e2e.test', password: 'New@Pass2' })
+        .expect(200);
     });
   });
 
@@ -262,6 +360,20 @@ describe('Auth (E2E)', () => {
 
       const targetUserId = createRes.body.data.id;
 
+      // Token assinado para o alvo antes do reset — prova que a confirmação
+      // por código também invalida sessões antigas, não só a troca autenticada.
+      const tokenIssuedBeforeReset = sign(
+        { sub: targetUserId, email: targetEmail, role: 'ATTENDANT' },
+        process.env.JWT_SECRET!,
+        { expiresIn: '15m' },
+      );
+
+      // iat tem granularidade de segundo; garante que a confirmação do reset
+      // cai num segundo seguinte ao da assinatura, para não colidir por
+      // arredondamento (o fetch no MailHog pode ser rápido demais para isso
+      // acontecer naturalmente).
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+
       await request(httpServer)
         .post(`/api/users/${targetUserId}/password-resets`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
@@ -278,6 +390,11 @@ describe('Auth (E2E)', () => {
         .post('/api/auth/login')
         .send({ email: targetEmail, password: 'NewPass@789' })
         .expect(200);
+
+      await request(httpServer)
+        .get('/api/me')
+        .set('Authorization', `Bearer ${tokenIssuedBeforeReset}`)
+        .expect(401);
     });
 
     it('should exhaust the code after 5 wrong confirmation attempts', async () => {
@@ -311,6 +428,57 @@ describe('Auth (E2E)', () => {
       }
 
       // The code is now exhausted, even with the correct value.
+      await request(httpServer)
+        .post('/api/auth/password-reset-confirmations')
+        .send({ email: targetEmail, code, newPassword: 'NewPass@789' })
+        .expect(401);
+    });
+
+    /**
+     * O contador de tentativas precisa ser um incremento atômico no banco —
+     * um simples read-modify-write em memória (ler attempts, somar 1, gravar
+     * o valor absoluto) perde incrementos sob concorrência: N requisições
+     * simultâneas leem o mesmo valor inicial e todas gravam N+1, nunca N+N.
+     * Sem essa atomicidade, o teto de 5 tentativas nunca é alcançado.
+     */
+    it('should exhaust the code after 10 concurrent wrong confirmation attempts', async () => {
+      const adminAuth = await registerAndLogin(
+        httpServer,
+        {
+          name: 'Admin Reset Race',
+          email: `admin-reset-race-${Date.now()}@e2e.test`,
+          role: 'ADMIN',
+        },
+        ctx.prisma,
+      );
+      const targetEmail = `target-race-${Date.now()}@e2e.test`;
+
+      const createRes = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Target User Race', email: targetEmail, role: 'ATTENDANT' })
+        .expect(201);
+
+      const targetUserId = createRes.body.data.id;
+
+      await request(httpServer)
+        .post(`/api/users/${targetUserId}/password-resets`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+
+      const code = await fetchLatestResetCode(ctx.mailhogContainer, targetEmail);
+
+      await Promise.all(
+        Array.from({ length: 10 }, () =>
+          request(httpServer)
+            .post('/api/auth/password-reset-confirmations')
+            .send({ email: targetEmail, code: '999999', newPassword: 'NewPass@789' })
+            .expect(401),
+        ),
+      );
+
+      // Even the correct code must no longer work — the counter must have
+      // reached the 5-attempt ceiling despite the concurrent requests.
       await request(httpServer)
         .post('/api/auth/password-reset-confirmations')
         .send({ email: targetEmail, code, newPassword: 'NewPass@789' })

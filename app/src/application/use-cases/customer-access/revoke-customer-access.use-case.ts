@@ -2,8 +2,9 @@ import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-cu
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IRevokeCustomerAccessUseCase } from '@application/ports/input/customer-access/revoke-customer-access.use-case.interface';
 
-export class RevokeCustomerAccessUseCase {
+export class RevokeCustomerAccessUseCase implements IRevokeCustomerAccessUseCase {
   constructor(
     private readonly userCustomerRepository: IUserCustomerRepository,
     private readonly logger: ILogger,

@@ -93,13 +93,6 @@ export const LOGICAL_FIELDS: Readonly<Record<LogicalFieldName, LogicalFieldDefin
     owner: 'use-case',
     sensitivity: 'clear',
   },
-  quoteDecisionFailureReason: {
-    key: 'oficina.quote.decision.failure.reason',
-    type: 'string',
-    cardinality: 'fixed',
-    owner: 'use-case',
-    sensitivity: 'clear',
-  },
   workOrderId: {
     key: 'oficina.work_order.id',
     type: 'string',

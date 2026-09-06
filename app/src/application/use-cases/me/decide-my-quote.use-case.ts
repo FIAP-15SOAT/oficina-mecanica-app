@@ -7,10 +7,11 @@ import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order
 import { CustomerAccessPolicy } from '@application/policies/customer-access.policy';
 import { IUpdateQuoteStatusUseCase } from '@application/ports/input/quote/update-quote-status.use-case.interface';
 
-import { DecideMyQuoteDto } from '@application/ports/input/me/dto/decide-my-quote.dto';
+import { QuoteDecisionDto } from '@application/ports/input/me/dto/quote-decision.dto';
+import { IDecideMyQuoteUseCase } from '@application/ports/input/me/decide-my-quote.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
-export class DecideMyQuoteUseCase {
+export class DecideMyQuoteUseCase implements IDecideMyQuoteUseCase {
   constructor(
     private readonly quoteRepository: IQuoteRepository,
     private readonly workOrderRepository: IWorkOrderRepository,
@@ -18,7 +19,7 @@ export class DecideMyQuoteUseCase {
     private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
   ) {}
 
-  async execute(userId: string, quoteId: string, dto: DecideMyQuoteDto): Promise<Quote> {
+  async execute(userId: string, quoteId: string, dto: QuoteDecisionDto): Promise<Quote> {
     const quote = await this.quoteRepository.findById(quoteId);
 
     if (!quote) {
@@ -36,9 +37,11 @@ export class DecideMyQuoteUseCase {
     const status =
       dto.action === QuoteDecisionAction.APPROVE ? QuoteStatus.APPROVED : QuoteStatus.REJECTED;
 
-    return this.updateQuoteStatusUseCase.execute(quoteId, userId, {
+    const decided = await this.updateQuoteStatusUseCase.execute(quoteId, userId, {
       status,
       reason: dto.reason ?? null,
     });
+
+    return (await this.quoteRepository.findByIdWithDetails(decided.id)) ?? decided;
   }
 }

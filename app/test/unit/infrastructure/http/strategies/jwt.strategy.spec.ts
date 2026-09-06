@@ -8,6 +8,7 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { User } from '@domain/entities/user.entity';
 
 import { TokenPayload } from '@application/ports/output/token.service.interface';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 import { createMockUser, createMockUserRepository } from '../../../../helpers/user-mock.factory';
 import { Email } from '@domain/value-objects/email.vo';
 
@@ -40,13 +41,14 @@ describe('JwtStrategy', () => {
       sub: mockUser.id,
       email: mockUser.email.value,
       role: mockUser.role,
+      iat: Math.floor(Date.now() / 1000),
     };
 
     const result = await strategy.validate(payload);
 
     expect(result).toEqual({
       sub: mockUser.id,
-      authFlow: 'INTERNAL',
+      authFlow: AuthFlow.INTERNAL,
       email: mockUser.email.value,
       role: mockUser.role,
     });
@@ -66,11 +68,12 @@ describe('JwtStrategy', () => {
       sub: user.id,
       email: user.email.value,
       role: user.role!,
+      iat: Math.ceil(Date.now() / 1000) + 1,
     });
 
     expect(result).toEqual({
       sub: user.id,
-      authFlow: 'INTERNAL',
+      authFlow: AuthFlow.INTERNAL,
       email: user.email.value,
       role: UserRole.ADMIN,
     });
@@ -129,6 +132,74 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate(payload)).rejects.toThrow('Usuário inválido ou desativado');
   });
 
+  it('should reject a token issued before the last password change', async () => {
+    const passwordChangedAt = new Date();
+    const mockUser = createMockUser({
+      id: 'user-uuid-password-changed',
+      email: Email.create('changed@example.com'),
+      role: UserRole.ADMIN,
+      isActive: true,
+      passwordChangedAt,
+    });
+
+    userRepository.findById.mockResolvedValue(mockUser);
+
+    const payload: TokenPayload = {
+      sub: mockUser.id,
+      email: mockUser.email.value,
+      role: mockUser.role,
+      iat: Math.floor((passwordChangedAt.getTime() - 60_000) / 1000),
+    };
+
+    await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+    await expect(strategy.validate(payload)).rejects.toThrow(
+      'Sessão expirada. Autentique-se novamente.',
+    );
+  });
+
+  it('should accept a token issued after the last password change', async () => {
+    const passwordChangedAt = new Date();
+    const mockUser = createMockUser({
+      id: 'user-uuid-password-changed-ok',
+      email: Email.create('changed-ok@example.com'),
+      role: UserRole.ADMIN,
+      isActive: true,
+      passwordChangedAt,
+    });
+
+    userRepository.findById.mockResolvedValue(mockUser);
+
+    const payload: TokenPayload = {
+      sub: mockUser.id,
+      email: mockUser.email.value,
+      role: mockUser.role,
+      iat: Math.ceil((passwordChangedAt.getTime() + 60_000) / 1000),
+    };
+
+    const result = await strategy.validate(payload);
+
+    expect(result.sub).toBe(mockUser.id);
+  });
+
+  it('should reject a token with no iat claim', async () => {
+    const mockUser = createMockUser({
+      id: 'user-uuid-no-iat',
+      email: Email.create('no-iat@example.com'),
+      role: UserRole.ADMIN,
+      isActive: true,
+    });
+
+    userRepository.findById.mockResolvedValue(mockUser);
+
+    const payload: TokenPayload = {
+      sub: mockUser.id,
+      email: mockUser.email.value,
+      role: mockUser.role,
+    };
+
+    await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+  });
+
   it('should return payload with user data from database', async () => {
     const mockUser = createMockUser({
       id: 'user-uuid-789',
@@ -143,14 +214,15 @@ describe('JwtStrategy', () => {
       sub: mockUser.id,
       email: 'old@example.com', // Different email in token
       role: UserRole.ADMIN, // Different role in token
+      iat: Math.floor(Date.now() / 1000),
     };
 
     const result = await strategy.validate(payload);
 
     // Should return data from database, not from token
-    expect(result.authFlow).toBe('INTERNAL');
+    expect(result.authFlow).toBe(AuthFlow.INTERNAL);
     expect(result.email).toBe(mockUser.email.value);
-    if (result.authFlow === 'INTERNAL') {
+    if (result.authFlow === AuthFlow.INTERNAL) {
       expect(result.role).toBe(mockUser.role);
     }
     expect(result.sub).toBe(mockUser.id);

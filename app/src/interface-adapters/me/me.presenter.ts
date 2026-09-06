@@ -1,10 +1,11 @@
 import { WorkOrder } from '@domain/entities/work-order.entity';
 import { Quote } from '@domain/entities/quote.entity';
+import { CustomerType } from '@domain/enums/customer-type.enum';
 import {
   PaginatedRepositoryResult,
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
-import { GetMeOutputDto } from '@application/ports/input/me/dto/get-me.dto';
+import { FindUserByIdOutput } from '@application/ports/input/user/find-user-by-id.use-case.interface';
 import { buildPaginationMeta } from '@application/utils/pagination.util';
 
 import {
@@ -12,14 +13,25 @@ import {
   MyWorkOrderResponse,
   MyWorkOrderDataResponse,
   MyWorkOrderPaginatedResponse,
+  MyQuoteSummaryResponse,
   MyQuoteResponse,
   MyQuoteDataResponse,
   MyQuoteListResponse,
 } from './responses/me.response';
 
 export class MePresenter {
-  static toMeDataResponse(result: GetMeOutputDto): MeDataResponse {
-    return { data: result };
+  static toMeDataResponse(user: FindUserByIdOutput): MeDataResponse {
+    return {
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        customers: user.customers
+          .filter((customer) => customer.type === CustomerType.COMPANY)
+          .map((customer) => ({ id: customer.id, name: customer.name, type: customer.type })),
+      },
+    };
   }
 
   static toWorkOrderResponse(workOrder: WorkOrder): MyWorkOrderResponse {
@@ -29,6 +41,11 @@ export class MePresenter {
       status: workOrder.status,
       problemDescription: workOrder.problemDescription,
       mileageAtService: workOrder.mileageAtService,
+      customer: {
+        id: workOrder.customer!.id,
+        name: workOrder.customer!.name,
+        type: workOrder.customer!.type,
+      },
       vehicle: workOrder.vehicle
         ? {
             id: workOrder.vehicle.id,
@@ -56,7 +73,8 @@ export class MePresenter {
     };
   }
 
-  static toQuoteResponse(quote: Quote): MyQuoteResponse {
+  /** Resumo — usado nas listagens, onde os itens não são carregados. */
+  static toQuoteSummaryResponse(quote: Quote): MyQuoteSummaryResponse {
     return {
       id: quote.id,
       status: quote.status,
@@ -67,16 +85,23 @@ export class MePresenter {
       sentAt: quote.sentAt,
       approvedAt: quote.approvedAt,
       rejectedAt: quote.rejectedAt,
+    };
+  }
+
+  /** Detalhe — exige um Quote carregado com findByIdWithDetails. */
+  static toQuoteResponse(quote: Quote): MyQuoteResponse {
+    return {
+      ...MePresenter.toQuoteSummaryResponse(quote),
       services: quote.services.map((item) => ({
         id: item.serviceId,
-        name: item.service?.name ?? '',
+        name: item.service!.name,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
       })),
       partsSupplies: quote.partsSupplies.map((item) => ({
         id: item.partSupplyId,
-        name: item.partSupply?.name ?? '',
+        name: item.partSupply!.name,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
@@ -89,6 +114,6 @@ export class MePresenter {
   }
 
   static toQuoteListResponse(quotes: Quote[]): MyQuoteListResponse {
-    return { data: quotes.map((quote) => MePresenter.toQuoteResponse(quote)) };
+    return { data: quotes.map((quote) => MePresenter.toQuoteSummaryResponse(quote)) };
   }
 }

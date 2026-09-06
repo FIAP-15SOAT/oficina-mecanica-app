@@ -1,13 +1,17 @@
 import { defineLogEvent } from './log-event';
 
-export type AuthenticationFailureReason = 'unknown_user' | 'inactive_user' | 'wrong_password';
+export type AuthenticationFailureReason =
+  | 'unknown_user'
+  | 'inactive_user'
+  | 'wrong_password'
+  | 'no_internal_role';
 
-export type RefreshFailureReason = 'invalid_token' | 'unknown_user' | 'inactive_user';
-
-export type QuoteDecisionFailureReason =
+export type RefreshFailureReason =
   | 'invalid_token'
-  | 'token_type_mismatch'
-  | 'quote_id_mismatch';
+  | 'unknown_user'
+  | 'inactive_user'
+  | 'no_internal_role'
+  | 'password_changed';
 
 interface AuthenticatedSubjectFields {
   subjectId: string;
@@ -33,14 +37,6 @@ export const BUSINESS_EVENTS = {
   >({
     name: 'auth.refresh.failed',
     message: 'refresh token rejected',
-    level: 'warn',
-  }),
-  QUOTE_DECISION_TOKEN_REJECTED: defineLogEvent<{
-    quoteDecisionFailureReason: QuoteDecisionFailureReason;
-    quoteId: string;
-  }>({
-    name: 'quote.decision.token_rejected',
-    message: 'quote decision capability token rejected',
     level: 'warn',
   }),
   QUOTE_SUBMITTED: defineLogEvent<{
@@ -140,6 +136,11 @@ export const BUSINESS_EVENTS = {
     message: 'user account activation changed',
     level: 'info',
   }),
+  USER_INITIAL_PASSWORD_SEND_FAILED: defineLogEvent<{ targetUserId: string }>({
+    name: 'user.initial_password.send_failed',
+    message: 'initial password e-mail could not be delivered',
+    level: 'warn',
+  }),
   CUSTOMER_ACCESS_GRANTED: defineLogEvent<{
     subjectId: string;
     targetUserId: string;
@@ -169,13 +170,13 @@ export const BUSINESS_EVENTS = {
     message: 'customer active flag changed',
     level: 'info',
   }),
-  PORTAL_ACCESS_DENIED: defineLogEvent<{
+  CUSTOMER_ACCESS_DENIED: defineLogEvent<{
     subjectId: string;
     customerId: string;
     externalAccessFailureReason: string;
   }>({
-    name: 'portal.access.denied',
-    message: 'external principal denied access to a customer-scoped resource',
+    name: 'customer.access.denied',
+    message: 'authenticated user denied access to a customer-scoped resource',
     level: 'warn',
   }),
   USER_PASSWORD_CHANGED: defineLogEvent<{ subjectId: string }>({

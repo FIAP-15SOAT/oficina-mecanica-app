@@ -2,19 +2,28 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEmail, MaxLength } from 'class-validator';
 
 export class GrantCustomerAccessRequestDto {
-  @ApiPropertyOptional({ description: 'Nome do operador (obrigatório para cliente COMPANY)' })
+  @ApiPropertyOptional({
+    example: 'João Silva',
+    description: 'Nome do operador (obrigatório para cliente COMPANY)',
+  })
   @IsOptional()
-  @IsString()
-  @MaxLength(150)
+  @IsString({ message: 'O nome deve ser um texto.' })
+  @MaxLength(150, { message: 'O nome deve ter no máximo 150 caracteres.' })
   name?: string;
 
-  @ApiPropertyOptional({ description: 'E-mail do operador (obrigatório para cliente COMPANY)' })
+  @ApiPropertyOptional({
+    example: 'joao@email.com',
+    description: 'E-mail do operador (obrigatório para cliente COMPANY)',
+  })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'E-mail inválido.' })
   email?: string;
 
-  @ApiPropertyOptional({ description: 'CPF do operador (obrigatório para cliente COMPANY)' })
+  @ApiPropertyOptional({
+    example: '123.456.789-09',
+    description: 'CPF do operador (obrigatório para cliente COMPANY)',
+  })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'O CPF deve ser um texto.' })
   cpf?: string;
 }

@@ -15,7 +15,7 @@ describe('CreateCustomerUseCase', () => {
   let useCase: CreateCustomerUseCase;
   let unitOfWork: jest.Mocked<IUnitOfWork>;
   let repos: jest.Mocked<IRepositories>;
-  let grantCustomerAccessUseCase: { grantAccess: jest.Mock; finalize: jest.Mock };
+  let grantCustomerAccessUseCase: { execute: jest.Mock };
 
   const validInput = {
     name: 'João da Silva',
@@ -31,8 +31,11 @@ describe('CreateCustomerUseCase', () => {
     unitOfWork = mocks.unitOfWork;
     repos = mocks.repos;
     grantCustomerAccessUseCase = {
-      grantAccess: jest.fn().mockResolvedValue({ userId: randomUUID(), pendingPassword: null }),
-      finalize: jest.fn().mockResolvedValue({}),
+      execute: jest.fn().mockResolvedValue({
+        user: { id: randomUUID(), name: 'x', email: 'x@example.com', role: null, isActive: true },
+        customer: { id: randomUUID(), name: 'x', type: CustomerType.INDIVIDUAL, isActive: true },
+        initialPasswordSent: true,
+      }),
     };
     useCase = new CreateCustomerUseCase(unitOfWork, grantCustomerAccessUseCase as never);
   });
@@ -96,11 +99,11 @@ describe('CreateCustomerUseCase', () => {
       randomUUID(),
     );
 
-    expect(grantCustomerAccessUseCase.grantAccess).toHaveBeenCalledWith(repos, created.id);
-    expect(grantCustomerAccessUseCase.finalize).toHaveBeenCalledWith(
-      await grantCustomerAccessUseCase.grantAccess.mock.results[0].value,
+    expect(grantCustomerAccessUseCase.execute).toHaveBeenCalledWith(
       created.id,
       expect.any(String),
+      undefined,
+      repos,
     );
   });
 
@@ -122,8 +125,7 @@ describe('CreateCustomerUseCase', () => {
       randomUUID(),
     );
 
-    expect(grantCustomerAccessUseCase.grantAccess).not.toHaveBeenCalled();
-    expect(grantCustomerAccessUseCase.finalize).not.toHaveBeenCalled();
+    expect(grantCustomerAccessUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('should reject createAccess true combined with COMPANY', async () => {
@@ -144,12 +146,14 @@ describe('CreateCustomerUseCase', () => {
     expect(unitOfWork.executeTransaction).not.toHaveBeenCalled();
   });
 
-  it('should propagate a grant conflict out of the shared transaction without finalizing', async () => {
+  it('should propagate a grant conflict out of the shared transaction', async () => {
     (repos.customer.findByDocument as jest.Mock).mockResolvedValue(null);
     (repos.customer.findByEmail as jest.Mock).mockResolvedValue(null);
     (repos.customer.create as jest.Mock).mockImplementation((c: Customer) => Promise.resolve(c));
-    grantCustomerAccessUseCase.grantAccess.mockRejectedValue(
-      new ResourceConflictException('CPF ou e-mail já cadastrado no sistema'),
+    grantCustomerAccessUseCase.execute.mockRejectedValue(
+      new ResourceConflictException(
+        'O e-mail informado já pertence a outro usuário. Verifique o cadastro do cliente.',
+      ),
     );
 
     await expect(
@@ -165,7 +169,5 @@ describe('CreateCustomerUseCase', () => {
         randomUUID(),
       ),
     ).rejects.toThrow(ResourceConflictException);
-
-    expect(grantCustomerAccessUseCase.finalize).not.toHaveBeenCalled();
   });
 });

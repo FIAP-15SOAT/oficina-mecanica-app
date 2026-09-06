@@ -5,14 +5,27 @@ import { UserPublicView } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { GrantCustomerAccessOutputDto } from '@application/ports/input/customer-access/dto/grant-customer-access.dto';
-import { LinkedCustomerOutputDto } from '@application/use-cases/customer-access/list-user-customers.use-case';
+import { LinkedCustomerOutputDto } from '@application/ports/input/customer-access/dto/list-user-customers.dto';
 
 describe('CustomerAccessPresenter', () => {
   describe('toDataResponse', () => {
     it('should wrap the grant result in a data property', () => {
       const result: GrantCustomerAccessOutputDto = {
-        userId: randomUUID(),
-        customerId: randomUUID(),
+        user: {
+          id: randomUUID(),
+          name: 'João da Silva',
+          email: 'joao@example.com',
+          role: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        customer: {
+          id: randomUUID(),
+          name: 'Oficina Parceira LTDA',
+          type: CustomerType.COMPANY,
+          isActive: true,
+        },
         initialPasswordSent: true,
       };
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { ListMyWorkOrdersUseCase } from '@application/use-cases/me/list-my-work-orders.use-case';
+import { FindAllMyWorkOrdersUseCase } from '@application/use-cases/me/find-all-my-work-orders.use-case';
 
-describe('ListMyWorkOrdersUseCase', () => {
+describe('FindAllMyWorkOrdersUseCase', () => {
   it('should filter the query by the authorized customer ids', async () => {
     const userId = randomUUID();
     const customerId = randomUUID();
@@ -10,7 +10,7 @@ describe('ListMyWorkOrdersUseCase', () => {
       findAllPaginated: jest.fn().mockResolvedValue({ items: [], total: 0 }),
     };
 
-    const useCase = new ListMyWorkOrdersUseCase(policy as never, workOrderRepository as never);
+    const useCase = new FindAllMyWorkOrdersUseCase(policy as never, workOrderRepository as never);
 
     await useCase.execute(userId, { page: 1, limit: 10 });
 
@@ -29,7 +29,7 @@ describe('ListMyWorkOrdersUseCase', () => {
       findAllPaginated: jest.fn().mockResolvedValue({ items: [], total: 0 }),
     };
 
-    const useCase = new ListMyWorkOrdersUseCase(policy as never, workOrderRepository as never);
+    const useCase = new FindAllMyWorkOrdersUseCase(policy as never, workOrderRepository as never);
 
     const result = await useCase.execute(userId, { page: 1, limit: 10 }, otherCustomerId);
 

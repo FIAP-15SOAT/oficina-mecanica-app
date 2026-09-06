@@ -5,8 +5,9 @@ import {
   PaginationInput,
 } from '@domain/interfaces/common/pagination.interface';
 import { CustomerAccessPolicy } from '@application/policies/customer-access.policy';
+import { IFindAllMyWorkOrdersUseCase } from '@application/ports/input/me/find-all-my-work-orders.use-case.interface';
 
-export class ListMyWorkOrdersUseCase {
+export class FindAllMyWorkOrdersUseCase implements IFindAllMyWorkOrdersUseCase {
   constructor(
     private readonly customerAccessPolicy: CustomerAccessPolicy,
     private readonly workOrderRepository: IWorkOrderRepository,

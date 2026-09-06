@@ -31,10 +31,8 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-principal.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { CustomerAccessController as CustomerAccessCleanController } from '@interface-adapters/customer-access/customer-access.controller';
@@ -55,7 +53,7 @@ import {
 export class CustomerAccessController {
   constructor(private readonly controller: CustomerAccessCleanController) {}
 
-  @Post(':customerId/access-users')
+  @Post(':customerId/users')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Conceder acesso externo a um cliente' })
   @ApiParam({ name: 'customerId', format: 'uuid' })
@@ -71,12 +69,12 @@ export class CustomerAccessController {
   grantAccess(
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Body() request: GrantCustomerAccessRequestDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<CustomerAccessDataResponseDto> {
-    return this.controller.grantAccess(customerId, user.sub, request);
+    return this.controller.grantAccess(customerId, principal.sub, request);
   }
 
-  @Get(':customerId/access-users')
+  @Get(':customerId/users')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @ApiOperation({ summary: 'Listar usuários com acesso a um cliente' })
   @ApiParam({ name: 'customerId', format: 'uuid' })
@@ -88,7 +86,7 @@ export class CustomerAccessController {
     return this.controller.listAccessUsers(customerId);
   }
 
-  @Delete(':customerId/access-users/:userId')
+  @Delete(':customerId/users/:userId')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover acesso externo de um usuário a um cliente' })
@@ -99,12 +97,12 @@ export class CustomerAccessController {
   revokeAccess(
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<void> {
-    return this.controller.revokeAccess(customerId, userId, user.sub);
+    return this.controller.revokeAccess(customerId, userId, principal.sub);
   }
 
-  @Patch(':customerId/status')
+  @Patch(':customerId')
   @Roles(UserRole.ADMIN, UserRole.ATTENDANT)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Ativar ou desativar um cliente' })
@@ -114,8 +112,8 @@ export class CustomerAccessController {
   updateStatus(
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Body() request: UpdateCustomerStatusRequestDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<void> {
-    return this.controller.updateStatus(customerId, request.isActive, user.sub);
+    return this.controller.updateStatus(customerId, request.isActive, principal.sub);
   }
 }

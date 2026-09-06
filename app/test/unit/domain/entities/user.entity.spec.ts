@@ -164,6 +164,17 @@ describe('User Entity', () => {
       expect(() => user.changePassword('')).toThrow(DomainValidationException);
       expect(() => user.changePassword('')).toThrow('Hash de senha não pode ser vazio');
     });
+
+    it('should update passwordChangedAt so tokens issued before this point stop being honored', () => {
+      const user = User.create(validProps);
+      const previousPasswordChangedAt = user.passwordChangedAt;
+
+      user.changePassword('$2b$12$newhash');
+
+      expect(user.passwordChangedAt.getTime()).toBeGreaterThanOrEqual(
+        previousPasswordChangedAt.getTime(),
+      );
+    });
   });
 
   describe('validatePasswordStrength', () => {
@@ -253,6 +264,7 @@ describe('User Entity', () => {
         role: UserRole.ADMIN,
         cpf: null,
         isActive: true,
+        passwordChangedAt: now,
         createdAt: now,
         updatedAt: now,
       });
@@ -282,13 +294,13 @@ describe('User Entity', () => {
     it('should create a user with a valid cpf', () => {
       const user = User.create({ ...validProps, cpf: '12345678909' });
 
-      expect(user.cpf).toBe('12345678909');
+      expect(user.cpf?.value).toBe('12345678909');
     });
 
     it('should normalize a formatted cpf to digits only', () => {
       const user = User.create({ ...validProps, cpf: '123.456.789-09' });
 
-      expect(user.cpf).toBe('12345678909');
+      expect(user.cpf?.value).toBe('12345678909');
     });
 
     it('should default cpf to null when not provided', () => {
@@ -315,7 +327,7 @@ describe('User Entity', () => {
       const user = User.create(validProps);
       user.assignCpf('123.456.789-09');
 
-      expect(user.cpf).toBe('12345678909');
+      expect(user.cpf?.value).toBe('12345678909');
     });
 
     it('should throw when the user already has a cpf', () => {

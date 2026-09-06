@@ -1,6 +1,6 @@
 import { UserPublicView } from '@domain/entities/user.entity';
 import { GrantCustomerAccessOutputDto } from '@application/ports/input/customer-access/dto/grant-customer-access.dto';
-import { LinkedCustomerOutputDto } from '@application/use-cases/customer-access/list-user-customers.use-case';
+import { LinkedCustomerOutputDto } from '@application/ports/input/customer-access/dto/list-user-customers.dto';
 import {
   AccessUserListResponse,
   CustomerAccessDataResponse,

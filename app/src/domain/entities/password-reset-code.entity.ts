@@ -1,5 +1,4 @@
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
-import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 
 const TTL_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -31,7 +30,7 @@ export class PasswordResetCode {
     return new PasswordResetCode(props);
   }
 
-  static issue(userId: string, codeHash: string): PasswordResetCode {
+  static create(userId: string, codeHash: string): PasswordResetCode {
     if (!codeHash) {
       throw new DomainValidationException('Hash do código não pode ser vazio');
     }
@@ -53,12 +52,5 @@ export class PasswordResetCode {
 
   isExhausted(): boolean {
     return this.attempts >= MAX_ATTEMPTS;
-  }
-
-  registerFailedAttempt(): void {
-    if (this.isExhausted()) {
-      throw new BusinessRuleViolationException('Código de reset esgotado');
-    }
-    this.attempts += 1;
   }
 }

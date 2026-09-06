@@ -62,7 +62,7 @@ Shutdown hooks continuam desligados no E2E: ligá-los acumularia listeners de pr
 
 ## Autenticação externa nos testes (customer-jwt)
 
-A função serverless que emite o token `customer-jwt` (RS256) fica **fora do escopo desta entrega** (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)) — não existe ainda um repositório/deploy real para consultar. Para exercitar `/api/me/*` sem depender dela, `test/helpers/customer-jwt.helper.ts` gera um **par de chaves RS256 em tempo de execução** (`generateKeyPairSync`, nunca um PEM comitado no repositório) e expõe `signTestCustomerToken(userId, expiresInSeconds?)`, que assina um token de teste com o mesmo formato de claims que a função serverless deverá emitir (`{ sub: userId }`, `iss`/`aud` fixos, RS256).
+A função serverless que emite o token `customer-jwt` (RS256) fica **fora do escopo desta entrega** (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)) e vive num repositório à parte, [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth). Para exercitar `/api/me/*` sem criar uma dependência de CI entre os dois repositórios, `test/helpers/customer-jwt.helper.ts` gera um **par de chaves RS256 em tempo de execução** (`generateKeyPairSync`, nunca um PEM comitado no repositório) e expõe `signTestCustomerToken(userId, expiresInSeconds?)`, que assina um token de teste com o mesmo formato de claims que a função serverless emite (`{ sub: userId }`, `iss`/`aud` fixos, RS256).
 
 `setupTestApp()` (`test/helpers/test-app.helper.ts`) injeta a chave **pública** gerada em `process.env.CUSTOMER_JWT_PUBLIC_KEY` antes de compilar o módulo — o mesmo caminho de configuração (`CustomerJwtStrategy` lendo `CUSTOMER_JWT_PUBLIC_KEY`/`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` via `ConfigService`) que roda em produção, só que com uma chave efêmera. Isso mantém o teste fiel à verificação real de assinatura/emissor/audiência, sem exigir a Lambda no ambiente de CI.
 
@@ -76,9 +76,9 @@ await request(ctx.httpServer)
   .expect(200);
 ```
 
-`test/e2e/me.e2e-spec.ts` é a suite que exercita esse caminho — identidade externa, troca de senha via `AnyAuthGuard`, listagem/consulta de OS e orçamentos vinculados por `CustomerAccessPolicy`, e decisão de orçamento (aprovação/rejeição) — incluindo o caso de um `sub` sem nenhum vínculo ativo (token assinado para um `userId` aleatório) para confirmar a rejeição em `CustomerJwtStrategy.validate()`.
+`test/e2e/me.e2e-spec.ts` é a suite que exercita esse caminho — identidade externa (`GET /api/me`), troca da própria senha via `AnyAuthGuard` (`PATCH /api/me/password`, provando que a rota aceita tanto o token interno quanto o externo, com a nova senha realmente persistida), listagem/consulta de OS e orçamentos vinculados por `CustomerAccessPolicy`, e decisão de orçamento (aprovação/rejeição) — incluindo o caso de um `sub` sem nenhum vínculo ativo (token assinado para um `userId` aleatório) para confirmar a rejeição em `CustomerJwtStrategy.validate()`.
 
-**Fora do escopo desta entrega — DAST de segunda passagem com o token externo.** O spec (§20.3) prevê que o workflow `dast.yml` gere um par de chaves RS256 efêmero **no próprio job de CI**, injete a chave pública no serviço `api` (substituindo a que a stack já usa para o primeiro passe autenticado como usuário interno) e rode um **segundo** `zap-api-scan.py` autenticado com um Bearer `customer-jwt`, para cobrir `/api/me/*` no scan dinâmico. Isso é uma mudança no **workflow de CI/CD** (`.github/workflows/dast.yml`), não no código da API — está fora do escopo deste plano, que cobre apenas a aplicação. Ver [Infra · CI/CD](infra/ci-cd.md#4-workflow-de-dast-dastyml) para o estado atual do workflow e a referência a este follow-up.
+**O DAST cobre `/api/me/*` com uma segunda passagem autenticada como Cliente da Oficina.** O workflow `dast.yml` gera um par de chaves RS256 efêmero **no próprio job de CI**, injeta a chave pública no serviço `api` (substituindo a que a stack usa para o primeiro passe, autenticado como usuário interno) e roda um **segundo** `zap-api-scan.py` com um Bearer `customer-jwt` assinado pela chave privada correspondente, para um usuário externo já semeado — exatamente o mesmo mecanismo de `test/helpers/customer-jwt.helper.ts` descrito acima, só que rodando no job em vez de dentro da suite E2E. Isso não depende da função serverless externa (fora de escopo, ver acima): o próprio job assina, isolado, o token que ela emitiria. Ver [Infra · CI/CD](infra/ci-cd.md#4-workflow-de-dast-dastyml) para o passo a passo do workflow.
 
 ## Postman / Newman
 
@@ -88,7 +88,10 @@ O environment já vem com `adminEmail` e `adminPassword` preenchidos com um dos 
 
 Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Acesso Externo de Clientes → Minha Conta → Veículos → Ordens de Serviço → Orçamentos**.
 
-O grupo **Minha Conta** exercita `/api/me/*` com o token externo (`customer-jwt`) e por isso não usa o bearer padrão da collection (`{{authToken}}`) — cada requisição sobrescreve a autenticação para `Bearer {{customerJwtToken}}`. Como a função serverless de emissão ainda não existe (ver [ADR 0004](adr/0004-autenticacao-de-clientes.md)), `customerJwtToken` no `collections/oficina-environment.json` vem **vazio por padrão**: gere um token de teste manualmente (mesmo mecanismo de `test/helpers/customer-jwt.helper.ts`, descrito acima) e preencha a variável do environment antes de rodar esse grupo.
+O grupo **Minha Conta** exercita `/api/me/*` com o token externo (`customer-jwt`) e por isso não usa o bearer padrão da collection (`{{authToken}}`) — cada requisição sobrescreve a autenticação para `Bearer {{customerJwtToken}}`. `customerJwtToken` no `collections/oficina-environment.json` vem **vazio por padrão**: preencha a variável do environment antes de rodar esse grupo, com um dos dois caminhos:
+
+- **Token de teste manual** — mesmo mecanismo de `test/helpers/customer-jwt.helper.ts`, descrito acima (não exige a lambda rodando).
+- **Token real da lambda** — com [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) clonada e configurada contra este mesmo banco, `npm run invoke` lá devolve um `customer-jwt` válido (use o CPF/senha de um dos usuários externos do seed, ver [Como executar localmente › Seed](local-setup.md#seed)) — cole o token retornado em `customerJwtToken`.
 
 Ou via linha de comando com a aplicação rodando:
 

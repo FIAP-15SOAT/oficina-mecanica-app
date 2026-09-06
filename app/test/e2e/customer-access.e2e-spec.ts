@@ -122,40 +122,40 @@ describe('Customer Access (E2E)', () => {
     return res.body.data as { id: string; document: string };
   }
 
-  // ─── POST /api/customers/:customerId/access-users ──────────────────────────
+  // ─── POST /api/customers/:customerId/users ──────────────────────────
 
-  describe('POST /api/customers/:customerId/access-users', () => {
+  describe('POST /api/customers/:customerId/users', () => {
     it('should create a new user by CPF and grant access for an INDIVIDUAL customer', async () => {
       const customer = await createCustomer();
 
       const res = await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(201);
 
       expect(res.body.data).toEqual(
         expect.objectContaining({
-          userId: expect.any(String),
-          customerId: customer.id,
+          user: expect.objectContaining({ id: expect.any(String), email: expect.any(String) }),
+          customer: expect.objectContaining({ id: customer.id }),
           initialPasswordSent: true,
         }),
       );
 
       const accessUsers = await request(httpServer)
-        .get(`/api/customers/${customer.id}/access-users`)
+        .get(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
       expect(accessUsers.body.data).toHaveLength(1);
-      expect(accessUsers.body.data[0].id).toBe(res.body.data.userId);
+      expect(accessUsers.body.data[0].id).toBe(res.body.data.user.id);
     });
 
     it('should allow ATTENDANT to grant access', async () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${attendantAuth.accessToken}`)
         .send({})
         .expect(201);
@@ -165,7 +165,7 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
         .send({})
         .expect(403);
@@ -174,15 +174,12 @@ describe('Customer Access (E2E)', () => {
     it('should return 401 without a token', async () => {
       const customer = await createCustomer();
 
-      await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
-        .send({})
-        .expect(401);
+      await request(httpServer).post(`/api/customers/${customer.id}/users`).send({}).expect(401);
     });
 
     it('should return 404 when the customer does not exist', async () => {
       await request(httpServer)
-        .post('/api/customers/00000000-0000-0000-0000-000000000000/access-users')
+        .post('/api/customers/00000000-0000-0000-0000-000000000000/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(404);
@@ -192,7 +189,7 @@ describe('Customer Access (E2E)', () => {
       const company = await createCompanyCustomer();
 
       const res = await request(httpServer)
-        .post(`/api/customers/${company.id}/access-users`)
+        .post(`/api/customers/${company.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({
           name: 'Operador da Empresa',
@@ -208,19 +205,19 @@ describe('Customer Access (E2E)', () => {
       const company = await createCompanyCustomer();
 
       await request(httpServer)
-        .post(`/api/customers/${company.id}/access-users`)
+        .post(`/api/customers/${company.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(409);
     });
 
-    it('should conflict (not reuse) when granting access to two COMPANY customers with the same CPF', async () => {
+    it('should reuse the same user (not conflict) when granting access to two COMPANY customers with the same CPF', async () => {
       const companyX = await createCompanyCustomer();
       const companyY = await createCompanyCustomer();
       const sharedCpf = generateCPF(9002);
 
-      await request(httpServer)
-        .post(`/api/customers/${companyX.id}/access-users`)
+      const first = await request(httpServer)
+        .post(`/api/customers/${companyX.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({
           name: 'Sócio Compartilhado',
@@ -229,33 +226,67 @@ describe('Customer Access (E2E)', () => {
         })
         .expect(201);
 
-      await request(httpServer)
-        .post(`/api/customers/${companyY.id}/access-users`)
+      const second = await request(httpServer)
+        .post(`/api/customers/${companyY.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({
           name: 'Sócio Compartilhado',
           email: `socio-y-${Date.now()}@test.com`,
           cpf: sharedCpf,
         })
-        .expect(409);
+        .expect(201);
+
+      expect(second.body.data.user.id).toBe(first.body.data.user.id);
+      expect(second.body.data.initialPasswordSent).toBe(false);
 
       const totalUsersWithCpf = await ctx.prisma.user.count({
         where: { cpf: sharedCpf.replace(/\D/g, '') },
       });
       expect(totalUsersWithCpf).toBe(1);
+
+      const linkedCustomers = await request(httpServer)
+        .get(`/api/users/${first.body.data.user.id}/customers`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(linkedCustomers.body.data).toHaveLength(2);
+      expect(linkedCustomers.body.data.map((c: { id: string }) => c.id).sort()).toEqual(
+        [companyX.id, companyY.id].sort(),
+      );
+    });
+
+    it('should conflict when the email already belongs to a different person than the one identified by cpf', async () => {
+      const companyX = await createCompanyCustomer();
+      const companyY = await createCompanyCustomer();
+      const sharedEmail = `pessoa-original-${Date.now()}@test.com`;
+
+      await request(httpServer)
+        .post(`/api/customers/${companyX.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Pessoa Original', email: sharedEmail, cpf: generateCPF(9003) })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/customers/${companyY.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Outra Pessoa', email: sharedEmail, cpf: generateCPF(9004) })
+        .expect(409);
+
+      const totalUsersWithEmail = await ctx.prisma.user.count({ where: { email: sharedEmail } });
+      expect(totalUsersWithEmail).toBe(1);
     });
 
     it('should return 409 when granting access twice to the same user/customer pair', async () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(201);
 
       await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(409);
@@ -265,38 +296,38 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);
 
       await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(409);
     });
   });
 
-  // ─── DELETE /api/customers/:customerId/access-users/:userId ────────────────
+  // ─── DELETE /api/customers/:customerId/users/:userId ────────────────
 
-  describe('DELETE /api/customers/:customerId/access-users/:userId', () => {
+  describe('DELETE /api/customers/:customerId/users/:userId', () => {
     it('should revoke access and return 204', async () => {
       const customer = await createCustomer();
 
       const grant = await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(201);
 
       await request(httpServer)
-        .delete(`/api/customers/${customer.id}/access-users/${grant.body.data.userId}`)
+        .delete(`/api/customers/${customer.id}/users/${grant.body.data.user.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(204);
 
       const accessUsers = await request(httpServer)
-        .get(`/api/customers/${customer.id}/access-users`)
+        .get(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(200);
 
@@ -307,7 +338,7 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .delete(`/api/customers/${customer.id}/access-users/00000000-0000-0000-0000-000000000000`)
+        .delete(`/api/customers/${customer.id}/users/00000000-0000-0000-0000-000000000000`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .expect(404);
     });
@@ -316,26 +347,26 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       const grant = await request(httpServer)
-        .post(`/api/customers/${customer.id}/access-users`)
+        .post(`/api/customers/${customer.id}/users`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({})
         .expect(201);
 
       await request(httpServer)
-        .delete(`/api/customers/${customer.id}/access-users/${grant.body.data.userId}`)
+        .delete(`/api/customers/${customer.id}/users/${grant.body.data.user.id}`)
         .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
         .expect(403);
     });
   });
 
-  // ─── PATCH /api/customers/:customerId/status ────────────────────────────────
+  // ─── PATCH /api/customers/:customerId ────────────────────────────────
 
-  describe('PATCH /api/customers/:customerId/status', () => {
+  describe('PATCH /api/customers/:customerId', () => {
     it('should deactivate an active customer and persist the change', async () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);
@@ -349,13 +380,13 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: true })
         .expect(204);
@@ -377,7 +408,7 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
         .send({ isActive: false })
         .expect(403);
@@ -387,7 +418,7 @@ describe('Customer Access (E2E)', () => {
       const customer = await createCustomer();
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);
@@ -421,7 +452,7 @@ describe('Customer Access (E2E)', () => {
         .expect(201);
 
       await request(httpServer)
-        .patch(`/api/customers/${customer.id}/status`)
+        .patch(`/api/customers/${customer.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(204);

@@ -194,83 +194,7 @@
           "response": []
         },
         {
-          "name": "TC-AUTH-05 — Obter dados do usuário autenticado (me)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna dados do usuário logado', () => {",
-                  "    const res = pm.response.json();",
-                  "    pm.expect(res.data).to.have.property('id');",
-                  "    pm.expect(res.data).to.have.property('email');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-AUTH-06 — Me sem autenticação (401)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "TC-AUTH-07 — Login sem campos obrigatórios (400)",
+          "name": "TC-AUTH-05 — Login sem campos obrigatórios (400)",
           "event": [
             {
               "listen": "test",
@@ -350,7 +274,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Atendente Teste\",\r\n    \"email\": \"atendente.teste@oficina.com\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"ATTENDANT\"\r\n}"
+              "raw": "{\r\n    \"name\": \"Atendente Teste\",\r\n    \"email\": \"atendente.teste@oficina.com\",\r\n    \"role\": \"ATTENDANT\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -395,7 +319,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Mecânico Teste\",\r\n    \"email\": \"mecanico.teste@oficina.com\",\r\n    \"password\": \"Senha@123\",\r\n    \"role\": \"MECHANIC\"\r\n}"
+              "raw": "{\r\n    \"name\": \"Mecânico Teste\",\r\n    \"email\": \"mecanico.teste@oficina.com\",\r\n    \"role\": \"MECHANIC\"\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -432,7 +356,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Duplicado\", \"email\": \"{{adminEmail}}\", \"password\": \"Senha@123\"}"
+              "raw": "{\"name\": \"Duplicado\", \"email\": \"{{adminEmail}}\", \"role\": \"ATTENDANT\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -622,7 +546,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Atendente Atualizado\", \"email\": \"atendente.atualizado@oficina.com\", \"password\": \"Senha@123\", \"role\": \"ATTENDANT\"}"
+              "raw": "{\"name\": \"Atendente Atualizado\", \"email\": \"atendente.atualizado@oficina.com\", \"role\": \"ATTENDANT\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}",
@@ -900,7 +824,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mecânico Conflito\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"Senha@123\",\n  \"role\": \"MECHANIC\"\n}"
+              "raw": "{\n  \"name\": \"Mecânico Conflito\",\n  \"email\": \"{{adminEmail}}\",\n  \"role\": \"MECHANIC\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{mechanicUserId}}",
@@ -3466,7 +3390,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"João da Silva\",\r\n    \"document\": \"929.362.770-19\",\r\n    \"type\": \"INDIVIDUAL\",\r\n    \"email\": \"joao3@oficina-test.com\",\r\n    \"phone\": \"(11) 99999-9999\",\r\n    \"address\": {\r\n        \"street\": \"Rua das Flores, 123\",\r\n        \"city\": \"São Paulo\",\r\n        \"state\": \"SP\",\r\n        \"zipCode\": \"01310-100\"\r\n    }\r\n}"
+              "raw": "{\r\n    \"name\": \"João da Silva\",\r\n    \"document\": \"929.362.770-19\",\r\n    \"type\": \"INDIVIDUAL\",\r\n    \"email\": \"joao3@oficina-test.com\",\r\n    \"phone\": \"(11) 99999-9999\",\r\n    \"createAccess\": false,\r\n    \"address\": {\r\n        \"street\": \"Rua das Flores, 123\",\r\n        \"city\": \"São Paulo\",\r\n        \"state\": \"SP\",\r\n        \"zipCode\": \"01310-100\"\r\n    }\r\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/customers",
@@ -4242,14 +4166,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/access-users",
+              "raw": "{{baseUrl}}/customers/{{customerId}}/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "customers",
                 "{{customerId}}",
-                "access-users"
+                "users"
               ]
             },
             "body": {
@@ -4264,11 +4188,11 @@
               "script": {
                 "exec": [
                   "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna userId e customerId', () => {",
+                  "pm.test('Retorna user e customer', () => {",
                   "    const res = pm.response.json();",
-                  "    pm.expect(res.data.userId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(res.data.customerId).to.equal(pm.environment.get('customerId'));",
-                  "    pm.environment.set('userId', res.data.userId);",
+                  "    pm.expect(res.data.user.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(res.data.customer.id).to.equal(pm.environment.get('customerId'));",
+                  "    pm.environment.set('userId', res.data.user.id);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -4287,14 +4211,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/access-users",
+              "raw": "{{baseUrl}}/customers/{{customerId}}/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "customers",
                 "{{customerId}}",
-                "access-users"
+                "users"
               ]
             },
             "body": {
@@ -4326,14 +4250,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/access-users",
+              "raw": "{{baseUrl}}/customers/{{customerId}}/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "customers",
                 "{{customerId}}",
-                "access-users"
+                "users"
               ]
             }
           },
@@ -4365,14 +4289,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/status",
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "customers",
-                "{{customerId}}",
-                "status"
+                "{{customerId}}"
               ]
             },
             "body": {
@@ -4443,14 +4366,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/customers/{{customerId}}/access-users/{{userId}}",
+              "raw": "{{baseUrl}}/customers/{{customerId}}/users/{{userId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "customers",
                 "{{customerId}}",
-                "access-users",
+                "users",
                 "{{userId}}"
               ]
             }

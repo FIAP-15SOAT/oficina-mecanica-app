@@ -149,6 +149,7 @@ describe('WorkOrderMapper', () => {
           passwordHash: 'hash',
           role: UserRole.MECHANIC,
           isActive: true,
+          passwordChangedAt: now,
           createdAt: now,
           updatedAt: now,
         },

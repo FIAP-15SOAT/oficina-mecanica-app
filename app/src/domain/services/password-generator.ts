@@ -24,7 +24,7 @@ function shuffle(chars: string[]): string[] {
 
 export class PasswordGenerator {
   /**
-   * Gera uma senha inicial forte (spec §9.2): mínimo de 12 caracteres,
+   * Gera uma senha inicial forte: mínimo de 12 caracteres,
    * garantindo ao menos um caractere de cada categoria exigida pelo
    * PASSWORD_REGEX do domínio, com randomização criptograficamente segura.
    */

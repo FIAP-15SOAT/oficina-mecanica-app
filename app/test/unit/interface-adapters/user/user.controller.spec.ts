@@ -15,7 +15,6 @@ import { IFindAllUsersUseCase } from '@application/ports/input/user/find-all-use
 import { IUpdateUserUseCase } from '@application/ports/input/user/update-user.use-case.interface';
 import { IUpdateUserStatusUseCase } from '@application/ports/input/user/update-user-status.use-case.interface';
 import { IDeleteUserUseCase } from '@application/ports/input/user/delete-user.use-case.interface';
-import { IssuePasswordResetCodeUseCase } from '@application/use-cases/auth/issue-password-reset-code.use-case';
 
 import { createMockUser } from '../../../helpers/user-mock.factory';
 
@@ -45,7 +44,7 @@ describe('UserController', () => {
       updateUserUseCase,
       updateUserStatusUseCase,
       deleteUserUseCase,
-      issuePasswordResetCodeUseCase as unknown as IssuePasswordResetCodeUseCase,
+      issuePasswordResetCodeUseCase,
     );
   });
 
@@ -113,7 +112,7 @@ describe('UserController', () => {
       const id = randomUUID();
       const user = createMockUser({ id });
 
-      findUserByIdUseCase.execute.mockResolvedValue(user.toPublicView());
+      findUserByIdUseCase.execute.mockResolvedValue({ ...user.toPublicView(), customers: [] });
 
       const result = await controller.findById(id);
 

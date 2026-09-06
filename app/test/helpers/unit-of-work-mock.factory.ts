@@ -20,6 +20,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       update: jest.fn(),
       delete: jest.fn(),
       isCustomerInUse: jest.fn(),
+      hasWorkOrders: jest.fn().mockResolvedValue(false),
     },
     vehicle: {
       create: jest.fn(),
@@ -62,6 +63,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
     userCustomer: {
       create: jest.fn(),
       exists: jest.fn(),
+      existsActiveLink: jest.fn(),
       delete: jest.fn(),
       findUsersByCustomerId: jest.fn(),
       findCustomersByUserId: jest.fn(),
@@ -70,7 +72,7 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
     passwordResetCode: {
       upsert: jest.fn(),
       findByUserId: jest.fn(),
-      update: jest.fn(),
+      incrementAttempts: jest.fn(),
       delete: jest.fn(),
     },
   };

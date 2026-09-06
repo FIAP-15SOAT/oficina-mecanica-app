@@ -10,7 +10,7 @@ import { JwtStrategy } from '@infrastructure/http/strategies/jwt.strategy';
 import { CustomerJwtStrategy } from '@infrastructure/http/strategies/customer-jwt.strategy';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
-import { IPasswordResetCodeRepository } from '@domain/interfaces/repositories/password-reset-code.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
@@ -26,7 +26,7 @@ import { AuthController } from './auth.controller';
       provide: AuthCleanController,
       useFactory: (
         userRepository: IUserRepository,
-        passwordResetCodeRepository: IPasswordResetCodeRepository,
+        unitOfWork: IUnitOfWork,
         hashService: IHashService,
         tokenService: ITokenService,
         logger: ILogger,
@@ -44,19 +44,12 @@ import { AuthController } from './auth.controller';
             logger.forContext(RefreshTokenUseCase.name),
           ),
           new ConfirmPasswordResetUseCase(
-            userRepository,
-            passwordResetCodeRepository,
+            unitOfWork,
             hashService,
             logger.forContext(ConfirmPasswordResetUseCase.name),
           ),
         ),
-      inject: [
-        'IUserRepository',
-        'IPasswordResetCodeRepository',
-        'IHashService',
-        'ITokenService',
-        'ILogger',
-      ],
+      inject: ['IUserRepository', 'IUnitOfWork', 'IHashService', 'ITokenService', 'ILogger'],
     },
     JwtStrategy,
     CustomerJwtStrategy,

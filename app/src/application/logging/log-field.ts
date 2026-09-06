@@ -5,7 +5,6 @@ export type LogicalFieldName =
   | 'failureReason'
   | 'quoteId'
   | 'previousQuoteStatus'
-  | 'quoteDecisionFailureReason'
   | 'workOrderId'
   | 'workOrderNumber'
   | 'workOrderStatusChanged'

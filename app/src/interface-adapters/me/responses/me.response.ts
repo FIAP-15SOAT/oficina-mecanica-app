@@ -35,6 +35,7 @@ export interface MyWorkOrderResponse {
   status: WorkOrderStatus;
   problemDescription: string | null;
   mileageAtService: number | null;
+  customer: MyCustomerSummary;
   vehicle: MyVehicleSummary | null;
   createdAt: Date;
   updatedAt: Date;
@@ -57,7 +58,12 @@ export interface MyQuoteItemResponse {
   totalPrice: number;
 }
 
-export interface MyQuoteResponse {
+/**
+ * Resumo — usado nas listagens, onde os itens não são carregados
+ * (`findByWorkOrderId` não inclui `services`/`partsSupplies` de propósito,
+ * para não puxar N itens por linha da lista).
+ */
+export interface MyQuoteSummaryResponse {
   id: string;
   status: QuoteStatus;
   servicesAmount: number;
@@ -67,6 +73,10 @@ export interface MyQuoteResponse {
   sentAt: Date | null;
   approvedAt: Date | null;
   rejectedAt: Date | null;
+}
+
+/** Detalhe — exige um Quote carregado com `findByIdWithDetails`. */
+export interface MyQuoteResponse extends MyQuoteSummaryResponse {
   services: MyQuoteItemResponse[];
   partsSupplies: MyQuoteItemResponse[];
 }
@@ -76,5 +86,5 @@ export interface MyQuoteDataResponse {
 }
 
 export interface MyQuoteListResponse {
-  data: MyQuoteResponse[];
+  data: MyQuoteSummaryResponse[];
 }

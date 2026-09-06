@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -32,10 +33,8 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-principal.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
@@ -225,13 +224,14 @@ export class QuoteController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
+  @ApiBadRequestResponse({ description: 'Justificativa ausente na rejeição' })
   @ApiConflictResponse({ description: 'Modificação concorrente detectada. Tente novamente.' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateQuoteStatusRequestDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.updateStatus(id, user.sub, request);
+    return this.controller.updateStatus(id, principal.sub, request);
   }
 }

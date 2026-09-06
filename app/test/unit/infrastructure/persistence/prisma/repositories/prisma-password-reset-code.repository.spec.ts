@@ -18,7 +18,7 @@ describe('PrismaPasswordResetCodeRepository', () => {
   describe('upsert', () => {
     it('should upsert keyed by userId', async () => {
       const userId = randomUUID();
-      const code = PasswordResetCode.issue(userId, 'hashed');
+      const code = PasswordResetCode.create(userId, 'hashed');
 
       prisma.passwordResetCode.upsert.mockResolvedValue({
         userId,
@@ -74,26 +74,23 @@ describe('PrismaPasswordResetCodeRepository', () => {
     });
   });
 
-  describe('update', () => {
-    it('should persist attempts and codeHash', async () => {
+  describe('incrementAttempts', () => {
+    it('should atomically increment attempts by userId', async () => {
       const userId = randomUUID();
-      const code = PasswordResetCode.issue(userId, 'hashed');
-      code.registerFailedAttempt();
 
       prisma.passwordResetCode.update.mockResolvedValue({
         userId,
-        codeHash: code.codeHash,
+        codeHash: 'hashed',
         attempts: 1,
-        expiresAt: code.expiresAt,
-        createdAt: code.createdAt,
+        expiresAt: new Date(),
+        createdAt: new Date(),
       });
 
-      const result = await repository.update(code);
+      await repository.incrementAttempts(userId);
 
-      expect(result.attempts).toBe(1);
       expect(prisma.passwordResetCode.update).toHaveBeenCalledWith({
         where: { userId },
-        data: { codeHash: code.codeHash, attempts: 1 },
+        data: { attempts: { increment: 1 } },
       });
     });
   });

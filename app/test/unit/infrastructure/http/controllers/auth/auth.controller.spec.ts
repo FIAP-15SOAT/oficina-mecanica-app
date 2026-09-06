@@ -8,7 +8,6 @@ import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
 import { LoginRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-token-request.dto';
 import { ConfirmPasswordResetRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/confirm-password-reset-request.dto';
-import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
 
@@ -19,9 +18,13 @@ describe('AuthController', () => {
   let cleanController: AuthCleanController;
 
   beforeEach(() => {
-    cleanController = new AuthCleanController({ execute: jest.fn() }, { execute: jest.fn() }, {
-      execute: jest.fn(),
-    } as unknown as ConfirmPasswordResetUseCase);
+    cleanController = new AuthCleanController(
+      { execute: jest.fn() },
+      { execute: jest.fn() },
+      {
+        execute: jest.fn(),
+      },
+    );
     httpController = new AuthController(cleanController);
   });
 

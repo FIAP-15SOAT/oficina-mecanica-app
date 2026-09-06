@@ -7,10 +7,11 @@ import { ILogger } from '@application/ports/output/logger.service.interface';
 
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { ChangeOwnPasswordDto } from '@application/ports/input/me/dto/change-own-password.dto';
+import { IChangeOwnPasswordUseCase } from '@application/ports/input/me/change-own-password.use-case.interface';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
-export class ChangeOwnPasswordUseCase {
+export class ChangeOwnPasswordUseCase implements IChangeOwnPasswordUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly hashService: IHashService,
@@ -24,6 +25,17 @@ export class ChangeOwnPasswordUseCase {
       throw new ResourceNotFoundException('Usuário', userId);
     }
 
+    await this.validatePassword(user, dto);
+
+    const newHash = await this.hashService.hash(dto.newPassword);
+    user.changePassword(newHash);
+
+    await this.userRepository.update(user);
+
+    this.logger.event(BUSINESS_EVENTS.USER_PASSWORD_CHANGED, { subjectId: userId });
+  }
+
+  private async validatePassword(user: User, dto: ChangeOwnPasswordDto): Promise<void> {
     const currentMatches = await this.hashService.compare(dto.currentPassword, user.passwordHash);
 
     if (!currentMatches) {
@@ -35,12 +47,5 @@ export class ChangeOwnPasswordUseCase {
     }
 
     User.validatePasswordStrength(dto.newPassword);
-
-    const newHash = await this.hashService.hash(dto.newPassword);
-    user.changePassword(newHash);
-
-    await this.userRepository.update(user);
-
-    this.logger.event(BUSINESS_EVENTS.USER_PASSWORD_CHANGED, { subjectId: userId });
   }
 }

@@ -7,8 +7,9 @@ import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
-import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { CreateQuoteRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/create-quote-request.dto';
 import { AddQuoteServiceRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/add-quote-service-request.dto';
 import { AddQuotePartSupplyRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/add-quote-part-supply-request.dto';
@@ -191,8 +192,9 @@ describe('QuoteController', () => {
       const id = randomUUID();
       const userId = randomUUID();
       const dto: UpdateQuoteStatusRequestDto = { status: QuoteStatus.APPROVED };
-      const user: AuthenticatedUser = {
+      const user: AuthenticatedPrincipal = {
         sub: userId,
+        authFlow: AuthFlow.INTERNAL,
         email: 'atendente@oficina.local',
         role: UserRole.ATTENDANT,
       };

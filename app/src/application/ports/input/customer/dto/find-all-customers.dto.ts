@@ -5,5 +5,5 @@ export interface FindAllCustomersInputDto extends PaginationInput {
   name?: string;
   type?: CustomerType;
   document?: string;
-  isActive?: boolean;
+  active?: boolean;
 }

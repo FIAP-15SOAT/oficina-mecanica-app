@@ -36,7 +36,7 @@ app/src/
 │   ├── enums/                       # UserRole, CustomerType, WorkOrderStatus,
 │   │                                # WorkOrderServiceStatus, QuoteStatus,
 │   │                                # QuoteDecisionAction, StockMovementType, Unit,
-│   │                                # PartSupplyCategory, TokenType, SortDirection
+│   │                                # PartSupplyCategory, SortDirection
 │   ├── exceptions/                  # DomainException, DomainValidationException,
 │   │                                # EntityNotFoundException, BusinessRuleViolationException
 │   ├── constants/                   # Regex compartilhadas (placa, telefone, e-mail, senha)
@@ -63,9 +63,11 @@ app/src/
 │   │   ├── customer-access/         # GrantCustomerAccess, ListCustomerAccessUsers,
 │   │   │                            # ListUserCustomers, RevokeCustomerAccess,
 │   │   │                            # UpdateCustomerStatus
-│   │   ├── me/                      # GetMe, ChangeOwnPassword, ListMyWorkOrders,
-│   │   │                            # GetMyWorkOrder, ListMyWorkOrderQuotes, GetMyQuote,
-│   │   │                            # DecideMyQuote — usuário externo autenticado
+│   │   ├── me/                      # ChangeOwnPassword, FindAllMyWorkOrders,
+│   │   │                            # FindMyWorkOrderById, FindMyWorkOrdersQuotes,
+│   │   │                            # FindMyQuoteById, DecideMyQuote — usuário externo
+│   │   │                            # autenticado (identidade via FindUserByIdUseCase,
+│   │   │                            # reaproveitado de user/)
 │   │   ├── vehicle/                 # CRUD + busca por cliente
 │   │   ├── service/                 # CRUD + métricas (individual e agregada paginada)
 │   │   ├── part-supply/             # CRUD + movimentação de estoque
@@ -256,7 +258,7 @@ Dois fluxos de autenticação totalmente isolados, cada um com sua própria estr
 | Guard HTTP | `JwtAuthGuard` | `CustomerJwtAuthGuard` (`AnyAuthGuard` aceita os dois em `GET /api/me` e `PATCH /api/me/password`) |
 | Carrega `role`/`customerId` no payload? | `role`, sim | **Não** — só `sub` (o `userId`) |
 
-**A autorização externa é resolvida a cada requisição, nunca embutida no JWT.** O token externo carrega apenas o `userId` (`sub`); nenhuma rota `/api/me/*` confia em um `customerId` do payload. `CustomerJwtStrategy.validate()` já rejeita o principal se o usuário estiver inativo ou não tiver nenhum vínculo ativo (`findActiveCustomerIdsByUserId`), e a `CustomerAccessPolicy` (`application/policies/customer-access.policy.ts`) repete essa resolução em cada caso de uso de `/api/me/*` que precisa autorizar contra um recurso específico (`GetMyWorkOrder`, `ListMyWorkOrders`, `ListMyWorkOrderQuotes`, `GetMyQuote`, `DecideMyQuote`). Isso faz uma remoção de vínculo (`DELETE /customers/:id/access-users/:userId`) ou uma desativação de cliente (`PATCH /customers/:id/status`) valer **imediatamente**, sem precisar de lista de revogação de token.
+**A autorização externa é resolvida a cada requisição, nunca embutida no JWT.** O token externo carrega apenas o `userId` (`sub`); nenhuma rota `/api/me/*` confia em um `customerId` do payload. `CustomerJwtStrategy.validate()` já rejeita o principal se o usuário estiver inativo ou não tiver nenhum vínculo ativo (`findActiveCustomerIdsByUserId`), e a `CustomerAccessPolicy` (`application/policies/customer-access.policy.ts`) repete essa resolução em cada caso de uso de `/api/me/*` que precisa autorizar contra um recurso específico (`FindMyWorkOrderById`, `FindAllMyWorkOrders`, `FindMyWorkOrdersQuotes`, `FindMyQuoteById`, `DecideMyQuote`). Isso faz uma remoção de vínculo (`DELETE /customers/:id/users/:userId`) ou uma desativação de cliente (`PATCH /customers/:id`) valer **imediatamente**, sem precisar de lista de revogação de token. Pelo mesmo caminho — o `User` já recarregado do banco a cada requisição —, `JwtStrategy`, `CustomerJwtStrategy` e `RefreshTokenUseCase` também comparam o `iat` do token com `User.passwordChangedAt`: qualquer token emitido antes da última troca de senha (autenticada ou por reset) é recusado, sem lista de revogação de JWT.
 
 **A política nunca lança 403.** `CustomerAccessPolicy.assertCustomerAuthorized` traduz recurso inexistente e recurso não autorizado para o **mesmo** `ResourceNotFoundException` (HTTP 404) — a rota nunca vira um oráculo de enumeração que revela se uma OS ou orçamento de outro cliente existe.
 

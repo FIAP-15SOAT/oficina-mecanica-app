@@ -2,8 +2,9 @@ import { ICustomerRepository } from '@domain/interfaces/repositories/customer.re
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
+import { IUpdateCustomerStatusUseCase } from '@application/ports/input/customer-access/update-customer-status.use-case.interface';
 
-export class UpdateCustomerStatusUseCase {
+export class UpdateCustomerStatusUseCase implements IUpdateCustomerStatusUseCase {
   constructor(
     private readonly customerRepository: ICustomerRepository,
     private readonly logger: ILogger,

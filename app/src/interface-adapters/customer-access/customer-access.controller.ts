@@ -1,8 +1,8 @@
-import { GrantCustomerAccessUseCase } from '@application/use-cases/customer-access/grant-customer-access.use-case';
-import { ListCustomerAccessUsersUseCase } from '@application/use-cases/customer-access/list-customer-access-users.use-case';
-import { ListUserCustomersUseCase } from '@application/use-cases/customer-access/list-user-customers.use-case';
-import { RevokeCustomerAccessUseCase } from '@application/use-cases/customer-access/revoke-customer-access.use-case';
-import { UpdateCustomerStatusUseCase } from '@application/use-cases/customer-access/update-customer-status.use-case';
+import { IGrantCustomerAccessUseCase } from '@application/ports/input/customer-access/grant-customer-access.use-case.interface';
+import { IListCustomerAccessUsersUseCase } from '@application/ports/input/customer-access/list-customer-access-users.use-case.interface';
+import { IListUserCustomersUseCase } from '@application/ports/input/customer-access/list-user-customers.use-case.interface';
+import { IRevokeCustomerAccessUseCase } from '@application/ports/input/customer-access/revoke-customer-access.use-case.interface';
+import { IUpdateCustomerStatusUseCase } from '@application/ports/input/customer-access/update-customer-status.use-case.interface';
 import { GrantCustomerAccessDto } from '@application/ports/input/customer-access/dto/grant-customer-access.dto';
 
 import { CustomerAccessPresenter } from './customer-access.presenter';
@@ -14,11 +14,11 @@ import {
 
 export class CustomerAccessController {
   constructor(
-    private readonly grantCustomerAccessUseCase: GrantCustomerAccessUseCase,
-    private readonly listCustomerAccessUsersUseCase: ListCustomerAccessUsersUseCase,
-    private readonly listUserCustomersUseCase: ListUserCustomersUseCase,
-    private readonly revokeCustomerAccessUseCase: RevokeCustomerAccessUseCase,
-    private readonly updateCustomerStatusUseCase: UpdateCustomerStatusUseCase,
+    private readonly grantCustomerAccessUseCase: IGrantCustomerAccessUseCase,
+    private readonly listCustomerAccessUsersUseCase: IListCustomerAccessUsersUseCase,
+    private readonly listUserCustomersUseCase: IListUserCustomersUseCase,
+    private readonly revokeCustomerAccessUseCase: IRevokeCustomerAccessUseCase,
+    private readonly updateCustomerStatusUseCase: IUpdateCustomerStatusUseCase,
   ) {}
 
   async grantAccess(

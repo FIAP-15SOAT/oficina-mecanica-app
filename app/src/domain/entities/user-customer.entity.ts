@@ -1,3 +1,4 @@
+import { validate as isUuid } from 'uuid';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
 
 export interface CreateUserCustomerProps {
@@ -27,18 +28,33 @@ export class UserCustomer {
   }
 
   static create(props: CreateUserCustomerProps): UserCustomer {
-    if (!props.userId?.trim()) {
-      throw new DomainValidationException('ID do usuário é obrigatório');
-    }
-
-    if (!props.customerId?.trim()) {
-      throw new DomainValidationException('ID do cliente é obrigatório');
-    }
+    UserCustomer.validateUserId(props.userId);
+    UserCustomer.validateCustomerId(props.customerId);
 
     return new UserCustomer({
       userId: props.userId,
       customerId: props.customerId,
       createdAt: new Date(),
     });
+  }
+
+  private static validateUserId(userId: string): void {
+    if (!userId?.trim()) {
+      throw new DomainValidationException('ID do usuário é obrigatório');
+    }
+
+    if (!isUuid(userId)) {
+      throw new DomainValidationException('ID do usuário deve ser um UUID válido');
+    }
+  }
+
+  private static validateCustomerId(customerId: string): void {
+    if (!customerId?.trim()) {
+      throw new DomainValidationException('ID do cliente é obrigatório');
+    }
+
+    if (!isUuid(customerId)) {
+      throw new DomainValidationException('ID do cliente deve ser um UUID válido');
+    }
   }
 }

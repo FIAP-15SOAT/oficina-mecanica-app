@@ -11,6 +11,7 @@ import { UpdateUserUseCase } from '@application/use-cases/user/update-user.use-c
 import { IssuePasswordResetCodeUseCase } from '@application/use-cases/auth/issue-password-reset-code.use-case';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-customer.repository.interface';
 import { IPasswordResetCodeRepository } from '@domain/interfaces/repositories/password-reset-code.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
@@ -27,6 +28,7 @@ import { UserController } from './user.controller';
       provide: UserCleanController,
       useFactory: (
         userRepository: IUserRepository,
+        userCustomerRepository: IUserCustomerRepository,
         passwordResetCodeRepository: IPasswordResetCodeRepository,
         hashService: IHashService,
         emailSender: IEmailSenderService,
@@ -39,7 +41,7 @@ import { UserController } from './user.controller';
             emailSender,
             logger.forContext(CreateUserUseCase.name),
           ),
-          new FindUserByIdUseCase(userRepository),
+          new FindUserByIdUseCase(userRepository, userCustomerRepository),
           new FindAllUsersUseCase(userRepository),
           new UpdateUserUseCase(userRepository),
           new UpdateUserStatusUseCase(
@@ -57,6 +59,7 @@ import { UserController } from './user.controller';
         ),
       inject: [
         'IUserRepository',
+        'IUserCustomerRepository',
         'IPasswordResetCodeRepository',
         'IHashService',
         'IEmailSenderService',

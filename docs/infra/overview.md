@@ -85,7 +85,7 @@ O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas quatro cama
 | Recurso | Manifesto | Finalidade |
 |---|---|---|
 | **Job** `db-migrate` (one-shot) | `00-db-migrate-job.yaml` | `prisma migrate deploy` + `db seed`; renderizado por run; TTL de 14 dias; `backoffLimit: 0` |
-| **Secret** `api-secret` | `01-api-secret.yaml` | `DATABASE_URL` + `JWT_SECRET` / `JWT_REFRESH_SECRET` / `CUSTOMER_JWT_PUBLIC_KEY` |
+| **Secret** `api-secret` | criado via `kubectl create secret` (`01-api-secret.yaml` é só referência para deploy manual) | `DATABASE_URL` + `JWT_SECRET` / `JWT_REFRESH_SECRET` / `CUSTOMER_JWT_PUBLIC_KEY` |
 | **ConfigMap** `api-config` | `02-api-configmap.yaml` | Envs não-sensíveis (`NODE_ENV`, `PORT`, expirações JWT, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST/PORT`, `TZ`) |
 | **Deployment** `oficina-api` | `03-api-deployment.yaml` | A API NestJS; 1 réplica; `:sha` imutável; três probes HTTP em `/api/health/live` (startup + liveness) e `/api/health/ready` (readiness) |
 | **Deployment** `mailhog` | `03-mailhog-deployment.yaml` | Sink SMTP de desenvolvimento (captura e-mails de orçamento) |

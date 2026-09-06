@@ -5,6 +5,7 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
+import { Cpf } from '@domain/value-objects/cpf.vo';
 
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/repositories/prisma-user.repository';
 
@@ -54,6 +55,7 @@ describe('PrismaUserRepository', () => {
           role: prismaModel.role,
           cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -63,10 +65,11 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
-          cpf: user.cpf,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
     });
@@ -140,6 +143,7 @@ describe('PrismaUserRepository', () => {
           role: prismaModel.role,
           cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -178,6 +182,7 @@ describe('PrismaUserRepository', () => {
           role: prismaModel.role,
           cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -267,6 +272,7 @@ describe('PrismaUserRepository', () => {
         role: UserRole.ADMIN,
         cpf: null,
         isActive: false,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -291,10 +297,11 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
-          cpf: user.cpf,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
     });
@@ -308,6 +315,7 @@ describe('PrismaUserRepository', () => {
         role: UserRole.MECHANIC,
         cpf: null,
         isActive: true,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -327,8 +335,9 @@ describe('PrismaUserRepository', () => {
         email: Email.create('dup@example.com'),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
-        cpf: '12345678909',
+        cpf: Cpf.create('12345678909'),
         isActive: true,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -351,6 +360,7 @@ describe('PrismaUserRepository', () => {
         role: UserRole.MECHANIC,
         cpf: null,
         isActive: true,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });

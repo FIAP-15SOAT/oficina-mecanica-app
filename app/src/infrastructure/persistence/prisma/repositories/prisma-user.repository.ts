@@ -28,10 +28,11 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
-          cpf: user.cpf,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
 
@@ -106,10 +107,11 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           name: user.name,
           email: user.email.value,
-          cpf: user.cpf,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
 

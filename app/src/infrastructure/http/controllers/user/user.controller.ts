@@ -33,10 +33,8 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-principal.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { UserController as UserCleanController } from '@interface-adapters/user/user.controller';
@@ -149,8 +147,8 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   issuePasswordResetCode(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<void> {
-    return this.controller.issuePasswordResetCode(userId, user.sub);
+    return this.controller.issuePasswordResetCode(userId, principal.sub);
   }
 }

@@ -12,10 +12,11 @@ import { UpdateWorkOrderStatusRequestDto } from '@infrastructure/http/controller
 import { UpdateWorkOrderServiceStatusRequestDto } from '@infrastructure/http/controllers/work-order/dto/requests/update-work-order-service-status-request.dto';
 import { FindAllWorkOrdersPaginatedQueryDto } from '@infrastructure/http/controllers/work-order/dto/requests/filter-work-orders.dto';
 
-import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
 import { createMockCustomer } from '../../../../../helpers/customer-mock.factory';
 import { createMockVehicle } from '../../../../../helpers/vehicle-mock.factory';
@@ -30,8 +31,9 @@ describe('WorkOrderController', () => {
 
   const customer = createMockCustomer();
   const vehicle = createMockVehicle({ customerId: customer.id });
-  const currentUser: AuthenticatedUser = {
+  const currentUser: AuthenticatedPrincipal = {
     sub: randomUUID(),
+    authFlow: AuthFlow.INTERNAL,
     email: 'mecanico@oficina.com',
     role: UserRole.MECHANIC,
   };

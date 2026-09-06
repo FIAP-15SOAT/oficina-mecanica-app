@@ -185,9 +185,12 @@ describe('SubmitQuoteUseCase', () => {
     expect(emailContent.toName).toBe('Cliente Teste');
     expect(emailContent.message.text).not.toContain('http');
     expect(emailContent.message.html).not.toContain('http');
+    expect(emailContent.message.text).toContain('Entre em contato com a oficina');
+    expect(emailContent.message.html).toContain('Entre em contato com a oficina');
+    expect(emailContent.message.text).not.toContain('Acesse o sistema autenticando');
   });
 
-  it('should notify all active linked users without duplicates, falling back to the commercial email when none are linked', async () => {
+  it('should notify every active linked user, excluding inactive ones', async () => {
     const service = createMockQuoteService();
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
@@ -202,9 +205,9 @@ describe('SubmitQuoteUseCase', () => {
       name: 'User A',
       isActive: true,
     });
-    const activeUserBDuplicate = createMockUser({
-      email: Email.create('userA@example.com'),
-      name: 'User A Duplicate',
+    const activeUserB = createMockUser({
+      email: Email.create('userB@example.com'),
+      name: 'User B',
       isActive: true,
     });
     const inactiveUser = createMockUser({
@@ -219,15 +222,23 @@ describe('SubmitQuoteUseCase', () => {
     (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
     (mockRepos.userCustomer.findUsersByCustomerId as jest.Mock).mockResolvedValue([
       activeUserA,
-      activeUserBDuplicate,
+      activeUserB,
       inactiveUser,
     ]);
 
     await useCase.execute(quote.id);
 
-    expect(mockEmailSender.send).toHaveBeenCalledTimes(1);
-    const emailContent = mockEmailSender.send.mock.calls[0][0] as SendEmailInput;
-    expect(emailContent.toEmail).toBe('usera@example.com');
+    expect(mockEmailSender.send).toHaveBeenCalledTimes(2);
+    const sentEmails = mockEmailSender.send.mock.calls.map(
+      ([content]: [SendEmailInput]) => content.toEmail,
+    );
+    expect(sentEmails.sort()).toEqual(['usera@example.com', 'userb@example.com']);
+
+    for (const [content] of mockEmailSender.send.mock.calls as [SendEmailInput][]) {
+      expect(content.message.text).toContain('Acesse o sistema autenticando com seu CPF e senha');
+      expect(content.message.html).toContain('Acesse o sistema autenticando com seu CPF e senha');
+      expect(content.message.text).not.toContain('Entre em contato com a oficina');
+    }
   });
 
   it('should fail if email sending fails', async () => {
