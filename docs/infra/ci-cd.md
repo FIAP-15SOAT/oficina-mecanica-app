@@ -101,7 +101,7 @@ Análise do SonarCloud num workflow dedicado. O plano do Sonar do projeto analis
 
 Roda `test:cov` + Sonar Scan (`projectBaseDir: app`). Com `sonar.qualitygate.wait=true` (em `sonar-project.properties`), o run **fica vermelho se o quality gate reprovar**. Por ser um workflow **separado do CD**, uma análise vermelha na `master` **não bloqueia o deploy** (rodam em paralelo). A configuração do Sonar (chave do projeto, organização, exclusões, caminho do `lcov.info`) está em `sonar-project.properties`.
 
-Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TOKEN`, a criação do PR dispara o `sast.yml` — então a análise/decoração aparece **desde o primeiro push** (o `GITHUB_TOKEN` não dispararia workflows no PR criado automaticamente).
+Como o `open-pr` abre o PR autenticado via **GitHub App** (`BOT_APP_ID` e `BOT_PRIVATE_KEY`) em vez do `GITHUB_TOKEN` nativo, a criação do PR dispara o `sast.yml` normalmente — então a análise/decoração aparece **desde o primeiro push** (tokens de GitHub Apps não sofrem a restrição de cascata do `GITHUB_TOKEN`).
 
 ## 4) Workflow de DAST (`dast.yml`)
 
