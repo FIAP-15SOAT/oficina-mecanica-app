@@ -65,11 +65,12 @@ describe('CustomerController', () => {
       });
 
       createUseCase.execute.mockResolvedValue(created);
+      const actingUserId = randomUUID();
 
-      const result = await controller.create(input);
+      const result = await controller.create(input, actingUserId);
 
       expect(result).toEqual(CustomerPresenter.toDataResponse(created));
-      expect(createUseCase.execute).toHaveBeenCalledWith(input);
+      expect(createUseCase.execute).toHaveBeenCalledWith(input, actingUserId);
     });
   });
 

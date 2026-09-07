@@ -71,8 +71,8 @@ Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (deploy sob dem
 | # | Job | `needs:` | O que faz |
 |---|---|---|---|
 | 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tags imutáveis (`:sha` e `:latest`); exporta o `image_uri` |
-| 2 | `db-migrate` | `build-push-image` | Configura o kubeconfig, **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão com timeout e logs |
-| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/01-api-secret.yaml` (secrets da app via `envsubst`) e `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — `Secret` e `ConfigMap` da API, o **MailHog** (`Deployment` + `Service`) e o `Deployment`/`Service`/`HPA` da API; valida o rollout |
+| 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML) e aplica o `ConfigMap` (`02-api-configmap.yaml`); **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão com timeout e logs |
+| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; valida o rollout |
 
 A imagem roda **somente a aplicação** (`CMD ["node", "dist/src/main"]`). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
 
@@ -107,18 +107,22 @@ Como o `open-pr` abre o PR com um **PAT** (`OPEN_PR_TOKEN`) em vez do `GITHUB_TO
 
 <p align="center"><img src="../diagrams/dast-workflow.png" alt="Diagrama do workflow de DAST: job único zap-scan com steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()" width="100%"></p>
 
-> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. As caixas *Start stack* e *Wait API ready* correspondem ao step único que sobe a stack e espera o healthcheck do serviço `api`. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama).
+> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. As caixas *Start stack* e *Wait API ready* correspondem ao step único que sobe a stack e espera o healthcheck do serviço `api`. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama). O diagrama antecede a segunda passagem descrita abaixo — a tabela de steps é a referência completa e atual.
 
 | # | Step | O que faz |
 |---|---|---|
 | 1 | Checkout | `actions/checkout` |
-| 2 | Start the target stack and wait for it to become healthy | `docker compose -p dast up -d --build --wait --wait-timeout 180` — sobe a stack prod-like (Postgres + `migrate` + MailHog + API) e espera o **healthcheck do serviço `api`**; na expiração publica `compose ps --all` + `logs` e falha |
-| 3 | Perform authentication | `POST /api/auth/login` com um admin do seed → JWT; injetado como `Authorization: Bearer` no _replacer_ do ZAP |
-| 4 | Prepare the ZAP work directory | `mkdir zap-work`, copia `.zap/rules.tsv`, `chmod` |
-| 5 | Run OWASP ZAP API scan | `zap-api-scan.py -t /api/docs-json -f openapi` — **scan ativo**, na rede `dast_default`; gera relatório HTML + JSON |
-| 6 | Upload the ZAP report | `if: always()` — sobe o artifact `zap-report` (HTML + JSON) mesmo se o job falhar |
-| 7 | Tear down the stack | `if: always()` — `docker compose down -v` |
-| → | *resultado* | job fica **vermelho** se houver qualquer alerta ≠ `IGNORE` |
+| 2 | Generate an ephemeral RS256 key pair for the customer auth flow | `openssl genpkey`/`openssl rsa -pubout` — par de chaves descartável, gerado a cada run; a pública vira `CUSTOMER_JWT_PUBLIC_KEY` para a stack que sobe a seguir |
+| 3 | Start the target stack and wait for it to become healthy | `docker compose -p dast up -d --build --wait --wait-timeout 180` — sobe a stack prod-like (Postgres + `migrate` + MailHog + API, esta última já com a chave pública efêmera do step anterior) e espera o **healthcheck do serviço `api`**; na expiração publica `compose ps --all` + `logs` e falha |
+| 4 | Perform authentication for the internal scan pass | `POST /api/auth/login` com um admin do seed → JWT interno; injetado como `Authorization: Bearer` no _replacer_ do ZAP da passagem interna |
+| 5 | Sign an ephemeral customer JWT for the external scan pass | Busca o `id` do usuário semeado `joao.silva@email.com` direto no Postgres da stack (`docker compose exec postgres psql`) e assina, com a chave privada do step 2, um `customer-jwt` RS256 (`iss`/`aud` batendo com os defaults do `docker-compose.yml`) — sem depender da Lambda externa, fora de escopo |
+| 6 | Prepare the ZAP work directory | `mkdir zap-work`, copia `.zap/rules.tsv`, `chmod` |
+| 7 | Run OWASP ZAP API scan — internal (Admin) auth | `zap-api-scan.py -t /api/docs-json -f openapi` — **scan ativo**, na rede `dast_default`, com o Bearer interno do step 4; gera `zap-report.{html,json}` |
+| 8 | Upload the internal-auth ZAP report | `if: always()` — sobe o artifact `zap-report` mesmo se o job falhar |
+| 9 | Run OWASP ZAP API scan — external (Customer) auth | Mesma imagem e alvo do step 7, mas com o Bearer `customer-jwt` do step 5 — cobre `/api/me/*` além do `401` que a passagem interna sempre recebe dessas rotas; gera `zap-report-customer.{html,json}` |
+| 10 | Upload the external-auth ZAP report | `if: always()` — sobe o artifact `zap-report-customer`, separado do da passagem interna |
+| 11 | Tear down the stack | `if: always()` — `docker compose down -v` |
+| → | *resultado* | job fica **vermelho** se **qualquer uma das duas passagens** encontrar alerta ≠ `IGNORE` |
 
 Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicado — como o SAST, roda em paralelo ao CI/CD e não bloqueia nenhum deles. Diferente do SAST (separado por limitação do plano do Sonar), o DAST é separado por ter um **ciclo de gatilho próprio**:
 
@@ -127,7 +131,7 @@ Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicad
 
 Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o loop rápido; subir a stack inteira a cada push seria caro e redundante) nem em `push` → `master` (a `master` é protegida — só entra via PR —, então o scan do PR já cobriu aquele código).
 
-O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`), faz login em `POST /api/auth/login` com um admin do seed e roda o `zap-api-scan.py` (`-f openapi`) contra a spec em `/api/docs-json`. Como quase toda rota está atrás do `JwtAuthGuard`, o token JWT é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`.
+O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`) e roda o `zap-api-scan.py` (`-f openapi`) **duas vezes** contra a mesma spec em `/api/docs-json`, uma por fluxo de autenticação da API: a primeira faz login em `POST /api/auth/login` com um admin do seed (JWT interno, `JwtAuthGuard`); a segunda assina, ela mesma, um `customer-jwt` RS256 para um usuário externo já semeado, com a chave privada de um par efêmero gerado no início do job (a pública correspondente substitui o `CUSTOMER_JWT_PUBLIC_KEY` da stack antes do `up`). Em ambas, o token é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`, e é exatamente esse ponto cego que a segunda passagem fecha para as rotas `/api/me/*`: elas exigem `customer-jwt`, não o JWT interno, então sem a segunda passagem nenhum parâmetro ou caminho pós-guard dessas rotas era exercitado.
 
 **O portão de prontidão é o healthcheck do próprio serviço `api`**, declarado uma vez no `app/docker-compose.yml` (`wget` do BusyBox contra `/api/health/ready`) e consumido pelo `up --wait` — não um laço de espera mantido em paralelo no workflow, que divergiria do endpoint que o orquestrador de fato consulta.
 
@@ -140,9 +144,9 @@ O sink de e-mail é tratado do mesmo jeito: esperar a stack prova que o containe
 
 As duas rotas de saúde são públicas e aparecem no `/api/docs-json`, então **são escaneadas ativamente como qualquer outra**. Escondê-las da spec para evitar o scan não é opção: são superfície não autenticada, e é exatamente isso que o scan existe para exercitar.
 
-O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`): alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, três flags de cookie de sessão) e o falso-positivo de XSS refletido em resposta JSON (`40014` — `Content-Type: application/json`, que o navegador nunca executa como HTML).
+O ZAP roda **na rede do compose** (`--network dast_default`, alvo `http://api:3000`) nas duas passagens: alcança a API pelo nome do serviço e escaneia a mesma imagem que o CD entrega — dá paridade com produção e evita o clássico problema de `localhost` resolver para o próprio container do ZAP. O `.zap/rules.tsv` (compartilhado pelas duas passagens) silencia alertas que não se aplicam a uma API stateless com Bearer JWT (ausência de token anti-CSRF, três flags de cookie de sessão) e o falso-positivo de XSS refletido em resposta JSON (`40014` — `Content-Type: application/json`, que o navegador nunca executa como HTML).
 
-O job **falha se o ZAP encontrar problemas** — qualquer alerta não marcado como `IGNORE` faz o `zap-api-scan.py` sair com código diferente de zero e o job fica **vermelho**, como acontece com o SAST. O relatório (HTML + JSON) **não se perde**: sobe como artifact do run mesmo quando o job falha (upload com `if: always()`). O `.zap/rules.tsv` é a alavanca de calibração — os primeiros runs provavelmente ficam vermelhos até você marcar os falsos-positivos como `IGNORE` (se falhar em todo WARN for agressivo demais, dá para usar `-I` e marcar como `FAIL` só as regras que devem bloquear). As credenciais do admin do seed vêm de **secrets do repositório** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`), nunca hardcoded, e são usadas só contra o banco descartável do job. O `zap-api-scan.py` roda por padrão um **scan ativo** afinado para APIs (importa a spec OpenAPI e exercita os endpoints) — como o alvo é sempre a stack efêmera do job, nunca um ambiente real, eventuais escritas são inofensivas.
+O job **falha se qualquer uma das duas passagens do ZAP encontrar problemas** — qualquer alerta não marcado como `IGNORE` faz o `zap-api-scan.py` sair com código diferente de zero e o job fica **vermelho**, como acontece com o SAST. Os relatórios (HTML + JSON, um por passagem) **não se perdem**: sobem como artifacts (`zap-report` e `zap-report-customer`) do run mesmo quando o job falha (upload com `if: always()`). O `.zap/rules.tsv` é a alavanca de calibração — os primeiros runs provavelmente ficam vermelhos até você marcar os falsos-positivos como `IGNORE` (se falhar em todo WARN for agressivo demais, dá para usar `-I` e marcar como `FAIL` só as regras que devem bloquear). As credenciais do admin do seed vêm de **secrets do repositório** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`), nunca hardcoded, e são usadas só contra o banco descartável do job; a segunda passagem não usa senha nenhuma — o job assina o próprio `customer-jwt` com uma chave RS256 gerada e descartada a cada run, isolado da Lambda externa (fora de escopo, ver [testing.md](../testing.md#autenticação-externa-nos-testes-customer-jwt)) exatamente como os testes E2E fazem com `test/helpers/customer-jwt.helper.ts`. O `zap-api-scan.py` roda por padrão um **scan ativo** afinado para APIs (importa a spec OpenAPI e exercita os endpoints) — como o alvo é sempre a stack efêmera do job, nunca um ambiente real, eventuais escritas são inofensivas.
 
 ## Secrets e Variables
 
@@ -157,10 +161,10 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
-| Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para renderizar a `DATABASE_URL` no Secret da aplicação (`01-api-secret.yaml`) |
+| Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para compor a `DATABASE_URL` do Secret da aplicação (`api-secret`, criado via `kubectl create secret`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
-| Secret | `QUOTE_DECISION_TOKEN_SECRET` | `cd.yml` | Assinatura dos tokens de aprovação/rejeição de orçamento enviados por e-mail |
+| Secret | `CUSTOMER_JWT_PUBLIC_KEY` | `cd.yml` | Chave **pública** RS256 usada para verificar o token externo (`customer-jwt`) do Cliente da Oficina — a chave privada correspondente vive na função serverless externa, fora deste repositório. Pode ser cadastrada no formato PEM natural (multilinha); o `db-migrate` cria o Secret via `kubectl create secret --from-literal`, que não exige convertê-la para uma linha só — ver [kubernetes.md](kubernetes.md#convenções-labels-e-wiring-de-configuração) |
 | Variable | `DB_HOST` | `cd.yml` | Endereço DNS do banco RDS (ex: `rds-oficina-mecanica.xxxx.us-east-1.rds.amazonaws.com`) |
 | Variable | `DB_USER` | `cd.yml` | Usuário do banco PostgreSQL (padrão: `techchallenge`) |
 | Variable | `DB_PORT` | `cd.yml` | Porta do PostgreSQL (padrão: `5432`) |
@@ -176,9 +180,11 @@ Os secrets ficam no nível do repositório ou organização porque são consumid
 
 ### Injeção de secrets da aplicação
 
+- Antes de qualquer chamada AWS/kubectl, o job `db-migrate` roda o passo `Validate required secrets`: se `CUSTOMER_JWT_PUBLIC_KEY` não estiver cadastrado (string vazia) ou não contiver `BEGIN PUBLIC KEY`, o job falha imediatamente com `::error::` explicando a causa. Sem essa checagem, a falha só apareceria depois — no pod da API, como um `TypeError: JwtStrategy requires a secret or key` genérico do `passport-jwt`, já em `CrashLoopBackOff`.
 - O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-database`.
-- No workflow de deploy (`cd.yml`), o job `db-migrate` renderiza o manifesto `k8s/01-api-secret.yaml` via `envsubst` com os valores de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, preenchendo a `DATABASE_URL` consumida pela API e pelo Job de migração.
+- No workflow de deploy (`cd.yml`), o job `db-migrate` cria o Secret `api-secret` de forma **imperativa** — `kubectl create secret generic api-secret --from-literal=DATABASE_URL="..." --from-literal=JWT_SECRET="..." ... --dry-run=client -o yaml | kubectl apply -f -` —, compondo a `DATABASE_URL` a partir de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, consumida pela API e pelo Job de migração.
+- O job não renderiza mais `k8s/01-api-secret.yaml` via `envsubst` (esse arquivo continua no repositório só como referência para deploy manual — ver [kubernetes.md](kubernetes.md#deploy-em-kubernetes-manual)). `--from-literal` aceita cada valor exatamente como a variável de ambiente do job o carrega — sem re-escapar quebras de linha —, o que importa para `CUSTOMER_JWT_PUBLIC_KEY`: uma chave PEM colada no formato natural (multilinha) quebraria o YAML gerado por `envsubst`, mas não quebra `--from-literal`.
 - Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:
   - `JWT_SECRET`
   - `JWT_REFRESH_SECRET`
-  - `QUOTE_DECISION_TOKEN_SECRET`
+  - `CUSTOMER_JWT_PUBLIC_KEY`

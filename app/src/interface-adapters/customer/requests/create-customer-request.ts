@@ -14,4 +14,5 @@ export interface CreateCustomerRequest {
   email: string;
   phone: string;
   address: AddressRequest;
+  createAccess?: boolean;
 }

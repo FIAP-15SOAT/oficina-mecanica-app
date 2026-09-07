@@ -13,6 +13,11 @@ import { AppModule } from '../../src/app.module';
 import { configureApp } from '../../src/infrastructure/config/app-bootstrap';
 import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
 import { LOGGER_DESTINATION, LOGGER_LEVEL } from '../../src/infrastructure/logging/logging.module';
+import {
+  CUSTOMER_JWT_TEST_PUBLIC_KEY,
+  CUSTOMER_JWT_TEST_ISSUER,
+  CUSTOMER_JWT_TEST_AUDIENCE,
+} from './customer-jwt.helper';
 
 export interface LogCapture {
   lines(): Record<string, unknown>[];
@@ -90,7 +95,9 @@ export async function setupTestApp(options: SetupTestAppOptions = {}): Promise<T
   process.env.JWT_EXPIRATION = '15m';
   process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-for-e2e';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
-  process.env.QUOTE_DECISION_TOKEN_SECRET = 'test-jwt-secret-key-for-e2e';
+  process.env.CUSTOMER_JWT_PUBLIC_KEY = CUSTOMER_JWT_TEST_PUBLIC_KEY;
+  process.env.CUSTOMER_JWT_ISSUER = CUSTOMER_JWT_TEST_ISSUER;
+  process.env.CUSTOMER_JWT_AUDIENCE = CUSTOMER_JWT_TEST_AUDIENCE;
 
   execSync('npx prisma migrate deploy', {
     env: { ...process.env },

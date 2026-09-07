@@ -14,6 +14,8 @@ import { PrismaStockMovementRepository } from './prisma-stock-movement.repositor
 import { PrismaPartSupplyRepository } from './prisma-part-supply.repository';
 import { PrismaServiceRepository } from './prisma-service.repository';
 import { PrismaUserRepository } from './prisma-user.repository';
+import { PrismaUserCustomerRepository } from './prisma-user-customer.repository';
+import { PrismaPasswordResetCodeRepository } from './prisma-password-reset-code.repository';
 
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
@@ -32,6 +34,8 @@ export class PrismaUnitOfWork implements IUnitOfWork {
         partSupply: new PrismaPartSupplyRepository(tx as unknown as PrismaService),
         service: new PrismaServiceRepository(tx as unknown as PrismaService),
         user: new PrismaUserRepository(tx as unknown as PrismaService),
+        userCustomer: new PrismaUserCustomerRepository(tx as unknown as PrismaService),
+        passwordResetCode: new PrismaPasswordResetCodeRepository(tx as unknown as PrismaService),
       };
 
       return work(repositories);

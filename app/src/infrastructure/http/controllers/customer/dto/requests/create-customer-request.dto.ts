@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -9,6 +9,8 @@ import {
   Matches,
   ValidateNested,
   Length,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { CustomerType } from '@domain/enums/customer-type.enum';
@@ -90,4 +92,12 @@ export class CreateCustomerRequestDto {
   @ValidateNested()
   @Type(() => AddressRequestDto)
   address!: AddressRequestDto;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Concede acesso externo automaticamente (padrão true para INDIVIDUAL)',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'createAccess deve ser um booleano.' })
+  createAccess?: boolean;
 }

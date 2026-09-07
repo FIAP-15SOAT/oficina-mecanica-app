@@ -9,7 +9,7 @@ import {
   UpdateQuoteStatusDto,
 } from '@application/ports/input/quote/update-quote-status.use-case.interface';
 
-import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 
 export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
   constructor(
@@ -23,9 +23,7 @@ export class UpdateQuoteStatusUseCase implements IUpdateQuoteStatusUseCase {
     }
 
     if (!dto.reason) {
-      throw new BusinessRuleViolationException(
-        'A justificativa é obrigatória para rejeitar um orçamento.',
-      );
+      throw new BadRequestException('A justificativa é obrigatória para rejeitar um orçamento.');
     }
 
     return this.rejectQuoteUseCase.execute(quoteId, dto.reason, userId);

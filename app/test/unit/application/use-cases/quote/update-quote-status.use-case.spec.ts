@@ -1,7 +1,7 @@
 import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-quote-status.use-case';
 import { IApproveQuoteUseCase } from '@application/ports/input/quote/approve-quote.use-case.interface';
 import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
-import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
+import { BadRequestException } from '@application/exceptions/bad-request.exception';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { createMockQuote } from '../../../../helpers/quote-mock.factory';
 import { randomUUID } from 'node:crypto';
@@ -46,12 +46,12 @@ describe('UpdateQuoteStatusUseCase', () => {
     expect(rejectQuoteUseCase.execute).toHaveBeenCalledWith(quoteId, reason, userId);
   });
 
-  it('should throw BusinessRuleViolationException when status is REJECTED and reason is missing', async () => {
+  it('should throw BadRequestException when status is REJECTED and reason is missing', async () => {
     const quoteId = randomUUID();
     const userId = randomUUID();
 
     await expect(
       useCase.execute(quoteId, userId, { status: QuoteStatus.REJECTED }),
-    ).rejects.toThrow(BusinessRuleViolationException);
+    ).rejects.toThrow(BadRequestException);
   });
 });

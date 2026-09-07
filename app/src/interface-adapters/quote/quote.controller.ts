@@ -7,7 +7,6 @@ import { IRemoveQuotePartSupplyUseCase } from '@application/ports/input/quote/re
 import { IUpdateQuoteServiceQuantityUseCase } from '@application/ports/input/quote/update-quote-service-quantity.use-case.interface';
 import { IUpdateQuotePartSupplyQuantityUseCase } from '@application/ports/input/quote/update-quote-part-supply-quantity.use-case.interface';
 import { ISubmitQuoteUseCase } from '@application/ports/input/quote/submit-quote.use-case.interface';
-import { IEmailDecisionQuoteUseCase } from '@application/ports/input/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@application/ports/input/quote/update-quote-status.use-case.interface';
 import { IFindAllQuotesPaginatedUseCase } from '@application/ports/input/quote/find-all-quotes-paginated.use-case.interface';
 
@@ -37,7 +36,6 @@ export class QuoteController {
     private readonly updateQuoteServiceQuantityUseCase: IUpdateQuoteServiceQuantityUseCase,
     private readonly updateQuotePartSupplyQuantityUseCase: IUpdateQuotePartSupplyQuantityUseCase,
     private readonly submitQuoteUseCase: ISubmitQuoteUseCase,
-    private readonly emailDecisionQuoteUseCase: IEmailDecisionQuoteUseCase,
     private readonly updateQuoteStatusUseCase: IUpdateQuoteStatusUseCase,
     private readonly findAllQuotesPaginatedUseCase: IFindAllQuotesPaginatedUseCase,
   ) {}
@@ -120,11 +118,6 @@ export class QuoteController {
     input: UpdateQuoteStatusRequest,
   ): Promise<QuoteDataResponse> {
     const quote = await this.updateQuoteStatusUseCase.execute(id, userId, input);
-    return QuotePresenter.toDataResponse(quote);
-  }
-
-  async emailDecision(id: string, token: string): Promise<QuoteDataResponse> {
-    const quote = await this.emailDecisionQuoteUseCase.execute(id, token);
     return QuotePresenter.toDataResponse(quote);
   }
 }

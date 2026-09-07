@@ -25,9 +25,13 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 |---|---|---|---|
 | POST | `/login` | Autenticar e obter tokens (access + refresh) | Público |
 | POST | `/refresh` | Renovar tokens com refresh token | Público |
-| GET | `/me` | Dados do usuário autenticado | JWT |
+| POST | `/password-reset-confirmations` | Confirmar redefinição de senha com código numérico de 6 dígitos (`email`, `code`, `newPassword`) emitido por um Admin — ver `POST /users/:userId/password-resets` | Público |
+
+> `GET /auth/me` foi **substituído** por `GET /me` (ver seção **Minha Conta** abaixo), que aceita tanto o token interno (`jwt`) quanto o externo (`customer-jwt`) e devolve a identidade do sujeito autenticado independentemente do fluxo.
 
 > `POST /auth/refresh` responde **401** com a mensagem única `Refresh token inválido ou expirado` para todas as causas de falha — token inválido ou expirado, usuário inexistente e usuário desativado. A resposta é deliberadamente idêntica nos três casos para não revelar se o usuário existe; a causa fica registrada apenas no log (ver [Segurança](security.md#proteção-de-dados-nos-logs)).
+
+> `POST /auth/password-reset-confirmations` responde **401** com a mensagem única `Código de redefinição inválido ou expirado` para todas as causas de falha — usuário inexistente, nenhum código emitido, código expirado (10 minutos), código esgotado (5 tentativas) ou código incorreto —, pelo mesmo motivo de não revelar a causa exata.
 
 ---
 
@@ -35,14 +39,15 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/` | Criar usuário (senha exige maiúscula, minúscula, número e caractere especial) | ADMIN |
+| POST | `/` | Criar usuário (`name`, `email`, `role`, `cpf` opcional) — **não recebe senha**: uma senha aleatória forte é gerada e enviada por e-mail ao usuário | ADMIN |
 | GET | `/` | Listar (paginado; filtros: `name`, `role`) | ADMIN |
 | GET | `/:id` | Buscar por ID | ADMIN |
-| PUT | `/:id` | Atualizar dados | ADMIN |
+| PUT | `/:id` | Atualizar dados (também sem campo de senha) | ADMIN |
 | PATCH | `/:id` | Alterar status (ativo/inativo) via `{ active: boolean }` | ADMIN |
 | DELETE | `/:id` | Remover | ADMIN |
+| POST | `/:userId/password-resets` | Emitir código numérico de 6 dígitos para redefinição de senha, enviado por e-mail ao usuário (válido por 10 minutos, 5 tentativas) — confirmado em `POST /auth/password-reset-confirmations` | ADMIN |
 
-> A força mínima da senha é definida em `domain/constants/regex/password.regex.ts` e validada **na camada de domínio** (`User.validatePasswordStrength`) além do `@Matches(PASSWORD_REGEX)` aplicado no DTO.
+> A força mínima da senha é definida em `domain/constants/regex/password.regex.ts` e validada **na camada de domínio** (`User.validatePasswordStrength`). Isso vale tanto para a senha inicial gerada em `POST /users` quanto para a nova senha em `PATCH /me/password` e `POST /auth/password-reset-confirmations`.
 
 ---
 
@@ -84,12 +89,26 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
-| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório) | ADMIN, ATTENDANT |
+| POST | `/` | Cadastrar cliente (CPF ou CNPJ, endereço obrigatório). Aceita `createAccess?: boolean` — concede acesso externo automaticamente reaproveitando o caso de uso de `POST /customers/:id/users`. Default: `true` para `INDIVIDUAL`, sempre `false` para `COMPANY` (`createAccess: true` com `COMPANY` é rejeitado com **409**) | ADMIN, ATTENDANT |
 | GET | `/` | Listar (paginado; filtros: `name`, `type`, `document`) | ADMIN, ATTENDANT |
 | GET | `/:id` | Buscar por ID | ADMIN, ATTENDANT |
 | GET | `/:id/vehicles` | Listar veículos do cliente | ADMIN, ATTENDANT |
 | PUT | `/:id` | Atualizar dados (incluindo endereço) | ADMIN, ATTENDANT |
 | DELETE | `/:id` | Remover (bloqueado se houver veículos vinculados) | ADMIN, ATTENDANT |
+
+---
+
+**Acesso Externo de Clientes** (`/api/customers/:customerId/users`, `/api/users/:userId/customers`) — *ADMIN, ATTENDANT*
+
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| POST | `/customers/:customerId/users` | Conceder acesso externo a um cliente. Para `Customer.type = INDIVIDUAL`, vincula o próprio cliente (usa CPF/e-mail do cadastro); para `COMPANY`, exige `name` + `email` + `cpf` do operador que vai representar a empresa. Se o CPF já pertence a um `User` existente, **reaproveita** essa conta (mesma pessoa física) e só cria o vínculo — sem senha inicial, sem alterar nome/e-mail/role da conta; caso contrário, cria um `User` novo e envia a senha inicial por e-mail. Se o e-mail já pertencer a **outro** usuário (interno ou externo) que não é o dono do CPF informado, retorna **409** — ver [ADR 0004](adr/0004-autenticacao-de-clientes.md) | ADMIN, ATTENDANT |
+| GET | `/customers/:customerId/users` | Listar usuários com acesso a um cliente | ADMIN, ATTENDANT |
+| DELETE | `/customers/:customerId/users/:userId` | Revogar o vínculo de um usuário com um cliente — efeito imediato, sem lista de revogação de token | ADMIN, ATTENDANT |
+| PATCH | `/customers/:customerId` | Ativar (`isActive: true`) ou desativar (`isActive: false`) um cliente. Cliente inativo perde acesso a `/api/me/*` imediatamente | ADMIN, ATTENDANT |
+| GET | `/users/:userId/customers` | Listar os clientes vinculados a um usuário | ADMIN, ATTENDANT |
+
+> Ver [Identidade externa, autenticação e autorização por vínculo](architecture.md#identidade-externa-autenticação-e-autorização-por-vínculo) para o modelo `User`/`Customer`/`UserCustomer`.
 
 ---
 
@@ -137,9 +156,9 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | POST | `/:id/parts-supplies` | Adicionar peça/insumo ao orçamento — body `{ partSupplyId, quantity }` | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id/parts-supplies/:partSupplyId` | Atualizar quantidade de peça/insumo | ADMIN, MECHANIC, ATTENDANT |
 | DELETE | `/:id/parts-supplies/:partSupplyId` | Remover peça/insumo do orçamento | ADMIN, MECHANIC, ATTENDANT |
-| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail com links assinados). Exige a OS já diagnosticada (nunca `RECEIVED` → 409); permite orçamentos concorrentes (vários `SENT` na mesma OS). | ADMIN, MECHANIC, ATTENDANT |
+| POST | `/:id/submissions` | Enviar orçamento para aprovação do cliente (envia e-mail notificando o cliente, sem link de decisão — a decisão exige autenticação, ver **Minha Conta** abaixo). Exige a OS já diagnosticada (nunca `RECEIVED` → 409); permite orçamentos concorrentes (vários `SENT` na mesma OS). | ADMIN, MECHANIC, ATTENDANT |
 | PATCH | `/:id` | Aprovar (`status=APPROVED`) ou rejeitar (`status=REJECTED` + `reason`) manualmente | ADMIN, ATTENDANT |
-| GET | `/:id/decisions` | Aprovar/rejeitar via link de e-mail (token assinado) — `?token=...` (a ação é derivada do payload do token) | Público |
+> A rota pública `GET /quotes/:id/decisions?token=...` (decisão via link assinado por e-mail) foi **removida**. A decisão do Cliente da Oficina agora exige autenticação — ver **Minha Conta** abaixo.
 
 > Itens só podem ser modificados enquanto o orçamento estiver `PENDING`. A aprovação reserva estoque, materializa itens na OS, transiciona a OS para `APPROVED` e rejeita os demais orçamentos pendentes/enviados da mesma OS (propostas concorrentes). A rejeição só leva a OS a `REJECTED` quando não há outro orçamento `SENT`; havendo, a OS permanece `AWAITING_APPROVAL`. As listagens (`GET /quotes` e `GET /work-orders/:id/quotes`) intencionalmente omitem os itens — apenas `GET /quotes/:id` retorna o orçamento com seus itens.
 
@@ -177,6 +196,22 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 > São **públicas por requisito**: um orquestrador não porta credencial de aplicação, e condicionar as probes a um token tornaria a saúde indisponível justamente quando a autenticação estiver comprometida. A proteção é de rede — o Service é `ClusterIP`, sem Ingress —, não por credencial. Detalhes da postura em [Segurança](security.md#endpoints-de-saúde-públicos-e-não-autenticados).
 >
 > `/live` **não tem** o desfecho `503`: ele não verifica dependência alguma. Com o banco fora, `/live` continua `200` e só `/ready` responde `503` — a instância está viva, apenas não consegue atender. Como o PostgreSQL é **compartilhado por todas as réplicas**, uma indisponibilidade dele deixa o Service sem endpoints em vez de desviar tráfego; isso é comportamento esperado, não defeito. O valor da readiness está na falha **por-réplica** (pool travado numa instância) e no encerramento gracioso.
+
+---
+
+**Minha Conta** (`/api/me`) — Cliente da Oficina (usuário externo)
+
+| Método | Rota | Descrição | Acesso |
+|---|---|---|---|
+| GET | `/` | Identidade do sujeito autenticado — funciona com token interno **ou** externo. `customers` lista só as empresas (`COMPANY`) que o usuário representa; fica vazio para quem só acessa o próprio cadastro pessoa física (o cadastro `INDIVIDUAL` não aparece ali por ser o próprio usuário, não alguém que ele representa) | JWT interno OU `customer-jwt` |
+| PATCH | `/password` | Trocar a própria senha (`currentPassword`, `newPassword`) — funciona com token interno **ou** externo | JWT interno OU `customer-jwt` |
+| GET | `/work-orders` | Listar ordens de serviço dos clientes vinculados ao usuário autenticado (paginado; filtro opcional `customerId`). Cada item traz `customer: { id, name, type }` — necessário para quem representa mais de uma empresa distinguir a qual cliente cada ordem pertence | `customer-jwt` |
+| GET | `/work-orders/:workOrderId` | Detalhe de uma ordem de serviço vinculada, incluindo `customer: { id, name, type }` | `customer-jwt` |
+| GET | `/work-orders/:workOrderId/quotes` | Orçamentos de uma ordem de serviço vinculada | `customer-jwt` |
+| GET | `/quotes/:quoteId` | Orçamento e itens de uma ordem vinculada | `customer-jwt` |
+| POST | `/quotes/:quoteId/decisions` | Aprovar (`{ "action": "approve" }`) ou rejeitar (`{ "action": "reject", "reason": "..." }`) um orçamento vinculado | `customer-jwt` |
+
+> O token `customer-jwt` (RS256) é emitido por uma **função serverless externa** a esta aplicação, após autenticar o Cliente da Oficina por CPF + senha — a API só verifica a assinatura com `CUSTOMER_JWT_PUBLIC_KEY`. Toda rota `/api/me/*` que aponta a um recurso específico (`workOrderId`/`quoteId`) resolve a autorização **por vínculo** a cada requisição, consultando `UserCustomer` no banco — o token nunca carrega `customerId`. Um recurso inexistente e um recurso de um cliente não vinculado respondem igualmente **404** (nunca 403), para não virar oráculo de enumeração. Ver [Identidade externa, autenticação e autorização por vínculo](architecture.md#identidade-externa-autenticação-e-autorização-por-vínculo).
 
 ---
 

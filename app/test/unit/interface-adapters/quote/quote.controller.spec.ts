@@ -16,7 +16,6 @@ import { IRemoveQuotePartSupplyUseCase } from '@application/ports/input/quote/re
 import { IUpdateQuoteServiceQuantityUseCase } from '@application/ports/input/quote/update-quote-service-quantity.use-case.interface';
 import { IUpdateQuotePartSupplyQuantityUseCase } from '@application/ports/input/quote/update-quote-part-supply-quantity.use-case.interface';
 import { ISubmitQuoteUseCase } from '@application/ports/input/quote/submit-quote.use-case.interface';
-import { IEmailDecisionQuoteUseCase } from '@application/ports/input/quote/email-decision-quote.use-case.interface';
 import { IUpdateQuoteStatusUseCase } from '@application/ports/input/quote/update-quote-status.use-case.interface';
 import { IFindAllQuotesPaginatedUseCase } from '@application/ports/input/quote/find-all-quotes-paginated.use-case.interface';
 
@@ -45,7 +44,6 @@ describe('QuoteController', () => {
   let updateQuoteServiceQuantityUseCase: jest.Mocked<IUpdateQuoteServiceQuantityUseCase>;
   let updateQuotePartSupplyQuantityUseCase: jest.Mocked<IUpdateQuotePartSupplyQuantityUseCase>;
   let submitQuoteUseCase: jest.Mocked<ISubmitQuoteUseCase>;
-  let emailDecisionQuoteUseCase: jest.Mocked<IEmailDecisionQuoteUseCase>;
   let updateQuoteStatusUseCase: jest.Mocked<IUpdateQuoteStatusUseCase>;
   let findAllQuotesPaginatedUseCase: jest.Mocked<IFindAllQuotesPaginatedUseCase>;
 
@@ -59,7 +57,6 @@ describe('QuoteController', () => {
     updateQuoteServiceQuantityUseCase = { execute: jest.fn() };
     updateQuotePartSupplyQuantityUseCase = { execute: jest.fn() };
     submitQuoteUseCase = { execute: jest.fn() };
-    emailDecisionQuoteUseCase = { execute: jest.fn() };
     updateQuoteStatusUseCase = { execute: jest.fn() };
     findAllQuotesPaginatedUseCase = { execute: jest.fn() };
 
@@ -73,7 +70,6 @@ describe('QuoteController', () => {
       updateQuoteServiceQuantityUseCase,
       updateQuotePartSupplyQuantityUseCase,
       submitQuoteUseCase,
-      emailDecisionQuoteUseCase,
       updateQuoteStatusUseCase,
       findAllQuotesPaginatedUseCase,
     );
@@ -221,19 +217,6 @@ describe('QuoteController', () => {
 
     expect(result).toEqual(QuotePresenter.toDataResponse(quote));
     expect(updateQuoteStatusUseCase.execute).toHaveBeenCalledWith(id, userId, dto);
-  });
-
-  it('should handle email decision', async () => {
-    const id = randomUUID();
-    const token = 'token123';
-    const quote = buildMockQuoteWithWorkOrder();
-
-    emailDecisionQuoteUseCase.execute.mockResolvedValue(quote);
-
-    const result = await controller.emailDecision(id, token);
-
-    expect(result).toEqual(QuotePresenter.toDataResponse(quote));
-    expect(emailDecisionQuoteUseCase.execute).toHaveBeenCalledWith(id, token);
   });
 
   it('should list all quotes paginated', async () => {

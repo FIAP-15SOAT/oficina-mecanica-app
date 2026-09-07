@@ -41,7 +41,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Novo Usuário',
           email: 'novo@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -55,6 +54,8 @@ describe('User (E2E)', () => {
           isActive: true,
         }),
       );
+      expect(res.body.data).not.toHaveProperty('password');
+      expect(res.body.data).not.toHaveProperty('passwordHash');
     });
 
     it('should return 409 when creating user with duplicate email', async () => {
@@ -64,7 +65,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'User A',
           email: 'dup@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -75,7 +75,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'User B',
           email: 'dup@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(409);
@@ -85,32 +84,15 @@ describe('User (E2E)', () => {
       await request(httpServer)
         .post('/api/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ name: 'ab', email: 'bad', password: '12' })
+        .send({ name: 'ab', email: 'bad' })
         .expect(400);
-    });
-
-    it('should return 400 when password does not meet the strength policy', async () => {
-      const res = await request(httpServer)
-        .post('/api/users')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({
-          name: 'Senha Fraca',
-          email: 'fraca@e2e.test',
-          password: '12345678',
-          role: 'MECHANIC',
-        })
-        .expect(400);
-
-      expect(res.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('caractere especial')]),
-      );
     });
 
     it('should return 400 when name is shorter than the minimum length', async () => {
       await request(httpServer)
         .post('/api/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ name: 'ab', email: 'shortname@e2e.test', password: 'Senha@123', role: 'MECHANIC' })
+        .send({ name: 'ab', email: 'shortname@e2e.test', role: 'MECHANIC' })
         .expect(400);
     });
 
@@ -121,7 +103,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'a'.repeat(151),
           email: 'longname@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(400);
@@ -131,15 +112,7 @@ describe('User (E2E)', () => {
       await request(httpServer)
         .post('/api/users')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ name: 'Valid Name', email: 'notanemail', password: 'Senha@123', role: 'MECHANIC' })
-        .expect(400);
-    });
-
-    it('should return 400 when password is shorter than the minimum length', async () => {
-      await request(httpServer)
-        .post('/api/users')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ name: 'Valid Name', email: 'valid@e2e.test', password: 'ab', role: 'MECHANIC' })
+        .send({ name: 'Valid Name', email: 'notanemail', role: 'MECHANIC' })
         .expect(400);
     });
 
@@ -150,8 +123,20 @@ describe('User (E2E)', () => {
         .send({
           name: 'Valid Name',
           email: 'valid@e2e.test',
-          password: 'Senha@123',
           role: 'INVALID',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 when a password field is sent (no longer accepted)', async () => {
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          name: 'Valid Name',
+          email: 'unexpectedfield@e2e.test',
+          role: 'MECHANIC',
+          password: 'Senha@123',
         })
         .expect(400);
     });
@@ -162,7 +147,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'No Auth',
           email: 'noauth@e2e.test',
-          password: 'Senha@123',
         })
         .expect(401);
     });
@@ -184,7 +168,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Forbidden',
           email: 'forbidden@e2e.test',
-          password: 'Senha@123',
         })
         .expect(403);
     });
@@ -221,7 +204,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Mechanic Test',
           email: 'mech@test.com',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -245,7 +227,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'UniqueName Search',
           email: 'unique@test.com',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -291,7 +272,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Find Me',
           email: 'findme@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -334,7 +314,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Update Me',
           email: 'updateme@e2e.test',
-          password: 'Senha@123',
           role: 'ATTENDANT',
         })
         .expect(201);
@@ -383,7 +362,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Other',
           email: 'other@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -403,31 +381,6 @@ describe('User (E2E)', () => {
         .expect(200);
 
       expect(res.body.data.email).toBe('newemail@e2e.test');
-    });
-
-    it('should update user password and allow login with new password', async () => {
-      await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'NewPassword@123' })
-        .expect(200);
-
-      await request(httpServer)
-        .post('/api/auth/login')
-        .send({ email: 'updateme@e2e.test', password: 'NewPassword@123' })
-        .expect(200);
-    });
-
-    it('should return 400 when updating to a password that does not meet the strength policy', async () => {
-      const res = await request(httpServer)
-        .put(`/api/users/${userId}`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ password: 'fraquinha' })
-        .expect(400);
-
-      expect(res.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('caractere especial')]),
-      );
     });
 
     it('should update with the same email, skipping the duplicate check', async () => {
@@ -456,7 +409,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Status User',
           email: 'status@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);
@@ -538,7 +490,6 @@ describe('User (E2E)', () => {
         .send({
           name: 'Delete Me',
           email: 'deleteme@e2e.test',
-          password: 'Senha@123',
           role: 'MECHANIC',
         })
         .expect(201);

@@ -20,8 +20,8 @@ export class CustomerController {
     private readonly deleteCustomerUseCase: IDeleteCustomerUseCase,
   ) {}
 
-  async create(input: CreateCustomerRequest): Promise<CustomerDataResponse> {
-    const customer = await this.createCustomerUseCase.execute(input);
+  async create(input: CreateCustomerRequest, actingUserId: string): Promise<CustomerDataResponse> {
+    const customer = await this.createCustomerUseCase.execute(input, actingUserId);
     return CustomerPresenter.toDataResponse(customer);
   }
 

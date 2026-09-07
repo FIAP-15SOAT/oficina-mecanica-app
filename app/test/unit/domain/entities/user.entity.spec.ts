@@ -164,6 +164,17 @@ describe('User Entity', () => {
       expect(() => user.changePassword('')).toThrow(DomainValidationException);
       expect(() => user.changePassword('')).toThrow('Hash de senha não pode ser vazio');
     });
+
+    it('should update passwordChangedAt so tokens issued before this point stop being honored', () => {
+      const user = User.create(validProps);
+      const previousPasswordChangedAt = user.passwordChangedAt;
+
+      user.changePassword('$2b$12$newhash');
+
+      expect(user.passwordChangedAt.getTime()).toBeGreaterThanOrEqual(
+        previousPasswordChangedAt.getTime(),
+      );
+    });
   });
 
   describe('validatePasswordStrength', () => {
@@ -251,7 +262,9 @@ describe('User Entity', () => {
         email: Email.create('usuario@email.com'),
         passwordHash: 'secret-hash',
         role: UserRole.ADMIN,
+        cpf: null,
         isActive: true,
+        passwordChangedAt: now,
         createdAt: now,
         updatedAt: now,
       });
@@ -268,6 +281,65 @@ describe('User Entity', () => {
         updatedAt: now,
       });
       expect(view).not.toHaveProperty('passwordHash');
+    });
+  });
+
+  describe('create with cpf and null role', () => {
+    it('should create an externally-only user with role null', () => {
+      const user = User.create({ ...validProps, role: null });
+
+      expect(user.role).toBeNull();
+    });
+
+    it('should create a user with a valid cpf', () => {
+      const user = User.create({ ...validProps, cpf: '12345678909' });
+
+      expect(user.cpf?.value).toBe('12345678909');
+    });
+
+    it('should normalize a formatted cpf to digits only', () => {
+      const user = User.create({ ...validProps, cpf: '123.456.789-09' });
+
+      expect(user.cpf?.value).toBe('12345678909');
+    });
+
+    it('should default cpf to null when not provided', () => {
+      const user = User.create(validProps);
+
+      expect(user.cpf).toBeNull();
+    });
+
+    it('should throw for an invalid cpf', () => {
+      expect(() => User.create({ ...validProps, cpf: '11111111111' })).toThrow(
+        DomainValidationException,
+      );
+      expect(() => User.create({ ...validProps, cpf: '11111111111' })).toThrow('CPF inválido');
+    });
+
+    it('should throw when cpf is provided but contains no digits', () => {
+      expect(() => User.create({ ...validProps, cpf: 'abc' })).toThrow(DomainValidationException);
+      expect(() => User.create({ ...validProps, cpf: 'abc' })).toThrow('CPF inválido');
+    });
+  });
+
+  describe('assignCpf', () => {
+    it('should assign cpf to a user without one', () => {
+      const user = User.create(validProps);
+      user.assignCpf('123.456.789-09');
+
+      expect(user.cpf?.value).toBe('12345678909');
+    });
+
+    it('should throw when the user already has a cpf', () => {
+      const user = User.create({ ...validProps, cpf: '12345678909' });
+
+      expect(() => user.assignCpf('98765432100')).toThrow('Usuário já possui CPF cadastrado');
+    });
+
+    it('should throw for an invalid cpf', () => {
+      const user = User.create(validProps);
+
+      expect(() => user.assignCpf('11111111111')).toThrow('CPF inválido');
     });
   });
 });

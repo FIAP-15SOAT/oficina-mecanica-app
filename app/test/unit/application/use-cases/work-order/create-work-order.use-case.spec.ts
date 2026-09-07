@@ -338,6 +338,21 @@ describe('CreateWorkOrderUseCase', () => {
     expect(mockRepos.quote.create).not.toHaveBeenCalled();
   });
 
+  it('should reject creating a work order for an inactive customer', async () => {
+    const customer = createMockCustomer();
+    customer.deactivate();
+    const vehicle = createMockVehicle({ customerId: customer.id });
+
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+
+    await expect(
+      useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, userId: randomUUID() }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+
+    expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
+  });
+
   it('should throw BusinessRuleViolationException on duplicate service id — no resolution, no number consumed', async () => {
     const customer = createMockCustomer();
     const vehicle = createMockVehicle({ customerId: customer.id });

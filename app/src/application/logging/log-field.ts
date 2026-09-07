@@ -5,7 +5,6 @@ export type LogicalFieldName =
   | 'failureReason'
   | 'quoteId'
   | 'previousQuoteStatus'
-  | 'quoteDecisionFailureReason'
   | 'workOrderId'
   | 'workOrderNumber'
   | 'workOrderStatusChanged'
@@ -36,6 +35,12 @@ export type LogicalFieldName =
   | 'mailErrorCategory'
   | 'dependencyName'
   | 'healthFailureCategory'
-  | 'healthDegradedDurationMs';
+  | 'healthDegradedDurationMs'
+  | 'customerId'
+  | 'customerActive'
+  | 'accessUserCreated'
+  | 'initialPasswordSent'
+  | 'externalAccessFailureReason'
+  | 'resetOutcome';
 
 export type LogFields = Partial<Record<LogicalFieldName, unknown>>;

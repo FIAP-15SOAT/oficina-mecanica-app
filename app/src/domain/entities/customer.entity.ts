@@ -33,6 +33,7 @@ interface CustomerProps {
   email: Email;
   phone: Phone;
   address: Address | null;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +46,7 @@ export class Customer {
   email: Email;
   phone: Phone;
   address: Address | null;
+  isActive: boolean;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -56,6 +58,7 @@ export class Customer {
     this.email = props.email;
     this.phone = props.phone;
     this.address = props.address;
+    this.isActive = props.isActive;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -75,6 +78,7 @@ export class Customer {
       email: Email.create(props.email),
       phone: Phone.create(props.phone),
       address: Address.create(props.address),
+      isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -89,6 +93,22 @@ export class Customer {
     this.email = Email.create(props.email);
     this.phone = Phone.create(props.phone);
     this.address = Address.create(props.address);
+    this.updatedAt = new Date();
+  }
+
+  activate(): void {
+    if (this.isActive) {
+      throw new DomainValidationException('Cliente já está ativo');
+    }
+    this.isActive = true;
+    this.updatedAt = new Date();
+  }
+
+  deactivate(): void {
+    if (!this.isActive) {
+      throw new DomainValidationException('Cliente já está desativado');
+    }
+    this.isActive = false;
     this.updatedAt = new Date();
   }
 

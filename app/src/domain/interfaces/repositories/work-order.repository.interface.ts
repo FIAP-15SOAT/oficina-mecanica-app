@@ -8,6 +8,7 @@ import { PaginatedRepositoryResult, PaginationInput } from '../common/pagination
 export interface WorkOrderFilters {
   number?: string;
   customerId?: string;
+  customerIdIn?: string[];
   vehicleId?: string;
   assignedUserId?: string;
   status?: WorkOrderStatus;

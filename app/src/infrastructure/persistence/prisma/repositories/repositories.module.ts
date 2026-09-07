@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 
 import { PrismaUserRepository } from './prisma-user.repository';
+import { PrismaUserCustomerRepository } from './prisma-user-customer.repository';
+import { PrismaPasswordResetCodeRepository } from './prisma-password-reset-code.repository';
 import { PrismaCustomerRepository } from './prisma-customer.repository';
 import { PrismaVehicleRepository } from './prisma-vehicle.repository';
 import { PrismaPartSupplyRepository } from './prisma-part-supply.repository';
@@ -14,6 +16,8 @@ import { PrismaUnitOfWork } from './prisma-unit-of-work';
 
 const REPOSITORY_PROVIDERS = [
   { provide: 'IUserRepository', useClass: PrismaUserRepository },
+  { provide: 'IUserCustomerRepository', useClass: PrismaUserCustomerRepository },
+  { provide: 'IPasswordResetCodeRepository', useClass: PrismaPasswordResetCodeRepository },
   { provide: 'ICustomerRepository', useClass: PrismaCustomerRepository },
   { provide: 'IVehicleRepository', useClass: PrismaVehicleRepository },
   { provide: 'IPartSupplyRepository', useClass: PrismaPartSupplyRepository },

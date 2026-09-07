@@ -6,6 +6,7 @@ export interface CustomerFilters {
   name?: string;
   type?: CustomerType;
   document?: string;
+  active?: boolean;
 }
 
 export interface ICustomerRepository {
@@ -20,4 +21,5 @@ export interface ICustomerRepository {
   update(customer: Customer): Promise<Customer>;
   delete(id: string): Promise<void>;
   isCustomerInUse(id: string): Promise<boolean>;
+  hasWorkOrders(id: string): Promise<boolean>;
 }

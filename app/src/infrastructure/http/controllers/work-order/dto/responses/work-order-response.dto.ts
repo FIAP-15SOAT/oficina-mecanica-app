@@ -87,8 +87,13 @@ export class WorkOrderAssignedUserResponseDto implements WorkOrderAssignedUserRe
   @ApiProperty({ description: 'E-mail do Usuário', example: 'carlos@oficina.com' })
   email!: string;
 
-  @ApiProperty({ enum: UserRole, description: 'Perfil de acesso', example: UserRole.MECHANIC })
-  role!: UserRole;
+  @ApiProperty({
+    enum: UserRole,
+    description: 'Perfil de acesso',
+    example: UserRole.MECHANIC,
+    nullable: true,
+  })
+  role!: UserRole | null;
 }
 
 export class WorkOrderServiceItemResponseDto implements WorkOrderServiceItemResponse {

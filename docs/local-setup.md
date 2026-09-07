@@ -74,11 +74,10 @@ JWT_REFRESH_SECRET=your-refresh-secret-key
 JWT_REFRESH_EXPIRATION=7d
 BCRYPT_SALT_ROUNDS=12
 
-# Token assinado para o link público de decisão de orçamento (e-mail)
-QUOTE_DECISION_TOKEN_SECRET=your-quote-decision-secret-key
-# Opcional — base URL usada para montar os links enviados por e-mail
-# (default: http://localhost:${PORT}/api)
-# QUOTE_DECISION_BASE_URL=https://api.suaempresa.com/api
+# Autenticação do Cliente (via função serverless externa)
+CUSTOMER_JWT_PUBLIC_KEY=your-rs256-public-key-pem
+CUSTOMER_JWT_ISSUER=oficina-customer-auth
+CUSTOMER_JWT_AUDIENCE=oficina-api
 
 # CORS — separar múltiplas origens por vírgula
 ALLOWED_ORIGINS=http://localhost:3000
@@ -100,7 +99,26 @@ OTEL_SERVICE_NAMESPACE=oficina-mecanica
 
 `SERVICE_VERSION` **não** é configurada por env em desenvolvimento: ela é assada na imagem (`ARG SERVICE_VERSION` no `Dockerfile`, alimentado pelo `github.sha` no `cd.yml`) e cai para `dev` fora do contêiner. `deployment.environment.name` reaproveita o `NODE_ENV` já existente — não há variável nova para ambiente.
 
-> **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
+> **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `CUSTOMER_JWT_PUBLIC_KEY`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
+
+### `CUSTOMER_JWT_PUBLIC_KEY` é metade de um par
+
+A chave pública configurada aqui precisa corresponder à chave **privada** carregada pela [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) — são as duas metades do mesmo par RS256, geradas juntas:
+
+```bash
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out customer-auth-private.pem
+openssl rsa -pubout -in customer-auth-private.pem -out customer-auth-public.pem
+```
+
+A pública (`customer-auth-public.pem`) vai em `CUSTOMER_JWT_PUBLIC_KEY` aqui; a privada (`customer-auth-private.pem`) vai em `CUSTOMER_JWT_PRIVATE_KEY` na lambda — **nunca** o inverso, e a privada nunca entra neste repositório. Como o `.env` não transporta quebra de linha, registre a chave com `\n` escapado no lugar das quebras reais (é o único formato que funciona; `CustomerJwtStrategy` já espera isso e desfaz o escape em runtime):
+
+```bash
+awk 'NF {sub(/\r/, ""); printf "%s\\n", $0}' customer-auth-public.pem
+```
+
+> **Se o login funcionar do lado da lambda e a API devolver 401 em `/api/me/*` mesmo assim, confira o par de chaves primeiro.** A API falha fechada por design: uma chave pública que não corresponde à privada da lambda (ou um `CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` divergente) produz exatamente o mesmo sintoma — `401` indistinguível de uma credencial recusada — mesmo com a API saudável e respondendo normalmente. Não é um bug, mas custa tempo de depuração se você não souber que é o primeiro lugar a olhar.
+
+O passo a passo completo de rodar os dois repositórios juntos (API + lambda) está documentado do lado da lambda, em `docs/local-setup.md` › **Os dois repositórios juntos**.
 
 ### Logs legíveis em desenvolvimento
 
@@ -127,4 +145,13 @@ O seed cria 4 usuários Admin com senha padrão `Tech@2026`:
 
 Use qualquer um desses e-mails com a senha `Tech@2026` no endpoint `POST /api/auth/login` para autenticar e obter o token JWT.
 
-Os scripts de seed em `prisma/seeds/` são executados em ordem pelo entrypoint `prisma/seed.ts`: `work-order-status-info.seed.ts` (tabela de referência de prioridade dos status de OS), depois `user.seed.ts`, `part-supply.seed.ts`, `service.seed.ts`, `customer.seed.ts`, `vehicle.seed.ts` e `work-order.seed.ts`. Eles populam dados de referência para acelerar o onboarding e os testes manuais. Todos são idempotentes (`upsert`), então podem rodar a cada deploy sem duplicar registros.
+O seed também cria dois usuários do fluxo **externo** (Cliente da Oficina, `role: null`, com CPF) e já vincula cada um a um cliente ativo — para testar `/api/me/*` sem precisar cadastrar nada manualmente:
+
+| CPF | Usuário | Cliente vinculado |
+|---|---|---|
+| `12345678909` | `joao.silva@email.com` | João da Silva — pessoa física (INDIVIDUAL) |
+| `98765432100` | `maria.souza@email.com` | Oficina Parceira LTDA — empresa (COMPANY) |
+
+Ambos com senha `Tech@2026`. Esse CPF + senha é o que se informa na [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) para obter um `customer-jwt` válido contra este seed.
+
+Os scripts de seed em `prisma/seeds/` são executados em ordem pelo entrypoint `prisma/seed.ts`: `work-order-status-info.seed.ts` (tabela de referência de prioridade dos status de OS), depois `user.seed.ts`, `part-supply.seed.ts`, `service.seed.ts`, `customer.seed.ts`, `user-customer.seed.ts` (os vínculos da tabela acima), `vehicle.seed.ts` e `work-order.seed.ts`. Eles populam dados de referência para acelerar o onboarding e os testes manuais. Todos são idempotentes (`upsert`), então podem rodar a cada deploy sem duplicar registros.

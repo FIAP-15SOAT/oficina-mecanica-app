@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { CreateQuoteUseCase } from '@application/use-cases/quote/create-quote.use-case';
 import { FindQuoteByIdUseCase } from '@application/use-cases/quote/find-quote-by-id.use-case';
@@ -13,14 +12,12 @@ import { SubmitQuoteUseCase } from '@application/use-cases/quote/submit-quote.us
 import { ApproveQuoteUseCase } from '@application/use-cases/quote/approve-quote.use-case';
 import { RejectQuoteUseCase } from '@application/use-cases/quote/reject-quote.use-case';
 import { UpdateQuoteStatusUseCase } from '@application/use-cases/quote/update-quote-status.use-case';
-import { EmailDecisionQuoteUseCase } from '@application/use-cases/quote/email-decision-quote.use-case';
 import { FindAllQuotesPaginatedUseCase } from '@application/use-cases/quote/find-all-quotes-paginated.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 
-import { ITokenService } from '@application/ports/output/token.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 
@@ -37,17 +34,8 @@ import { QuoteController } from './quote.controller';
         unitOfWork: IUnitOfWork,
         quoteRepository: IQuoteRepository,
         emailSender: IEmailSenderService,
-        tokenService: ITokenService,
-        configService: ConfigService,
         logger: ILogger,
       ) => {
-        const quoteDecisionTokenSecret = configService.getOrThrow<string>(
-          'QUOTE_DECISION_TOKEN_SECRET',
-        );
-        const quoteDecisionBaseUrl =
-          configService.get<string>('QUOTE_DECISION_BASE_URL') ??
-          `http://localhost:${configService.get<string>('PORT') ?? '3000'}/api`;
-
         const approveQuoteUseCase = new ApproveQuoteUseCase(
           unitOfWork,
           logger.forContext(ApproveQuoteUseCase.name),
@@ -69,30 +57,13 @@ import { QuoteController } from './quote.controller';
           new SubmitQuoteUseCase(
             unitOfWork,
             emailSender,
-            tokenService,
-            quoteDecisionTokenSecret,
-            quoteDecisionBaseUrl,
             logger.forContext(SubmitQuoteUseCase.name),
-          ),
-          new EmailDecisionQuoteUseCase(
-            tokenService,
-            approveQuoteUseCase,
-            rejectQuoteUseCase,
-            quoteDecisionTokenSecret,
-            logger.forContext(EmailDecisionQuoteUseCase.name),
           ),
           new UpdateQuoteStatusUseCase(approveQuoteUseCase, rejectQuoteUseCase),
           new FindAllQuotesPaginatedUseCase(quoteRepository),
         );
       },
-      inject: [
-        'IUnitOfWork',
-        'IQuoteRepository',
-        'IEmailSenderService',
-        'ITokenService',
-        ConfigService,
-        'ILogger',
-      ],
+      inject: ['IUnitOfWork', 'IQuoteRepository', 'IEmailSenderService', 'ILogger'],
     },
   ],
 })

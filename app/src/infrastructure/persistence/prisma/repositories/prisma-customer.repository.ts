@@ -90,13 +90,14 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     pagination: PaginationInput,
     filters: CustomerFilters,
   ): Promise<PaginatedRepositoryResult<Customer>> {
-    const { name, type, document } = filters;
+    const { name, type, document, active } = filters;
 
     const where: Prisma.CustomerWhereInput = {};
 
     if (name) where.name = { contains: name.trim(), mode: 'insensitive' };
     if (type) where.type = type;
     if (document) where.document = document.replaceAll(/[.\-/]/g, '').trim();
+    if (active !== undefined) where.isActive = active;
 
     const result = await paginate(
       this.prisma.customer,
@@ -143,6 +144,7 @@ export class PrismaCustomerRepository implements ICustomerRepository {
           type: customer.type,
           email: customer.email.value,
           phone: customer.phone.value,
+          isActive: customer.isActive,
           address: addressData,
         },
         include: ADDRESS_INCLUDE,
@@ -168,5 +170,9 @@ export class PrismaCustomerRepository implements ICustomerRepository {
     ]);
 
     return hasVehicles || hasWorkOrders;
+  }
+
+  async hasWorkOrders(id: string): Promise<boolean> {
+    return existsBy(this.prisma.workOrder, { customerId: id });
   }
 }

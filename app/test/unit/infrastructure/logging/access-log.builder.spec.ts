@@ -822,6 +822,41 @@ describe('buildAccessLogAttributes — política de captura do corpo', () => {
 });
 
 /**
+ * Todo o recurso /api/auth fica fora da captura de corpo, mesmo em status que
+ * normalmente capturam (400/409/422): a rota sempre trafega uma credencial
+ * (senha, refresh token, código de redefinição), e não há campo isolável por
+ * nome sem também apagar zipCode/statusCode do resto do log.
+ */
+describe('buildAccessLogAttributes — /api/auth nunca captura o corpo', () => {
+  function postAuthWithBody(statusCode: number, path: string): Record<string, unknown> {
+    const request = createRequest({
+      method: 'POST',
+      path,
+      headers: { 'content-type': 'application/json' },
+      body: { code: '123456', newPassword: 'fraca' },
+    });
+
+    return buildAccessLogAttributes(request, createResponse(statusCode), {});
+  }
+
+  it.each([400, 409, 422, 500])(
+    'should not capture the body of a POST to /api/auth/password-reset-confirmations on %i',
+    (statusCode) => {
+      const attributes = postAuthWithBody(statusCode, '/api/auth/password-reset-confirmations');
+
+      expect(attributes).not.toHaveProperty('oficina.http.request.body_json');
+      expect(JSON.stringify(attributes)).not.toContain('123456');
+    },
+  );
+
+  it('should not capture the body of a POST to /api/auth/login on 400', () => {
+    expect(postAuthWithBody(400, '/api/auth/login')).not.toHaveProperty(
+      'oficina.http.request.body_json',
+    );
+  });
+});
+
+/**
  * `client.address` e `url.scheme` são os dois únicos valores do access log que o
  * Express deriva de cabeçalho encaminhado sem passar pelo scrubber. Com
  * `trust proxy` ativo ele devolve o primeiro salto não confiável **como texto**,

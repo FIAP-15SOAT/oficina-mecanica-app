@@ -7,10 +7,9 @@ import { AuthPresenter } from '@interface-adapters/auth/auth.presenter';
 
 import { LoginRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/login-request.dto';
 import { RefreshTokenRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/refresh-token-request.dto';
-import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { ConfirmPasswordResetRequestDto } from '@infrastructure/http/controllers/auth/dto/requests/confirm-password-reset-request.dto';
 
 import { AuthenticateUserOutputDto } from '@application/ports/input/auth/dto/authenticate-user.dto';
-import { GetCurrentUserOutputDto } from '@application/ports/input/auth/dto/get-current-user.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
 
@@ -22,7 +21,9 @@ describe('AuthController', () => {
     cleanController = new AuthCleanController(
       { execute: jest.fn() },
       { execute: jest.fn() },
-      { execute: jest.fn() },
+      {
+        execute: jest.fn(),
+      },
     );
     httpController = new AuthController(cleanController);
   });
@@ -69,32 +70,19 @@ describe('AuthController', () => {
     });
   });
 
-  describe('me', () => {
-    it('should delegate to the clean controller with the current user id', async () => {
-      const authenticatedUser: AuthenticatedUser = {
-        sub: randomUUID(),
+  describe('confirmPasswordReset', () => {
+    it('should delegate to the clean controller with the request body', async () => {
+      const dto: ConfirmPasswordResetRequestDto = {
         email: 'joao@email.com',
-        role: UserRole.ATTENDANT,
+        code: '042731',
+        newPassword: 'NewPass@456',
       };
 
-      const currentUser: GetCurrentUserOutputDto = {
-        id: authenticatedUser.sub,
-        name: 'João',
-        email: authenticatedUser.email,
-        role: authenticatedUser.role,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      jest.spyOn(cleanController, 'confirmPasswordReset').mockResolvedValue(undefined);
 
-      const response = AuthPresenter.toMeDataResponse(currentUser);
+      await httpController.confirmPasswordReset(dto);
 
-      jest.spyOn(cleanController, 'me').mockResolvedValue(response);
-
-      const result = await httpController.me(authenticatedUser);
-
-      expect(result).toBe(response);
-      expect(cleanController.me).toHaveBeenCalledWith(authenticatedUser.sub);
+      expect(cleanController.confirmPasswordReset).toHaveBeenCalledWith(dto);
     });
   });
 });

@@ -2,13 +2,15 @@ import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthenticateUserUseCase } from '@application/use-cases/auth/authenticate-user.use-case';
-import { GetCurrentUserUseCase } from '@application/use-cases/auth/get-current-user.use-case';
 import { RefreshTokenUseCase } from '@application/use-cases/auth/refresh-token.use-case';
+import { ConfirmPasswordResetUseCase } from '@application/use-cases/auth/confirm-password-reset.use-case';
 import { InfrastructureServicesModule } from '@infrastructure/services/infrastructure-services.module';
 
 import { JwtStrategy } from '@infrastructure/http/strategies/jwt.strategy';
+import { CustomerJwtStrategy } from '@infrastructure/http/strategies/customer-jwt.strategy';
 
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
+import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
@@ -24,6 +26,7 @@ import { AuthController } from './auth.controller';
       provide: AuthCleanController,
       useFactory: (
         userRepository: IUserRepository,
+        unitOfWork: IUnitOfWork,
         hashService: IHashService,
         tokenService: ITokenService,
         logger: ILogger,
@@ -35,17 +38,22 @@ import { AuthController } from './auth.controller';
             tokenService,
             logger.forContext(AuthenticateUserUseCase.name),
           ),
-          new GetCurrentUserUseCase(userRepository),
           new RefreshTokenUseCase(
             userRepository,
             tokenService,
             logger.forContext(RefreshTokenUseCase.name),
           ),
+          new ConfirmPasswordResetUseCase(
+            unitOfWork,
+            hashService,
+            logger.forContext(ConfirmPasswordResetUseCase.name),
+          ),
         ),
-      inject: ['IUserRepository', 'IHashService', 'ITokenService', 'ILogger'],
+      inject: ['IUserRepository', 'IUnitOfWork', 'IHashService', 'ITokenService', 'ILogger'],
     },
     JwtStrategy,
+    CustomerJwtStrategy,
   ],
-  exports: [JwtStrategy],
+  exports: [JwtStrategy, CustomerJwtStrategy],
 })
 export class AuthModule {}

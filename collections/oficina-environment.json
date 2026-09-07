@@ -9,7 +9,9 @@
     { "key": "adminPassword", "value": "Tech@2026", "type": "secret", "enabled": true },
     { "key": "userId", "value": "", "type": "default", "enabled": true },
     { "key": "serviceId", "value": "", "type": "default", "enabled": true },
-    { "key": "partSupplyId", "value": "", "type": "default", "enabled": true }
+    { "key": "partSupplyId", "value": "", "type": "default", "enabled": true },
+    { "key": "customerId", "value": "", "type": "default", "enabled": true },
+    { "key": "customerJwtToken", "value": "", "type": "secret", "enabled": true }
   ],
   "_postman_variable_scope": "environment"
 }

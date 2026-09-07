@@ -1,5 +1,4 @@
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
-import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
 import { IVehicleRepository } from '@domain/interfaces/repositories/vehicle.repository.interface';
 import { IServiceRepository } from '@domain/interfaces/repositories/service.repository.interface';
 import { IUserRepository } from '@domain/interfaces/repositories/user.repository.interface';
@@ -16,11 +15,13 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       create: jest.fn(),
       findById: jest.fn(),
       findByDocument: jest.fn(),
+      findByEmail: jest.fn(),
       findAllPaginated: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
       isCustomerInUse: jest.fn(),
-    } as unknown as jest.Mocked<ICustomerRepository>,
+      hasWorkOrders: jest.fn().mockResolvedValue(false),
+    },
     vehicle: {
       create: jest.fn(),
       findById: jest.fn(),
@@ -53,11 +54,27 @@ export function createMockRepositories(): jest.Mocked<IRepositories> {
       create: jest.fn(),
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      findByCpf: jest.fn(),
       findByUsername: jest.fn(),
       findAllPaginated: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<IUserRepository>,
+    userCustomer: {
+      create: jest.fn(),
+      exists: jest.fn(),
+      existsActiveLink: jest.fn(),
+      delete: jest.fn(),
+      findUsersByCustomerId: jest.fn(),
+      findCustomersByUserId: jest.fn(),
+      findActiveCustomerIdsByUserId: jest.fn(),
+    },
+    passwordResetCode: {
+      upsert: jest.fn(),
+      findByUserId: jest.fn(),
+      incrementAttempts: jest.fn(),
+      delete: jest.fn(),
+    },
   };
 }
 

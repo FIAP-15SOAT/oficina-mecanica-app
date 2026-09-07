@@ -72,6 +72,22 @@ describe('AuthenticateUserUseCase', () => {
     );
   });
 
+  it('should reject an externally-only account (role null) with the same generic message', async () => {
+    const user = createMockUser({ role: null });
+    userRepository.findByEmail.mockResolvedValue(user);
+    hashService.compare.mockResolvedValue(true);
+
+    await expect(
+      useCase.execute({ email: 'externo@email.com', password: 'Senha@123' }),
+    ).rejects.toThrow('Credenciais inválidas');
+
+    expect(tokenService.signTokenPair).not.toHaveBeenCalled();
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ failureReason: 'no_internal_role' }),
+    );
+  });
+
   it('não deve gerar tokens se autenticação falhar', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
 
@@ -99,6 +115,12 @@ describe('AuthenticateUserUseCase', () => {
       'Credenciais inválidas',
     );
 
+    userRepository.findByEmail.mockResolvedValueOnce(createMockUser({ role: null }));
+    hashService.compare.mockResolvedValueOnce(true);
+    await expect(useCase.execute({ email: 'a@b.com', password: 'x' })).rejects.toThrow(
+      'Credenciais inválidas',
+    );
+
     expect(logger.event.mock.calls.map((call) => call[1])).toEqual([
       { failureReason: 'unknown_user' },
       {
@@ -109,6 +131,12 @@ describe('AuthenticateUserUseCase', () => {
       },
       {
         failureReason: 'wrong_password',
+        subjectId: 'user-uuid-123',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
+      },
+      {
+        failureReason: 'no_internal_role',
         subjectId: 'user-uuid-123',
         subjectName: 'Admin User',
         subjectEmail: 'admin@email.com',

@@ -1,6 +1,5 @@
 import type { Server } from 'http';
 import request from 'supertest';
-import { JwtService } from '@nestjs/jwt';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
@@ -9,13 +8,10 @@ describe('Quote (E2E)', () => {
   let ctx: TestContext;
   let httpServer: Server;
   let adminAuth: AuthTokens;
-  const secret = 'test-jwt-secret-key-for-e2e';
-  let jwtService: JwtService;
 
   beforeAll(async () => {
     ctx = await setupTestApp();
     httpServer = ctx.httpServer;
-    jwtService = new JwtService({ secret });
   });
 
   afterAll(async () => {
@@ -1110,7 +1106,7 @@ describe('Quote (E2E)', () => {
       expect(res.body.data.status).toBe('REJECTED');
     });
 
-    it('should return 409 when rejecting without reason', async () => {
+    it('should return 400 when rejecting without reason', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const service = await createService();
       const createRes = await request(httpServer)
@@ -1133,11 +1129,14 @@ describe('Quote (E2E)', () => {
         .send({})
         .expect(200);
 
+      // Motivo ausente é entrada malformada, não conflito de estado — a
+      // combinação de parâmetros (status=REJECTED sem reason) é inválida em
+      // si, independentemente do estado atual do orçamento.
       await request(httpServer)
         .patch(`/api/quotes/${quoteId}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'REJECTED' })
-        .expect(409);
+        .expect(400);
     });
 
     it('should return 400 with invalid status', async () => {
@@ -1340,214 +1339,6 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
   });
-  describe('GET /api/quotes/:id/decisions', () => {
-    it('should approve quote via email link and status history changedBy is null', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const service = await createService();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const quoteId = createRes.body.data.id;
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ serviceId: service.id, quantity: 1 })
-        .expect(200);
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/submissions`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      const token = jwtService.sign(
-        { quoteId, action: 'approve', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      const res = await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ token })
-        .expect(200);
-
-      expect(res.body.data.status).toBe('APPROVED');
-
-      const historyRes = await request(httpServer)
-        .get(`/api/work-orders/${workOrderId}/status-history`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      const approvalEntry = (
-        historyRes.body.data as Array<{ newStatus: string; changedBy: unknown }>
-      ).find((e) => e.newStatus === 'APPROVED');
-      expect(approvalEntry).toBeDefined();
-      expect(approvalEntry!.changedBy).toBeNull();
-    });
-
-    it('should reject quote via email link', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const service = await createService();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const quoteId = createRes.body.data.id;
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ serviceId: service.id, quantity: 1 })
-        .expect(200);
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/submissions`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      const token = jwtService.sign(
-        { quoteId, action: 'reject', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      const res = await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ token })
-        .expect(200);
-
-      expect(res.body.data.status).toBe('REJECTED');
-    });
-
-    it('should return 401 for invalid token', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      await request(httpServer)
-        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ token: 'invalid-token' })
-        .expect(401);
-    });
-
-    it('should return 401 when token payload type is invalid', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const invalidToken = jwtService.sign(
-        { quoteId: createRes.body.data.id, action: 'approve', type: 'wrong-type' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer)
-        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ token: invalidToken })
-        .expect(401);
-    });
-
-    it('should return 401 when quoteId in token is different from route', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const anotherQuoteId = '00000000-0000-0000-0000-000000000000';
-      const invalidToken = jwtService.sign(
-        { quoteId: anotherQuoteId, action: 'approve', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer)
-        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ token: invalidToken })
-        .expect(401);
-    });
-
-    it('should return 409 when attempting email decision on a non-submitted quote', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const token = jwtService.sign(
-        { quoteId: createRes.body.data.id, action: 'reject', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer)
-        .get(`/api/quotes/${createRes.body.data.id}/decisions`)
-        .query({ token })
-        .expect(409);
-    });
-
-    it('should throw ResourceNotFoundException when quote does not exist (approve)', async () => {
-      const fakeId = '00000000-0000-0000-0000-000000000001';
-      const token = jwtService.sign(
-        { quoteId: fakeId, action: 'approve', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
-    });
-
-    it('should throw ResourceNotFoundException when quote does not exist (reject)', async () => {
-      const fakeId = '00000000-0000-0000-0000-000000000001';
-      const token = jwtService.sign(
-        { quoteId: fakeId, action: 'reject', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer).get(`/api/quotes/${fakeId}/decisions`).query({ token }).expect(404);
-    });
-
-    it('should treat unrecognized action in token as reject on a submitted quote', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-      const quoteId = createRes.body.data.id;
-      const service = await createService();
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ serviceId: service.id, quantity: 1 })
-        .expect(200);
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/submissions`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      const token = jwtService.sign(
-        { quoteId, action: 'invalid-action', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      const res = await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ token })
-        .expect(200);
-
-      expect(res.body.data.status).toBe('REJECTED');
-    });
-  });
 
   // ─── PATCH /api/quotes/:id ──────────────────────────────────────────────────
 
@@ -1626,7 +1417,7 @@ describe('Quote (E2E)', () => {
         .patch(`/api/quotes/${createRes.body.data.id}`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'REJECTED' })
-        .expect(409); // BusinessRuleViolationException mapped to 409
+        .expect(400); // BadRequestException mapped to 400
     });
 
     it('should return 404 when quote does not exist', async () => {
@@ -1767,37 +1558,6 @@ describe('Quote (E2E)', () => {
         .expect(404);
     });
 
-    it('should return 409 when attempting email decision on a draft (non-submitted) quote', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-      const quoteId = createRes.body.data.id;
-      const token = jwtService.sign(
-        { quoteId, action: 'reject', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ token })
-        .expect(409);
-    });
-
-    it('should return 400 when token query param is missing', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-      const quoteId = createRes.body.data.id;
-
-      await request(httpServer).get(`/api/quotes/${quoteId}/decisions`).expect(400);
-    });
-
     it('should return 404 when updating service in non-existent quote', async () => {
       const service = await createService();
       await request(httpServer)
@@ -1828,42 +1588,6 @@ describe('Quote (E2E)', () => {
         .expect(201);
 
       expect(res.body.data.notes).toBe(sanitizedNotes);
-    });
-
-    it('should reject a quote via email decision (QuoteDecisionAction.REJECT)', async () => {
-      const { workOrderId } = await createWorkOrderInDiagnosis();
-      const createRes = await request(httpServer)
-        .post('/api/quotes')
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ workOrderId })
-        .expect(201);
-
-      const quoteId = createRes.body.data.id;
-      const service = await createService();
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/services`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .send({ serviceId: service.id, quantity: 1 })
-        .expect(200);
-
-      await request(httpServer)
-        .post(`/api/quotes/${quoteId}/submissions`)
-        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
-        .expect(200);
-
-      const token = jwtService.sign(
-        { quoteId, action: 'reject', type: 'quote-email-decision' },
-        { secret, expiresIn: '7d' },
-      );
-
-      await request(httpServer)
-        .get(`/api/quotes/${quoteId}/decisions`)
-        .query({ token })
-        .expect(200);
-
-      const updatedQuote = await ctx.prisma.quote.findUnique({ where: { id: quoteId } });
-      expect(updatedQuote?.status).toBe('REJECTED');
     });
 
     describe('Retrieval', () => {

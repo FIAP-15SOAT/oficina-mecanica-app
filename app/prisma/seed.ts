@@ -10,6 +10,7 @@ import { seedVehicles } from './seeds/vehicle.seed';
 import { seedPartSupplies } from './seeds/part-supply.seed';
 import { seedWorkOrders } from './seeds/work-order.seed';
 import { seedWorkOrderStatusInfos } from './seeds/work-order-status-info.seed';
+import { seedUserCustomers } from './seeds/user-customer.seed';
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
   await seedPartSupplies(prisma);
   const serviceIds = await seedServices(prisma);
   const customerIds = await seedCustomers(prisma);
+  await seedUserCustomers(prisma, customerIds);
   const vehicleIds = await seedVehicles(prisma, customerIds);
   await seedWorkOrders(prisma, customerIds, vehicleIds, serviceIds);
 

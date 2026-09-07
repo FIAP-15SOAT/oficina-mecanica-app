@@ -20,6 +20,7 @@ env:
   API_BASE_URL: http://localhost:3000
   SEED_ADMIN_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
   SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+  SEED_CUSTOMER_USER_EMAIL: joao.silva@email.com
   STACK_WAIT_TIMEOUT: 180
 
 jobs:
@@ -28,6 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # Par de chaves efêmero, gerado a cada run — nunca comitado. Isola o
+      # scan da rota /api/me/* da Lambda externa (fora de escopo): o job
+      # assina seus próprios tokens de cliente, exatamente como os E2E fazem
+      # com test/helpers/customer-jwt.helper.ts.
+      - name: Generate an ephemeral RS256 key pair for the customer auth flow
+        run: |
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/customer-jwt.key
+          openssl rsa -in /tmp/customer-jwt.key -pubout -out /tmp/customer-jwt.pub
+          echo "CUSTOMER_JWT_PUBLIC_KEY=$(awk 'NF {sub(/\r/, ""); printf "%s\\n", $0}' /tmp/customer-jwt.pub)" >> "$GITHUB_ENV"
 
       - name: Start the target stack and wait for it to become healthy
         run: |
@@ -38,7 +49,7 @@ jobs:
             exit 1
           fi
 
-      - name: Perform authentication for the scan
+      - name: Perform authentication for the internal scan pass
         run: |
           echo "::add-mask::$SEED_ADMIN_PASSWORD"
           token="$(curl -fsS -X POST "$API_BASE_URL/api/auth/login" \
@@ -52,13 +63,41 @@ jobs:
           echo "::add-mask::$token"
           echo "ZAP_AUTH_HEADER_VALUE=Bearer $token" >> "$GITHUB_ENV"
 
+      # A Lambda externa está fora de escopo (ver docs/testing.md). O job
+      # assina o próprio token de cliente com a chave privada gerada acima,
+      # para um usuário já semeado — o mesmo papel que a Lambda desempenharia.
+      - name: Sign an ephemeral customer JWT for the external scan pass
+        run: |
+          user_id="$(docker compose exec -T postgres psql -U postgres -d techchallenge -tAc \
+            "SELECT id FROM users WHERE email = '${SEED_CUSTOMER_USER_EMAIL}';" | tr -d '[:space:]')"
+          if [ -z "$user_id" ]; then
+            echo "::error::Could not find the seeded customer user (${SEED_CUSTOMER_USER_EMAIL})."
+            exit 1
+          fi
+
+          b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+          now="$(date +%s)"
+          exp="$((now + 3600))"
+          header='{"alg":"RS256","typ":"JWT"}'
+          payload="{\"sub\":\"${user_id}\",\"iss\":\"oficina-customer-auth\",\"aud\":\"oficina-api\",\"iat\":${now},\"exp\":${exp}}"
+
+          header_b64="$(printf '%s' "$header" | b64url)"
+          payload_b64="$(printf '%s' "$payload" | b64url)"
+          signing_input="${header_b64}.${payload_b64}"
+          signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign /tmp/customer-jwt.key | b64url)"
+          token="${signing_input}.${signature}"
+
+          echo "::add-mask::$token"
+          echo "CUSTOMER_ZAP_AUTH_HEADER_VALUE=Bearer $token" >> "$GITHUB_ENV"
+
       - name: Prepare the ZAP work directory
         run: |
           mkdir -p "$GITHUB_WORKSPACE/zap-work"
           cp .zap/rules.tsv "$GITHUB_WORKSPACE/zap-work/rules.tsv"
           chmod -R 777 "$GITHUB_WORKSPACE/zap-work"
 
-      - name: Run OWASP ZAP API scan
+      - name: Run OWASP ZAP API scan — internal (Admin) auth
         run: |
           # ZAP 2.17.0 (stable) pinned by digest — bump with: docker buildx imagetools inspect ghcr.io/zaproxy/zaproxy:stable
           docker run --rm \
@@ -74,7 +113,7 @@ jobs:
               -r zap-report.html \
               -J zap-report.json
 
-      - name: Upload the ZAP report
+      - name: Upload the internal-auth ZAP report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -82,6 +121,34 @@ jobs:
           path: |
             zap-work/zap-report.html
             zap-work/zap-report.json
+          if-no-files-found: warn
+
+      # Segunda passagem: mesma stack efêmera, autenticada como Cliente da
+      # Oficina (customer-jwt) — cobre /api/me/* além do 401 que a passagem
+      # interna sempre recebe dessas rotas.
+      - name: Run OWASP ZAP API scan — external (Customer) auth
+        run: |
+          docker run --rm \
+            --network "${COMPOSE_PROJECT_NAME}_default" \
+            -v "$GITHUB_WORKSPACE/zap-work:/zap/wrk:rw" \
+            -e ZAP_AUTH_HEADER=Authorization \
+            -e ZAP_AUTH_HEADER_VALUE="$CUSTOMER_ZAP_AUTH_HEADER_VALUE" \
+            ghcr.io/zaproxy/zaproxy@sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2 \
+            zap-api-scan.py \
+              -t http://api:3000/api/docs-json \
+              -f openapi \
+              -c rules.tsv \
+              -r zap-report-customer.html \
+              -J zap-report-customer.json
+
+      - name: Upload the external-auth ZAP report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zap-report-customer
+          path: |
+            zap-work/zap-report-customer.html
+            zap-work/zap-report-customer.json
           if-no-files-found: warn
 
       - name: Tear down the stack

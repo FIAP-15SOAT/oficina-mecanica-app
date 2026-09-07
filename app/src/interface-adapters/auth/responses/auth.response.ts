@@ -4,7 +4,7 @@ export interface AuthUserSummaryResponse {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
 }
 
 export interface AuthResponse {
@@ -15,18 +15,4 @@ export interface AuthResponse {
 
 export interface AuthDataResponse {
   data: AuthResponse;
-}
-
-export interface MeResponse {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface MeDataResponse {
-  data: MeResponse;
 }

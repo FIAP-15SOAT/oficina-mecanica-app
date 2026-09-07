@@ -55,6 +55,31 @@ export class RefreshTokenUseCase {
       throw new UnauthorizedAccessException(INVALID_REFRESH_TOKEN_MESSAGE);
     }
 
+    if (!user.role) {
+      this.logger.event(BUSINESS_EVENTS.REFRESH_TOKEN_FAILED, {
+        failureReason: 'no_internal_role',
+        subjectId: user.id,
+        subjectName: user.name,
+        subjectEmail: user.email.value,
+      });
+
+      throw new UnauthorizedAccessException(INVALID_REFRESH_TOKEN_MESSAGE);
+    }
+
+    if (
+      typeof payload.iat !== 'number' ||
+      payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)
+    ) {
+      this.logger.event(BUSINESS_EVENTS.REFRESH_TOKEN_FAILED, {
+        failureReason: 'password_changed',
+        subjectId: user.id,
+        subjectName: user.name,
+        subjectEmail: user.email.value,
+      });
+
+      throw new UnauthorizedAccessException(INVALID_REFRESH_TOKEN_MESSAGE);
+    }
+
     const newTokenPair: TokenPair = this.tokenService.signTokenPair({
       sub: user.id,
       email: user.email.value,

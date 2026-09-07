@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -24,7 +25,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiProduces,
-  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -33,11 +33,8 @@ import {
 import { JwtAuthGuard } from '@infrastructure/http/guards/jwt-auth.guard';
 import { RolesGuard } from '@infrastructure/http/guards/roles.guard';
 import { Roles } from '@infrastructure/http/decorators/roles.decorator';
-import { Public } from '@infrastructure/http/decorators/public.decorator';
-import {
-  AuthenticatedUser,
-  CurrentUser,
-} from '@infrastructure/http/decorators/current-user.decorator';
+import { CurrentPrincipal } from '@infrastructure/http/decorators/current-principal.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { UserRole } from '@domain/enums/user-role.enum';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
@@ -48,7 +45,6 @@ import { AddQuotePartSupplyRequestDto } from './dto/requests/add-quote-part-supp
 import { UpdateQuoteServiceItemRequestDto } from './dto/requests/update-quote-service-item-request.dto';
 import { UpdateQuotePartSupplyItemRequestDto } from './dto/requests/update-quote-part-supply-item-request.dto';
 import { UpdateQuoteStatusRequestDto } from './dto/requests/update-quote-status-request.dto';
-import { QuoteEmailDecisionRequestDto } from './dto/requests/quote-email-decision-request.dto';
 import { FindAllQuotesQueryDto } from './dto/requests/find-all-quotes-query.dto';
 import {
   QuoteDataResponseDto,
@@ -228,29 +224,14 @@ export class QuoteController {
   @ApiForbiddenResponse({ description: 'Acesso negado' })
   @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
   @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
+  @ApiBadRequestResponse({ description: 'Justificativa ausente na rejeição' })
   @ApiConflictResponse({ description: 'Modificação concorrente detectada. Tente novamente.' })
   @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() request: UpdateQuoteStatusRequestDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ): Promise<QuoteDataResponseDto> {
-    return this.controller.updateStatus(id, user.sub, request);
-  }
-
-  @Get(':id/decisions')
-  @Public()
-  @ApiOperation({ summary: 'Aprovar ou rejeitar orçamento via link de email' })
-  @ApiOkResponse({ type: QuoteDataResponseDto, description: 'Decisão registrada com sucesso' })
-  @ApiUnauthorizedResponse({ description: 'Token inválido ou expirado' })
-  @ApiNotFoundResponse({ description: 'Orçamento não encontrado' })
-  @ApiUnprocessableEntityResponse({ description: 'Erro de validação ou regra de negócio' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID do orçamento' })
-  @ApiQuery({ name: 'token', description: 'Token assinado para decisão do orçamento' })
-  emailDecision(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query() query: QuoteEmailDecisionRequestDto,
-  ): Promise<QuoteDataResponseDto> {
-    return this.controller.emailDecision(id, query.token);
+    return this.controller.updateStatus(id, principal.sub, request);
   }
 }

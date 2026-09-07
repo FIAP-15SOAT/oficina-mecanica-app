@@ -320,6 +320,25 @@ describe('Structured logging (E2E)', () => {
       expect(JSON.stringify(capture.lines())).not.toContain('SenhaErrada@2026');
     });
 
+    /**
+     * O corpo de qualquer rota /api/auth nunca é capturado, mesmo em status
+     * que normalmente disparam a captura (400/409/422) — o código de reset é
+     * uma credencial válida por 10 minutos, e não há campo que a redação por
+     * nome possa isolar sem também apagar zipCode/statusCode do resto do log.
+     */
+    it('should never log the password reset code, even on a 400 that would otherwise capture the body', async () => {
+      await request(httpServer)
+        .post('/api/auth/password-reset-confirmations')
+        .send({ email: 'alguem@e2e.test', code: '123456', newPassword: 'fraca' })
+        .expect(400);
+
+      const [line] = accessLines(capture);
+
+      expect(line['http.response.status_code']).toBe(400);
+      expect(line).not.toHaveProperty('oficina.http.request.body_json');
+      expect(JSON.stringify(capture.lines())).not.toContain('123456');
+    });
+
     it('should capture the sanitized body on a 4xx of a mutating route', async () => {
       await request(httpServer)
         .post('/api/customers')
@@ -500,9 +519,7 @@ describe('Structured logging (E2E)', () => {
     it('should never log a capability token carried in the query string', async () => {
       const token = 'eyJhbGciOiJIUzI1NiJ9.eyJxdW90ZUlkIjoiMSJ9.c2lnbmF0dXJlLXZhbHVlLWhlcmU';
 
-      await request(httpServer)
-        .get(`/api/quotes/00000000-0000-4000-8000-000000000000/decisions?token=${token}`)
-        .expect(401);
+      await request(httpServer).get(`/api/customers?token=${token}`).expect(401);
 
       const serialized = JSON.stringify(capture.lines());
 

@@ -44,6 +44,13 @@ const BODY_CAPTURE_STATUSES = new Set([400, 409, 422]);
 
 const SERVER_ERROR_STATUS = 500;
 
+/**
+ * Recursos cujo corpo nunca é registrado: tudo em /api/auth trafega credencial
+ * (senha, refresh token, código de redefinição) e o payload não ajuda a
+ * diagnosticar a rejeição — o status e a rota já dizem o que aconteceu.
+ */
+const BODY_CAPTURE_EXCLUDED_RESOURCES = new Set(['auth']);
+
 const URL_SCHEMES = new Set(['http', 'https']);
 
 export const DURATION_ATTRIBUTE = 'oficina.http.server.request.duration_ms';
@@ -293,11 +300,15 @@ function buildBodyAttributes(
     return {};
   }
 
+  const resource = extractResourceSegment(request.path ?? '');
+
+  if (resource !== undefined && BODY_CAPTURE_EXCLUDED_RESOURCES.has(resource)) {
+    return {};
+  }
+
   // `serializeBody` devolve `undefined` quando não há corpo para serializar —
   // uma requisição sem corpo chega aqui com `req.body` indefinido.
-  const serialized = serializeBody(request.body, {
-    resource: extractResourceSegment(request.path ?? ''),
-  });
+  const serialized = serializeBody(request.body, { resource });
 
   if (!serialized) {
     return {};

@@ -16,8 +16,8 @@ class AuthUserSummaryResponseDto implements AuthUserSummaryResponse {
   @ApiProperty({ example: 'joao@email.com' })
   email!: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT })
-  role!: UserRole;
+  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT, nullable: true })
+  role!: UserRole | null;
 }
 
 export class AuthResponseDto implements AuthResponse {

@@ -54,6 +54,17 @@ export class AuthenticateUserUseCase {
       throw new UnauthorizedAccessException(INVALID_CREDENTIALS_MESSAGE);
     }
 
+    if (!user.role) {
+      this.logger.event(BUSINESS_EVENTS.AUTHENTICATION_FAILED, {
+        failureReason: 'no_internal_role',
+        subjectId: user.id,
+        subjectName: user.name,
+        subjectEmail: user.email.value,
+      });
+
+      throw new UnauthorizedAccessException(INVALID_CREDENTIALS_MESSAGE);
+    }
+
     const payload = { sub: user.id, email: user.email.value, role: user.role };
     const { accessToken, refreshToken } = this.tokenService.signTokenPair(payload);
 

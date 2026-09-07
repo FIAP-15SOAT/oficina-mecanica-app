@@ -6,22 +6,13 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { createMockQuote, createMockQuoteService } from '../../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../../helpers/work-order-mock.factory';
 import { createMockCustomer } from '../../../../helpers/customer-mock.factory';
+import { createMockUser } from '../../../../helpers/user-mock.factory';
 import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-mock.factory';
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { Email } from '@domain/value-objects/email.vo';
 import { SendEmailInput } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { createMockLogger } from '../../../../helpers/logger-mock.factory';
-
-const mockTokenService = {
-  signAccessToken: jest.fn(),
-  signRefreshToken: jest.fn(),
-  signTokenPair: jest.fn(),
-  signWithSecret: jest.fn().mockReturnValue('mock-token'),
-  verifyWithSecret: jest.fn(),
-  verifyAccessToken: jest.fn(),
-  verifyRefreshToken: jest.fn(),
-};
 
 const mockEmailSender = {
   send: jest.fn().mockResolvedValue(undefined),
@@ -38,15 +29,9 @@ describe('SubmitQuoteUseCase', () => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    (mockRepos.userCustomer.findUsersByCustomerId as jest.Mock).mockResolvedValue([]);
     logger = createMockLogger();
-    useCase = new SubmitQuoteUseCase(
-      mockUow,
-      mockEmailSender,
-      mockTokenService,
-      'test-secret',
-      'http://localhost:3000/api',
-      logger,
-    );
+    useCase = new SubmitQuoteUseCase(mockUow, mockEmailSender, logger);
   });
 
   it('should submit quote and change WO to AWAITING_APPROVAL when IN_DIAGNOSIS', async () => {
@@ -174,14 +159,17 @@ describe('SubmitQuoteUseCase', () => {
     await expect(useCase.execute(quote.id)).rejects.toThrow(BusinessRuleViolationException);
   });
 
-  it('should send email when customer has email', async () => {
+  it('should send email to the customer when no active linked users exist', async () => {
     const service = createMockQuoteService();
     const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
     const workOrder = createMockWorkOrder({
       id: quote.workOrderId,
       status: WorkOrderStatus.IN_DIAGNOSIS,
     });
-    const customer = createMockCustomer({ email: Email.create('test@example.com') });
+    const customer = createMockCustomer({
+      email: Email.create('test@example.com'),
+      name: 'Cliente Teste',
+    });
     const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
 
     (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
@@ -191,10 +179,66 @@ describe('SubmitQuoteUseCase', () => {
 
     await useCase.execute(quote.id);
 
-    expect(mockEmailSender.send).toHaveBeenCalled();
+    expect(mockEmailSender.send).toHaveBeenCalledTimes(1);
     const emailContent = mockEmailSender.send.mock.calls[0][0] as SendEmailInput;
-    expect(emailContent.message.text).toContain(`/decisions?token=`);
-    expect(emailContent.message.html).toContain(`/decisions?token=`);
+    expect(emailContent.toEmail).toBe('test@example.com');
+    expect(emailContent.toName).toBe('Cliente Teste');
+    expect(emailContent.message.text).not.toContain('http');
+    expect(emailContent.message.html).not.toContain('http');
+    expect(emailContent.message.text).toContain('Entre em contato com a oficina');
+    expect(emailContent.message.html).toContain('Entre em contato com a oficina');
+    expect(emailContent.message.text).not.toContain('Acesse o sistema autenticando');
+  });
+
+  it('should notify every active linked user, excluding inactive ones', async () => {
+    const service = createMockQuoteService();
+    const quote = createMockQuote({ status: QuoteStatus.PENDING, services: [service] });
+    const workOrder = createMockWorkOrder({
+      id: quote.workOrderId,
+      status: WorkOrderStatus.IN_DIAGNOSIS,
+    });
+    const customer = createMockCustomer({ email: Email.create('commercial@example.com') });
+    const savedQuote = createMockQuote({ id: quote.id, status: QuoteStatus.SENT });
+
+    const activeUserA = createMockUser({
+      email: Email.create('userA@example.com'),
+      name: 'User A',
+      isActive: true,
+    });
+    const activeUserB = createMockUser({
+      email: Email.create('userB@example.com'),
+      name: 'User B',
+      isActive: true,
+    });
+    const inactiveUser = createMockUser({
+      email: Email.create('inactive@example.com'),
+      name: 'Inactive User',
+      isActive: false,
+    });
+
+    (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+    (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+    (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+    (mockRepos.quote.update as jest.Mock).mockResolvedValue(savedQuote);
+    (mockRepos.userCustomer.findUsersByCustomerId as jest.Mock).mockResolvedValue([
+      activeUserA,
+      activeUserB,
+      inactiveUser,
+    ]);
+
+    await useCase.execute(quote.id);
+
+    expect(mockEmailSender.send).toHaveBeenCalledTimes(2);
+    const sentEmails = mockEmailSender.send.mock.calls.map(
+      ([content]: [SendEmailInput]) => content.toEmail,
+    );
+    expect(sentEmails.sort()).toEqual(['usera@example.com', 'userb@example.com']);
+
+    for (const [content] of mockEmailSender.send.mock.calls as [SendEmailInput][]) {
+      expect(content.message.text).toContain('Acesse o sistema autenticando com seu CPF e senha');
+      expect(content.message.html).toContain('Acesse o sistema autenticando com seu CPF e senha');
+      expect(content.message.text).not.toContain('Entre em contato com a oficina');
+    }
   });
 
   it('should fail if email sending fails', async () => {

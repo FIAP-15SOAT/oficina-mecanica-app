@@ -8,7 +8,8 @@ const DEFAULT_PASSWORD = 'Tech@2026';
 interface UserSeed {
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
+  cpf?: string;
 }
 
 const users: UserSeed[] = [
@@ -32,6 +33,18 @@ const users: UserSeed[] = [
     email: 'camacho.renan@gmail.com',
     role: UserRole.ADMIN,
   },
+  {
+    name: 'João da Silva',
+    email: 'joao.silva@email.com',
+    role: null,
+    cpf: '12345678909',
+  },
+  {
+    name: 'Maria Souza',
+    email: 'maria.souza@email.com',
+    role: null,
+    cpf: '98765432100',
+  },
 ];
 
 export async function seedUsers(prisma: PrismaClient): Promise<void> {
@@ -45,12 +58,14 @@ export async function seedUsers(prisma: PrismaClient): Promise<void> {
       update: {
         name: user.name,
         role: user.role,
+        cpf: user.cpf ?? null,
       },
       create: {
         name: user.name,
         email: user.email,
         passwordHash,
         role: user.role,
+        cpf: user.cpf ?? null,
         isActive: true,
       },
     });
