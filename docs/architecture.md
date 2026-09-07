@@ -641,6 +641,9 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no f
 - [ADR 0012 — Hierarquia de exceções por camada, com Exception Filters dedicados](./adr/0012-hierarquia-de-excecoes-por-camada.md)
 - [ADR 0013 — Autenticação interna via JWT stateless (access + refresh)](./adr/0013-autenticacao-interna-jwt-stateless.md)
 - [ADR 0014 — Pipelines de CI, CD, SAST e DAST separados](./adr/0014-pipelines-ci-cd-sast-dast-separados.md)
+- [ADR 0015 — Testes E2E contra PostgreSQL real via Testcontainers, não mocks](./adr/0015-testcontainers-e2e-postgresql-real.md)
+- [ADR 0016 — Sanitização e validação de entrada em duas camadas](./adr/0016-sanitizacao-e-validacao-em-duas-camadas.md)
+- [ADR 0017 — Ausência de rate limiting no login interno — risco aceito](./adr/0017-sem-rate-limiting-no-login-risco-aceito.md)
 
 ## Modelo C4
 
