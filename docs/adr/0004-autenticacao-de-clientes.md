@@ -81,6 +81,47 @@ explicitamente.
   continuava válido por até 15 minutos, e o refresh por até 7 dias, renovando
   à vontade.
 
+## Alternativas consideradas
+
+### `User` com FK opcional para `Customer`
+
+Proposta inicial de um colega, ao revisar a feature de documento (CPF/CNPJ) no
+`User`: a tabela `User` continuaria sendo a única fonte de login, e um cliente
+que precisasse logar ganharia uma linha em `User` vinculada ao seu `Customer`
+via `customerId`. Descartada porque:
+
+- `User.role` (`ADMIN`/`MECHANIC`/`ATTENDANT`) é um modelo de permissão
+  interno da equipe da oficina — misturar clientes ali exigiria um 4º valor de
+  role ou depender de `customerId` não-nulo como discriminador implícito, um
+  cheiro de "campo nulo que só faz sentido em um branch do enum".
+- Resolve apenas o caso "operador de empresa PJ" — todo cliente pessoa física
+  que precisasse logar também exigiria uma linha-sombra em `User`.
+- Compartilhar guard/verificador entre funcionário e cliente aumenta o raio de
+  dano de um bug de RBAC: um cliente poderia acidentalmente passar por um
+  guard `@Roles(ADMIN)` só por estar na mesma tabela.
+
+### `UserRole.CUSTOMER` como valor do enum interno
+
+Chegou a ser implementada numa iteração paralela deste desenho (branch
+`feature/customer-login`, divergente da que resultou nesta entrega).
+Descartada pelo mesmo motivo do item anterior: `UserRole` descreve permissão
+*dentro* da oficina, e um cliente externo não possui nenhuma — um valor
+`CUSTOMER` no mesmo enum confundiria dois domínios de autorização que esta
+ADR mantém deliberadamente isolados (ver "Dois fluxos de autenticação
+totalmente isolados", acima).
+
+### `Customer` com login e senha próprios
+
+Direção adotada numa discussão anterior a esta ADR: `Customer` ganharia seu
+próprio `passwordHash`, paralelo a `User`, evitando misturar cliente e
+funcionário na mesma tabela. Superada pelo desenho final quando o requisito
+evoluiu para cobrir a pessoa física que representa **mais de uma** empresa —
+um `Customer` com login próprio duplicaria a identidade dessa pessoa em dois
+registros de `Customer`, um por empresa representada, em vez de reconhecer
+que é a mesma pessoa física em ambos os vínculos. Mantida a decisão de
+`Customer` nunca ter credencial própria; a identidade de login ficou em
+`User`, com `Customer` permanecendo só a parte comercial.
+
 ## Riscos aceitos
 
 - Senha inicial e código de reset trafegam por e-mail (mitigado por geração
