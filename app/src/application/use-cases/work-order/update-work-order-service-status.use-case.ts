@@ -7,9 +7,12 @@ import { WorkOrderServiceStatus } from '@domain/enums/work-order-service-status.
 import { StockMovementType } from '@domain/enums/stock-movement-type.enum';
 
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { UpdateWorkOrderServiceStatusDto } from '@application/ports/input/work-order/dto/update-work-order-service-status.dto';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
@@ -24,6 +27,8 @@ export class UpdateWorkOrderServiceStatusUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(dto: UpdateWorkOrderServiceStatusDto): Promise<WorkOrderService> {
@@ -35,6 +40,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
       currentStatus,
       previousServiceStatus,
       consumption,
+      transition,
     } = await this.unitOfWork.executeTransaction(async (repos) => {
       const workOrder = await repos.workOrder.findByIdWithDetails(dto.workOrderId);
 
@@ -65,17 +71,17 @@ export class UpdateWorkOrderServiceStatusUseCase {
 
       await repos.workOrder.updateServiceItemStatus(workOrder, item);
 
-      if (statusChanged) {
-        await repos.statusHistory.create(
-          StatusHistory.create({
-            workOrderId: workOrder.id,
-            changedById: dto.userId,
-            previousStatus,
-            newStatus: workOrder.status,
-            notes: null,
-          }),
-        );
-      }
+      const transition = statusChanged
+        ? await repos.statusHistory.create(
+            StatusHistory.create({
+              workOrderId: workOrder.id,
+              changedById: dto.userId,
+              previousStatus,
+              newStatus: workOrder.status,
+              notes: null,
+            }),
+          )
+        : undefined;
 
       return {
         item,
@@ -85,6 +91,7 @@ export class UpdateWorkOrderServiceStatusUseCase {
         currentStatus: workOrder.status,
         previousServiceStatus,
         consumption,
+        transition,
       };
     });
 
@@ -106,6 +113,8 @@ export class UpdateWorkOrderServiceStatusUseCase {
       previousWorkOrderStatus: previousStatus,
       currentWorkOrderStatus: currentStatus,
     });
+
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
 
     return item;
   }

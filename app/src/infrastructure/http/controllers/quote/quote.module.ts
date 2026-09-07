@@ -20,6 +20,8 @@ import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interf
 
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
 import { QuoteController } from './quote.controller';
@@ -35,14 +37,20 @@ import { QuoteController } from './quote.controller';
         quoteRepository: IQuoteRepository,
         emailSender: IEmailSenderService,
         logger: ILogger,
+        metrics: IMetrics,
+        statusHistoryRepository: IStatusHistoryRepository,
       ) => {
         const approveQuoteUseCase = new ApproveQuoteUseCase(
           unitOfWork,
           logger.forContext(ApproveQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
         const rejectQuoteUseCase = new RejectQuoteUseCase(
           unitOfWork,
           logger.forContext(RejectQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
 
         return new QuoteCleanController(
@@ -58,12 +66,21 @@ import { QuoteController } from './quote.controller';
             unitOfWork,
             emailSender,
             logger.forContext(SubmitQuoteUseCase.name),
+            metrics,
+            statusHistoryRepository,
           ),
           new UpdateQuoteStatusUseCase(approveQuoteUseCase, rejectQuoteUseCase),
           new FindAllQuotesPaginatedUseCase(quoteRepository),
         );
       },
-      inject: ['IUnitOfWork', 'IQuoteRepository', 'IEmailSenderService', 'ILogger'],
+      inject: [
+        'IUnitOfWork',
+        'IQuoteRepository',
+        'IEmailSenderService',
+        'ILogger',
+        'IMetrics',
+        'IStatusHistoryRepository',
+      ],
     },
   ],
 })

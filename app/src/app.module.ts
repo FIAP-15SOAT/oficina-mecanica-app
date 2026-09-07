@@ -9,6 +9,7 @@ import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exce
 import { InfrastructureExceptionFilter } from './infrastructure/http/filters/infrastructure-exception.filter';
 
 import { LoggingModule } from './infrastructure/logging/logging.module';
+import { TelemetryModule } from './infrastructure/telemetry/telemetry.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { RepositoriesModule } from './infrastructure/persistence/prisma/repositories/repositories.module';
 import { HealthModule } from './infrastructure/http/controllers/health/health.module';
@@ -44,6 +45,7 @@ import { MeModule } from './infrastructure/http/controllers/me/me.module';
       }),
     }),
     LoggingModule,
+    TelemetryModule,
     PrismaModule,
     RepositoriesModule,
     HealthModule,

@@ -1,12 +1,9 @@
 import { LogEventDefinition } from '@application/logging/log-event';
 import { LogFields } from '@application/logging/log-field';
 
-/**
- * Rejeita, em tempo de compilação, um campo que a entrada do catálogo não
- * declara.
- */
-export type NoExtraFields<TAllowed, TGiven> = TGiven &
-  Record<Exclude<keyof TGiven, keyof TAllowed>, never>;
+import { NoExtraFields } from './no-extra-fields';
+
+export type { NoExtraFields };
 
 export interface ILogger {
   debug(message: string): void;

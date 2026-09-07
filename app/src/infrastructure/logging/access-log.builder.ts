@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { isIP } from 'node:net';
 import { Request, Response } from 'express';
 
-import { HEALTH_PATHS } from '@infrastructure/health/health.constants';
+import { isHealthProbePath } from '@infrastructure/health/health.constants';
 
 import { ALLOWED_REQUEST_HEADERS } from './field-registry';
 import { runSafely } from './logging-diagnostics';
@@ -159,7 +159,7 @@ function isSuppressedHealthProbe(request: IncomingMessage, response: ServerRespo
 
   const { path, url } = request as Request;
 
-  return HEALTH_PATHS.has(path ?? url ?? '');
+  return isHealthProbePath(path ?? url ?? '');
 }
 
 export function buildAccessLogAttributes(

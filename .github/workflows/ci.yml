@@ -72,6 +72,10 @@ jobs:
         working-directory: app
         run: npm run build
 
+      - name: Telemetry preload smoke
+        working-directory: app
+        run: npm run test:smoke
+
   db-validation:
     name: DB Validation
     runs-on: ubuntu-latest

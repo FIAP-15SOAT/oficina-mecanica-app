@@ -11,17 +11,21 @@ import { UserRole } from '@domain/enums/user-role.enum';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { createMockService } from '../../../../helpers/service-mock.factory';
 import { createMockPartSupply } from '../../../../helpers/part-supply-mock.factory';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { createMockMetrics } from '../../../../helpers/metrics-mock.factory';
 
 describe('CreateWorkOrderUseCase', () => {
   let useCase: CreateWorkOrderUseCase;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
+  let metrics: jest.Mocked<IMetrics>;
 
   beforeEach(() => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
-    useCase = new CreateWorkOrderUseCase(mockUow);
+    metrics = createMockMetrics();
+    useCase = new CreateWorkOrderUseCase(mockUow, metrics);
   });
 
   it('should create a work order and initial status history', async () => {
@@ -376,5 +380,74 @@ describe('CreateWorkOrderUseCase', () => {
     expect(mockRepos.workOrder.generateNextNumber).not.toHaveBeenCalled();
     expect(mockRepos.workOrder.create).not.toHaveBeenCalled();
     expect(mockRepos.quote.create).not.toHaveBeenCalled();
+  });
+  describe('volume metric', () => {
+    function arrangeHappyPath() {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
+      const createdWO = createMockWorkOrder({ customerId: customer.id, vehicleId: vehicle.id });
+
+      (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+      (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+      (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+      (mockRepos.workOrder.create as jest.Mock).mockResolvedValue(createdWO);
+      (mockRepos.statusHistory.create as jest.Mock).mockResolvedValue({});
+
+      return { customerId: customer.id, vehicleId: vehicle.id };
+    }
+
+    it('should count an actually created order exactly once', async () => {
+      const { customerId, vehicleId } = arrangeHappyPath();
+
+      await useCase.execute({ customerId, vehicleId, userId: randomUUID() });
+
+      expect(metrics.increment).toHaveBeenCalledTimes(1);
+      expect(metrics.increment).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'work_order.created', kind: 'counter' }),
+        {},
+      );
+    });
+
+    /**
+     * A emissão acontece **depois** do `await`: o Prisma só solicita o COMMIT
+     * quando o callback do `$transaction` retorna, então contar lá dentro
+     * incluiria o que vier a ser revertido.
+     */
+    it('should not count when the transaction throws', async () => {
+      const customer = createMockCustomer();
+      const vehicle = createMockVehicle({ customerId: customer.id });
+
+      (mockRepos.customer.findById as jest.Mock).mockResolvedValue(customer);
+      (mockRepos.vehicle.findById as jest.Mock).mockResolvedValue(vehicle);
+      (mockRepos.workOrder.generateNextNumber as jest.Mock).mockResolvedValue('000001');
+      (mockRepos.workOrder.create as jest.Mock).mockRejectedValue(new Error('rollback'));
+
+      await expect(
+        useCase.execute({ customerId: customer.id, vehicleId: vehicle.id, userId: randomUUID() }),
+      ).rejects.toThrow('rollback');
+
+      expect(metrics.increment).not.toHaveBeenCalled();
+    });
+
+    it('should emit only after the transaction returns', async () => {
+      const { customerId, vehicleId } = arrangeHappyPath();
+      const calls: string[] = [];
+
+      (mockUow.executeTransaction as jest.Mock).mockImplementation(
+        async (work: (repos: IRepositories) => Promise<unknown>) => {
+          const result = await work(mockRepos);
+          calls.push('commit');
+
+          return result;
+        },
+      );
+      metrics.increment.mockImplementation(() => {
+        calls.push('increment');
+      });
+
+      await useCase.execute({ customerId, vehicleId, userId: randomUUID() });
+
+      expect(calls).toEqual(['commit', 'increment']);
+    });
   });
 });

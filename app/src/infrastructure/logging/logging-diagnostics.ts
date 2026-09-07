@@ -23,6 +23,8 @@ export type LoggingFailureStage =
 
 export const DESTINATION_FAILURE_POLICY = 'continue-degraded';
 
+const LOGGING_FAILURE_MESSAGE = 'logging failure';
+
 export interface LoggingFailureDetail {
   field?: string;
   errorType?: string;
@@ -43,7 +45,7 @@ export function reportLoggingFailure(
   stage: LoggingFailureStage,
   detail: LoggingFailureDetail = {},
 ): void {
-  writeDiagnostic({
+  writeDiagnostic(LOGGING_FAILURE_MESSAGE, {
     'oficina.logging.failure.stage': stage,
     ...(detail.field ? { 'oficina.logging.failure.field': detail.field } : {}),
     ...(detail.errorType ? { 'oficina.logging.failure.error_type': detail.errorType } : {}),
@@ -57,19 +59,30 @@ export function reportDestinationFailure(): void {
 
   destinationFailureReported = true;
 
-  writeDiagnostic({
+  writeDiagnostic(LOGGING_FAILURE_MESSAGE, {
     'oficina.logging.failure.stage': 'destination',
     'oficina.logging.failure.policy': DESTINATION_FAILURE_POLICY,
   });
 }
 
-function writeDiagnostic(attributes: Record<string, string>): void {
+/**
+ * Exportada porque o canal de diagnóstico do SDK de telemetria precisa sair
+ * pelo **mesmo** fd 2, com o mesmo envelope e os mesmos atributos de recurso:
+ * um segundo escritor teria a própria política de escape e a própria maneira de
+ * falhar. Escrever essa classe de mensagem em stdout quebraria o contrato de um
+ * objeto JSON por linha com todas as chaves declaradas.
+ */
+export function writeDiagnostic(
+  message: string,
+  attributes: Record<string, string>,
+  level: 'warn' | 'error' = 'error',
+): void {
   try {
     process.stderr.write(
       `${JSON.stringify({
         timestamp: new Date().toISOString(),
-        level: 'error',
-        message: 'logging failure',
+        level,
+        message,
         ...resolveLoggerConfig().resource,
         ...attributes,
       })}\n`,

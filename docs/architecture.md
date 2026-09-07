@@ -17,12 +17,13 @@ Clean Architecture + DDD do backend da Oficina Mecânica — camadas estritas, e
 - [Aprovação de orçamento por e-mail](#aprovação-de-orçamento-por-e-mail)
 - [Exceções por Camada](#exceções-por-camada)
 - [Logs estruturados](#logs-estruturados)
+- [Telemetria: traces e métricas](#telemetria-traces-e-métricas)
 - [Decisões de Arquitetura (ADRs)](#decisões-de-arquitetura-adrs)
 - [Modelo C4](#modelo-c4)
 
 ## Estrutura de camadas
 
-O projeto segue **Clean Architecture** com separação estrita de camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. O código-fonte aponta apenas para dentro: `domain/` e `application/` são **livres de framework e ORM** (uma cerca de ESLint proíbe `@nestjs/*` e `@generated/client` nessas camadas e quebra a build se violada). A camada `interface-adapters/` concentra os **Clean Controllers** e **Presenters** (POJOs livres de framework); a borda NestJS (rotas, Swagger, guards, DTOs) fica em `infrastructure/http/` e apenas **delega** ao Clean Controller.
+O projeto segue **Clean Architecture** com separação estrita de camadas e adota práticas de **Domain-Driven Design** — entidades ricas, value objects, agregados (Aggregate Roots), invariantes de domínio e regras de negócio encapsuladas no próprio domínio. O código-fonte aponta apenas para dentro: `domain/` e `application/` são **livres de framework e ORM** (uma cerca de ESLint proíbe `@nestjs/*`, `@generated/client` e `@opentelemetry/*` nessas camadas — e em `interface-adapters/` — quebrando a build se violada). A camada `interface-adapters/` concentra os **Clean Controllers** e **Presenters** (POJOs livres de framework); a borda NestJS (rotas, Swagger, guards, DTOs) fica em `infrastructure/http/` e apenas **delega** ao Clean Controller.
 
 Toda a aplicação fica sob o diretório `app/` na raiz do repositório (código, testes, Prisma e todas as configs de tooling); a raiz guarda apenas concerns transversais (`README.md`, `.gitignore`) e as pastas `docs/`, `infra/`, `k8s/`, `collections/`, `reports/` e `openspec/`.
 
@@ -51,6 +52,9 @@ app/src/
 │   │   ├── input/<domínio>/         # I<Nome>UseCase (input ports) + DTOs de entrada
 │   │   └── output/                  # IEmailSenderService, IHashService, ITokenService,
 │   │                                # ILogger (output ports)
+│   ├── metrics/                     # IMetrics é a porta; aqui ficam o catálogo tipado das
+│   │                                # métricas de negócio e o cálculo puro de permanência
+│   │                                # por status e dos dois totais
 │   ├── logging/                     # LogEventDefinition + catálogo tipado e fechado
 │   │                                # de eventos de NEGÓCIO (nomes lógicos, sem chave física)
 │   ├── policies/                    # CustomerAccessPolicy — autorização por vínculo,
@@ -140,6 +144,13 @@ app/src/
 │   │   └── redaction/               # field-classifier (tokenizador + regras),
 │   │                                # pii-masker, text-sanitizer,
 │   │                                # payload-sanitizer (valores E nomes de propriedade)
+│   ├── telemetry/                   # TelemetryModule (@Global) + OtelMetricsAdapter,
+│   │                                # metric-registry (lógico → físico + agregação),
+│   │                                # span-request-attributes (sobrescreve url.path,
+│   │                                #   client.address e user_agent.original; remove url.query),
+│   │                                # incoming-request-filter (exclusão das probes),
+│   │                                # telemetry-lifecycle.service (flush no encerramento),
+│   │                                # telemetry-resource, telemetry-diagnostics
 │   ├── services/                    # BcryptHashService, JwtTokenService,
 │   │                                # MailerEmailSenderService + InfrastructureServicesModule
 │   └── exceptions/                  # InfrastructureException, AuthenticationFailedException,
@@ -147,6 +158,9 @@ app/src/
 │                                    # ConcurrencyException
 │
 ├── app.module.ts
+├── otel.ts                          # preload (`node --require`): registra as instrumentações
+│                                    # ANTES de express/pg serem carregados; sem endpoint,
+│                                    # não registra nada
 └── main.ts                          # bufferLogs + useLogger, configureApp(), shutdown hooks, listen
 
 app/test/
@@ -172,6 +186,7 @@ app/test/
     ├── quote.e2e-spec.ts
     ├── service.e2e-spec.ts
     ├── stock.e2e-spec.ts
+    ├── telemetry.e2e-spec.ts
     ├── user.e2e-spec.ts
     ├── vehicle.e2e-spec.ts
     └── work-order.e2e-spec.ts
@@ -504,14 +519,101 @@ O destino é o stdout **síncrono**, e a promessa é declarada na força certa: 
 
 A linha de diagnóstico carrega o envelope, os atributos de recurso e o estágio que falhou — nunca o valor. Os atributos de recurso estão ali porque, num destino compartilhado, é a linha que sobra quando o stdout falhou: sem `service.*` ela seria impossível de atribuir.
 
+## Telemetria: traces e métricas
+
+A aplicação emite **traces** e **métricas** pelo SDK do OpenTelemetry, sem nenhuma dependência, credencial, cabeçalho ou nome de plataforma de observabilidade — a tradução para qualquer fornecedor acontece fora do processo. Ver [ADR 0005](./adr/0005-opentelemetry.md).
+
+**Com `OTEL_EXPORTER_OTLP_ENDPOINT` vazio, nada é iniciado**: nenhuma instrumentação registrada, nenhum exportador, nenhuma conexão. É o interruptor, e é o que mantém desenvolvimento local e as suítes E2E sem exportador de fundo.
+
+### O registro acontece por preload, e a ordem é contrato
+
+```
+node --require ./dist/src/otel.js dist/src/main
+```
+
+A instrumentação funciona **substituindo funções da biblioteca no momento em que ela é carregada**, e `import { AppModule }` no topo de `main.ts` já arrasta `express` e `pg` na avaliação dos módulos. Registrar depois produz um processo que sobe normalmente, **não emite nada e não reporta erro** — por isso `src/otel.ts` importa apenas folhas puras da aplicação (`logger.config`, `health.constants`, `url-attributes` e a cadeia de redação), nenhuma das quais carrega `express`, `pg` ou `pino` transitivamente.
+
+Quatro instrumentações, nomeadas: `http`, `express` (que é quem resolve `http.route` **parametrizado**, a dimensão de toda métrica por rota), `pg` (o driver que de fato executa as consultas, já que o `PrismaService` entrega um `pg.Pool` explícito) e `runtime-node`. **Nenhum metapacote**, e **nenhum span criado por código de negócio**.
+
+### Correlação log-trace
+
+Um `mixin` do pino (`trace-correlation.ts`) lê o span ativo e injeta `trace_id`, `span_id` e `trace_flags` — a grafia que a convenção define para o mapeamento fora do OTLP, pela mesma razão que já sustenta `otel.scope.name`. Fora de um span os três ficam **ausentes**, nunca vazios nem sintéticos: um identificador fabricado leva o destino a correlacionar com um traço que não existe.
+
+Os três são declarados em `CORRELATION_FIELDS` como qualquer outro atributo — sem isso o `normalizeLogRecord` os descartaria em silêncio, e a correlação seria prometida sem ser entregue.
+
+**`request.id` permanece.** `trace_id` só existe onde há span; `request.id` existe em toda linha da requisição e também fora dela — inicialização, encerramento, eventos de negócio pós-resposta e requisições que morrem antes de alcançar a instrumentação. É também o valor ecoado no cabeçalho de resposta, ou seja, o que um usuário cita num chamado.
+
+A instrumentação de pino **não** é usada, e não por preferência: sob Jest nenhuma instrumentação é aplicada, então a asserção "a linha de access log carrega `trace_id`" ficaria sem cobertura possível e o E2E que a afirmasse passaria **vazio**.
+
+### Probes de saúde excluídas do tracing
+
+`ignoreIncomingRequestHook` consulta `isHealthProbePath`, o **mesmo predicado** que o supressor de access log usa — exportado por `health.constants.ts`, nunca duplicado. Neste ambiente as probes são praticamente todo o volume de requisições (~108 mil spans/dia com 5 réplicas, contando os spans `pg` filhos da readiness).
+
+A exclusão acontece **na entrada** porque é o único ponto em que ela é completa: `ignoreIncomingRequestHook` aplica `suppressTracing()` e por isso alcança os spans **descendentes**, incluindo o `SELECT 1` da verificação de prontidão. Isto **contraria** o ADR 0003, que preferia descartar depois de conhecer o resultado — mas esse descarte só derruba o span de servidor e deixaria os spans de consulta órfãos. A perda assumida (a duração do `SELECT 1` numa probe que falha) está declarada no ADR 0005, junto dos três registros que sobrevivem: a linha de access log em `error`, o evento `health.degraded` com a categoria da causa, e o estado da instância no Kubernetes.
+
+### Nenhum span carrega dado que o log não carregue sanitizado
+
+Toda a cadeia de redação existe apenas no caminho de log; um atributo de span sai por serialização própria. A garantia é mantida **por subtração e reuso**, no `startIncomingSpanHook`:
+
+| Atributo | Política |
+| --- | --- |
+| `url.path` | passa pelo **mesmo** `sanitizeUrlPath` do access log — mesma canonicalização, mesmo scrubber |
+| `url.query` | **não é emitida**. A proteção do log é por *nome de parâmetro* sobre a query decomposta, e um atributo de span é montado antes dessa decomposição; emitir "o que dá para sanitizar" seria fail-open |
+| `client.address` | resolvido pelo mesmo `proxy-addr` que alimenta o `req.ip` do Express, com a mesma `TRUSTED_PROXY_CIDRS`, e ainda validado por `net.isIP()` (omitido quando não é endereço). Caminha da direita para a esquerda até o primeiro salto não confiável, então o span e a linha de acesso coincidem em qualquer configuração — nunca o valor mais à esquerda, que é o que o chamador escolhe |
+| `user_agent.original` | truncado e varrido como qualquer texto livre |
+| `server.address` / `server.port` | **não emitidos**. A instrumentação os deriva de `Forwarded`/`X-Forwarded-Host`/`Host` sem validar nem truncar, e a linha de acesso não carrega esse atributo em forma nenhuma |
+| cabeçalhos genéricos | captura opt-in, desligada |
+| corpo de requisição/resposta | nunca capturado |
+| consulta ao banco | `enhancedDatabaseReporting` desligado: nenhum valor de parâmetro no atributo |
+
+`instrumentation-nestjs-core` é **excluído** por esse mesmo critério: grava `url.full` sem oferecer ponto de configuração, e qualquer parâmetro de query com PII ou segredo — `GET /api/customers?document=<CPF>`, por exemplo — sairia inteiro num span que nenhuma correção nossa alcança.
+
+### Métricas de negócio
+
+Uma porta `IMetrics` em `application/ports/output/`, no mesmo molde de `ILogger` e pelo mesmo critério — *a camada de aplicação precisa emitir esse sinal?* Para traces a resposta é não (o span vem do transporte, e por isso não existe `ITracer`); para estas métricas o requisito faz do caso de uso o emissor, e a porta tem **6 chamadores**.
+
+```
+application/ports/output/metrics.service.interface.ts   IMetrics — interface TS pura
+application/metrics/business-metric.catalog.ts          nome lógico, instrumento, unidade, atributos
+application/metrics/work-order-duration.ts              cálculo puro de permanência e totais
+infrastructure/telemetry/metric-registry.ts             lógico para físico, agregação, cardinalidade
+infrastructure/telemetry/otel-metrics.adapter.ts        Meter do OTel, instrumento criado uma vez
+```
+
+| Métrica (nome físico) | Instrumento | Unidade | Atributo |
+| --- | --- | --- | --- |
+| `oficina.work_order.created` | Counter | `{work_order}` | — |
+| `oficina.work_order.status.duration` | Histogram | `s` | `oficina.work_order.status` |
+| `oficina.work_order.diagnosis_to_completion.duration` | Histogram | `s` | — |
+| `oficina.work_order.lead_time.duration` | Histogram | `s` | — |
+
+Quatro regras que o código torna difíceis de violar:
+
+1. **Instrumento síncrono, nunca observação periódica do banco.** Um `ObservableGauge` lendo o estado compartilhado reportaria o mesmo valor em cada réplica, e a soma no destino daria N vezes a verdade sob o HPA.
+2. **Emissão sempre depois do commit**, pela mesma razão dos eventos de negócio: o Prisma só solicita o COMMIT quando o callback do `$transaction` retorna.
+3. **Permanência em todo status com transição de saída** — `REJECTED` inclusive, porque a máquina de estados declara `REJECTED` para `AWAITING_APPROVAL`. Terminais são apenas `DELIVERED` e `CANCELLED`, e essa definição é derivada do próprio mapa (`WorkOrder.isTerminalStatus`), nunca de uma segunda lista. **A permanência ancora na entrada mais recente; os totais, na primeira.**
+4. **Os dois extremos de cada intervalo vêm do carimbo do banco**, e a leitura acontece **depois do commit**, fora da transação. `created_at` é `@default(now())`, e usar `Date.now()` do processo subtrairia relógios distintos — sob desvio pod-RDS, produziria durações negativas, que o SDK descarta em silêncio. Dentro da transação, essa leitura — que existe só para observabilidade — podia derrubar a operação de negócio junto, e sem conserto local: no PostgreSQL a transação já estaria abortada e o `COMMIT` viraria ROLLBACK silencioso, com a API respondendo sucesso. A transição corrente é localizada por **id**, nunca por posição.
+
+A agregação das durações é **exponencial**, declarada no registry: a padrão usa fronteiras que terminam em 10 000, dimensionadas para milissegundos de requisição, e permanências medidas em segundos cairiam **todas** no último balde — a média continuaria certa e os percentis não teriam significado, sem nada falhar.
+
+A aplicação **não cria** métrica própria de latência, contagem por rota, CPU, memória, disponibilidade ou resultado de health check. As métricas semconv que as instrumentações emitem sozinhas — `http.server.request.duration` por `http.route`, `db.client.operation.duration` e `db.client.connection.*` — são **preservadas**: são a resposta portátil para "latência das APIs" e a única visão de ocupação de pool em série temporal.
+
+### Degradação, encerramento e diagnóstico
+
+- **A aplicação nunca depende do pipeline** — nem para subir. A fronteira não-lançante do preload cobre a **construção** do SDK, não só o `start()`: uma relação inválida entre variáveis do leitor de métricas lançava no construtor e, num `--require`, derrubava o processo com código 1 e sem uma linha em stdout. O `BatchSpanProcessor` bufferiza e **descarta** quando o export falha; falha ao emitir métrica é absorvida pelo adaptador.
+- **Com o endpoint vazio, nenhum módulo do SDK é carregado.** Os imports acontecem depois do interruptor: com `import` de topo, o modo desligado ainda pagava ~348 módulos e ~13,5 MiB de RSS por pod.
+- **O flush vive num hook do Nest** (`TelemetryLifecycleService.onApplicationShutdown`), depois do drain e do fechamento do servidor — nunca em `main.ts` (que não é a composition root sob teste) nem num tratador de sinal (que correria em paralelo com o encerramento). Os prazos de exportação são declarados em 5 s porque os padrões do SDK (até 30 s) são maiores que o que sobra de `terminationGracePeriodSeconds` depois da janela de drenagem.
+- **O canal `diag` do SDK vai para stderr**, nunca para stdout: uma falha de exportação imprimiria texto livre e quebraria o contrato "um objeto JSON por linha, todas as chaves declaradas".
+
 ## Decisões de Arquitetura (ADRs)
 
 Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no formato Markdown:
 
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
-- [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md) *(parcialmente superado pelo 0003)*
-- [ADR 0003 — Health Checks: Liveness e Readiness como Endpoints Dedicados](./adr/0003-health-checks.md)
+- [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md) *(parcialmente superado pelos ADRs 0003 e 0005)*
+- [ADR 0003 — Health Checks: Liveness e Readiness como Endpoints Dedicados](./adr/0003-health-checks.md) *(política de volume das probes contrariada pelo 0005)*
 - [ADR 0004 — Autenticação externa de clientes por CPF via função serverless](./adr/0004-autenticacao-de-clientes.md)
+- [ADR 0005 — Instrumentação OpenTelemetry: traces, correlação e métricas de negócio](./adr/0005-opentelemetry.md)
 
 ## Modelo C4
 

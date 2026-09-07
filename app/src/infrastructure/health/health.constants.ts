@@ -9,5 +9,9 @@ export const READINESS_PATH = `/${GLOBAL_PREFIX}/${HEALTH_SEGMENT}/${READINESS_S
 
 export const HEALTH_PATHS: ReadonlySet<string> = new Set([LIVENESS_PATH, READINESS_PATH]);
 
+export function isHealthProbePath(pathname: string): boolean {
+  return HEALTH_PATHS.has(pathname);
+}
+
 export const HEALTHY_BODY = { status: 'ok' } as const;
 export const UNAVAILABLE_BODY = { status: 'unavailable' } as const;

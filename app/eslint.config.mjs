@@ -65,23 +65,6 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/domain/**/*.ts', 'src/application/**/*.ts'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@nestjs/*', '@nestjs/**', '@generated/*', '@generated/**'],
-              message:
-                'Camada interna (domain/application) deve ser livre de framework e ORM: não importe @nestjs/* nem @generated/* (Prisma).',
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     files: ['src/**/*.ts'],
     ignores: ['src/infrastructure/persistence/prisma/**'],
     rules: {
@@ -93,6 +76,54 @@ export default tseslint.config(
               group: ['@generated/*', '@generated/**'],
               message:
                 'Somente infrastructure/persistence/prisma/ pode importar @generated/client (Prisma).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/domain/**/*.ts', 'src/application/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@nestjs/*',
+                '@nestjs/**',
+                '@generated/*',
+                '@generated/**',
+                '@opentelemetry/*',
+                '@opentelemetry/**',
+              ],
+              message:
+                'Camada interna (domain/application) deve ser livre de framework, ORM e telemetria: não importe @nestjs/*, @generated/* (Prisma) nem @opentelemetry/* (use a porta IMetrics).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/interface-adapters/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@nestjs/*',
+                '@nestjs/**',
+                '@generated/*',
+                '@generated/**',
+                '@opentelemetry/*',
+                '@opentelemetry/**',
+              ],
+              message:
+                'interface-adapters/ é o anel de adaptadores livre de framework: não importe @nestjs/*, @generated/* (Prisma) nem @opentelemetry/*.',
             },
           ],
         },

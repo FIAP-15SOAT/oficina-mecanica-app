@@ -9,19 +9,27 @@ import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { createMockMetrics } from '../../../../helpers/metrics-mock.factory';
+import {
+  arrangeStatusHistory,
+  createMockStatusHistory,
+} from '../../../../helpers/status-history-mock.factory';
 
 describe('RejectQuoteUseCase', () => {
   let useCase: RejectQuoteUseCase;
   let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
+  let metrics: jest.Mocked<IMetrics>;
 
   beforeEach(() => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    metrics = createMockMetrics();
     logger = createMockLogger();
-    useCase = new RejectQuoteUseCase(mockUow, logger);
+    useCase = new RejectQuoteUseCase(mockUow, logger, metrics, mockRepos.statusHistory);
   });
 
   it('should reject quote and update work order status to REJECTED', async () => {
@@ -118,5 +126,66 @@ describe('RejectQuoteUseCase', () => {
       expect.anything(),
       expect.objectContaining({ customerId: workOrder.customerId }),
     );
+  });
+  describe('dwell metrics', () => {
+    it('should record the dwell in AWAITING_APPROVAL when the work order transitions', async () => {
+      const quote = createMockQuote({ status: QuoteStatus.SENT });
+      const workOrder = createMockWorkOrder({
+        id: quote.workOrderId,
+        status: WorkOrderStatus.AWAITING_APPROVAL,
+      });
+
+      (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.quote.findByWorkOrderId as jest.Mock).mockResolvedValue([quote]);
+      (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
+      arrangeStatusHistory(
+        mockRepos.statusHistory,
+        [
+          createMockStatusHistory({
+            workOrderId: workOrder.id,
+            previousStatus: WorkOrderStatus.IN_DIAGNOSIS,
+            newStatus: WorkOrderStatus.AWAITING_APPROVAL,
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          }),
+        ],
+        new Date('2026-01-01T01:30:00.000Z'),
+      );
+
+      await useCase.execute(quote.id);
+
+      expect(metrics.record).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'work_order.status.duration' }),
+        1.5 * 3600,
+        { workOrderStatus: WorkOrderStatus.AWAITING_APPROVAL },
+      );
+    });
+
+    /**
+     * Sem transição da OS não há entrada nova no histórico: não existe
+     * permanência a fechar, e emitir aqui inventaria uma.
+     */
+    it('should not record a metric when another submitted quote keeps the work order still', async () => {
+      const quote = createMockQuote({ status: QuoteStatus.SENT });
+      const sibling = createMockQuote({
+        status: QuoteStatus.SENT,
+        workOrderId: quote.workOrderId,
+      });
+      const workOrder = createMockWorkOrder({
+        id: quote.workOrderId,
+        status: WorkOrderStatus.AWAITING_APPROVAL,
+      });
+
+      (mockRepos.quote.findById as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.quote.findByWorkOrderId as jest.Mock).mockResolvedValue([quote, sibling]);
+      (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+
+      await useCase.execute(quote.id);
+
+      expect(metrics.record).not.toHaveBeenCalled();
+      expect(mockRepos.statusHistory.findByWorkOrderId).not.toHaveBeenCalled();
+    });
   });
 });

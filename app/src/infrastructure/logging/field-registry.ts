@@ -19,6 +19,7 @@ export type FieldOwner =
   | 'interceptor'
   | 'exception-filter'
   | 'adapter'
+  | 'instrumentation'
   | 'use-case'
   | 'infrastructure-service';
 
@@ -377,6 +378,9 @@ export const RESOURCE_FIELDS: readonly FieldDefinition[] = [
 export const CORRELATION_FIELDS: readonly FieldDefinition[] = [
   field('request.id', 'string', 'high', 'access-log', 'identifier'),
   field('otel.scope.name', 'string', 'low', 'adapter', 'clear', true),
+  field('trace_id', 'string', 'high', 'instrumentation', 'identifier', true),
+  field('span_id', 'string', 'high', 'instrumentation', 'identifier', true),
+  field('trace_flags', 'string', 'high', 'instrumentation', 'identifier', true),
 ];
 
 export const HTTP_FIELDS: readonly FieldDefinition[] = [

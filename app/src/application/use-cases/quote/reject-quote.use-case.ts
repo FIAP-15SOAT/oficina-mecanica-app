@@ -4,8 +4,11 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
@@ -13,67 +16,80 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
-    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus, customerId } =
-      await this.unitOfWork.executeTransaction(async (repos) => {
-        const quote = await repos.quote.findById(quoteId);
+    const {
+      quote,
+      workOrderId,
+      workOrderNumber,
+      previousQuoteStatus,
+      previousStatus,
+      transition,
+      customerId,
+    } = await this.unitOfWork.executeTransaction(async (repos) => {
+      const quote = await repos.quote.findById(quoteId);
 
-        if (!quote) {
-          throw new ResourceNotFoundException('Orçamento', quoteId);
-        }
+      if (!quote) {
+        throw new ResourceNotFoundException('Orçamento', quoteId);
+      }
 
-        const previousQuoteStatus = quote.status;
+      const previousQuoteStatus = quote.status;
 
-        quote.reject();
+      quote.reject();
 
-        const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
-        const customerId = workOrder.customerId;
-        const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
+      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+      const customerId = workOrder.customerId;
+      const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
 
-        const hasOtherSentQuote = workOrderQuotes.some(
-          (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
-        );
+      const hasOtherSentQuote = workOrderQuotes.some(
+        (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
+      );
 
-        if (hasOtherSentQuote) {
-          return {
-            quote: await repos.quote.update(quote),
-            workOrderId: workOrder.id,
-            workOrderNumber: workOrder.number.toString(),
-            previousQuoteStatus,
-            previousStatus: undefined,
-            customerId,
-          };
-        }
-
-        const previousStatus = workOrder.status;
-
-        workOrder.changeStatus(WorkOrderStatus.REJECTED);
-
-        const [updatedQuote] = await Promise.all([
-          repos.quote.update(quote),
-          repos.workOrder.update(workOrder),
-          repos.statusHistory.create(
-            StatusHistory.create({
-              workOrderId: workOrder.id,
-              changedById: userId ?? null,
-              previousStatus,
-              newStatus: WorkOrderStatus.REJECTED,
-              notes: notes ?? `Orçamento ${quoteId} rejeitado`,
-            }),
-          ),
-        ]);
-
+      if (hasOtherSentQuote) {
+        // A OS não transiciona quando ainda há outro orçamento enviado: sem
+        // entrada nova no histórico, não há permanência a fechar.
         return {
-          quote: updatedQuote,
+          quote: await repos.quote.update(quote),
           workOrderId: workOrder.id,
           workOrderNumber: workOrder.number.toString(),
           previousQuoteStatus,
-          previousStatus,
+          previousStatus: undefined,
+          transition: undefined,
           customerId,
         };
-      });
+      }
+
+      const previousStatus = workOrder.status;
+
+      workOrder.changeStatus(WorkOrderStatus.REJECTED);
+
+      const [updatedQuote, , transition] = await Promise.all([
+        repos.quote.update(quote),
+        repos.workOrder.update(workOrder),
+        repos.statusHistory.create(
+          StatusHistory.create({
+            workOrderId: workOrder.id,
+            changedById: userId ?? null,
+            previousStatus,
+            newStatus: WorkOrderStatus.REJECTED,
+            notes: notes ?? `Orçamento ${quoteId} rejeitado`,
+          }),
+        ),
+      ]);
+
+      return {
+        quote: updatedQuote,
+        workOrderId: workOrder.id,
+        workOrderNumber: workOrder.number.toString(),
+        previousQuoteStatus,
+        previousStatus,
+        transition,
+        customerId,
+      };
+    });
 
     this.logger.event(BUSINESS_EVENTS.QUOTE_REJECTED, {
       quoteId: quote.id,
@@ -84,6 +100,8 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
       workOrderStatusChanged: previousStatus !== undefined,
       customerId,
     });
+
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
 
     return quote;
   }

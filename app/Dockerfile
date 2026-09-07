@@ -42,5 +42,5 @@ ENV SERVICE_VERSION=${SERVICE_VERSION}
 
 EXPOSE 3000
 
-CMD ["node", "dist/src/main"]
+CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]
 

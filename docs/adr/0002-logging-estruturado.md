@@ -6,6 +6,8 @@ Aceito — 2026-08-22
 
 Parcialmente superado pelo [ADR 0003 — Health checks](0003-health-checks.md) na parte de supressão de ruído das probes. O corpo abaixo é o registro da decisão à época e não é reescrito; a descrição do comportamento corrente está em [`docs/architecture.md`](../architecture.md#supressão-seletiva-das-probes).
 
+Parcialmente superado também pelo [ADR 0005 — OpenTelemetry](0005-opentelemetry.md): a decisão "o sistema não emite identificador de trace ou de span enquanto não houver instrumentação de tracing real" cumpriu seu propósito — evitar campo artificial — e **deixa de valer**. Havendo instrumentação ativa, a linha carrega `trace_id`, `span_id` e `trace_flags` reais, declarados no dicionário como qualquer outro atributo; fora de um span eles continuam **ausentes**, nunca vazios nem sintéticos. `request.id` permanece, com o papel de chave de junção das linhas que existem fora de um span.
+
 ## Contexto
 
 A aplicação não tinha logging estruturado. O que existia eram cinco chamadas dispersas ao `Logger` do NestJS (`main.ts`, `prisma.service.ts`, `all-exceptions.filter.ts`, `infrastructure-exception.filter.ts` e `mailer-email-sender.service.ts`) emitindo **texto legível** em stdout. Não havia correlação por requisição, access log, redação de dados sensíveis nem qualquer forma de responder "o que aconteceu na requisição X?" depois do fato.

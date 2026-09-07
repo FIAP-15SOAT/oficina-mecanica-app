@@ -19,8 +19,10 @@ import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-cu
 import { IWorkOrderRepository } from '@domain/interfaces/repositories/work-order.repository.interface';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { IHashService } from '@application/ports/output/hash.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 
 import { MeController as MeCleanController } from '@interface-adapters/me/me.controller';
 import { MeController } from './me.controller';
@@ -39,6 +41,8 @@ import { MeController } from './me.controller';
         quoteRepository: IQuoteRepository,
         unitOfWork: IUnitOfWork,
         logger: ILogger,
+        metrics: IMetrics,
+        statusHistoryRepository: IStatusHistoryRepository,
       ) => {
         const customerAccessPolicy = new CustomerAccessPolicy(
           userCustomerRepository,
@@ -47,10 +51,14 @@ import { MeController } from './me.controller';
         const approveQuoteUseCase = new ApproveQuoteUseCase(
           unitOfWork,
           logger.forContext(ApproveQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
         const rejectQuoteUseCase = new RejectQuoteUseCase(
           unitOfWork,
           logger.forContext(RejectQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
         const updateQuoteStatusUseCase = new UpdateQuoteStatusUseCase(
           approveQuoteUseCase,
@@ -88,6 +96,8 @@ import { MeController } from './me.controller';
         'IQuoteRepository',
         'IUnitOfWork',
         'ILogger',
+        'IMetrics',
+        'IStatusHistoryRepository',
       ],
     },
   ],
