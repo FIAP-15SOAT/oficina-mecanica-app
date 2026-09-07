@@ -208,7 +208,7 @@ Arquivos em `k8s/`:
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER` e `CUSTOMER_JWT_AUDIENCE`)
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
-- `04-api-service.yaml`: Service `ClusterIP` da API
+- `04-api-service.yaml`: Service **`NodePort`** da API (`3000` → `30080` nos nós). `NodePort` é um superconjunto de `ClusterIP`: o Service continua recebendo um ClusterIP e o DNS interno segue igual. A porta dos nós é o destino do target group do NLB interno provisionado em `oficina-mecanica-k8s`, que por sua vez é o backend da integração privada do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway). O valor precisa casar com `api_node_port` naquele repositório
 - `04-mailhog-service.yaml`: Service `ClusterIP` do MailHog, expondo as portas SMTP (`1025`) e Web UI (`8025`) para acesso interno ao cluster
 - `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2) — ver [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
 
@@ -252,7 +252,11 @@ O `node_instance_type` vive em `oficina-mecanica-k8s` — é pré-requisito da c
 
 ## Acesso à aplicação em Kubernetes
 
-O Service da API é publicado como `ClusterIP`, portanto não é acessível diretamente fora do cluster. Para testes e validações manuais, utilize `kubectl port-forward` para criar um túnel entre a sua máquina e o Service da aplicação.
+A aplicação tem **dois** caminhos de acesso.
+
+**Público**, para uso real: pelo endereço do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway), que alcança o cluster por VPC Link → NLB interno → NodePort `30080`. Nada disso tem IP público: o Service é `NodePort`, mas a porta só é alcançável de dentro da VPC.
+
+**Diagnóstico**, para testes e validações manuais: `kubectl port-forward`, que continua funcionando exatamente como antes — `NodePort` não substitui o `ClusterIP`, o acrescenta.
 
 ```bash
 kubectl port-forward -n oficina svc/oficina-api 3000:3000
