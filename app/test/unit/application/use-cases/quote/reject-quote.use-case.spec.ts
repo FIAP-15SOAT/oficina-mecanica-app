@@ -61,6 +61,10 @@ describe('RejectQuoteUseCase', () => {
       }),
     );
     expect(result.status).toBe(QuoteStatus.REJECTED);
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ customerId: workOrder.customerId }),
+    );
   });
 
   it('should use default notes and null userId when not provided', async () => {
@@ -118,6 +122,10 @@ describe('RejectQuoteUseCase', () => {
     expect(mockRepos.workOrder.update).not.toHaveBeenCalled();
     expect(mockRepos.statusHistory.create).not.toHaveBeenCalled();
     expect(result.status).toBe(QuoteStatus.REJECTED);
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ customerId: workOrder.customerId }),
+    );
   });
   describe('dwell metrics', () => {
     it('should record the dwell in AWAITING_APPROVAL when the work order transitions', async () => {

@@ -31,6 +31,7 @@ describe('CustomerPresenter', () => {
       email: Email.create('joao@email.com'),
       phone: Phone.create('11999999999'),
       address,
+      isActive: true,
       createdAt: now,
       updatedAt: now,
     });

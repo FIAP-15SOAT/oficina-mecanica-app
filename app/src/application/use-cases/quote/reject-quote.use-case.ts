@@ -21,65 +21,75 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
   ) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
-    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus, transition } =
-      await this.unitOfWork.executeTransaction(async (repos) => {
-        const quote = await repos.quote.findById(quoteId);
+    const {
+      quote,
+      workOrderId,
+      workOrderNumber,
+      previousQuoteStatus,
+      previousStatus,
+      transition,
+      customerId,
+    } = await this.unitOfWork.executeTransaction(async (repos) => {
+      const quote = await repos.quote.findById(quoteId);
 
-        if (!quote) {
-          throw new ResourceNotFoundException('Orçamento', quoteId);
-        }
+      if (!quote) {
+        throw new ResourceNotFoundException('Orçamento', quoteId);
+      }
 
-        const previousQuoteStatus = quote.status;
+      const previousQuoteStatus = quote.status;
 
-        quote.reject();
+      quote.reject();
 
-        const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
-        const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
+      const workOrder = (await repos.workOrder.findById(quote.workOrderId))!;
+      const customerId = workOrder.customerId;
+      const workOrderQuotes = await repos.quote.findByWorkOrderId(workOrder.id);
 
-        const hasOtherSentQuote = workOrderQuotes.some(
-          (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
-        );
+      const hasOtherSentQuote = workOrderQuotes.some(
+        (sibling) => sibling.id !== quote.id && sibling.status === QuoteStatus.SENT,
+      );
 
-        if (hasOtherSentQuote) {
-          // A OS não transiciona quando ainda há outro orçamento enviado: sem
-          // entrada nova no histórico, não há permanência a fechar.
-          return {
-            quote: await repos.quote.update(quote),
-            workOrderId: workOrder.id,
-            workOrderNumber: workOrder.number.toString(),
-            previousQuoteStatus,
-            previousStatus: undefined,
-            transition: undefined,
-          };
-        }
-
-        const previousStatus = workOrder.status;
-
-        workOrder.changeStatus(WorkOrderStatus.REJECTED);
-
-        const [updatedQuote, , transition] = await Promise.all([
-          repos.quote.update(quote),
-          repos.workOrder.update(workOrder),
-          repos.statusHistory.create(
-            StatusHistory.create({
-              workOrderId: workOrder.id,
-              changedById: userId ?? null,
-              previousStatus,
-              newStatus: WorkOrderStatus.REJECTED,
-              notes: notes ?? `Orçamento ${quoteId} rejeitado`,
-            }),
-          ),
-        ]);
-
+      if (hasOtherSentQuote) {
+        // A OS não transiciona quando ainda há outro orçamento enviado: sem
+        // entrada nova no histórico, não há permanência a fechar.
         return {
-          quote: updatedQuote,
+          quote: await repos.quote.update(quote),
           workOrderId: workOrder.id,
           workOrderNumber: workOrder.number.toString(),
           previousQuoteStatus,
-          previousStatus,
-          transition,
+          previousStatus: undefined,
+          transition: undefined,
+          customerId,
         };
-      });
+      }
+
+      const previousStatus = workOrder.status;
+
+      workOrder.changeStatus(WorkOrderStatus.REJECTED);
+
+      const [updatedQuote, , transition] = await Promise.all([
+        repos.quote.update(quote),
+        repos.workOrder.update(workOrder),
+        repos.statusHistory.create(
+          StatusHistory.create({
+            workOrderId: workOrder.id,
+            changedById: userId ?? null,
+            previousStatus,
+            newStatus: WorkOrderStatus.REJECTED,
+            notes: notes ?? `Orçamento ${quoteId} rejeitado`,
+          }),
+        ),
+      ]);
+
+      return {
+        quote: updatedQuote,
+        workOrderId: workOrder.id,
+        workOrderNumber: workOrder.number.toString(),
+        previousQuoteStatus,
+        previousStatus,
+        transition,
+        customerId,
+      };
+    });
 
     this.logger.event(BUSINESS_EVENTS.QUOTE_REJECTED, {
       quoteId: quote.id,
@@ -88,6 +98,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
       workOrderNumber,
       previousWorkOrderStatus: previousStatus,
       workOrderStatusChanged: previousStatus !== undefined,
+      customerId,
     });
 
     await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);

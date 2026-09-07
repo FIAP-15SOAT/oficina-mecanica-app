@@ -26,6 +26,7 @@ describe('UserController', () => {
   let updateUserUseCase: jest.Mocked<IUpdateUserUseCase>;
   let updateUserStatusUseCase: jest.Mocked<IUpdateUserStatusUseCase>;
   let deleteUserUseCase: jest.Mocked<IDeleteUserUseCase>;
+  let issuePasswordResetCodeUseCase: { execute: jest.Mock };
 
   beforeEach(() => {
     createUserUseCase = { execute: jest.fn() };
@@ -34,6 +35,7 @@ describe('UserController', () => {
     updateUserUseCase = { execute: jest.fn() };
     updateUserStatusUseCase = { execute: jest.fn() };
     deleteUserUseCase = { execute: jest.fn() };
+    issuePasswordResetCodeUseCase = { execute: jest.fn() };
 
     controller = new UserController(
       createUserUseCase,
@@ -42,6 +44,7 @@ describe('UserController', () => {
       updateUserUseCase,
       updateUserStatusUseCase,
       deleteUserUseCase,
+      issuePasswordResetCodeUseCase,
     );
   });
 
@@ -50,7 +53,6 @@ describe('UserController', () => {
       const request: CreateUserRequest = {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
-        password: 'SecurePass123!',
         role: UserRole.MECHANIC,
       };
 
@@ -110,7 +112,7 @@ describe('UserController', () => {
       const id = randomUUID();
       const user = createMockUser({ id });
 
-      findUserByIdUseCase.execute.mockResolvedValue(user.toPublicView());
+      findUserByIdUseCase.execute.mockResolvedValue({ ...user.toPublicView(), customers: [] });
 
       const result = await controller.findById(id);
 
@@ -177,6 +179,19 @@ describe('UserController', () => {
       await controller.remove(id);
 
       expect(deleteUserUseCase.execute).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('issuePasswordResetCode', () => {
+    it('should call the issue password reset code use case with the correct ids', async () => {
+      const userId = randomUUID();
+      const actingUserId = randomUUID();
+
+      issuePasswordResetCodeUseCase.execute.mockResolvedValue(undefined);
+
+      await controller.issuePasswordResetCode(userId, actingUserId);
+
+      expect(issuePasswordResetCodeUseCase.execute).toHaveBeenCalledWith(userId, actingUserId);
     });
   });
 });

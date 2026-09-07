@@ -38,8 +38,8 @@ describe('MailerEmailSenderService', () => {
       toName: 'Maria Silva',
       subject: 'Orçamento aguardando aprovação',
       message: {
-        text: 'Para aprovar, acesse: https://api.local/quotes/1/decisions?token=abc',
-        html: '<p>Para aprovar, acesse o link</p>',
+        text: 'Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.',
+        html: '<p>Acesse o sistema autenticando com seu CPF e senha para aprovar ou rejeitar.</p>',
       },
     };
 

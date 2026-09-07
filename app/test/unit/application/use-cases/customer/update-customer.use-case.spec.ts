@@ -1,19 +1,23 @@
 import { UpdateCustomerUseCase } from '@application/use-cases/customer/update-customer.use-case';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { ResourceConflictException } from '@application/exceptions/resource-conflict.exception';
+import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { CustomerType } from '@domain/enums/customer-type.enum';
 import { ICustomerRepository } from '@domain/interfaces/repositories/customer.repository.interface';
+import { IUserCustomerRepository } from '@domain/interfaces/repositories/user-customer.repository.interface';
 import { UpdateCustomerDto } from '@application/ports/input/customer/dto/update-customer.dto';
 import {
   createMockCustomer,
   createMockCustomerRepository,
 } from '../../../../helpers/customer-mock.factory';
+import { createMockUser } from '../../../../helpers/user-mock.factory';
 import { Document } from '@domain/value-objects/document.vo';
 import { Email } from '@domain/value-objects/email.vo';
 
 describe('UpdateCustomerUseCase', () => {
   let useCase: UpdateCustomerUseCase;
   let customerRepository: jest.Mocked<ICustomerRepository>;
+  let userCustomerRepository: jest.Mocked<IUserCustomerRepository>;
 
   const validInput: UpdateCustomerDto = {
     name: 'João da Silva',
@@ -26,7 +30,8 @@ describe('UpdateCustomerUseCase', () => {
 
   beforeEach(() => {
     customerRepository = createMockCustomerRepository();
-    useCase = new UpdateCustomerUseCase(customerRepository);
+    userCustomerRepository = { findUsersByCustomerId: jest.fn().mockResolvedValue([]) } as never;
+    useCase = new UpdateCustomerUseCase(customerRepository, userCustomerRepository);
   });
 
   it('should update customer successfully', async () => {
@@ -119,5 +124,147 @@ describe('UpdateCustomerUseCase', () => {
     expect(customerRepository.findByDocument).toHaveBeenCalledWith('12345678909');
     expect(customerRepository.findByEmail).toHaveBeenCalledWith(validInput.email);
     expect(customerRepository.update).toHaveBeenCalled();
+  });
+
+  it('should reject changing the document when the customer has active access links', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: Document.create('11144477735', CustomerType.INDIVIDUAL),
+    });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    userCustomerRepository.findUsersByCustomerId.mockResolvedValue([
+      createMockUser({ id: 'user-1' }),
+    ]);
+
+    await expect(
+      useCase.execute('cust-1', { ...validInput, document: '123.456.789-09' }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+    expect(customerRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject changing the type when the customer has active access links', async () => {
+    const existing = createMockCustomer({ id: 'cust-1', type: CustomerType.INDIVIDUAL });
+    customerRepository.findById.mockResolvedValue(existing);
+    userCustomerRepository.findUsersByCustomerId.mockResolvedValue([
+      createMockUser({ id: 'user-1' }),
+    ]);
+
+    await expect(
+      useCase.execute('cust-1', {
+        ...validInput,
+        type: CustomerType.COMPANY,
+        document: '12345678000195',
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+    expect(customerRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should allow a COMPANY customer to correct its own CNPJ even with active access links', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      type: CustomerType.COMPANY,
+      document: Document.create('11.222.333/0001-81', CustomerType.COMPANY),
+    });
+    const updated = createMockCustomer({ id: 'cust-1', type: CustomerType.COMPANY });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.update.mockResolvedValue(updated);
+    userCustomerRepository.findUsersByCustomerId.mockResolvedValue([
+      createMockUser({ id: 'user-1' }),
+    ]);
+
+    const result = await useCase.execute('cust-1', {
+      ...validInput,
+      type: CustomerType.COMPANY,
+      document: '12.345.678/0001-95',
+    });
+
+    expect(result).toEqual(updated);
+    expect(userCustomerRepository.findUsersByCustomerId).not.toHaveBeenCalled();
+  });
+
+  it('should allow updating other fields when the customer has active access links', async () => {
+    const existing = createMockCustomer({ id: 'cust-1' });
+    const updated = createMockCustomer({ id: 'cust-1', name: 'Novo Nome' });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.update.mockResolvedValue(updated);
+    userCustomerRepository.findUsersByCustomerId.mockResolvedValue([
+      createMockUser({ id: 'user-1' }),
+    ]);
+
+    const result = await useCase.execute('cust-1', { ...validInput, name: 'Novo Nome' });
+
+    expect(result).toEqual(updated);
+  });
+
+  it('should reject changing the document when the customer has linked work orders', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: Document.create('11144477735', CustomerType.INDIVIDUAL),
+    });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.hasWorkOrders.mockResolvedValue(true);
+
+    await expect(
+      useCase.execute('cust-1', { ...validInput, document: '123.456.789-09' }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+    expect(customerRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should allow changing the document when the customer only has linked vehicles', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: Document.create('11144477735', CustomerType.INDIVIDUAL),
+    });
+    const updated = createMockCustomer({ id: 'cust-1' });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.update.mockResolvedValue(updated);
+    customerRepository.hasWorkOrders.mockResolvedValue(false);
+
+    const result = await useCase.execute('cust-1', {
+      ...validInput,
+      document: '123.456.789-09',
+    });
+
+    expect(result).toEqual(updated);
+  });
+
+  it('should allow a COMPANY customer to correct its own CNPJ even with linked work orders', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      type: CustomerType.COMPANY,
+      document: Document.create('11.222.333/0001-81', CustomerType.COMPANY),
+    });
+    const updated = createMockCustomer({ id: 'cust-1', type: CustomerType.COMPANY });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.findByDocument.mockResolvedValue(null);
+    customerRepository.update.mockResolvedValue(updated);
+    customerRepository.hasWorkOrders.mockResolvedValue(true);
+
+    const result = await useCase.execute('cust-1', {
+      ...validInput,
+      type: CustomerType.COMPANY,
+      document: '12.345.678/0001-95',
+    });
+
+    expect(result).toEqual(updated);
+    expect(customerRepository.hasWorkOrders).not.toHaveBeenCalled();
+  });
+
+  it('should not check for linked work orders when there is no identity change', async () => {
+    const existing = createMockCustomer({
+      id: 'cust-1',
+      document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+      email: Email.create(validInput.email),
+    });
+    customerRepository.findById.mockResolvedValue(existing);
+    customerRepository.update.mockResolvedValue(existing);
+
+    await useCase.execute('cust-1', { ...validInput, document: '12345678909' });
+
+    expect(customerRepository.hasWorkOrders).not.toHaveBeenCalled();
   });
 });

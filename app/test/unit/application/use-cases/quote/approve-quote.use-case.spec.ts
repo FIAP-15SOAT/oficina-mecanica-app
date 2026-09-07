@@ -203,6 +203,7 @@ describe('ApproveQuoteUseCase', () => {
       workOrderId: workOrder.id,
       workOrderNumber: workOrder.number.toString(),
       previousWorkOrderStatus: WorkOrderStatus.AWAITING_APPROVAL,
+      customerId: workOrder.customerId,
     });
   });
   describe('dwell metrics', () => {

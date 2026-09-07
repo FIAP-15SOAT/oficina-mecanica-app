@@ -9,6 +9,7 @@ Clean Architecture + DDD do backend da Oficina Mecânica — camadas estritas, e
 - [DDD — Aggregate Roots, Entidades e Value Objects](#ddd--aggregate-roots-entidades-e-value-objects)
 - [Concorrência otimista](#concorrência-otimista)
 - [Perfis de usuário (RBAC)](#perfis-de-usuário-rbac)
+- [Identidade externa, autenticação e autorização por vínculo](#identidade-externa-autenticação-e-autorização-por-vínculo)
 - [Unit of Work](#unit-of-work)
 - [Ciclo de vida da Ordem de Serviço](#ciclo-de-vida-da-ordem-de-serviço)
 - [Ciclo de vida do Orçamento](#ciclo-de-vida-do-orçamento)
@@ -36,7 +37,7 @@ app/src/
 │   ├── enums/                       # UserRole, CustomerType, WorkOrderStatus,
 │   │                                # WorkOrderServiceStatus, QuoteStatus,
 │   │                                # QuoteDecisionAction, StockMovementType, Unit,
-│   │                                # PartSupplyCategory, TokenType, SortDirection
+│   │                                # PartSupplyCategory, SortDirection
 │   ├── exceptions/                  # DomainException, DomainValidationException,
 │   │                                # EntityNotFoundException, BusinessRuleViolationException
 │   ├── constants/                   # Regex compartilhadas (placa, telefone, e-mail, senha)
@@ -56,10 +57,21 @@ app/src/
 │   │                                # por status e dos dois totais
 │   ├── logging/                     # LogEventDefinition + catálogo tipado e fechado
 │   │                                # de eventos de NEGÓCIO (nomes lógicos, sem chave física)
+│   ├── policies/                    # CustomerAccessPolicy — autorização por vínculo,
+│   │                                # reutilizável por qualquer caso de uso de /api/me/*
 │   ├── use-cases/
-│   │   ├── auth/                    # Authenticate, RefreshToken, GetCurrentUser
+│   │   ├── auth/                    # Authenticate, RefreshToken, IssuePasswordResetCode,
+│   │   │                            # ConfirmPasswordReset
 │   │   ├── user/                    # CRUD + atualização de status
-│   │   ├── customer/                # CRUD completo de clientes
+│   │   ├── customer/                # CRUD completo de clientes (createAccess opcional)
+│   │   ├── customer-access/         # GrantCustomerAccess, ListCustomerAccessUsers,
+│   │   │                            # ListUserCustomers, RevokeCustomerAccess,
+│   │   │                            # UpdateCustomerStatus
+│   │   ├── me/                      # ChangeOwnPassword, FindAllMyWorkOrders,
+│   │   │                            # FindMyWorkOrderById, FindMyWorkOrdersQuotes,
+│   │   │                            # FindMyQuoteById, DecideMyQuote — usuário externo
+│   │   │                            # autenticado (identidade via FindUserByIdUseCase,
+│   │   │                            # reaproveitado de user/)
 │   │   ├── vehicle/                 # CRUD + busca por cliente
 │   │   ├── service/                 # CRUD + métricas (individual e agregada paginada)
 │   │   ├── part-supply/             # CRUD + movimentação de estoque
@@ -73,8 +85,9 @@ app/src/
 │   └── utils/                       # PaginationUtil (sanitização e cálculo de páginas)
 │
 ├── interface-adapters/<domínio>/    # Adapters livres de framework (POJOs, zero @nestjs/*)
-│                                    # domínios: auth, customer, part-supply, quote, service,
-│                                    # stock, user, vehicle, work-order
+│                                    # domínios: auth, customer, customer-access, me,
+│                                    # part-supply, quote, service, stock, user, vehicle,
+│                                    # work-order
 │   ├── <domínio>.controller.ts      # Clean Controller: orquestra o(s) use-case(s) + Presenter
 │   ├── <domínio>.presenter.ts       # Entidade → tipo de resposta PURO (sem @ApiProperty)
 │   ├── requests/                    # Tipos de request do controller (defaults de paginação aqui)
@@ -94,11 +107,17 @@ app/src/
 │   │   │                            #   config/app-bootstrap e por health/health.constants
 │   │   ├── controllers/<domínio>/   # @Controller + module + dto/requests + dto/responses
 │   │   │                            # (@ApiProperty; *ResponseDto implements o tipo puro)
-│   │   │                            # domínios no singular; auth em controllers/auth/
-│   │   │                            # e as rotas de saúde em controllers/health/
-│   │   ├── guards/                  # JwtAuthGuard, RolesGuard
+│   │   │                            # domínios no singular; auth em controllers/auth/;
+│   │   │                            # customer-access/ tem dois controllers
+│   │   │                            # (CustomerAccessController, UserCustomersController);
+│   │   │                            # me/ expõe as rotas do usuário externo; e as rotas
+│   │   │                            # de saúde em controllers/health/
+│   │   ├── guards/                  # JwtAuthGuard, RolesGuard, CustomerJwtAuthGuard,
+│   │   │                            # AnyAuthGuard (aceita interno OU externo)
 │   │   ├── decorators/              # @CurrentUser, @Roles, @Public
-│   │   ├── strategies/              # JwtStrategy (Passport)
+│   │   ├── strategies/              # JwtStrategy (HS256, interno),
+│   │   │                            # CustomerJwtStrategy (RS256, externo) — Passport,
+│   │   │                            # nunca um verificador compartilhado
 │   │   ├── filters/                 # Exception Filters: Domain, Application,
 │   │   │                            # Infrastructure, AllExceptions
 │   │   ├── interceptors/            # DateSerializerInterceptor (ISO 8601 com timezone),
@@ -148,18 +167,21 @@ app/test/
 ├── helpers/                         # Mock factories reutilizáveis (incluindo
 │                                    # UnitOfWorkMockFactory) e helpers de E2E
 │                                    # (auth, db cleanup, test app bootstrap)
-├── unit/                            # 151 suites de testes unitários (espelham src/)
+├── unit/                            # 191 suites de testes unitários (espelham src/)
 │   ├── domain/                      # entities/, value-objects/, validators/
-│   ├── application/use-cases/       # auth, customer, part-supply, quote, service,
-│   │                                # stock, user, vehicle, work-order
+│   ├── application/use-cases/       # auth, customer, customer-access, me,
+│   │                                # part-supply, quote, service, stock, user,
+│   │                                # vehicle, work-order
 │   ├── interface-adapters/          # Clean Controllers + Presenters por domínio
 │   └── infrastructure/              # http/ (controllers, filters, interceptors, pipes,
 │                                    # validators, auth), persistence/prisma, services
-└── e2e/                             # 11 suites de testes E2E (Testcontainers + PostgreSQL real)
+└── e2e/                             # 12 suites de testes E2E (Testcontainers + PostgreSQL real)
     ├── all-exceptions.filter.e2e-spec.ts
     ├── auth.e2e-spec.ts
     ├── customer.e2e-spec.ts
     ├── logging.e2e-spec.ts
+    ├── me.e2e-spec.ts                 # /api/me/*: identidade externa, senha, OS e
+    │                                  # orçamentos vinculados, decisão de orçamento
     ├── part-supply.e2e-spec.ts
     ├── quote.e2e-spec.ts
     ├── service.e2e-spec.ts
@@ -184,9 +206,9 @@ app/prisma/
 
 ## Modelos do banco de dados
 
-16 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrderStatusInfo`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`. `WorkOrderStatusInfo` (`work_order_statuses`) é uma **tabela de referência** (lookup) — não expõe API própria e é populada pelo seed.
+18 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrderStatusInfo`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`, `UserCustomer`, `PasswordResetCode`. `WorkOrderStatusInfo` (`work_order_statuses`) é uma **tabela de referência** (lookup) — não expõe API própria e é populada pelo seed. `UserCustomer` (`user_customers`) é o vínculo many-to-many entre `User` e `Customer` que autoriza o acesso externo (chave primária composta `(userId, customerId)`, sem `accessType` — a semântica vem de `Customer.type`); `PasswordResetCode` (`password_reset_codes`) guarda o código de redefinição de senha em vigor por usuário (`userId` como chave primária — no máximo um código ativo por vez).
 
-Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`.
+Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`. `UserRole` **não** ganhou um valor `CUSTOMER` — o acesso externo não é modelado como papel interno (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)).
 
 Convenções de modelagem:
 
@@ -222,13 +244,40 @@ Esse mecanismo protege fluxos críticos como atualização de status de OS, apro
 
 ## Perfis de usuário (RBAC)
 
-A autorização é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Os guards são aplicados **por controller** (`@UseGuards(JwtAuthGuard, RolesGuard)` na classe), não como guard global. O decorator `@Public()` libera uma rota específica dentro de um controller protegido — o `JwtAuthGuard` lê o metadata `IS_PUBLIC_KEY` e pula a autenticação; o único uso hoje é a decisão de orçamento via link assinado (`GET /quotes/:id/decisions`). O `AuthController` não tem guard de classe, então `POST /auth/login` e `POST /auth/refresh` já são públicos sem precisar de `@Public()` (apenas `GET /auth/me` é protegido com `@UseGuards(JwtAuthGuard)`).
+A autorização **interna** é feita por papel via `JwtAuthGuard` + `RolesGuard` + decorator `@Roles(...)`. Os guards são aplicados **por controller** (`@UseGuards(JwtAuthGuard, RolesGuard)` na classe), não como guard global. O decorator `@Public()` libera uma rota específica dentro de um controller protegido — o `JwtAuthGuard` lê o metadata `IS_PUBLIC_KEY` e pula a autenticação; o único uso hoje é `POST /auth/password-reset-confirmations` (confirmação de reset de senha por código numérico enviado por e-mail — não há JWT nesse ponto do fluxo). O `AuthController` não tem guard de classe, então `POST /auth/login`, `POST /auth/refresh` e `POST /auth/password-reset-confirmations` já são públicos sem precisar de guard.
 
 | Perfil | Permissões |
 |---|---|
-| `ADMIN` | Acesso completo (usuários, serviços, peças/insumos, clientes, veículos, OS, orçamentos, métricas, estoque) |
+| `ADMIN` | Acesso completo (usuários, serviços, peças/insumos, clientes, veículos, OS, orçamentos, métricas, estoque, concessão/revogação de acesso externo) |
 | `MECHANIC` | Operação de OS e orçamentos, atualização de status de serviço, consulta de catálogos (serviços, peças/insumos) |
-| `ATTENDANT` | Cadastro de clientes/veículos, criação e gestão de OS e orçamentos, movimentação manual de estoque |
+| `ATTENDANT` | Cadastro de clientes/veículos, criação e gestão de OS e orçamentos, movimentação manual de estoque, concessão/revogação de acesso externo |
+
+O **Cliente da Oficina** (usuário externo) não tem `role` no sentido RBAC — `UserRole` continua com apenas `ADMIN`/`MECHANIC`/`ATTENDANT`, papéis de dentro da oficina. Suas rotas (`/api/me/*`) usam um guard e uma política de autorização completamente separados — ver a seção seguinte.
+
+## Identidade externa, autenticação e autorização por vínculo
+
+Três conceitos que o modelo mantém deliberadamente separados:
+
+- **`User`** — identidade com credenciais (e-mail + senha com hash). Um `User` pode ter uma `role` interna (RBAC), vínculos externos com um ou mais `Customer` (`UserCustomer`), os dois ao mesmo tempo, ou nenhum dos dois ainda.
+- **`Customer`** — a parte comercial (pessoa física ou jurídica dona do veículo/OS). Nunca tem credencial própria; uma empresa (`CustomerType.COMPANY`) nunca loga diretamente.
+- **`UserCustomer`** — o vínculo (many-to-many) que autoriza um `User` a agir em nome de um `Customer`. Não existe um campo `accessType`: a semântica (acesso à própria pessoa física vs. representação de uma empresa) deriva de `Customer.type`.
+
+Dois fluxos de autenticação totalmente isolados, cada um com sua própria estratégia Passport, nunca um verificador compartilhado:
+
+| | Interno | Externo (Cliente da Oficina) |
+|---|---|---|
+| Estratégia Passport | `jwt` (`JwtStrategy`) | `customer-jwt` (`CustomerJwtStrategy`) |
+| Algoritmo | HS256 | RS256 |
+| Chave | `JWT_SECRET` (simétrica) | `CUSTOMER_JWT_PUBLIC_KEY` (só a pública — a privada vive na função serverless externa) |
+| Emissor do token | `POST /api/auth/login` (interno) | Função serverless externa, autenticando por CPF + senha |
+| Guard HTTP | `JwtAuthGuard` | `CustomerJwtAuthGuard` (`AnyAuthGuard` aceita os dois em `GET /api/me` e `PATCH /api/me/password`) |
+| Carrega `role`/`customerId` no payload? | `role`, sim | **Não** — só `sub` (o `userId`) |
+
+**A autorização externa é resolvida a cada requisição, nunca embutida no JWT.** O token externo carrega apenas o `userId` (`sub`); nenhuma rota `/api/me/*` confia em um `customerId` do payload. `CustomerJwtStrategy.validate()` já rejeita o principal se o usuário estiver inativo ou não tiver nenhum vínculo ativo (`findActiveCustomerIdsByUserId`), e a `CustomerAccessPolicy` (`application/policies/customer-access.policy.ts`) repete essa resolução em cada caso de uso de `/api/me/*` que precisa autorizar contra um recurso específico (`FindMyWorkOrderById`, `FindAllMyWorkOrders`, `FindMyWorkOrdersQuotes`, `FindMyQuoteById`, `DecideMyQuote`). Isso faz uma remoção de vínculo (`DELETE /customers/:id/users/:userId`) ou uma desativação de cliente (`PATCH /customers/:id`) valer **imediatamente**, sem precisar de lista de revogação de token. Pelo mesmo caminho — o `User` já recarregado do banco a cada requisição —, `JwtStrategy`, `CustomerJwtStrategy` e `RefreshTokenUseCase` também comparam o `iat` do token com `User.passwordChangedAt`: qualquer token emitido antes da última troca de senha (autenticada ou por reset) é recusado, sem lista de revogação de JWT.
+
+**A política nunca lança 403.** `CustomerAccessPolicy.assertCustomerAuthorized` traduz recurso inexistente e recurso não autorizado para o **mesmo** `ResourceNotFoundException` (HTTP 404) — a rota nunca vira um oráculo de enumeração que revela se uma OS ou orçamento de outro cliente existe.
+
+Ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md) para o raciocínio completo por trás dessas decisões.
 
 ## Unit of Work
 
@@ -295,14 +344,14 @@ Fluxo automático no ciclo de vida da OS:
 2. **Início do primeiro serviço (`IN_PROGRESS`)** — quando um serviço da OS é iniciado e a OS transiciona para `IN_PROGRESS`, todas as reservas vinculadas à OS são consumidas: o `PartSupply` tem `stock` e `reservedStock` decrementados, é criado um `StockMovement` de tipo `EXIT` por reserva (com `reason` automático `"Saída por Ordem de Serviço <número>"`) e os registros de `StockReservation` são removidos.
 3. **Movimentação manual** — o endpoint `PATCH /parts-supplies/:id` permite registrar `ENTRY`, `EXIT` ou `ADJUSTMENT` com `reason` e `workOrderId` opcionais, sempre validando que a saída não comprometa o estoque já reservado.
 
-## Aprovação de orçamento por e-mail
+## Aprovação de orçamento pelo Cliente da Oficina autenticado
 
-Ao chamar `POST /quotes/:id/submissions`:
+O link público assinado por e-mail (`GET /quotes/:id/decisions?token=...`) foi **removido** — um `GET` que muda estado é executável por prefetch de cliente de e-mail ou scanner de segurança antes de a pessoa ler a mensagem, e o token na URL contornaria a autenticação por CPF e senha (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)). O fluxo atual:
 
-1. A OS precisa já ter sido diagnosticada — `WorkOrder.ensureCanSubmitQuote()` exige que ela **não** esteja em `RECEIVED` (aceita `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED`; caso contrário, **HTTP 409**). O agregado `Quote` transiciona para `SENT`; a OS avança para `AWAITING_APPROVAL` quando estava em `IN_DIAGNOSIS`/`REJECTED` (se já estava `AWAITING_APPROVAL` — orçamento concorrente — permanece), com histórico registrado.
-2. Dois tokens JWT independentes (assinados com `QUOTE_DECISION_TOKEN_SECRET` e expiração de 7 dias) são gerados — um para `APPROVE` e outro para `REJECT`. O payload contém `{ quoteId, action, type: QUOTE_EMAIL_DECISION }`.
-3. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) com dois links absolutos: `GET /quotes/:id/decisions?token=...`. A base URL é configurada por `QUOTE_DECISION_BASE_URL` (default: `http://localhost:${PORT}/api`).
-4. O endpoint público `GET /quotes/:id/decisions` (decorator `@Public()`) verifica o token, valida `quoteId` + `action` + `type` (do payload do JWT) e delega para `ApproveQuoteUseCase` ou `RejectQuoteUseCase`. Tokens inválidos ou para outro `quoteId` retornam **HTTP 401**.
+1. `POST /quotes/:id/submissions` continua exigindo que a OS já tenha sido diagnosticada — `WorkOrder.ensureCanSubmitQuote()` exige que ela **não** esteja em `RECEIVED` (aceita `IN_DIAGNOSIS`, `AWAITING_APPROVAL` ou `REJECTED`; caso contrário, **HTTP 409**). O agregado `Quote` transiciona para `SENT`; a OS avança para `AWAITING_APPROVAL` quando estava em `IN_DIAGNOSIS`/`REJECTED` (se já estava `AWAITING_APPROVAL` — orçamento concorrente — permanece), com histórico registrado. Um e-mail é enviado ao cliente (via `IEmailSenderService` → MailHog em dev) **avisando** que há um orçamento pendente — sem token de decisão embutido.
+2. O Cliente da Oficina se autentica de forma totalmente independente: uma função serverless externa recebe CPF + senha, consulta o banco diretamente e, se as credenciais forem válidas, emite um JWT assimétrico (RS256) contendo apenas `{ sub: userId, iss, aud, iat, exp }` — nunca um `customerId` ou `quoteId`.
+3. Com esse token, o cliente consulta seus orçamentos vinculados — `GET /api/me/work-orders`, `GET /api/me/work-orders/:id/quotes`, `GET /api/me/quotes/:id` — e decide em `POST /api/me/quotes/:id/decisions` (body `{ action: 'approve' | 'reject', reason? }`). Cada uma dessas rotas passa pela `CustomerAccessPolicy` antes de tocar o orçamento (ver [seção anterior](#identidade-externa-autenticação-e-autorização-por-vínculo)); um orçamento de um cliente não vinculado ao usuário autenticado responde **HTTP 404**, nunca 403.
+4. A materialização da decisão (reserva de estoque, transição de status da OS, rejeição de propostas concorrentes) é a mesma lógica de domínio de antes — `DecideMyQuoteUseCase` delega para `UpdateQuoteStatusUseCase`, o mesmo caso de uso que `PATCH /quotes/:id` (aprovação/rejeição manual) usa, que por sua vez chama `ApproveQuoteUseCase`/`RejectQuoteUseCase`.
 
 ## Exceções por Camada
 
@@ -563,6 +612,7 @@ Decisões arquiteturais relevantes são registradas em [`docs/adr/`](./adr) no f
 - [ADR 0001 — Uso do PostgreSQL como Banco de Dados Relacional](./adr/0001-uso-do-postgresql-como-banco-de-dados.md)
 - [ADR 0002 — Logging Estruturado em JSON com Nomenclatura OpenTelemetry](./adr/0002-logging-estruturado.md) *(parcialmente superado pelos ADRs 0003 e 0005)*
 - [ADR 0003 — Health Checks: Liveness e Readiness como Endpoints Dedicados](./adr/0003-health-checks.md) *(política de volume das probes contrariada pelo 0005)*
+- [ADR 0004 — Autenticação externa de clientes por CPF via função serverless](./adr/0004-autenticacao-de-clientes.md)
 - [ADR 0005 — Instrumentação OpenTelemetry: traces, correlação e métricas de negócio](./adr/0005-opentelemetry.md)
 
 ## Modelo C4

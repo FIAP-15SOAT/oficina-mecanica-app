@@ -29,7 +29,7 @@ export interface WorkOrderAssignedUserResponse {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
 }
 
 export interface WorkOrderServiceItemResponse {

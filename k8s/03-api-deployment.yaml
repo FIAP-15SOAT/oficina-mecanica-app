@@ -145,11 +145,23 @@ spec:
                   name: api-secret
                   key: JWT_REFRESH_SECRET
  
-            - name: QUOTE_DECISION_TOKEN_SECRET
+            - name: CUSTOMER_JWT_PUBLIC_KEY
               valueFrom:
                 secretKeyRef:
                   name: api-secret
-                  key: QUOTE_DECISION_TOKEN_SECRET
+                  key: CUSTOMER_JWT_PUBLIC_KEY
+
+            - name: CUSTOMER_JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: CUSTOMER_JWT_ISSUER
+
+            - name: CUSTOMER_JWT_AUDIENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: CUSTOMER_JWT_AUDIENCE
           startupProbe:
             httpGet:
               path: /api/health/live

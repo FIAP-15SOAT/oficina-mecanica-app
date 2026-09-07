@@ -1,20 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
-import {
-  MIN_NAME_LENGTH,
-  MAX_NAME_LENGTH,
-  PASSWORD_REQUIREMENTS_MESSAGE,
-} from '@domain/constants/validation/user.constants';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/user.constants';
 
 export class UpdateUserRequestDto {
   @ApiPropertyOptional({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
@@ -32,16 +19,6 @@ export class UpdateUserRequestDto {
   @IsOptional()
   @IsEmail({}, { message: 'E-mail inválido' })
   email?: string;
-
-  @ApiPropertyOptional({
-    example: 'NovaSenha@123',
-    description:
-      'Nova senha (mín. 8 caracteres, com ao menos uma letra maiúscula, uma minúscula, um número e um caractere especial)',
-  })
-  @IsOptional()
-  @IsString({ message: 'A senha deve ser um texto.' })
-  @Matches(PASSWORD_REGEX, { message: PASSWORD_REQUIREMENTS_MESSAGE })
-  password?: string;
 
   @ApiPropertyOptional({ enum: UserRole, example: UserRole.MECHANIC })
   @IsOptional()

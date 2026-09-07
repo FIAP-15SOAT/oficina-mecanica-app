@@ -189,4 +189,78 @@ describe('Customer Entity', () => {
       });
     });
   });
+
+  describe('activate / deactivate', () => {
+    it('should create a customer active by default', () => {
+      const customer = Customer.create({
+        name: 'John Doe',
+        document: '12345678909',
+        type: CustomerType.INDIVIDUAL,
+        email: 'john@example.com',
+        phone: '11999999999',
+        address: { street: 'Main St', city: 'City', state: 'SP', zipCode: '01001000' },
+      });
+
+      expect(customer.isActive).toBe(true);
+    });
+
+    it('should deactivate an active customer', () => {
+      const customer = Customer.create({
+        name: 'John Doe',
+        document: '12345678909',
+        type: CustomerType.INDIVIDUAL,
+        email: 'john@example.com',
+        phone: '11999999999',
+        address: { street: 'Main St', city: 'City', state: 'SP', zipCode: '01001000' },
+      });
+
+      customer.deactivate();
+
+      expect(customer.isActive).toBe(false);
+    });
+
+    it('should reactivate a deactivated customer', () => {
+      const customer = Customer.create({
+        name: 'John Doe',
+        document: '12345678909',
+        type: CustomerType.INDIVIDUAL,
+        email: 'john@example.com',
+        phone: '11999999999',
+        address: { street: 'Main St', city: 'City', state: 'SP', zipCode: '01001000' },
+      });
+
+      customer.deactivate();
+      customer.activate();
+
+      expect(customer.isActive).toBe(true);
+    });
+
+    it('should throw when activating an already active customer', () => {
+      const customer = Customer.create({
+        name: 'John Doe',
+        document: '12345678909',
+        type: CustomerType.INDIVIDUAL,
+        email: 'john@example.com',
+        phone: '11999999999',
+        address: { street: 'Main St', city: 'City', state: 'SP', zipCode: '01001000' },
+      });
+
+      expect(() => customer.activate()).toThrow('Cliente já está ativo');
+    });
+
+    it('should throw when deactivating an already inactive customer', () => {
+      const customer = Customer.create({
+        name: 'John Doe',
+        document: '12345678909',
+        type: CustomerType.INDIVIDUAL,
+        email: 'john@example.com',
+        phone: '11999999999',
+        address: { street: 'Main St', city: 'City', state: 'SP', zipCode: '01001000' },
+      });
+
+      customer.deactivate();
+
+      expect(() => customer.deactivate()).toThrow('Cliente já está desativado');
+    });
+  });
 });

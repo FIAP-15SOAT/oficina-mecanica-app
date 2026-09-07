@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { DomainValidationException } from '../exceptions/domain-validation.exception';
+import { BusinessRuleViolationException } from '../exceptions/business-rule-violation.exception';
 import { UserRole } from '../enums/user-role.enum';
 import { Email } from '../value-objects/email.vo';
+import { Cpf } from '../value-objects/cpf.vo';
 
 import { PASSWORD_REGEX } from '../constants/regex/password.regex';
 import {
@@ -16,7 +18,8 @@ export interface CreateUserProps {
   name: string;
   email: string;
   passwordHash: string;
-  role: UserRole;
+  role: UserRole | null;
+  cpf?: string | null;
 }
 
 interface UserProps {
@@ -24,8 +27,10 @@ interface UserProps {
   name: string;
   email: Email;
   passwordHash: string;
-  role: UserRole;
+  role: UserRole | null;
+  cpf: Cpf | null;
   isActive: boolean;
+  passwordChangedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,8 +40,10 @@ export class User {
   name: string;
   email: Email;
   passwordHash: string;
-  role: UserRole;
+  role: UserRole | null;
+  cpf: Cpf | null;
   isActive: boolean;
+  passwordChangedAt: Date;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -46,7 +53,9 @@ export class User {
     this.email = props.email;
     this.passwordHash = props.passwordHash;
     this.role = props.role;
+    this.cpf = props.cpf;
     this.isActive = props.isActive;
+    this.passwordChangedAt = props.passwordChangedAt;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -60,6 +69,9 @@ export class User {
     User.validatePasswordHash(props.passwordHash);
     User.validateRole(props.role);
 
+    const hasCpfInput = typeof props.cpf === 'string' && props.cpf.trim().length > 0;
+    const cpf = hasCpfInput ? Cpf.create(props.cpf as string) : null;
+
     const now = new Date();
 
     return new User({
@@ -68,7 +80,9 @@ export class User {
       email: Email.create(props.email),
       passwordHash: props.passwordHash,
       role: props.role,
+      cpf,
       isActive: true,
+      passwordChangedAt: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -100,6 +114,21 @@ export class User {
   changePassword(passwordHash: string): void {
     User.validatePasswordHash(passwordHash);
     this.passwordHash = passwordHash;
+    this.passwordChangedAt = new Date();
+    this.updatedAt = new Date();
+  }
+
+  /**
+   * A concessão de acesso pode preencher um CPF ainda nulo, mas nunca
+   * substituir um já cadastrado — correção exige rota administrativa
+   * fora desta entrega.
+   */
+  assignCpf(cpf: string): void {
+    if (this.cpf) {
+      throw new BusinessRuleViolationException('Usuário já possui CPF cadastrado');
+    }
+
+    this.cpf = Cpf.create(cpf);
     this.updatedAt = new Date();
   }
 
@@ -147,7 +176,11 @@ export class User {
     }
   }
 
-  private static validateRole(role: UserRole): void {
+  private static validateRole(role: UserRole | null): void {
+    if (role === null) {
+      return;
+    }
+
     if (!VALID_ROLES.includes(role)) {
       throw new DomainValidationException(
         `Role inválida. Valores aceitos: ${VALID_ROLES.join(', ')}`,
@@ -160,7 +193,7 @@ export interface UserPublicView {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

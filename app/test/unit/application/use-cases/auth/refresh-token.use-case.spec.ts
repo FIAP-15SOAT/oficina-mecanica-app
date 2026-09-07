@@ -65,6 +65,46 @@ describe('RefreshTokenUseCase', () => {
     );
   });
 
+  it('should reject an externally-only account (role null) with the same generic message', async () => {
+    const user = createMockUser({ role: null });
+    userRepository.findById.mockResolvedValue(user);
+
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
+    expect(tokenService.signTokenPair).not.toHaveBeenCalled();
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ failureReason: 'no_internal_role' }),
+    );
+  });
+
+  it('should reject a refresh token issued before the last password change', async () => {
+    const passwordChangedAt = new Date();
+    const user = createMockUser({ passwordChangedAt });
+    userRepository.findById.mockResolvedValue(user);
+    tokenService.verifyRefreshToken.mockReturnValue({
+      sub: user.id,
+      email: user.email.value,
+      role: user.role,
+      iat: Math.floor((passwordChangedAt.getTime() - 60_000) / 1000),
+    });
+
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      UnauthorizedAccessException,
+    );
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
+    expect(tokenService.signTokenPair).not.toHaveBeenCalled();
+    expect(logger.event).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ failureReason: 'password_changed' }),
+    );
+  });
+
   it('should report a distinct cause for each failure while throwing an identical message', async () => {
     tokenService.verifyRefreshToken.mockImplementationOnce(() => {
       throw new Error('expired');
@@ -83,11 +123,22 @@ describe('RefreshTokenUseCase', () => {
       'Refresh token inválido ou expirado',
     );
 
+    userRepository.findById.mockResolvedValueOnce(createMockUser({ role: null }));
+    await expect(useCase.execute({ refreshToken: 'valid-token' })).rejects.toThrow(
+      'Refresh token inválido ou expirado',
+    );
+
     expect(logger.event.mock.calls.map((call) => call[1])).toEqual([
       { failureReason: 'invalid_token' },
       { failureReason: 'unknown_user', subjectId: 'user-uuid-123' },
       {
         failureReason: 'inactive_user',
+        subjectId: 'user-uuid-123',
+        subjectName: 'Admin User',
+        subjectEmail: 'admin@email.com',
+      },
+      {
+        failureReason: 'no_internal_role',
         subjectId: 'user-uuid-123',
         subjectName: 'Admin User',
         subjectEmail: 'admin@email.com',

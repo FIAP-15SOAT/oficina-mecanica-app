@@ -26,6 +26,12 @@ export class CreateWorkOrderUseCase {
         throw new ResourceNotFoundException('Cliente', dto.customerId);
       }
 
+      if (!customer.isActive) {
+        throw new BusinessRuleViolationException(
+          'Não é possível abrir ordem de serviço para um cliente inativo.',
+        );
+      }
+
       const vehicle = await repos.vehicle.findById(dto.vehicleId);
 
       if (!vehicle) {

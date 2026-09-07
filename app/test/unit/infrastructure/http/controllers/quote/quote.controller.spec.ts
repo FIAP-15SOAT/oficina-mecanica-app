@@ -7,8 +7,9 @@ import { QuotePresenter } from '@interface-adapters/quote/quote.presenter';
 import { Quote } from '@domain/entities/quote.entity';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 import { UserRole } from '@domain/enums/user-role.enum';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
-import { AuthenticatedUser } from '@infrastructure/http/decorators/current-user.decorator';
+import { AuthenticatedPrincipal } from '@application/ports/output/authenticated-principal';
 import { CreateQuoteRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/create-quote-request.dto';
 import { AddQuoteServiceRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/add-quote-service-request.dto';
 import { AddQuotePartSupplyRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/add-quote-part-supply-request.dto';
@@ -16,7 +17,6 @@ import { UpdateQuoteServiceItemRequestDto } from '@infrastructure/http/controlle
 import { UpdateQuotePartSupplyItemRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/update-quote-part-supply-item-request.dto';
 import { UpdateQuoteStatusRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/update-quote-status-request.dto';
 import { FindAllQuotesQueryDto } from '@infrastructure/http/controllers/quote/dto/requests/find-all-quotes-query.dto';
-import { QuoteEmailDecisionRequestDto } from '@infrastructure/http/controllers/quote/dto/requests/quote-email-decision-request.dto';
 
 import { createMockQuote } from '../../../../../helpers/quote-mock.factory';
 import { createMockWorkOrder } from '../../../../../helpers/work-order-mock.factory';
@@ -35,7 +35,6 @@ describe('QuoteController', () => {
 
   beforeEach(() => {
     cleanController = new QuoteCleanController(
-      { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
@@ -193,8 +192,9 @@ describe('QuoteController', () => {
       const id = randomUUID();
       const userId = randomUUID();
       const dto: UpdateQuoteStatusRequestDto = { status: QuoteStatus.APPROVED };
-      const user: AuthenticatedUser = {
+      const user: AuthenticatedPrincipal = {
         sub: userId,
+        authFlow: AuthFlow.INTERNAL,
         email: 'atendente@oficina.local',
         role: UserRole.ATTENDANT,
       };
@@ -205,21 +205,6 @@ describe('QuoteController', () => {
 
       expect(result).toBe(response);
       expect(cleanController.updateStatus).toHaveBeenCalledWith(id, userId, dto);
-    });
-  });
-
-  describe('emailDecision', () => {
-    it('should delegate to the clean controller with the token from the query', async () => {
-      const id = randomUUID();
-      const token = 'signed-decision-token';
-      const query: QuoteEmailDecisionRequestDto = { token };
-      const response = QuotePresenter.toDataResponse(quoteStub);
-      jest.spyOn(cleanController, 'emailDecision').mockResolvedValue(response);
-
-      const result = await httpController.emailDecision(id, query);
-
-      expect(result).toBe(response);
-      expect(cleanController.emailDecision).toHaveBeenCalledWith(id, token);
     });
   });
 });

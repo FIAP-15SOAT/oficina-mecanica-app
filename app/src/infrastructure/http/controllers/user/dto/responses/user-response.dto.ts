@@ -17,8 +17,8 @@ export class UserResponseDto implements UserResponse {
   @ApiProperty({ example: 'joao@email.com' })
   email!: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT })
-  role!: UserRole;
+  @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT, nullable: true })
+  role!: UserRole | null;
 
   @ApiProperty({ example: true })
   isActive!: boolean;

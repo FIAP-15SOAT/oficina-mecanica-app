@@ -169,6 +169,7 @@ describe('PrismaCustomerRepository', () => {
           state: 'ST',
           zipCode: '12345678',
         }),
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -185,6 +186,31 @@ describe('PrismaCustomerRepository', () => {
       );
     });
 
+    it('should include isActive in the persisted data so status changes are not silently dropped', async () => {
+      const customer = Customer.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        document: Document.create('12345678909', CustomerType.INDIVIDUAL),
+        type: CustomerType.INDIVIDUAL,
+        email: Email.create('test@example.com'),
+        phone: Phone.create('11999999999'),
+        address: null,
+        isActive: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      prisma.customer.update.mockResolvedValue(createMockPrismaCustomer({ id: customer.id }));
+
+      await repository.update(customer);
+
+      expect(prisma.customer.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ isActive: false }),
+        }),
+      );
+    });
+
     it('should send delete for address when customer has no address', async () => {
       const customer = Customer.reconstitute({
         id: randomUUID(),
@@ -194,6 +220,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -218,6 +245,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('dup@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -239,6 +267,7 @@ describe('PrismaCustomerRepository', () => {
         email: Email.create('test@example.com'),
         phone: Phone.create('11999999999'),
         address: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -294,6 +323,17 @@ describe('PrismaCustomerRepository', () => {
         }),
       );
     });
+
+    it('should filter by active when provided', async () => {
+      prisma.customer.findMany.mockResolvedValue([]);
+      prisma.customer.count.mockResolvedValue(0);
+
+      await repository.findAllPaginated({ page: 1, limit: 10 }, { active: false });
+
+      expect(prisma.customer.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { isActive: false } }),
+      );
+    });
   });
 
   describe('isCustomerInUse', () => {
@@ -315,6 +355,20 @@ describe('PrismaCustomerRepository', () => {
       prisma.vehicle.findFirst.mockResolvedValue(null);
       prisma.workOrder.findFirst.mockResolvedValue(null);
       const result = await repository.isCustomerInUse(randomUUID());
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasWorkOrders', () => {
+    it('should return true if customer has work orders', async () => {
+      prisma.workOrder.findFirst.mockResolvedValue({ id: 'some-id' });
+      const result = await repository.hasWorkOrders(randomUUID());
+      expect(result).toBe(true);
+    });
+
+    it('should return false if customer has no work orders', async () => {
+      prisma.workOrder.findFirst.mockResolvedValue(null);
+      const result = await repository.hasWorkOrders(randomUUID());
       expect(result).toBe(false);
     });
   });

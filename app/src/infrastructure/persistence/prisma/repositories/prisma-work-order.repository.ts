@@ -87,11 +87,13 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
     filters: WorkOrderFilters,
     sort?: SortCriterion[],
   ): Promise<PaginatedRepositoryResult<WorkOrder>> {
-    const { number, customerId, vehicleId, assignedUserId, status, statusNotIn } = filters;
+    const { number, customerId, customerIdIn, vehicleId, assignedUserId, status, statusNotIn } =
+      filters;
 
     const where: Prisma.WorkOrderWhereInput = {};
     if (number) where.number = { contains: number.trim(), mode: 'insensitive' };
     if (customerId) where.customerId = customerId;
+    if (customerIdIn !== undefined) where.customerId = { in: customerIdIn };
     if (vehicleId) where.vehicleId = vehicleId;
     if (assignedUserId) where.assignedUserId = assignedUserId;
     if (status) where.status = status;

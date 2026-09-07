@@ -5,6 +5,7 @@ import { ResourceConflictException } from '@application/exceptions/resource-conf
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { Email } from '@domain/value-objects/email.vo';
+import { Cpf } from '@domain/value-objects/cpf.vo';
 
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/repositories/prisma-user.repository';
 
@@ -52,7 +53,9 @@ describe('PrismaUserRepository', () => {
           email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
+          cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -62,9 +65,11 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
     });
@@ -84,6 +89,25 @@ describe('PrismaUserRepository', () => {
       prisma.user.create.mockRejectedValue(error);
 
       await expect(repository.create(user)).rejects.toThrow(ResourceConflictException);
+    });
+
+    it('should report a CPF conflict distinctly from an email conflict on P2002', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+        cpf: '12345678909',
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate cpf', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['cpf'] },
+      });
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow('CPF já cadastrado');
     });
 
     it('should rethrow unexpected errors', async () => {
@@ -117,7 +141,9 @@ describe('PrismaUserRepository', () => {
           email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
+          cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -154,7 +180,9 @@ describe('PrismaUserRepository', () => {
           email: Email.create(prismaModel.email),
           passwordHash: prismaModel.passwordHash,
           role: prismaModel.role,
+          cpf: prismaModel.cpf,
           isActive: prismaModel.isActive,
+          passwordChangedAt: prismaModel.passwordChangedAt,
           createdAt: prismaModel.createdAt,
           updatedAt: prismaModel.updatedAt,
         }),
@@ -242,7 +270,9 @@ describe('PrismaUserRepository', () => {
         email: Email.create('updated@example.com'),
         passwordHash: '$2b$10$newhash',
         role: UserRole.ADMIN,
+        cpf: null,
         isActive: false,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -267,9 +297,11 @@ describe('PrismaUserRepository', () => {
         data: {
           name: user.name,
           email: user.email.value,
+          cpf: user.cpf?.value ?? null,
           passwordHash: user.passwordHash,
           role: user.role,
           isActive: user.isActive,
+          passwordChangedAt: user.passwordChangedAt,
         },
       });
     });
@@ -281,7 +313,9 @@ describe('PrismaUserRepository', () => {
         email: Email.create('dup@example.com'),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
+        cpf: null,
         isActive: true,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -294,6 +328,29 @@ describe('PrismaUserRepository', () => {
       await expect(repository.update(user)).rejects.toThrow(ResourceConflictException);
     });
 
+    it('should report a CPF conflict distinctly from an email conflict on P2002 update', async () => {
+      const user = User.reconstitute({
+        id: randomUUID(),
+        name: 'Test',
+        email: Email.create('dup@example.com'),
+        passwordHash: '$2b$10$hash',
+        role: UserRole.MECHANIC,
+        cpf: Cpf.create('12345678909'),
+        isActive: true,
+        passwordChangedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate cpf', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['cpf'] },
+      });
+      prisma.user.update.mockRejectedValue(error);
+
+      await expect(repository.update(user)).rejects.toThrow('CPF já cadastrado para outro usuário');
+    });
+
     it('should rethrow unexpected errors from update', async () => {
       const user = User.reconstitute({
         id: randomUUID(),
@@ -301,7 +358,9 @@ describe('PrismaUserRepository', () => {
         email: Email.create('test@example.com'),
         passwordHash: '$2b$10$hash',
         role: UserRole.MECHANIC,
+        cpf: null,
         isActive: true,
+        passwordChangedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -321,6 +380,26 @@ describe('PrismaUserRepository', () => {
       await repository.delete(id);
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id } });
+    });
+  });
+
+  describe('findByCpf', () => {
+    it('should return a user when found', async () => {
+      const cpf = '12345678909';
+      prisma.user.findUnique.mockResolvedValue(createMockPrismaUser({ cpf }));
+
+      const result = await repository.findByCpf(cpf);
+
+      expect(result).toBeDefined();
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { cpf } });
+    });
+
+    it('should return null when not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findByCpf('12345678909');
+
+      expect(result).toBeNull();
     });
   });
 });

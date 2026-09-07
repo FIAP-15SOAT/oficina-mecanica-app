@@ -28,6 +28,7 @@ export class CustomerMapper {
             zipCode: prismaRecord.address.zipCode,
           })
         : null,
+      isActive: prismaRecord.isActive,
       createdAt: prismaRecord.createdAt,
       updatedAt: prismaRecord.updatedAt,
     });

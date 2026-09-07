@@ -74,6 +74,23 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # Falha rápido e com causa explícita, antes de gastar uma autenticação AWS e
+      # um kubectl apply: sem este secret, o Secret do cluster sobe com um valor
+      # vazio ou malformado, o pod da API entra em CrashLoopBackOff, e o
+      # TypeError do passport-jwt no log do pod não diz o que realmente faltou.
+      - name: Validate required secrets
+        env:
+          CUSTOMER_JWT_PUBLIC_KEY: ${{ secrets.CUSTOMER_JWT_PUBLIC_KEY }}
+        run: |
+          if [ -z "${CUSTOMER_JWT_PUBLIC_KEY}" ]; then
+            echo "::error::CUSTOMER_JWT_PUBLIC_KEY não está configurado nos secrets do repositório."
+            exit 1
+          fi
+          case "${CUSTOMER_JWT_PUBLIC_KEY}" in
+            *"BEGIN PUBLIC KEY"*) ;;
+            *) echo "::error::CUSTOMER_JWT_PUBLIC_KEY não parece uma chave pública PEM."; exit 1 ;;
+          esac
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
@@ -94,22 +111,22 @@ jobs:
           DB_NAME: ${{ vars.DB_NAME || 'techchallenge' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          QUOTE_DECISION_TOKEN_SECRET: ${{ secrets.QUOTE_DECISION_TOKEN_SECRET }}
+          CUSTOMER_JWT_PUBLIC_KEY: ${{ secrets.CUSTOMER_JWT_PUBLIC_KEY }}
+        # `kubectl create secret --from-literal` (não `envsubst` sobre o YAML) porque
+        # CUSTOMER_JWT_PUBLIC_KEY é uma chave PEM que pode conter quebras de linha reais —
+        # envsubst injetaria o valor cru dentro do stringData e quebraria o YAML renderizado
+        # (a segunda linha do PEM começa na coluna 0, sem `:`), derrubando o `kubectl apply`
+        # antes da migração e do rollout. --from-literal aceita o valor como está, com
+        # quebras de linha ou não, e o próprio kubectl faz o escape para o Secret.
         run: |
-          DB_USER="${DB_USER}" \
-          DB_PASSWORD="${DB_PASSWORD}" \
-          DB_HOST="${DB_HOST}" \
-          DB_PORT="${DB_PORT}" \
-          DB_NAME="${DB_NAME}" \
-          JWT_SECRET="${JWT_SECRET}" \
-          JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
-          QUOTE_DECISION_TOKEN_SECRET="${QUOTE_DECISION_TOKEN_SECRET}" \
-            envsubst \
-            '${DB_USER} ${DB_PASSWORD} ${DB_HOST} ${DB_PORT} ${DB_NAME} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${QUOTE_DECISION_TOKEN_SECRET}' \
-            < k8s/01-api-secret.yaml \
-            > k8s/01-api-secret.rendered.yaml
+          kubectl create secret generic api-secret \
+            --namespace "${{ vars.K8S_NAMESPACE }}" \
+            --from-literal=DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public" \
+            --from-literal=JWT_SECRET="${JWT_SECRET}" \
+            --from-literal=JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
+            --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
-          kubectl apply -f k8s/01-api-secret.rendered.yaml
           kubectl apply -f k8s/02-api-configmap.yaml
 
       - name: Apply DB migration Job

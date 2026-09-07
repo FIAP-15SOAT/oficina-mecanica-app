@@ -19,6 +19,8 @@ data:
   OTEL_SERVICE_NAME: "oficina-mecanica-api"
   OTEL_SERVICE_NAMESPACE: "oficina-mecanica"
   TRUSTED_PROXY_CIDRS: ""
+  CUSTOMER_JWT_ISSUER: "oficina-customer-auth"
+  CUSTOMER_JWT_AUDIENCE: "oficina-api"
   # Telemetria (OpenTelemetry). VAZIO = telemetria desligada
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   OTEL_LOGS_EXPORTER: "none"

@@ -1,20 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 import { UserRole } from '@domain/enums/user-role.enum';
-import { PASSWORD_REGEX } from '@domain/constants/regex/password.regex';
-import {
-  MIN_NAME_LENGTH,
-  MAX_NAME_LENGTH,
-  PASSWORD_REQUIREMENTS_MESSAGE,
-} from '@domain/constants/validation/user.constants';
+import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '@domain/constants/validation/user.constants';
 
 export class CreateUserRequestDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo (mín. 3 caracteres)' })
@@ -33,17 +28,13 @@ export class CreateUserRequestDto {
   @IsNotEmpty({ message: 'O e-mail é obrigatório' })
   email!: string;
 
-  @ApiProperty({
-    example: 'Senha@123',
-    description:
-      'Senha (mín. 8 caracteres, com ao menos uma letra maiúscula, uma minúscula, um número e um caractere especial)',
-  })
-  @IsString({ message: 'A senha deve ser um texto.' })
-  @Matches(PASSWORD_REGEX, { message: PASSWORD_REQUIREMENTS_MESSAGE })
-  password!: string;
-
   @ApiProperty({ enum: UserRole, example: UserRole.ATTENDANT, description: 'Role do usuário' })
   @IsNotEmpty({ message: 'A role é obrigatória' })
   @IsEnum(UserRole, { message: 'Role inválida' })
   role!: UserRole;
+
+  @ApiPropertyOptional({ example: '123.456.789-09', description: 'CPF do usuário' })
+  @IsOptional()
+  @IsString({ message: 'O CPF deve ser um texto.' })
+  cpf?: string;
 }

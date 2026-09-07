@@ -11,6 +11,7 @@ import { UpdateUserStatusRequestDto } from '@infrastructure/http/controllers/use
 import { FindAllUsersQueryDto } from '@infrastructure/http/controllers/user/dto/requests/filter-users.dto';
 
 import { UserRole } from '@domain/enums/user-role.enum';
+import { AuthFlow } from '@domain/enums/auth-flow.enum';
 
 import { createMockUser } from '../../../../../helpers/user-mock.factory';
 
@@ -21,12 +22,12 @@ describe('UserController', () => {
   const userRequestStub: CreateUserRequestDto = {
     name: 'Jane Smith',
     email: 'jane.smith@example.com',
-    password: 'SecurePass123!',
     role: UserRole.MECHANIC,
   };
 
   beforeEach(() => {
     cleanController = new UserCleanController(
+      { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
       { execute: jest.fn() },
@@ -127,6 +128,24 @@ describe('UserController', () => {
       await httpController.remove(id);
 
       expect(cleanController.remove).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('issuePasswordResetCode', () => {
+    it('should delegate to the clean controller with the acting user id', async () => {
+      const userId = randomUUID();
+      const actingUser = {
+        sub: randomUUID(),
+        authFlow: AuthFlow.INTERNAL,
+        email: 'admin@example.com',
+        role: UserRole.ADMIN,
+      };
+
+      jest.spyOn(cleanController, 'issuePasswordResetCode').mockResolvedValue(undefined);
+
+      await httpController.issuePasswordResetCode(userId, actingUser);
+
+      expect(cleanController.issuePasswordResetCode).toHaveBeenCalledWith(userId, actingUser.sub);
     });
   });
 });

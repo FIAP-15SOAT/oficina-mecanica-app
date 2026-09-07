@@ -37,7 +37,7 @@ export interface StockWorkOrderAssignedUserResponse {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
 }
 
 export interface StockWorkOrderResponse {
