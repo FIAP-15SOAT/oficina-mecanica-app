@@ -1,0 +1,139 @@
+/**
+ * Smoke do preload de telemetria — roda FORA do Jest, de propósito.
+ *
+ * O `jest-runtime` tem registro de módulos próprio e não passa pelo carregador
+ * do Node, que é onde `require-in-the-middle` engancha: nenhuma asserção sobre
+ * o comportamento real do preload é possível lá dentro, e uma que tentasse
+ * ficaria verde sem verificar nada.
+ *
+ * O que este arquivo protege são as regressões que já aconteceram e que só
+ * aparecem num processo de verdade: o interruptor carregando o SDK inteiro, uma
+ * configuração inválida derrubando o boot, e o canal de diagnóstico do SDK
+ * escrevendo texto cru em stdout.
+ *
+ *   node test/smoke/telemetry-preload.smoke.mjs
+ */
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const PRELOAD = resolve(APP_ROOT, 'dist/src/otel.js');
+const MARKER = 'SMOKE_MAIN_STARTED';
+
+/** Endereço reservado para documentação (RFC 5737): nunca responde. */
+const UNREACHABLE_ENDPOINT = 'http://192.0.2.1:4318';
+
+const failures = [];
+
+function check(name, condition, detail) {
+  if (condition) {
+    console.log(`  ok   ${name}`);
+
+    return;
+  }
+
+  failures.push(name);
+  console.log(`  FAIL ${name}${detail ? `\n       ${detail}` : ''}`);
+}
+
+function runWithPreload(env, script) {
+  return spawnSync(process.execPath, ['--require', PRELOAD, script], {
+    cwd: APP_ROOT,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+    timeout: 60_000,
+  });
+}
+
+const scratch = mkdtempSync(join(tmpdir(), 'otel-smoke-'));
+
+const mainScript = join(scratch, 'main.js');
+writeFileSync(mainScript, `console.log(${JSON.stringify(MARKER)});\n`);
+
+const moduleCountScript = join(scratch, 'modules.js');
+writeFileSync(
+  moduleCountScript,
+  `const loaded = Object.keys(require.cache).filter((id) => id.includes('@opentelemetry'));
+console.log(JSON.stringify({ otelModules: loaded.length }));\n`,
+);
+
+if (!existsSync(PRELOAD)) {
+  console.error(`dist ausente: ${PRELOAD}\nRode "npm run build" antes do smoke.`);
+  process.exit(1);
+}
+
+console.log('interruptor (OTEL_EXPORTER_OTLP_ENDPOINT vazio)');
+{
+  const result = runWithPreload({ OTEL_EXPORTER_OTLP_ENDPOINT: '' }, moduleCountScript);
+  const parsed = JSON.parse(result.stdout.trim() || '{"otelModules":-1}');
+
+  check('a aplicação sobe', result.status === 0, result.stderr);
+  // O `return` antecipado precisa vir ANTES dos imports do SDK: com `import` de
+  // topo, o modo desligado ainda pagava ~348 módulos e ~13,5 MiB de RSS por pod.
+  check('nenhum módulo do SDK é carregado', parsed.otelModules === 0, `carregados: ${parsed.otelModules}`);
+}
+
+console.log('configuração inválida não impede o boot');
+for (const [name, env] of [
+  ['intervalo de métrica abaixo do prazo de exportação', { OTEL_METRIC_EXPORT_INTERVAL: '1000' }],
+  ['intervalo de métrica absurdo', { OTEL_METRIC_EXPORT_INTERVAL: '1' }],
+  ['prazo de exportação acima da janela de encerramento', { OTEL_EXPORTER_OTLP_TIMEOUT: '600000' }],
+  ['endereço sem esquema', { OTEL_EXPORTER_OTLP_ENDPOINT: 'localhost:4318' }],
+  ['cabeçalhos OTLP malformados', { OTEL_EXPORTER_OTLP_HEADERS: '==' }],
+]) {
+  const result = runWithPreload(
+    { OTEL_EXPORTER_OTLP_ENDPOINT: UNREACHABLE_ENDPOINT, ...env },
+    mainScript,
+  );
+
+  check(
+    name,
+    result.status === 0 && result.stdout.includes(MARKER),
+    `status=${result.status} stderr=${result.stderr.slice(0, 200)}`,
+  );
+}
+
+console.log('stdout permanece um objeto JSON por linha');
+for (const level of ['debug', 'verbose', 'info']) {
+  const result = runWithPreload(
+    { OTEL_EXPORTER_OTLP_ENDPOINT: UNREACHABLE_ENDPOINT, OTEL_LOG_LEVEL: level },
+    mainScript,
+  );
+  const extra = result.stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && line !== MARKER);
+
+  check(`OTEL_LOG_LEVEL=${level} não escreve em stdout`, extra.length === 0, extra.join(' | '));
+}
+
+console.log('destino inalcançável degrada pelo canal de erro');
+{
+  const result = runWithPreload({ OTEL_EXPORTER_OTLP_ENDPOINT: UNREACHABLE_ENDPOINT }, mainScript);
+  const stderrLines = result.stderr
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  check('a aplicação responde normalmente', result.status === 0 && result.stdout.includes(MARKER));
+  check(
+    'toda linha de diagnóstico é JSON com envelope declarado',
+    stderrLines.every((line) => {
+      try {
+        const parsed = JSON.parse(line);
+
+        return typeof parsed.message === 'string' && typeof parsed['service.name'] === 'string';
+      } catch {
+        return false;
+      }
+    }),
+    stderrLines.find((line) => !line.startsWith('{')),
+  );
+}
+
+console.log(failures.length === 0 ? '\nsmoke ok' : `\nsmoke falhou: ${failures.join(', ')}`);
+process.exit(failures.length === 0 ? 0 : 1);

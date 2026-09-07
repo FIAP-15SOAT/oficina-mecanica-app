@@ -14,6 +14,7 @@ import { IUserRepository } from '@domain/interfaces/repositories/user.repository
 import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { IQuoteRepository } from '@domain/interfaces/repositories/quote.repository.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
 
 import { WorkOrderController as WorkOrderCleanController } from '@interface-adapters/work-order/work-order.controller';
@@ -31,19 +32,24 @@ import { WorkOrderController } from './work-order.controller';
         statusHistoryRepository: IStatusHistoryRepository,
         quoteRepository: IQuoteRepository,
         logger: ILogger,
+        metrics: IMetrics,
       ) =>
         new WorkOrderCleanController(
-          new CreateWorkOrderUseCase(unitOfWork),
+          new CreateWorkOrderUseCase(unitOfWork, metrics),
           new FindWorkOrderByIdUseCase(workOrderRepository),
           new FindAllWorkOrdersPaginatedUseCase(workOrderRepository),
           new UpdateWorkOrderUseCase(workOrderRepository, userRepository),
           new UpdateWorkOrderStatusUseCase(
             unitOfWork,
             logger.forContext(UpdateWorkOrderStatusUseCase.name),
+            metrics,
+            statusHistoryRepository,
           ),
           new UpdateWorkOrderServiceStatusUseCase(
             unitOfWork,
             logger.forContext(UpdateWorkOrderServiceStatusUseCase.name),
+            metrics,
+            statusHistoryRepository,
           ),
           new FindWorkOrderStatusHistoryUseCase(statusHistoryRepository, workOrderRepository),
           new FindWorkOrderQuotesUseCase(quoteRepository, workOrderRepository),
@@ -55,6 +61,7 @@ import { WorkOrderController } from './work-order.controller';
         'IStatusHistoryRepository',
         'IQuoteRepository',
         'ILogger',
+        'IMetrics',
       ],
     },
   ],

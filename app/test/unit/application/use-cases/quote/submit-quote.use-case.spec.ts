@@ -12,6 +12,12 @@ import { Email } from '@domain/value-objects/email.vo';
 import { SendEmailInput } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { createMockMetrics } from '../../../../helpers/metrics-mock.factory';
+import {
+  arrangeStatusHistory,
+  createMockStatusHistory,
+} from '../../../../helpers/status-history-mock.factory';
 
 const mockTokenService = {
   signAccessToken: jest.fn(),
@@ -32,12 +38,14 @@ describe('SubmitQuoteUseCase', () => {
   let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
+  let metrics: jest.Mocked<IMetrics>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    metrics = createMockMetrics();
     logger = createMockLogger();
     useCase = new SubmitQuoteUseCase(
       mockUow,
@@ -46,6 +54,8 @@ describe('SubmitQuoteUseCase', () => {
       'test-secret',
       'http://localhost:3000/api',
       logger,
+      metrics,
+      mockRepos.statusHistory,
     );
   });
 
@@ -214,5 +224,84 @@ describe('SubmitQuoteUseCase', () => {
     mockEmailSender.send.mockRejectedValue(new Error('SMTP error'));
 
     await expect(useCase.execute(quote.id)).rejects.toThrow('SMTP error');
+  });
+  describe('dwell metrics', () => {
+    beforeEach(() => {
+      // `clearAllMocks` limpa chamadas, mas nao implementacoes: um teste anterior
+      // deixa o envio de e-mail rejeitando.
+      mockEmailSender.send.mockResolvedValue(undefined);
+    });
+
+    function arrangeHistory(workOrderId: string) {
+      arrangeStatusHistory(
+        mockRepos.statusHistory,
+        [
+          createMockStatusHistory({
+            workOrderId,
+            previousStatus: WorkOrderStatus.RECEIVED,
+            newStatus: WorkOrderStatus.IN_DIAGNOSIS,
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          }),
+        ],
+        new Date('2026-01-01T03:00:00.000Z'),
+      );
+    }
+
+    it('should record the dwell in IN_DIAGNOSIS when the work order transitions', async () => {
+      const quote = createMockQuote({
+        status: QuoteStatus.PENDING,
+        services: [createMockQuoteService()],
+      });
+      const workOrder = createMockWorkOrder({
+        id: quote.workOrderId,
+        status: WorkOrderStatus.IN_DIAGNOSIS,
+      });
+
+      (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.customer.findById as jest.Mock).mockResolvedValue(
+        createMockCustomer({ id: workOrder.customerId }),
+      );
+      (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(workOrder);
+      arrangeHistory(workOrder.id);
+
+      await useCase.execute(quote.id);
+
+      expect(metrics.record).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'work_order.status.duration' }),
+        3 * 3600,
+        { workOrderStatus: WorkOrderStatus.IN_DIAGNOSIS },
+      );
+    });
+
+    /**
+     * A transição só ocorre a partir de `IN_DIAGNOSIS` ou `REJECTED`. Com a OS
+     * já em `AWAITING_APPROVAL` não há entrada nova no histórico — e o retorno
+     * composto precisa dizer isso, senão a seção pós-commit inventaria uma
+     * permanência.
+     */
+    it('should not record a metric when the work order was already in AWAITING_APPROVAL', async () => {
+      const quote = createMockQuote({
+        status: QuoteStatus.PENDING,
+        services: [createMockQuoteService()],
+      });
+      const workOrder = createMockWorkOrder({
+        id: quote.workOrderId,
+        status: WorkOrderStatus.AWAITING_APPROVAL,
+      });
+
+      (mockRepos.quote.findByIdWithDetails as jest.Mock).mockResolvedValue(quote);
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.customer.findById as jest.Mock).mockResolvedValue(
+        createMockCustomer({ id: workOrder.customerId }),
+      );
+      (mockRepos.quote.update as jest.Mock).mockResolvedValue(quote);
+
+      await useCase.execute(quote.id);
+
+      expect(metrics.record).not.toHaveBeenCalled();
+      expect(mockRepos.statusHistory.findByWorkOrderId).not.toHaveBeenCalled();
+    });
   });
 });

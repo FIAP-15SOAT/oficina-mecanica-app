@@ -21,6 +21,7 @@ import { normalizeLogRecord } from './log-record-normalizer';
 import { LogLevel, resolveLoggerConfig } from './logger.config';
 import { PinoLoggerAdapter } from './pino-logger.adapter';
 import { ProcessLifecycleService } from './process-lifecycle.service';
+import { buildTraceCorrelation } from './trace-correlation';
 
 export const LOGGER_DESTINATION = 'LOGGER_DESTINATION';
 export const LOGGER_LEVEL = 'LOGGER_LEVEL';
@@ -50,6 +51,11 @@ export function buildLoggerParams(destination: DestinationStream, level: LogLeve
         base: { ...resource, 'host.name': hostname(), 'process.pid': process.pid },
         messageKey: 'message',
         timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
+        // O pino aplica o `mixin` **antes** de `formatters.log`, então os três
+        // campos atravessam `normalizeLogRecord` como qualquer outra chave — e
+        // por isso precisam estar declarados no dicionário, senão sumiriam em
+        // silêncio.
+        mixin: buildTraceCorrelation,
         formatters: {
           level: (label: string) => ({ level: label }),
           log: normalizeLogRecord,

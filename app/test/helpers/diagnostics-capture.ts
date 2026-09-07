@@ -1,3 +1,5 @@
+import { resetTelemetryDiagnostics } from '@infrastructure/telemetry/telemetry-diagnostics';
+
 export interface DiagnosticsCapture {
   spy: jest.SpyInstance;
   lines(): Record<string, unknown>[];
@@ -6,6 +8,8 @@ export interface DiagnosticsCapture {
 }
 
 export function captureDiagnostics(): DiagnosticsCapture {
+  resetTelemetryDiagnostics();
+
   const spy = jest.spyOn(process.stderr, 'write').mockReturnValue(true);
 
   const written = (): string[] =>

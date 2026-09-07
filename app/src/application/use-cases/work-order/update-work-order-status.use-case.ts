@@ -3,9 +3,12 @@ import { StatusHistory } from '@domain/entities/status-history.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { UpdateWorkOrderStatusDto } from '@application/ports/input/work-order/dto/update-work-order-status.dto';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
@@ -20,10 +23,12 @@ export class UpdateWorkOrderStatusUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(id: string, dto: UpdateWorkOrderStatusDto): Promise<WorkOrder> {
-    const { workOrder, previousStatus } = await this.unitOfWork.executeTransaction(
+    const { workOrder, previousStatus, transition } = await this.unitOfWork.executeTransaction(
       async (repos) => {
         const workOrder = await repos.workOrder.findById(id);
 
@@ -42,7 +47,7 @@ export class UpdateWorkOrderStatusUseCase {
 
         const saved = await repos.workOrder.update(workOrder);
 
-        await repos.statusHistory.create(
+        const transition = await repos.statusHistory.create(
           StatusHistory.create({
             workOrderId: saved.id,
             changedById: dto.userId,
@@ -52,7 +57,7 @@ export class UpdateWorkOrderStatusUseCase {
           }),
         );
 
-        return { workOrder: saved, previousStatus };
+        return { workOrder: saved, previousStatus, transition };
       },
     );
 
@@ -62,6 +67,8 @@ export class UpdateWorkOrderStatusUseCase {
       previousWorkOrderStatus: previousStatus,
       currentWorkOrderStatus: workOrder.status,
     });
+
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
 
     return workOrder;
   }

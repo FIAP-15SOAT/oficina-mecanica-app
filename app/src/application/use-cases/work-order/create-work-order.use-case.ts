@@ -4,6 +4,8 @@ import { Quote } from '@domain/entities/quote.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { BUSINESS_METRICS } from '@application/metrics/business-metric.catalog';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { QuoteItemValidator } from '@application/services/quote-item-validator';
 import { CreateWorkOrderDto } from '@application/ports/input/work-order/dto/create-work-order.dto';
 
@@ -11,10 +13,13 @@ import { ResourceNotFoundException } from '@application/exceptions/resource-not-
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 
 export class CreateWorkOrderUseCase {
-  constructor(private readonly unitOfWork: IUnitOfWork) {}
+  constructor(
+    private readonly unitOfWork: IUnitOfWork,
+    private readonly metrics: IMetrics,
+  ) {}
 
   async execute(dto: CreateWorkOrderDto): Promise<WorkOrder> {
-    return this.unitOfWork.executeTransaction(async (repos) => {
+    const workOrder = await this.unitOfWork.executeTransaction(async (repos) => {
       const customer = await repos.customer.findById(dto.customerId);
 
       if (!customer) {
@@ -93,5 +98,9 @@ export class CreateWorkOrderUseCase {
 
       return saved;
     });
+
+    this.metrics.increment(BUSINESS_METRICS.WORK_ORDER_CREATED, {});
+
+    return workOrder;
   }
 }

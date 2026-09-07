@@ -4,8 +4,11 @@ import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 import { QuoteStatus } from '@domain/enums/quote-status.enum';
 
 import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 import { IRejectQuoteUseCase } from '@application/ports/input/quote/reject-quote.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
@@ -13,10 +16,12 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(quoteId: string, notes?: string | null, userId?: string | null): Promise<Quote> {
-    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus } =
+    const { quote, workOrderId, workOrderNumber, previousQuoteStatus, previousStatus, transition } =
       await this.unitOfWork.executeTransaction(async (repos) => {
         const quote = await repos.quote.findById(quoteId);
 
@@ -36,12 +41,15 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
         );
 
         if (hasOtherSentQuote) {
+          // A OS não transiciona quando ainda há outro orçamento enviado: sem
+          // entrada nova no histórico, não há permanência a fechar.
           return {
             quote: await repos.quote.update(quote),
             workOrderId: workOrder.id,
             workOrderNumber: workOrder.number.toString(),
             previousQuoteStatus,
             previousStatus: undefined,
+            transition: undefined,
           };
         }
 
@@ -49,7 +57,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
 
         workOrder.changeStatus(WorkOrderStatus.REJECTED);
 
-        const [updatedQuote] = await Promise.all([
+        const [updatedQuote, , transition] = await Promise.all([
           repos.quote.update(quote),
           repos.workOrder.update(workOrder),
           repos.statusHistory.create(
@@ -69,6 +77,7 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
           workOrderNumber: workOrder.number.toString(),
           previousQuoteStatus,
           previousStatus,
+          transition,
         };
       });
 
@@ -80,6 +89,8 @@ export class RejectQuoteUseCase implements IRejectQuoteUseCase {
       previousWorkOrderStatus: previousStatus,
       workOrderStatusChanged: previousStatus !== undefined,
     });
+
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
 
     return quote;
   }

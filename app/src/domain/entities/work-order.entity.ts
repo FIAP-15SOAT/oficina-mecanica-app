@@ -329,6 +329,10 @@ export class WorkOrder {
     [WorkOrderStatus.CANCELLED]: [],
   };
 
+  static isTerminalStatus(status: WorkOrderStatus): boolean {
+    return (WorkOrder.STATUS_TRANSITION_MAP[status] ?? []).length === 0;
+  }
+
   private validateStatusTransition(newStatus: WorkOrderStatus, notes?: string | null): void {
     if (this.status === newStatus) {
       throw new BusinessRuleViolationException(

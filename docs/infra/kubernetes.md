@@ -58,10 +58,34 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 **Wiring de configuração.** A configuração da API é injetada como variáveis de ambiente a partir de duas fontes, separando o sensível do não-sensível:
 
-- `configMapKeyRef` → `api-config` (`ConfigMap`, **não sensível**): `NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`.
+- `configMapKeyRef` → `api-config` (`ConfigMap`, **não sensível**): `NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_LOGS_EXPORTER` e `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
 - `secretKeyRef` → `api-secret` (`Secret`, **sensível**): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `QUOTE_DECISION_TOKEN_SECRET`.
 
 O Deployment referencia cada chave individualmente (`valueFrom`), o que torna explícito no manifesto de onde vem cada env — em vez de um `envFrom` opaco.
+
+**Telemetria.** Três chaves controlam o SDK do OpenTelemetry, e a primeira é o interruptor:
+
+| Chave | Valor no ConfigMap | Efeito |
+|---|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | **vazio** | Vazio desliga tudo: nenhum módulo do SDK carregado, nenhuma instrumentação, nenhum exportador, nenhuma conexão de saída. Para ligar, apontar para o **DNS do Service** do agente (`http://datadog-agent.oficina.svc:4318`), nunca para `status.hostIP` via Downward API |
+| `OTEL_LOGS_EXPORTER` | `none` | A **ausência** desta chave faria o SDK instanciar um `LoggerProvider` com exportador OTLP de rede. Os logs têm um caminho único — o stdout do contêiner, lido pelo coletor |
+| `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | O OTel JS exporta cumulative por padrão, e os destinos compatíveis esperam delta; cumulative descarta pontos na inicialização do processo |
+
+Como o endpoint está **vazio no manifesto**, este merge não altera o comportamento em produção: os logs saem idênticos, nenhuma conexão nova é aberta e o SDK sequer é carregado. Ligar a telemetria — e desligá-la de novo, como rollback — é uma edição de ConfigMap, sem rebuild de imagem.
+
+### Camada de coleta
+
+Os manifestos do agente vivem em `k8s/06-datadog-secret.yaml` (chave por `envsubst`, nunca committada), `k8s/07-datadog-agent.yaml` (ServiceAccount + RBAC somente-leitura + DaemonSet) e `k8s/08-datadog-service.yaml` (ClusterIP expondo `4318`). É a **única peça do sistema que conhece o fornecedor**: a aplicação exporta OTLP puro, sem dependência, cabeçalho ou credencial de plataforma.
+
+O CD só os aplica com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de ativação:
+
+1. `node_instance_type` para `t3.medium` em `oficina-mecanica-k8s` (17 pods);
+2. `DD_API_KEY` como secret do repositório e `ENABLE_TELEMETRY_COLLECTION` como variável;
+3. depois que o DaemonSet estiver `Ready`, apontar `OTEL_EXPORTER_OTLP_ENDPOINT` para `http://datadog-agent.oficina.svc:4318` no ConfigMap.
+
+Os três passos são independentes, e o terceiro é o único que muda o comportamento da aplicação.
+
+⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — traço e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
 
 ## Recursos: CPU e memória (requests e limits)
 
@@ -207,6 +231,14 @@ O `05-api-hpa.yaml` (HPA `autoscaling/v2`) escala o Deployment `oficina-api` com
 `averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado em `oficina-mecanica-k8s`); sem ele, o HPA não teria dados para decidir.
 
 O HPA escala apenas os **pods da API** (`1→5`); a escala do _cluster_ (nodes) está fora do escopo — o node group é mantido fixo em 1 por decisão, como registrado em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
+
+⚠️ **O `maxReplicas: 5` esbarra no teto de pods do node, e isso independe de telemetria.** Pela fórmula padrão do VPC CNI (sem prefix delegation), um `t3.small` permite **11 pods** por node, e os workloads existentes — `coredns` ×2, `aws-node`, `kube-proxy`, `metrics-server`, `mailhog` — já ocupam 6. Sobram 5, sem margem para qualquer agente de coleta. Um `t3.medium` permite 17 pods e 4 GiB, e acomoda 6 + 5 + 1 com folga. Confirmar o número real antes de decidir:
+
+```bash
+kubectl get node -o jsonpath='{.items[*].status.allocatable.pods}'
+```
+
+O `node_instance_type` vive em `oficina-mecanica-k8s` — é pré-requisito da camada de coleta, e não uma alteração deste repositório.
 
 ## Acesso à aplicação em Kubernetes
 

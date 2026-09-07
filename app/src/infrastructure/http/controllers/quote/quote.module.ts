@@ -23,6 +23,8 @@ import { IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interf
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { IEmailSenderService } from '@application/ports/output/email-sender.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 
 import { QuoteController as QuoteCleanController } from '@interface-adapters/quote/quote.controller';
 import { QuoteController } from './quote.controller';
@@ -40,6 +42,8 @@ import { QuoteController } from './quote.controller';
         tokenService: ITokenService,
         configService: ConfigService,
         logger: ILogger,
+        metrics: IMetrics,
+        statusHistoryRepository: IStatusHistoryRepository,
       ) => {
         const quoteDecisionTokenSecret = configService.getOrThrow<string>(
           'QUOTE_DECISION_TOKEN_SECRET',
@@ -51,10 +55,14 @@ import { QuoteController } from './quote.controller';
         const approveQuoteUseCase = new ApproveQuoteUseCase(
           unitOfWork,
           logger.forContext(ApproveQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
         const rejectQuoteUseCase = new RejectQuoteUseCase(
           unitOfWork,
           logger.forContext(RejectQuoteUseCase.name),
+          metrics,
+          statusHistoryRepository,
         );
 
         return new QuoteCleanController(
@@ -73,6 +81,8 @@ import { QuoteController } from './quote.controller';
             quoteDecisionTokenSecret,
             quoteDecisionBaseUrl,
             logger.forContext(SubmitQuoteUseCase.name),
+            metrics,
+            statusHistoryRepository,
           ),
           new EmailDecisionQuoteUseCase(
             tokenService,
@@ -92,6 +102,8 @@ import { QuoteController } from './quote.controller';
         'ITokenService',
         ConfigService,
         'ILogger',
+        'IMetrics',
+        'IStatusHistoryRepository',
       ],
     },
   ],

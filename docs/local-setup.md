@@ -96,11 +96,26 @@ OTEL_SERVICE_NAMESPACE=oficina-mecanica
 # Lista separada por vírgula (ex.: 10.0.0.0/8,loopback). Ausente ou inválida =
 # nenhum proxy confiável e cabeçalhos X-Forwarded-For ignorados (falha fechada).
 # TRUSTED_PROXY_CIDRS=
+
+# Telemetria (traces e métricas). VAZIO = desligada por completo: nenhuma
+# instrumentação registrada, nenhum exportador, nenhuma conexão de saída.
+# Não existe variável de habilitação — a ausência do endereço é o interruptor.
+OTEL_EXPORTER_OTLP_ENDPOINT=
+OTEL_LOGS_EXPORTER=none
+OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta
 ```
 
 `SERVICE_VERSION` **não** é configurada por env em desenvolvimento: ela é assada na imagem (`ARG SERVICE_VERSION` no `Dockerfile`, alimentado pelo `github.sha` no `cd.yml`) e cai para `dev` fora do contêiner. `deployment.environment.name` reaproveita o `NODE_ENV` já existente — não há variável nova para ambiente.
 
 > **Atenção**: em produção, gere segredos fortes para `JWT_SECRET`, `JWT_REFRESH_SECRET` e `QUOTE_DECISION_TOKEN_SECRET`. Os valores padrão do `docker-compose.yml` são apenas placeholders.
+
+### Telemetria desligada por padrão
+
+Em desenvolvimento a telemetria fica **inativa**: sem `OTEL_EXPORTER_OTLP_ENDPOINT`, o preload retorna cedo e o SDK não registra instrumentação alguma. Os logs, os health checks e todo o restante do comportamento seguem idênticos, e nenhuma conexão de saída é tentada.
+
+Para exercitar a telemetria localmente, aponte a variável para um coletor OTLP/HTTP (por exemplo `http://localhost:4318`) e use `npm run start:prod`, que carrega o preload como a imagem de produção faz. O `npm run start:dev` **não** carrega o preload: em modo watch o objetivo é a iteração rápida, e a instrumentação de verdade é verificada na stack do compose (ver [testes](./testing.md#telemetria-o-que-o-jest-não-instrumenta)).
+
+⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** deve declarar `service.name`, `service.namespace`, `service.version`, `service.instance.id` nem `deployment.environment.name`: o detector de ambiente vence o resource montado em código e o caminho de log ignora essa variável — traço e log passariam a reportar valores diferentes, em silêncio.
 
 ### Logs legíveis em desenvolvimento
 

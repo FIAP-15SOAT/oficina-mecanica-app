@@ -109,6 +109,24 @@ spec:
                   name: api-config
                   key: TRUSTED_PROXY_CIDRS
 
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: OTEL_EXPORTER_OTLP_ENDPOINT
+
+            - name: OTEL_LOGS_EXPORTER
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: OTEL_LOGS_EXPORTER
+
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

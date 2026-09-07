@@ -190,5 +190,18 @@ jobs:
           kubectl apply -f k8s/04-api-service.yaml
           kubectl apply -f k8s/05-api-hpa.yaml
 
+      - name: Apply telemetry collection layer
+        if: vars.ENABLE_TELEMETRY_COLLECTION == 'true'
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          DD_API_KEY="${DD_API_KEY}"             envsubst '${DD_API_KEY}'             < k8s/06-datadog-secret.yaml             > k8s/06-datadog-secret.rendered.yaml
+
+          kubectl apply -f k8s/06-datadog-secret.rendered.yaml
+          kubectl apply -f k8s/07-datadog-agent.yaml
+          kubectl apply -f k8s/08-datadog-service.yaml
+
+          kubectl rollout status daemonset/datadog-agent             --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s
+
       - name: Wait rollout
         run: kubectl rollout status deployment/${{ vars.K8S_DEPLOYMENT_NAME }} --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s

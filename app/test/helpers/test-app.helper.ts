@@ -33,6 +33,14 @@ export interface SetupTestAppOptions {
   captureLogs?: boolean;
   captureBootstrap?: boolean;
   withSwagger?: boolean;
+  /**
+   * Ponto de extensão executado **antes** de `init()`, que é quando o Nest
+   * instala o roteador. Existe para a suíte de correlação log↔trace: a
+   * instrumentação automática não roda sob Jest, então o span de servidor é
+   * aberto por um middleware do próprio teste — e ele precisa ser registrado
+   * antes do `pino-http`, que é quem registra o ouvinte de conclusão.
+   */
+  configure?: (app: NestExpressApplication) => void;
 }
 
 interface LogCaptureSeam {
@@ -121,6 +129,8 @@ export async function setupTestApp(options: SetupTestAppOptions = {}): Promise<T
   }
 
   configureApp(app, { allowedOrigins: true, withSwagger: options.withSwagger === true });
+
+  options.configure?.(app);
 
   await app.init();
 

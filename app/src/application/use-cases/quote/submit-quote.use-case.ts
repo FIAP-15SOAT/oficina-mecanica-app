@@ -9,8 +9,11 @@ import { QuoteDecisionAction } from '@domain/enums/quote-decision-action.enum';
 
 import { ITokenService } from '@application/ports/output/token.service.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import {
   IEmailSenderService,
   SendEmailInput,
@@ -32,6 +35,8 @@ export class SubmitQuoteUseCase {
     private readonly decisionSecret: string,
     private readonly apiBaseUrl: string,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(quoteId: string): Promise<Quote> {
@@ -40,6 +45,7 @@ export class SubmitQuoteUseCase {
       workOrderId,
       workOrderNumber,
       previousQuoteStatus,
+      transition,
     } = await this.unitOfWork.executeTransaction(async (repos) => {
       const quote = await repos.quote.findByIdWithDetails(quoteId);
 
@@ -57,9 +63,9 @@ export class SubmitQuoteUseCase {
 
       const customer = (await repos.customer.findById(workOrder.customerId))!;
 
-      const [updatedQuote] = await Promise.all([
+      const [updatedQuote, transition] = await Promise.all([
         repos.quote.update(quote),
-        this.updateWorkOrderStatus(repos, workOrder),
+        this.applyWorkOrderTransition(repos, workOrder),
       ]);
 
       updatedQuote.workOrder = workOrder;
@@ -71,6 +77,7 @@ export class SubmitQuoteUseCase {
         workOrderId: workOrder.id,
         workOrderNumber: workOrder.number.toString(),
         previousQuoteStatus,
+        transition,
       };
     });
 
@@ -81,21 +88,26 @@ export class SubmitQuoteUseCase {
       workOrderNumber,
     });
 
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
+
     return submittedQuote;
   }
 
-  private async updateWorkOrderStatus(repos: IRepositories, workOrder: WorkOrder): Promise<void> {
+  private async applyWorkOrderTransition(
+    repos: IRepositories,
+    workOrder: WorkOrder,
+  ): Promise<StatusHistory | undefined> {
     if (
       workOrder.status !== WorkOrderStatus.IN_DIAGNOSIS &&
       workOrder.status !== WorkOrderStatus.REJECTED
     ) {
-      return;
+      return undefined;
     }
 
     const previousStatus = workOrder.status;
     workOrder.changeStatus(WorkOrderStatus.AWAITING_APPROVAL);
 
-    await Promise.all([
+    const [, transition] = await Promise.all([
       repos.workOrder.update(workOrder),
       repos.statusHistory.create(
         StatusHistory.create({
@@ -105,6 +117,8 @@ export class SubmitQuoteUseCase {
         }),
       ),
     ]);
+
+    return transition;
   }
 
   private async sendEmailNotification(

@@ -7,19 +7,28 @@ import { createMockUnitOfWorkWithRepos } from '../../../../helpers/unit-of-work-
 import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit-of-work.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { createMockMetrics } from '../../../../helpers/metrics-mock.factory';
+import { StatusHistory } from '@domain/entities/status-history.entity';
+import {
+  arrangeStatusHistory,
+  createMockStatusHistory,
+} from '../../../../helpers/status-history-mock.factory';
 
 describe('UpdateWorkOrderStatusUseCase', () => {
   let useCase: UpdateWorkOrderStatusUseCase;
   let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
+  let metrics: jest.Mocked<IMetrics>;
 
   beforeEach(() => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    metrics = createMockMetrics();
     logger = createMockLogger();
-    useCase = new UpdateWorkOrderStatusUseCase(mockUow, logger);
+    useCase = new UpdateWorkOrderStatusUseCase(mockUow, logger, metrics, mockRepos.statusHistory);
   });
 
   it('should transition RECEIVED -> IN_DIAGNOSIS', async () => {
@@ -102,5 +111,141 @@ describe('UpdateWorkOrderStatusUseCase', () => {
         userId: '550e8400-e29b-41d4-a716-446655440099',
       }),
     ).rejects.toThrow(BusinessRuleViolationException);
+  });
+  describe('dwell metrics', () => {
+    const RECEIVED_AT = new Date('2026-01-01T00:00:00.000Z');
+    const DIAGNOSED_AT = new Date('2026-01-01T02:00:00.000Z');
+
+    function arrangeTransition() {
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+      const updated = createMockWorkOrder({ ...wo, status: WorkOrderStatus.IN_DIAGNOSIS });
+
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(wo);
+      (mockRepos.workOrder.update as jest.Mock).mockResolvedValue(updated);
+      arrangeStatusHistory(
+        mockRepos.statusHistory,
+        [
+          createMockStatusHistory({
+            workOrderId: updated.id,
+            previousStatus: null,
+            newStatus: WorkOrderStatus.RECEIVED,
+            createdAt: RECEIVED_AT,
+          }),
+        ],
+        DIAGNOSED_AT,
+      );
+
+      return updated;
+    }
+
+    it('should record the dwell in the left status, with the status as an attribute', async () => {
+      const updated = arrangeTransition();
+
+      await useCase.execute(updated.id, {
+        status: WorkOrderStatus.IN_DIAGNOSIS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      });
+
+      expect(metrics.record).toHaveBeenCalledTimes(1);
+      expect(metrics.record).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'work_order.status.duration', unit: 's' }),
+        2 * 3600,
+        { workOrderStatus: WorkOrderStatus.RECEIVED },
+      );
+    });
+
+    /**
+     * A leitura do histórico existe só para a métrica, e por isso acontece
+     * **fora** da transação. Dentro dela, uma falha aqui derrubaria a operação de
+     * negócio junto — e sem conserto local, porque a transação já estaria
+     * abortada e o COMMIT viraria ROLLBACK silencioso.
+     */
+    it('should read the history after the commit, not inside the transaction', async () => {
+      const updated = arrangeTransition();
+      const order: string[] = [];
+
+      (mockUow.executeTransaction as jest.Mock).mockImplementation(
+        async (work: (repos: IRepositories) => Promise<unknown>) => {
+          const result = await work(mockRepos);
+          order.push('commit');
+
+          return result;
+        },
+      );
+      (mockRepos.statusHistory.create as jest.Mock).mockImplementation((entry: StatusHistory) => {
+        order.push('create');
+
+        return Promise.resolve(entry);
+      });
+      (mockRepos.statusHistory.findByWorkOrderId as jest.Mock).mockImplementation(() => {
+        order.push('read');
+
+        return Promise.resolve([]);
+      });
+
+      await useCase.execute(updated.id, {
+        status: WorkOrderStatus.IN_DIAGNOSIS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      });
+
+      expect(order).toEqual(['create', 'commit', 'read']);
+    });
+
+    it('should not let a metric read failure break the already committed operation', async () => {
+      const updated = arrangeTransition();
+
+      (mockRepos.statusHistory.findByWorkOrderId as jest.Mock).mockRejectedValue(
+        new Error('conexão perdida'),
+      );
+
+      await expect(
+        useCase.execute(updated.id, {
+          status: WorkOrderStatus.IN_DIAGNOSIS,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
+        }),
+      ).resolves.toBe(updated);
+
+      expect(metrics.record).not.toHaveBeenCalled();
+    });
+
+    it('should not record a metric when the transaction throws', async () => {
+      const wo = createMockWorkOrder({ status: WorkOrderStatus.RECEIVED });
+
+      (mockRepos.workOrder.findById as jest.Mock).mockResolvedValue(wo);
+      (mockRepos.workOrder.update as jest.Mock).mockRejectedValue(new Error('rollback'));
+
+      await expect(
+        useCase.execute(wo.id, {
+          status: WorkOrderStatus.IN_DIAGNOSIS,
+          userId: '550e8400-e29b-41d4-a716-446655440099',
+        }),
+      ).rejects.toThrow('rollback');
+
+      expect(metrics.record).not.toHaveBeenCalled();
+    });
+
+    it('should emit only after the transaction returns', async () => {
+      const updated = arrangeTransition();
+      const calls: string[] = [];
+
+      (mockUow.executeTransaction as jest.Mock).mockImplementation(
+        async (work: (repos: IRepositories) => Promise<unknown>) => {
+          const result = await work(mockRepos);
+          calls.push('commit');
+
+          return result;
+        },
+      );
+      metrics.record.mockImplementation(() => {
+        calls.push('record');
+      });
+
+      await useCase.execute(updated.id, {
+        status: WorkOrderStatus.IN_DIAGNOSIS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      });
+
+      expect(calls).toEqual(['commit', 'record']);
+    });
   });
 });

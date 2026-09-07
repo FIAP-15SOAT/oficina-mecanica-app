@@ -13,19 +13,32 @@ import { IUnitOfWork, IRepositories } from '@domain/interfaces/repositories/unit
 import { randomUUID } from 'node:crypto';
 import { ILogger } from '@application/ports/output/logger.service.interface';
 import { createMockLogger } from '../../../../helpers/logger-mock.factory';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
+import { createMockMetrics } from '../../../../helpers/metrics-mock.factory';
+import {
+  arrangeStatusHistory,
+  createMockStatusHistory,
+} from '../../../../helpers/status-history-mock.factory';
 
 describe('UpdateWorkOrderServiceStatusUseCase', () => {
   let useCase: UpdateWorkOrderServiceStatusUseCase;
   let logger: jest.Mocked<ILogger>;
   let mockRepos: jest.Mocked<IRepositories>;
   let mockUow: jest.Mocked<IUnitOfWork>;
+  let metrics: jest.Mocked<IMetrics>;
 
   beforeEach(() => {
     const { unitOfWork, repos } = createMockUnitOfWorkWithRepos();
     mockRepos = repos;
     mockUow = unitOfWork;
+    metrics = createMockMetrics();
     logger = createMockLogger();
-    useCase = new UpdateWorkOrderServiceStatusUseCase(mockUow, logger);
+    useCase = new UpdateWorkOrderServiceStatusUseCase(
+      mockUow,
+      logger,
+      metrics,
+      mockRepos.statusHistory,
+    );
   });
 
   describe('transition to IN_PROGRESS', () => {
@@ -267,6 +280,81 @@ describe('UpdateWorkOrderServiceStatusUseCase', () => {
           userId: '550e8400-e29b-41d4-a716-446655440099',
         }),
       ).rejects.toThrow(BusinessRuleViolationException);
+    });
+  });
+  describe('dwell metrics', () => {
+    it('should record the dwell when the service item moves the work order status', async () => {
+      const serviceId = randomUUID();
+      const woService = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.PENDING,
+      });
+      const workOrder = createMockWorkOrder({
+        status: WorkOrderStatus.APPROVED,
+        services: [woService],
+      });
+
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.stockReservation.findByWorkOrderId as jest.Mock).mockResolvedValue([]);
+      (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
+      arrangeStatusHistory(
+        mockRepos.statusHistory,
+        [
+          createMockStatusHistory({
+            workOrderId: workOrder.id,
+            previousStatus: WorkOrderStatus.AWAITING_APPROVAL,
+            newStatus: WorkOrderStatus.APPROVED,
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          }),
+        ],
+        new Date('2026-01-01T05:00:00.000Z'),
+      );
+
+      await useCase.execute({
+        workOrderId: workOrder.id,
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      });
+
+      expect(metrics.record).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'work_order.status.duration' }),
+        5 * 3600,
+        { workOrderStatus: WorkOrderStatus.APPROVED },
+      );
+    });
+
+    /**
+     * O item de serviço mudou, a ordem não: sem entrada nova no histórico não
+     * há permanência a fechar, e a leitura sequer acontece.
+     */
+    it('should not record a metric when the work order status does not change', async () => {
+      const serviceId = randomUUID();
+      const started = createMockWorkOrderService({
+        serviceId,
+        status: WorkOrderServiceStatus.PENDING,
+      });
+      const other = createMockWorkOrderService({
+        serviceId: randomUUID(),
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+      });
+      const workOrder = createMockWorkOrder({
+        status: WorkOrderStatus.IN_PROGRESS,
+        services: [started, other],
+      });
+
+      (mockRepos.workOrder.findByIdWithDetails as jest.Mock).mockResolvedValue(workOrder);
+      (mockRepos.workOrder.updateServiceItemStatus as jest.Mock).mockResolvedValue(undefined);
+
+      await useCase.execute({
+        workOrderId: workOrder.id,
+        serviceId,
+        status: WorkOrderServiceStatus.IN_PROGRESS,
+        userId: '550e8400-e29b-41d4-a716-446655440099',
+      });
+
+      expect(metrics.record).not.toHaveBeenCalled();
+      expect(mockRepos.statusHistory.findByWorkOrderId).not.toHaveBeenCalled();
     });
   });
 });

@@ -86,12 +86,25 @@ O mapa **"quem provisiona o quê / para que serve"**, agrupado pelas quatro cama
 |---|---|---|
 | **Job** `db-migrate` (one-shot) | `00-db-migrate-job.yaml` | `prisma migrate deploy` + `db seed`; renderizado por run; TTL de 14 dias; `backoffLimit: 0` |
 | **Secret** `api-secret` | `01-api-secret.yaml` | `DATABASE_URL` + `JWT_SECRET` / `JWT_REFRESH_SECRET` / `QUOTE_DECISION_TOKEN_SECRET` |
-| **ConfigMap** `api-config` | `02-api-configmap.yaml` | Envs não-sensíveis (`NODE_ENV`, `PORT`, expirações JWT, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST/PORT`, `TZ`) |
+| **ConfigMap** `api-config` | `02-api-configmap.yaml` | Envs não-sensíveis (`NODE_ENV`, `PORT`, expirações JWT, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST/PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_*`, `TRUSTED_PROXY_CIDRS` e as três chaves de telemetria — `OTEL_EXPORTER_OTLP_ENDPOINT` **vazio** desliga o SDK por completo) |
 | **Deployment** `oficina-api` | `03-api-deployment.yaml` | A API NestJS; 1 réplica; `:sha` imutável; três probes HTTP em `/api/health/live` (startup + liveness) e `/api/health/ready` (readiness) |
 | **Deployment** `mailhog` | `03-mailhog-deployment.yaml` | Sink SMTP de desenvolvimento (captura e-mails de orçamento) |
 | **Service** `oficina-api` (ClusterIP `3000`) | `04-api-service.yaml` | Expõe a API **dentro** do cluster |
 | **Service** `mailhog` (ClusterIP `1025`/`8025`) | `04-mailhog-service.yaml` | SMTP (`1025`) + interface web (`8025`) |
 | **HPA** `oficina-api-hpa` (`1`→`5`) | `05-api-hpa.yaml` | Autoscaling da API por CPU (70%) e memória (80%) |
+
+### Camada de coleta (ainda não provisionada)
+
+A aplicação **já emite** os três sinais e declara o contrato; o que não existe ainda é quem os leia. Registrado aqui para que o inventário não sugira uma coleta que não há:
+
+| Componente | Estado | Finalidade |
+|---|---|---|
+| Agente com receiver OTLP (DaemonSet) | ⚠️ versionado em `k8s/06`–`08`, aplicado só com o gate ligado | Recebe traços e métricas em `:4318`, lê o stdout dos contêineres e as métricas de kubelet/cAdvisor. É a **única** peça que conhece o fornecedor |
+| Pipeline de log promovendo `trace_id`/`span_id` | ❌ não provisionado | Liga a linha de log ao traço no destino |
+| **Monitor sintético externo** | ❌ não provisionado | O que de fato fecha o requisito de **uptime**: readiness decide roteamento e liveness decide reinício, mas **nenhuma das duas enxerga** DNS, load balancer, TLS ou ingress — é possível ter 100% dos pods `Ready` com a API inacessível de fora |
+| Dashboards e monitores | ❌ não provisionado | Volume diário de OS, tempo por status, latência por rota, ocupação de pool, `mail.send.failed`, `health.degraded` |
+
+Enquanto o gate não é ligado, `OTEL_EXPORTER_OTLP_ENDPOINT` fica **vazio** no ConfigMap e o SDK não inicia — nem é carregado: a aplicação está pronta e o comportamento em produção é idêntico ao de antes. O gate existe por capacidade do node, não por indecisão. Ver [ADR 0005](../adr/0005-opentelemetry.md).
 
 ## Topologia de rede
 
@@ -168,6 +181,8 @@ Este é um ambiente **acadêmico** com orçamento de laboratório; as decisões 
 - **Sem VPC endpoints.** O `pull` de imagens do ECR e o acesso ao state no S3 saem pela internet (NAT/IGW). *Produção*: VPC endpoints (gateway para S3, interface para ECR/CloudWatch) reduzem custo de NAT e mantêm o tráfego privado.
 - **ECR `MUTABLE`, mas o pipeline fixa `:sha`.** O repositório permite sobrescrever tags, porém o CD publica com tag imutável por commit (`:sha`) e move `latest` em paralelo — imutabilidade por **convenção**, não imposta pelo registry. *Produção*: `IMMUTABLE` no ECR para garantir por política.
 - **State com lock nativo do S3.** O backend usa `use_lockfile = true` (Terraform ≥ 1.11) em vez de uma tabela DynamoDB de lock — mais simples, sem recurso extra.
+- **A camada de coleta está versionada, mas não aplicada.** A aplicação emite logs estruturados, traços e métricas, e os manifestos do agente existem em `k8s/06-datadog-secret.yaml`, `k8s/07-datadog-agent.yaml` e `k8s/08-datadog-service.yaml` — o CD só os aplica com `vars.ENABLE_TELEMETRY_COLLECTION`, que está desligada. Enquanto isso nada retém os sinais, e `OTEL_EXPORTER_OTLP_ENDPOINT` continua vazio no ConfigMap: **ligar a coleta e ligar a telemetria são duas edições independentes**. `eks.tf` cobre apenas os logs do control plane, com 14 dias de retenção. Falta ainda o monitor sintético externo, sem o qual uptime real não se mede — nenhuma probe enxerga DNS, load balancer ou ingress. *Pré-requisitos da ativação*: capacidade de node (abaixo) e a correção do manifesto do DaemonSet.
+- **O teto de pods do node já aperta o HPA.** Um `t3.small` permite **11 pods** e os workloads existentes ocupam 6 — o `maxReplicas: 5` já não cabe hoje, antes de qualquer agente. É pré-requisito de capacidade (`t3.medium`, 17 pods) em `oficina-mecanica-k8s`. Ver [kubernetes.md › Autoscaling](kubernetes.md#autoscaling-da-api-hpa).
 - **Custo é o driver das escolhas.** O control plane do EKS e o NAT Gateway já consomem a maior parte do crédito de laboratório (US$ 50 do AWS Academy), o que mantém a infraestrutura mínima e sem redundância — o RDS corrente é a menor instância possível (`db.t4g.micro`, Single-AZ). O objetivo do projeto é demonstrar arquitetura e pipeline, não operar produção.
 
 ## Documentação relacionada

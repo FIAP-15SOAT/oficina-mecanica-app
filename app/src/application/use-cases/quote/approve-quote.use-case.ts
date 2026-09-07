@@ -5,8 +5,11 @@ import { QuotePartSupply } from '@domain/entities/quote-part-supply.entity';
 import { WorkOrderStatus } from '@domain/enums/work-order-status.enum';
 
 import { IRepositories, IUnitOfWork } from '@domain/interfaces/repositories/unit-of-work.interface';
+import { IStatusHistoryRepository } from '@domain/interfaces/repositories/status-history.repository.interface';
 import { ILogger } from '@application/ports/output/logger.service.interface';
+import { IMetrics } from '@application/ports/output/metrics.service.interface';
 import { BUSINESS_EVENTS } from '@application/logging/business-event.catalog';
+import { recordWorkOrderTransition } from '@application/metrics/work-order-metrics';
 import { IApproveQuoteUseCase } from '@application/ports/input/quote/approve-quote.use-case.interface';
 import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 
@@ -19,6 +22,8 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
   constructor(
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly statusHistoryRepository: IStatusHistoryRepository,
   ) {}
 
   async execute(quoteId: string, userId?: string | null): Promise<Quote> {
@@ -29,6 +34,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
       previousQuoteStatus,
       previousStatus,
       reservation,
+      transition,
     } = await this.unitOfWork.executeTransaction(async (repos) => {
       const quote = await repos.quote.findByIdWithDetails(quoteId);
 
@@ -53,7 +59,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
       const { services: woServices, partSupplies: woPartSupplies } =
         workOrder.applyQuoteItems(quote);
 
-      await Promise.all([
+      const [, , , , , transition] = await Promise.all([
         repos.workOrder.addServiceItems(woServices),
         repos.workOrder.addPartSupplyItems(woPartSupplies),
         repos.quote.update(quote),
@@ -77,6 +83,7 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
         previousQuoteStatus,
         previousStatus,
         reservation,
+        transition,
       };
     });
 
@@ -96,6 +103,8 @@ export class ApproveQuoteUseCase implements IApproveQuoteUseCase {
       workOrderNumber,
       previousWorkOrderStatus: previousStatus,
     });
+
+    await recordWorkOrderTransition(this.metrics, this.statusHistoryRepository, transition);
 
     return quote;
   }

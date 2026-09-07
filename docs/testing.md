@@ -4,6 +4,7 @@
 
 - [Unitários](#unitários)
 - [E2E](#e2e)
+- [Telemetria: o que o Jest não instrumenta](#telemetria-o-que-o-jest-não-instrumenta)
 - [Postman / Newman](#postman--newman)
 - [Indisponibilidade de dependência e encerramento gracioso](#indisponibilidade-de-dependência-e-encerramento-gracioso)
 - [Cobertura E2E — branches estruturalmente inalcançáveis](#cobertura-e2e--branches-estruturalmente-inalcançáveis)
@@ -26,7 +27,7 @@ npm run test:e2e      # executa os testes
 npm run test:e2e:cov  # com cobertura
 ```
 
-12 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais uma suite dedicada ao `AllExceptionsFilter`, outra ao logging estruturado e outra aos endpoints de saúde. Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
+13 suites cobrindo todos os domínios (auth, user, customer, vehicle, service, part-supply, work-order, quote, stock) mais uma suite dedicada ao `AllExceptionsFilter`, outra ao logging estruturado, outra aos endpoints de saúde e outra à telemetria (correlação log-trace e métricas de negócio). Os testes E2E sobem um PostgreSQL real via **Testcontainers** (sem necessidade de banco externo) e usam helpers compartilhados em `test/helpers/` (`test-app.helper.ts`, `auth.helper.ts`, `db-cleanup.helper.ts`) para subir o `INestApplication`, autenticar e limpar o banco entre testes. Configuração em `test/jest-e2e.json` (timeout de 10 minutos para acomodar a inicialização dos containers).
 
 O motivo de testar contra um Postgres real (em vez de mocks Prisma) é validar comportamentos que dependem do banco — constraints de unicidade, cascade deletes, sequences, conversões de tipos, índices e a corrida implícita de updates condicionados (`WHERE version = ?`) — e detectar regressões em migrations.
 
@@ -81,6 +82,27 @@ O drain **é** alcançável neste harness: `enableShutdownHooks()` apenas regist
 As três `describe`s esperam a prontidão assentar em `200` antes de assertar o contrato. A primeira verificação depois do boot paga TCP + autenticação com o pool ainda vazio, e o prazo próprio do chamador é de 3,5 s — o `query_timeout` de 2 s vale só para a consulta e não cobre a aquisição da conexão: com doze suítes E2E em paralelo, cada uma subindo os próprios containers, esse caso frio estoura o prazo e a prontidão responde `503` uma vez — exatamente como responderia em produção antes de o `failureThreshold` ser atingido. A propriedade continua asserida (se a prontidão nunca ficar `200`, a suíte falha); o que a espera remove é a dependência de uma única amostra fria sob inanição de CPU.
 
 **Asserções de log.** Com `setupTestApp({ captureLogs: true })`, a suíte assere que uma probe saudável produz **zero** linhas de access log; que uma probe que falha produz **exatamente uma**, em `error`, **sem** stack trace e **sem** `error.type`/`oficina.error.message` (a resposta é deliberada e não lança, então não há exceção resolvida de onde derivá-los); e que a transição emite exatamente um `health.degraded` com a categoria da causa. Fecha com uma asserção **negativa**: o corpo do `503` não contém host, porta, cadeia de conexão nem stack.
+
+## Telemetria: o que o Jest não instrumenta
+
+**A auto-instrumentação do OpenTelemetry não funciona sob Jest, e isso reorganiza toda a verificação.** Medido: um `setupFiles` que substitui `Module._load` permanece instalado dentro do teste — mesmo objeto `module`, patch visível — e registra **zero** chamadas ao requerer `express`, `pino`, `pg` e até `http`. O `jest-runtime` tem registro de módulos próprio e não passa pelo carregador do Node, que é onde `require-in-the-middle` engancha.
+
+O perigo não é o que deixa de ser testado; é o que passa **vazio**. Um E2E afirmando "o dicionário continua fechado com a instrumentação ativa" ficaria verde porque não há instrumentação ativa, logo não há chave nova. Um E2E afirmando "linhas de bootstrap não carregam `trace_id`" ficaria verde porque não há span algum. **Um teste vazio é pior que a ausência do teste, porque compra confiança.**
+
+A divisão é deliberada:
+
+| Onde | O que |
+| --- | --- |
+| **Unitário (Jest)** | Predicado `isHealthProbePath` e o filtro de exclusão; o hook de atributos de span chamado com um `IncomingMessage` sintético (caminho sanitizado igual ao do log, query ausente, endereço validado, agente truncado); resolução de `Resource`; registry e adaptador de métricas, incluindo a agregação que distingue 60 s de 3 h e de 5 dias; cálculo de permanência e dos dois totais, com reentrada; posição do hook de encerramento. Tudo função pura ou classe — **sem patching**. |
+| **E2E (Jest)** | Correlação log-trace, viável porque a correlação é um `mixin` nosso e não uma instrumentação: registra-se um `TracerProvider` em memória, abre-se um span num middleware do próprio teste (que reproduz o `context.bind` da resposta feito pelo `instrumentation-http`) e verifica-se que a linha de access log carrega `trace_id`, `span_id` e `request.id`. Métricas de negócio com `MeterProvider` explícito e leitura em memória — a API de Meter também não depende de patching. |
+| **Smoke fora do Jest** (`npm run test:smoke`) | O que exige um processo de verdade, **versionado e rodando no CI**: o interruptor não carregando módulo algum do SDK, configuração inválida não impedindo o boot, `OTEL_LOG_LEVEL` não poluindo o stdout, e a degradação com endpoint inalcançável saindo só pelo canal de erro em JSON. Ver `test/smoke/telemetry-preload.smoke.mjs`. |
+| **Smoke manual sobre o compose** | O que exige um coletor: spans de servidor e `pg`, `http.route` parametrizado, exclusão das probes (descendentes inclusive), ausência de `url.query` e de `url.full`, orçamento de encerramento e a medição de overhead (p95 e RSS). A stack de `app/docker-compose.yml` sobe a imagem com o `CMD` real e o preload. |
+
+O que **não** se faz: tentar instrumentar via `setupFiles` (o patch fica instalado e nunca é chamado), nem chamar as funções internas de patch das instrumentações à mão (passa a testar a biblioteca, não o nosso código).
+
+O smoke de preload roda no job `build` do CI, depois do `npm run build`, porque depende do `dist`. Ele existe porque duas regressões reais passaram pela verificação manual: um `OTEL_METRIC_EXPORT_INTERVAL` plausível derrubava o processo no boot, e `OTEL_LOG_LEVEL=debug` escrevia uma linha crua em stdout.
+
+Nenhuma suíte define `OTEL_EXPORTER_OTLP_ENDPOINT`, então o SDK **não inicia** em teste algum: sem exportador de fundo e sem conexão de saída.
 
 ## Postman / Newman
 
