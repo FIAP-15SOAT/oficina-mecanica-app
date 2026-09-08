@@ -118,10 +118,18 @@ jobs:
         # (a segunda linha do PEM começa na coluna 0, sem `:`), derrubando o `kubectl apply`
         # antes da migração e do rollout. --from-literal aceita o valor como está, com
         # quebras de linha ou não, e o próprio kubectl faz o escape para o Secret.
+        #
+        # `sslmode=require&uselibpqcompat=true` é obrigatório contra o RDS: o parameter group
+        # `default.postgres16` traz `rds.force_ssl = 1`, e o node-postgres (`prisma db seed` e
+        # o `pg.Pool` do `PrismaService`) não usa TLS sem `sslmode` na string — ao contrário do
+        # motor do `prisma migrate deploy`, que negocia TLS por conta própria; daí a migração
+        # passar e o seed falhar com P1010. `uselibpqcompat=true` mantém a semântica libpq de
+        # `require` (cifra sem validar a cadeia), necessária porque a raiz do RDS é
+        # autoassinada e não está no truststore do Node. Detalhes em docs/infra/kubernetes.md.
         run: |
           kubectl create secret generic api-secret \
             --namespace "${{ vars.K8S_NAMESPACE }}" \
-            --from-literal=DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public" \
+            --from-literal=DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public&sslmode=require&uselibpqcompat=true" \
             --from-literal=JWT_SECRET="${JWT_SECRET}" \
             --from-literal=JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET}" \
             --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" \

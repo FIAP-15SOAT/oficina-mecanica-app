@@ -197,7 +197,26 @@ A persistência relacional da aplicação é fornecida pelo **Amazon RDS (Postgr
 
 - Instância gerenciada PostgreSQL 16 (Single-AZ, `db.t4g.micro`, 20 GiB GP3).
 - Alocado nas subnets privadas da VPC, com Security Group restrito ao CIDR da VPC.
-- Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret`.
+- Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret` — que precisa carregar os parâmetros descritos em [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
+
+### Conexão obrigatoriamente cifrada (TLS)
+
+O parameter group `default.postgres16` traz **`rds.force_ssl = 1`** — padrão do sistema desde o PostgreSQL 15, não uma escolha desta stack. O servidor recusa qualquer conexão sem criptografia com `no pg_hba.conf entry for host "...", user "...", no encryption`, um SQLSTATE `28000` que o Prisma reporta como **`P1010 "User was denied access on the database"`**: uma mensagem de permissão para o que é, na verdade, ausência de TLS.
+
+Por isso a `DATABASE_URL` do `api-secret` termina em **`sslmode=require&uselibpqcompat=true`**. A mesma URL é lida por **dois clientes com defaults opostos**:
+
+| Consumidor | Cliente | Sem `sslmode` na URL |
+|---|---|---|
+| `prisma migrate deploy` | motor Rust do Prisma | assume `sslmode=prefer` e negocia TLS sozinho |
+| `prisma db seed` e o `pg.Pool` do `PrismaService` | node-postgres | **não usa TLS algum** |
+
+A assimetria produz um sintoma enganoso: a migração passa e o seed falha. E, se o seed não estivesse no caminho, a falha só apareceria adiante — no `$connect()` do `onModuleInit` da API, com a readiness nunca ficando pronta.
+
+`require` sozinho não fecha o caso: no parser do `pg` ele hoje equivale a `verify-full`, e a cadeia do RDS termina na raiz **autoassinada** `Amazon RDS <região> Root CA RSA2048 G1`, que não está no truststore do Node — a conexão passaria a falhar na validação do certificado, trocando um erro por outro. **`uselibpqcompat=true`** dá a `require` a semântica do libpq (cifra sem validar a cadeia) e é a grafia que o próprio `pg` recomenda para o comportamento que valerá a partir do `pg` v9. O motor do Prisma descarta a chave que não conhece e segue exigindo TLS por `require`.
+
+Validar a cadeia exigiria embarcar o bundle de CAs do RDS na imagem e nomeá-lo **duas vezes** na URL — `sslrootcert` para o `pg`, `sslcert` para o Prisma —, com o PEM entrando no ciclo de rotação. Com o RDS em subnet privada e Security Group restrito à VPC, o risco residual é MITM interno à VPC, e a troca não se paga aqui.
+
+O ambiente local não carrega esses parâmetros: `docker-compose` e Testcontainers sobem PostgreSQL sem TLS, e a `DATABASE_URL` do `.env` continua sem `sslmode`.
 
 ## Manifestos da aplicação
 
@@ -226,6 +245,7 @@ O `00-db-migrate-job.yaml` é um `Job` do Kubernetes executado **uma vez por dep
   ```
 
 - **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente.
+- **O seed é o primeiro consumidor node-postgres do pipeline** — e, por isso, o primeiro a expor uma `DATABASE_URL` sem parâmetros de TLS, já que o `migrate deploy` negocia a criptografia por conta própria. Ver [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
 
 ## Autoscaling da API (HPA)
 
