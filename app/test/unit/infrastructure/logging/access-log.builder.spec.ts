@@ -128,6 +128,17 @@ describe('generateRequestId', () => {
     ).not.toBe('123.456.789-09');
   });
 
+  it('should reuse the base64 request identifier written by the API Gateway', () => {
+    const gatewayRequestId = 'DW7LdhXYIAMESCA=';
+    const setHeader = jest.fn();
+    const request = createRequest({ headers: { 'x-request-id': gatewayRequestId } });
+
+    const requestId = generateRequestId(request, { setHeader } as unknown as ServerResponse);
+
+    expect(requestId).toBe(gatewayRequestId);
+    expect(setHeader).toHaveBeenCalledWith('x-request-id', gatewayRequestId);
+  });
+
   it('should still reuse an ordinary correlation identifier', () => {
     const request = createRequest({ headers: { 'x-request-id': 'pedido-12345-retry-2' } });
 
