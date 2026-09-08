@@ -271,6 +271,8 @@ O projeto está dividido em repositórios especializados e desacoplados:
 | **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede na AWS (VPC, Subnets públicas/privadas, Gateways) | Terraform, AWS VPC, NAT Gateway, Route Tables |
 | **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR |
 | **[oficina-mecanica-database](https://github.com/FIAP-15SOAT/oficina-mecanica-database)** | Banco de dados relacional gerenciado, **fora do cluster** | Terraform, Amazon RDS, PostgreSQL 16 |
+| **[oficina-mecanica-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway)** | **Ponto de entrada público** da solução: roteamento, integração privada com o EKS e limitação de frequência | Terraform, AWS API Gateway (HTTP API), VPC Link, OpenAPI 3.0 |
+| **[oficina-mecanica-lambda-customer-auth](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth)** | Autenticação externa de clientes por CPF em função serverless | TypeScript, AWS Lambda, Zod, Jest |
 
 ## 📚 Documentação
 
