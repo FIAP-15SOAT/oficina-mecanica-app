@@ -27,7 +27,7 @@ export type HttpLogLevel = 'info' | 'warn' | 'error';
 
 export type CompletionOutcome = 'completed' | 'client_aborted' | 'transport_error';
 
-const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:+/=-]{1,128}$/;
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const JSON_CONTENT_TYPE = /^application\/(json|[\w.+-]+\+json)\b/i;
