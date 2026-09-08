@@ -41,7 +41,7 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`, referência para deploy manual) | Workflow de CD | `kubectl create secret --from-literal` (imperativo, não renderiza o YAML) em `.github/workflows/cd.yml` |
-| API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
+| API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | Render de `OTEL_EXPORTER_OTLP_ENDPOINT` a partir de GitHub Actions Variables via `envsubst` + `kubectl apply` em `.github/workflows/cd.yml` |
 | API Deployment (`03-api-deployment.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | MailHog Deployment (`03-mailhog-deployment.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` (dependência de e-mail) |
 | API Service (`04-api-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
@@ -77,23 +77,23 @@ O Deployment referencia cada chave individualmente (`valueFrom`), o que torna ex
 
 | Chave | Valor no ConfigMap | Efeito |
 |---|---|---|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | **vazio** | Vazio desliga tudo: nenhum módulo do SDK carregado, nenhuma instrumentação, nenhum exportador, nenhuma conexão de saída. Para ligar, apontar para o **DNS do Service** do agente (`http://datadog-agent.oficina.svc:4318`), nunca para `status.hostIP` via Downward API |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Renderizado de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` | É o interruptor do SDK: vazio desliga instrumentações e exportadores; preenchido ativa traces e métricas para o endpoint informado. Com o Agent do projeto, usar o **DNS do Service** (`http://datadog-agent.oficina.svc:4318`), nunca `status.hostIP` via Downward API |
 | `OTEL_LOGS_EXPORTER` | `none` | A **ausência** desta chave faria o SDK instanciar um `LoggerProvider` com exportador OTLP de rede. Os logs têm um caminho único — o stdout do contêiner, lido pelo coletor |
 | `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | O OTel JS exporta cumulative por padrão, e os destinos compatíveis esperam delta; cumulative descarta pontos na inicialização do processo |
 
-Como o endpoint está **vazio no manifesto**, este merge não altera o comportamento em produção: os logs saem idênticos, nenhuma conexão nova é aberta e o SDK sequer é carregado. Ligar a telemetria — e desligá-la de novo, como rollback — é uma edição de ConfigMap, sem rebuild de imagem.
+O manifesto contém um placeholder, não um estado fixo. A cada deploy, o workflow lê `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza `02-api-configmap.yaml` e aplica o resultado. Variável ausente ou vazia produz uma chave vazia e mantém o SDK desligado; qualquer URL válida ativa a exportação sem rebuild da imagem. Como chaves de ConfigMap consumidas como variáveis de ambiente não mudam em Pods existentes, o `app-deploy` reinicia explicitamente o Deployment antes de aguardar o rollout.
 
 ### Camada de coleta
 
 Os manifestos do agente vivem em `k8s/06-datadog-secret.yaml` (chave por `envsubst`, nunca committada), `k8s/07-datadog-agent.yaml` (ServiceAccount + RBAC somente-leitura + DaemonSet) e `k8s/08-datadog-service.yaml` (ClusterIP expondo `4318`). É a **única peça do sistema que conhece o fornecedor**: a aplicação exporta OTLP puro, sem dependência, cabeçalho ou credencial de plataforma.
 
-O CD só os aplica com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de ativação:
+O CD só aplica o Agent com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de configuração:
 
 1. `node_instance_type` para `t3.medium` em `oficina-mecanica-k8s` (17 pods);
-2. `DD_API_KEY` como secret do repositório e `ENABLE_TELEMETRY_COLLECTION` como variável;
-3. depois que o DaemonSet estiver `Ready`, apontar `OTEL_EXPORTER_OTLP_ENDPOINT` para `http://datadog-agent.oficina.svc:4318` no ConfigMap.
+2. `DD_API_KEY` como secret e `ENABLE_TELEMETRY_COLLECTION=true` como variável do GitHub Actions;
+3. `OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318` como variável do GitHub Actions — o CD transporta o valor até o ConfigMap.
 
-Os três passos são independentes, e o terceiro é o único que muda o comportamento da aplicação.
+Os dois controles continuam independentes: `ENABLE_TELEMETRY_COLLECTION` instala ou remove da execução do CD a camada do Agent; `OTEL_EXPORTER_OTLP_ENDPOINT` liga ou desliga o SDK da aplicação. Assim é possível manter apenas logs/métricas de infraestrutura pelo Agent com o endpoint vazio, ou apontar a aplicação para outro coletor OTLP.
 
 ⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — traço e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
 
@@ -224,7 +224,7 @@ Arquivos em `k8s/`:
 
 - `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`. Detalhes em [Job de migração do banco](#job-de-migração-do-banco)
 - `01-api-secret.yaml`: referência dos secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `CUSTOMER_JWT_PUBLIC_KEY`) para deploy manual — o `cd.yml` não aplica este arquivo; ele cria o Secret de forma imperativa via `kubectl create secret --from-literal`, com os mesmos valores vindos dos GitHub Secrets e Variables
-- `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER` e `CUSTOMER_JWT_AUDIENCE`)
+- `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER`, `CUSTOMER_JWT_AUDIENCE` e as chaves de telemetria); o placeholder de `OTEL_EXPORTER_OTLP_ENDPOINT` é renderizado pelo CD a partir da variável homônima do GitHub Actions
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
 - `04-api-service.yaml`: Service **`NodePort`** da API (`3000` → `30080` nos nós). `NodePort` é um superconjunto de `ClusterIP`: o Service continua recebendo um ClusterIP e o DNS interno segue igual. A porta dos nós é o destino do target group do NLB interno provisionado em `oficina-mecanica-k8s`, que por sua vez é o backend da integração privada do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway). O valor precisa casar com `api_node_port` naquele repositório
@@ -396,11 +396,18 @@ export CHANGE_ME_STRONG_PASSWORD=<SENHA_DB>
 export JWT_SECRET=<JWT_SECRET>
 export JWT_REFRESH_SECRET=<JWT_REFRESH_SECRET>
 export CUSTOMER_JWT_PUBLIC_KEY=<CUSTOMER_JWT_PUBLIC_KEY>
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318
 
 envsubst \
 '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${CUSTOMER_JWT_PUBLIC_KEY}' \
 < k8s/01-api-secret.yaml \
 > k8s/01-api-secret.rendered.yaml
+
+# Renderiza o ConfigMap com o endpoint OTLP; use valor vazio para desligar o SDK
+
+envsubst '${OTEL_EXPORTER_OTLP_ENDPOINT}' \
+< k8s/02-api-configmap.yaml \
+> k8s/02-api-configmap.rendered.yaml
 
 # Renderiza imagem
 
@@ -409,7 +416,7 @@ sed "s|IMAGE_URI_PLACEHOLDER|<IMAGE_URI>|g" k8s/03-api-deployment.yaml > k8s/03-
 # Aplica recursos da aplicação
 
 kubectl apply -f k8s/01-api-secret.rendered.yaml
-kubectl apply -f k8s/02-api-configmap.yaml
+kubectl apply -f k8s/02-api-configmap.rendered.yaml
 kubectl apply -f k8s/03-api-deployment.rendered.yaml
 kubectl apply -f k8s/04-api-service.yaml
 kubectl apply -f k8s/05-api-hpa.yaml
