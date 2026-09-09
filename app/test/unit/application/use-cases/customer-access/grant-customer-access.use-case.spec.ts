@@ -101,6 +101,51 @@ describe('GrantCustomerAccessUseCase', () => {
     );
   });
 
+  it('should require the email of a company customer even when the name is given', async () => {
+    const customer = buildCompanyCustomer();
+    repos.customer.findById.mockResolvedValue(customer);
+
+    await expect(
+      useCase.execute(customer.id, randomUUID(), { name: 'Operador', cpf: '12345678909' }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+  });
+
+  it('should require the cpf of a company customer even when name and email are given', async () => {
+    const customer = buildCompanyCustomer();
+    repos.customer.findById.mockResolvedValue(customer);
+
+    await expect(
+      useCase.execute(customer.id, randomUUID(), {
+        name: 'Operador',
+        email: 'operador@parceira.com.br',
+      }),
+    ).rejects.toThrow(BusinessRuleViolationException);
+  });
+
+  it('should take the person data from the body for a company customer and strip the cpf mask', async () => {
+    const customer = buildCompanyCustomer();
+    repos.customer.findById.mockResolvedValue(customer);
+    repos.user.findByCpf.mockResolvedValue(null);
+    repos.user.findByEmail.mockResolvedValue(null);
+    repos.user.create.mockImplementation((user: User) => Promise.resolve(user));
+    repos.userCustomer.exists.mockResolvedValue(false);
+    repos.userCustomer.create.mockImplementation((link) => Promise.resolve(link));
+
+    const result = await useCase.execute(customer.id, randomUUID(), {
+      name: 'Operador',
+      email: 'operador@parceira.com.br',
+      cpf: '123.456.789-09',
+    });
+
+    expect(repos.user.findByCpf).toHaveBeenCalledWith('12345678909');
+    expect(result.user).toEqual(
+      expect.objectContaining({ name: 'Operador', email: 'operador@parceira.com.br' }),
+    );
+    expect(emailSender.send).toHaveBeenCalledWith(
+      expect.objectContaining({ toEmail: 'operador@parceira.com.br' }),
+    );
+  });
+
   it('should reject an inactive customer', async () => {
     const customer = buildIndividualCustomer();
     customer.deactivate();

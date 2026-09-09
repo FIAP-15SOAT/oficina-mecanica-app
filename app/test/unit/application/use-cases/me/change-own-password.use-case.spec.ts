@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { ChangeOwnPasswordUseCase } from '@application/use-cases/me/change-own-password.use-case';
 import { User } from '@domain/entities/user.entity';
 import { UserRole } from '@domain/enums/user-role.enum';
 import { UnauthorizedAccessException } from '@application/exceptions/unauthorized-access.exception';
+import { ResourceNotFoundException } from '@application/exceptions/resource-not-found.exception';
 import { BusinessRuleViolationException } from '@domain/exceptions/business-rule-violation.exception';
 import { DomainValidationException } from '@domain/exceptions/domain-validation.exception';
 
@@ -100,5 +103,25 @@ describe('ChangeOwnPasswordUseCase', () => {
       useCase.execute(user.id, { currentPassword: 'CurrentPass@123', newPassword: 'weak' }),
     ).rejects.toThrow(DomainValidationException);
     expect(userRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject when the authenticated subject no longer exists', async () => {
+    const userRepository = { findById: jest.fn().mockResolvedValue(null), update: jest.fn() };
+    const hashService = { compare: jest.fn(), hash: jest.fn() };
+    const logger = { event: jest.fn() };
+
+    const useCase = new ChangeOwnPasswordUseCase(
+      userRepository as never,
+      hashService,
+      logger as never,
+    );
+
+    await expect(
+      useCase.execute(randomUUID(), {
+        currentPassword: 'CurrentPass@123',
+        newPassword: 'NewPass@456',
+      }),
+    ).rejects.toThrow(ResourceNotFoundException);
+    expect(hashService.compare).not.toHaveBeenCalled();
   });
 });

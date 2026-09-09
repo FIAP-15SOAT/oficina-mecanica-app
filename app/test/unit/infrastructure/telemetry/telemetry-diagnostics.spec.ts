@@ -2,6 +2,7 @@ import { MAX_TEXT_LENGTH, REDACTED } from '@infrastructure/logging/redaction/tex
 import {
   createTelemetryDiagLogger,
   MAX_TELEMETRY_DETAIL_LENGTH,
+  MAX_TRACKED_CAUSES,
   reportTelemetryFailure,
   TELEMETRY_FAILURE_MESSAGE,
 } from '@infrastructure/telemetry/telemetry-diagnostics';
@@ -152,6 +153,22 @@ describe('reportTelemetryFailure — severity and repetition', () => {
     reportTelemetryFailure('diagnostic', 'socket hang up');
 
     expect(diagnostics.lines()).toHaveLength(2);
+  });
+
+  /**
+   * O mapa de causas é estado de módulo e vive tanto quanto o processo: sem
+   * teto, um detalhe com parte variável (porta efêmera, id de tentativa) cria
+   * uma entrada por ocorrência e o canal de diagnóstico passa a vazar memória.
+   */
+  it('should drop the tracked causes once the ceiling is reached', () => {
+    for (let cause = 0; cause < MAX_TRACKED_CAUSES; cause += 1) {
+      reportTelemetryFailure('diagnostic', `connect ECONNREFUSED 10.0.0.${cause}`);
+    }
+
+    reportTelemetryFailure('diagnostic', 'connect ECONNREFUSED 198.51.100.1');
+    reportTelemetryFailure('diagnostic', 'connect ECONNREFUSED 10.0.0.0');
+
+    expect(diagnostics.lines()).toHaveLength(MAX_TRACKED_CAUSES + 2);
   });
 
   it('should count suppressed occurrences on the next line of the same cause', () => {

@@ -309,6 +309,94 @@ describe('Customer Access (E2E)', () => {
     });
   });
 
+  // ─── GET /api/customers/:customerId/users ───────────────────────────
+
+  describe('GET /api/customers/:customerId/users', () => {
+    it('should list the users granted access to the customer', async () => {
+      const customer = await createCustomer();
+
+      const grant = await request(httpServer)
+        .post(`/api/customers/${customer.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(201);
+
+      const response = await request(httpServer)
+        .get(`/api/customers/${customer.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0]).toMatchObject({
+        id: grant.body.data.user.id,
+        email: grant.body.data.user.email,
+      });
+      expect(response.body.data[0]).not.toHaveProperty('passwordHash');
+    });
+
+    it('should return 404 for a non-existent customer', async () => {
+      await request(httpServer)
+        .get('/api/customers/00000000-0000-0000-0000-000000000000/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+
+    it('should return 403 for MECHANIC role', async () => {
+      const customer = await createCustomer();
+
+      await request(httpServer)
+        .get(`/api/customers/${customer.id}/users`)
+        .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
+        .expect(403);
+    });
+  });
+
+  // ─── GET /api/users/:userId/customers ───────────────────────────────
+
+  describe('GET /api/users/:userId/customers', () => {
+    it('should list the customers linked to the user', async () => {
+      const customer = await createCustomer();
+
+      const grant = await request(httpServer)
+        .post(`/api/customers/${customer.id}/users`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(201);
+
+      const response = await request(httpServer)
+        .get(`/api/users/${grant.body.data.user.id}/customers`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toEqual([
+        { id: customer.id, name: expect.any(String), type: 'INDIVIDUAL', isActive: true },
+      ]);
+    });
+
+    it('should return an empty list for a user with no linked customer', async () => {
+      const response = await request(httpServer)
+        .get(`/api/users/${attendantAuth.user.id}/customers`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toEqual([]);
+    });
+
+    it('should return 404 for a non-existent user', async () => {
+      await request(httpServer)
+        .get('/api/users/00000000-0000-0000-0000-000000000000/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+
+    it('should return 403 for MECHANIC role', async () => {
+      await request(httpServer)
+        .get(`/api/users/${attendantAuth.user.id}/customers`)
+        .set('Authorization', `Bearer ${mechanicAuth.accessToken}`)
+        .expect(403);
+    });
+  });
+
   // ─── DELETE /api/customers/:customerId/users/:userId ────────────────
 
   describe('DELETE /api/customers/:customerId/users/:userId', () => {
@@ -398,7 +486,7 @@ describe('Customer Access (E2E)', () => {
 
     it('should return 404 for a non-existent customer', async () => {
       await request(httpServer)
-        .patch('/api/customers/00000000-0000-0000-0000-000000000000/status')
+        .patch('/api/customers/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ isActive: false })
         .expect(404);

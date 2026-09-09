@@ -208,11 +208,74 @@ describe('Me (E2E)', () => {
       expect(res.body.pagination.totalRecords).toBe(1);
     });
 
+    /**
+     * `page` e `limit` chegam como texto na query string: sem a conversão do
+     * `@Type(() => Number)` o `IsInt` recusaria toda requisição paginada.
+     */
+    it('should paginate with the page and limit given in the query string', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const user = await createExternalUserLinkedTo(customer.id, generateCPF(1002));
+      const token = signTestCustomerToken(user.id);
+
+      const res = await request(httpServer)
+        .get('/api/me/work-orders?page=2&limit=1')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.pagination).toMatchObject({ page: 2, limit: 1, totalRecords: 2 });
+    });
+
     it('should return 401 when the token has no active linked customer', async () => {
       await request(httpServer)
         .get(`/api/me/work-orders?customerId=${randomUUID()}`)
         .set('Authorization', `Bearer ${signTestCustomerToken(randomUUID())}`)
         .expect(401);
+    });
+  });
+
+  // ─── Recursos inexistentes nas rotas externas ───────────────────────────────
+
+  describe('Unknown resources on the external routes', () => {
+    let token: string;
+
+    beforeEach(async () => {
+      const customer = await createCustomer();
+      const user = await createExternalUserLinkedTo(customer.id, generateCPF(5000));
+      token = signTestCustomerToken(user.id);
+    });
+
+    it('should return 404 for an unknown work order', async () => {
+      await request(httpServer)
+        .get(`/api/me/work-orders/${randomUUID()}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('should return 404 when listing quotes of an unknown work order', async () => {
+      await request(httpServer)
+        .get(`/api/me/work-orders/${randomUUID()}/quotes`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('should return 404 for an unknown quote', async () => {
+      await request(httpServer)
+        .get(`/api/me/quotes/${randomUUID()}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('should return 404 when deciding an unknown quote', async () => {
+      await request(httpServer)
+        .post(`/api/me/quotes/${randomUUID()}/decisions`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ action: 'approve' })
+        .expect(404);
     });
   });
 
