@@ -256,6 +256,32 @@ describe('Structured logging (E2E)', () => {
     });
   });
 
+  describe('framework bootstrap output', () => {
+    /**
+     * O `forRoutes` declarado em `buildLoggerParams` existe só para calar este
+     * aviso: o default do `nestjs-pino` é o curinga legado `'*'`, que somado ao
+     * `setGlobalPrefix` vira `/api/*` e faz o Nest avisar duas vezes por boot,
+     * uma por middleware registrado.
+     *
+     * A asserção vive aqui, e não num spec unitário sobre o valor do
+     * `forRoutes`, porque quem emite o aviso é o roteador do Nest na
+     * inicialização — comparar a string com ela mesma não provaria nada, e é
+     * exatamente o boot que a regressão quebraria.
+     */
+    it('should register the request logger without tripping the legacy route converter', () => {
+      const bootstrap = capture.bootstrapLines();
+
+      expect(bootstrap.length).toBeGreaterThan(0);
+
+      const legacyRouteWarnings = bootstrap.filter(
+        (line) =>
+          typeof line.message === 'string' && line.message.includes('Unsupported route path'),
+      );
+
+      expect(legacyRouteWarnings).toEqual([]);
+    });
+  });
+
   describe('guards, actor and error attribution', () => {
     it('should log a request rejected by the authentication guard without an error line', async () => {
       await request(httpServer).get('/api/customers').expect(401);
