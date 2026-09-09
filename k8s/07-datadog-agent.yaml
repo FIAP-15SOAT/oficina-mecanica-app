@@ -86,7 +86,7 @@ spec:
 
       containers:
         - name: agent
-          image: gcr.io/datadoghq/agent:7.60.0
+          image: gcr.io/datadoghq/agent:7.83.1
           imagePullPolicy: IfNotPresent
 
           ports:
@@ -106,6 +106,9 @@ spec:
 
             - name: DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT
               value: 0.0.0.0:4318
+
+            - name: HOST_PROC
+              value: /proc
 
             - name: DD_APM_ENABLED
               value: "true"
