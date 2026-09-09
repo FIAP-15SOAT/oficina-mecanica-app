@@ -18,11 +18,13 @@ A automação está dividida por responsabilidade, em quatro workflows:
 | Workflow | Arquivo | Gatilho | Responsabilidade |
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | `push` em branches de trabalho (`feature/**`, `fix/**`) | Validar a mudança (inclui `terraform plan`) e abrir o PR |
-| CD | `.github/workflows/cd.yml` | `push` em `master` (pós-merge) + `workflow_dispatch` | Fluxo de entrega completo: **provisiona a infra (Terraform), builda a imagem, migra o banco e deploya a app** |
+| CD | `.github/workflows/cd.yml` | `push` em `master` (pós-merge) + `workflow_dispatch` | Fluxo de entrega da aplicação: **builda e publica a imagem, migra o banco e deploya a app**. Não provisiona infraestrutura |
 | SAST | `.github/workflows/sast.yml` | `pull_request` + `push` em `master` | Análise do SonarCloud (PR + `master`), em paralelo ao CD (não bloqueia o deploy) |
 | DAST | `.github/workflows/dast.yml` | `pull_request` → `master` + `workflow_dispatch` | Scan ativo OWASP ZAP da API em execução (autenticado, via OpenAPI), em paralelo ao CI/CD |
 
-O CD faz o **fluxo de entrega ponta a ponta**: aplica o Terraform (infra) **antes** de migrar e deployar. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD. Seguindo a prática do HashiCorp, o **`terraform plan` roda no CI** (o revisor vê o diff de infra no PR) e o **`terraform apply` roda no CD** — o merge na `master` (protegida, só via PR com checks verdes) é a aprovação.
+O CD faz o fluxo de entrega **da aplicação**: publica a imagem, migra o banco e deploya. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD.
+
+**Infraestrutura não é provisionada por este repositório.** Rede, cluster, banco, API Gateway e a função serverless de autenticação externa vivem em stacks Terraform próprias, cada uma com o seu `plan` no CI e o seu `apply` no CD — ver [overview.md › Camadas](overview.md#camadas).
 
 > **Como ler os diagramas.** Nos diagramas de **CI** e **CD**, cada caixa é um **job** (com os principais steps em bullets) e as setas seguem as dependências `needs:`. Nos de **SAST** e **DAST** — que têm um **único job** —, cada caixa é um **step**, executado em sequência no mesmo runner.
 
@@ -41,11 +43,11 @@ Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_requ
 | `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`master` torna a análise anterior obsoleta; cancelar economiza runners |
 | `dast.yml` | `dast-<pr ou ref>` | `true` | Um push novo no PR torna o scan anterior obsoleto; cancelar economiza runners |
 
-Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_APP_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
+Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
 
 ## 1) Workflow de CI (`ci.yml`)
 
-<p align="center"><img src="../diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 6 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation, Terraform Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para master" width="100%"></p>
+<p align="center"><img src="../diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 5 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para master" width="100%"></p>
 
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
@@ -58,7 +60,7 @@ Os 5 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `o
 | 3 | `e2e-tests` | `npm run test:e2e:cov` — E2E com um PostgreSQL descartável via Testcontainers no próprio job |
 | 4 | `build` | `npm run build` — compila o TypeScript |
 | 5 | `db-validation` | Sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed): prova que as migrations aplicam do zero e o seed funciona. Banco descartado com o job — nunca toca ambiente real |
-| 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `master` de forma idempotente (não duplica), com o PAT `OPEN_PR_TOKEN` para que o `sast.yml` rode no PR desde o primeiro push |
+| 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `master` de forma idempotente (não duplica), autenticado por **GitHub App** (`BOT_APP_ID` + `BOT_PRIVATE_KEY`) para que o `sast.yml` rode no PR desde o primeiro push |
 
 > As validações de Terraform (`fmt`, `validate`, `plan`) são executadas nos repositórios dedicados de infraestrutura ([`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) e [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)).
 
@@ -160,7 +162,8 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
-| Secret | `OPEN_PR_TOKEN` | `ci.yml` | PAT que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` no PR (o `GITHUB_TOKEN` não dispara workflows) |
+| Variable | `BOT_APP_ID` | `ci.yml` | Identidade do GitHub App que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` (o `GITHUB_TOKEN` não dispara workflows) |
+| Secret | `BOT_PRIVATE_KEY` | `ci.yml` | Chave privada do mesmo GitHub App |
 | Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para compor a `DATABASE_URL` do Secret da aplicação (`api-secret`, criado via `kubectl create secret`) |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
