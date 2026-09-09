@@ -663,6 +663,72 @@ describe('Customer (E2E)', () => {
       expect(res.body.data.email).toBe('novo.endereco@email.com');
     });
 
+    /**
+     * O tipo do cliente decide de quem é a identidade do acesso externo (CPF do
+     * próprio cliente para INDIVIDUAL, CPF de um representante para COMPANY).
+     * Trocá-lo com vínculo ativo deixaria o usuário externo apontando para uma
+     * identidade que o cliente não tem mais.
+     */
+    it('should return 409 when changing the type of a customer with an active access link', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send(validCustomer)
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/customers/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          name: 'Oficina Parceira LTDA',
+          document: '12.345.678/0001-95',
+          type: 'COMPANY',
+        })
+        .expect(409);
+    });
+
+    it('should return 409 when changing the type of a customer that already has work orders', async () => {
+      const created = await request(httpServer)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ ...validCustomer, createAccess: false })
+        .expect(201);
+
+      const vehicle = await request(httpServer)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: created.body.data.id,
+          plate: 'XYZ-9876',
+          brand: 'Toyota',
+          model: 'Corolla',
+          year: 2020,
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: created.body.data.id,
+          vehicleId: vehicle.body.data.id,
+          problemDescription: 'Revisão geral',
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .put(`/api/customers/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          ...validCustomer,
+          name: 'Oficina Parceira LTDA',
+          document: '12.345.678/0001-95',
+          type: 'COMPANY',
+        })
+        .expect(409);
+    });
+
     it('should let a COMPANY customer correct its own CNPJ even with an active access link', async () => {
       const created = await request(httpServer)
         .post('/api/customers')

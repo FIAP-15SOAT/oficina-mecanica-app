@@ -216,6 +216,21 @@ describe('measureWorkOrderDurations', () => {
 
       expect(measure(history).diagnosisToCompletionSeconds).toBeUndefined();
     });
+
+    it('should not produce a total when the opening timestamp is invalid', () => {
+      const history = [
+        createMockStatusHistory({
+          workOrderId: WORK_ORDER_ID,
+          previousStatus: null,
+          newStatus: WorkOrderStatus.RECEIVED,
+          createdAt: new Date('data-invalida'),
+        }),
+        entry(WorkOrderStatus.RECEIVED, WorkOrderStatus.COMPLETED, 1),
+        entry(WorkOrderStatus.COMPLETED, WorkOrderStatus.DELIVERED, 2),
+      ];
+
+      expect(measure(history).leadTimeSeconds).toBeUndefined();
+    });
   });
 
   describe('time source', () => {
@@ -254,6 +269,15 @@ describe('measureWorkOrderDurations', () => {
       const orphan = [entry(WorkOrderStatus.APPROVED, WorkOrderStatus.IN_PROGRESS, 3)];
 
       expect(measure(orphan).dwell).toBeUndefined();
+    });
+
+    it('should not measure dwell when the history keeps only rows into other statuses', () => {
+      const history = [
+        entry(WorkOrderStatus.RECEIVED, WorkOrderStatus.IN_DIAGNOSIS, 1),
+        entry(WorkOrderStatus.APPROVED, WorkOrderStatus.IN_PROGRESS, 3),
+      ];
+
+      expect(measure(history).dwell).toBeUndefined();
     });
 
     it('should not emit a duration when a timestamp is invalid', () => {

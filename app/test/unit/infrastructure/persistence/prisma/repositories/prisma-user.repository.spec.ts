@@ -110,6 +110,25 @@ describe('PrismaUserRepository', () => {
       await expect(repository.create(user)).rejects.toThrow('CPF já cadastrado');
     });
 
+    it('should report a CPF conflict when the driver sends the target as a single string', async () => {
+      const user = User.create({
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        passwordHash: '$2b$10$hashedpassword',
+        role: UserRole.MECHANIC,
+        cpf: '12345678909',
+      });
+
+      const error = new Prisma.PrismaClientKnownRequestError('Duplicate cpf', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: 'cpf' },
+      });
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(repository.create(user)).rejects.toThrow('CPF já cadastrado');
+    });
+
     it('should rethrow unexpected errors', async () => {
       const user = User.create({
         name: 'Jane Smith',

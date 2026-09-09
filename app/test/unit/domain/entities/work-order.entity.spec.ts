@@ -337,6 +337,20 @@ describe('WorkOrder Entity', () => {
     });
   });
 
+  describe('isTerminalStatus()', () => {
+    it('should report a status with outgoing transitions as not terminal', () => {
+      expect(WorkOrder.isTerminalStatus(WorkOrderStatus.RECEIVED)).toBe(false);
+    });
+
+    it('should report a status with no outgoing transition as terminal', () => {
+      expect(WorkOrder.isTerminalStatus(WorkOrderStatus.DELIVERED)).toBe(true);
+    });
+
+    it('should treat a status absent from the map as terminal', () => {
+      expect(WorkOrder.isTerminalStatus('UNKNOWN_STATUS' as unknown as WorkOrderStatus)).toBe(true);
+    });
+  });
+
   describe('ensureCanCreateQuote()', () => {
     it('should not throw for IN_DIAGNOSIS status', () => {
       const workOrder = createMockWorkOrder({ status: WorkOrderStatus.IN_DIAGNOSIS });

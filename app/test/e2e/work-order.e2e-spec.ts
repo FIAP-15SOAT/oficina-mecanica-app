@@ -598,6 +598,24 @@ describe('WorkOrder (E2E)', () => {
       expect(res.body.pagination).toBeDefined();
     });
 
+    it('should default to ascending when the sort field carries no direction', async () => {
+      const customer = await createCustomer();
+      const vehicle = await createVehicle(customer.id);
+      await createWorkOrder(customer.id, vehicle.id);
+      await createWorkOrder(customer.id, vehicle.id);
+
+      const res = await request(httpServer)
+        .get('/api/work-orders?sort=createdAt')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(200);
+
+      const timestamps = (res.body.data as { createdAt: string }[]).map((item) =>
+        new Date(item.createdAt).getTime(),
+      );
+
+      expect(timestamps).toEqual([...timestamps].sort((a, b) => a - b));
+    });
+
     it('should return 400 for disallowed sort field', async () => {
       await request(httpServer)
         .get('/api/work-orders?sort=number:asc')

@@ -9,7 +9,7 @@ export const MAX_TELEMETRY_DETAIL_LENGTH = 256;
 
 export const TELEMETRY_REPORT_WINDOW_MS = 60_000;
 
-const MAX_TRACKED_CAUSES = 64;
+export const MAX_TRACKED_CAUSES = 64;
 
 export type TelemetryFailureStage =
   | 'config'

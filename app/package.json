@@ -130,6 +130,7 @@
       "src/**/*.(t|j)s",
       "!src/**/*.module.ts",
       "!src/main.ts",
+      "!src/otel.ts",
       "!src/**/*.enums.ts",
       "!src/**/*.config.ts",
       "!src/**/*.exception.ts",
@@ -138,6 +139,14 @@
       "!src/domain/constants/**"
     ],
     "coverageDirectory": "coverage",
+    "coverageThreshold": {
+      "global": {
+        "lines": 100,
+        "statements": 100,
+        "functions": 100,
+        "branches": 100
+      }
+    },
     "testEnvironment": "node",
     "modulePaths": [
       "<rootDir>"

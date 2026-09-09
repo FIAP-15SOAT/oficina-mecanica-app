@@ -8,7 +8,7 @@
 - [Telemetria: o que o Jest não instrumenta](#telemetria-o-que-o-jest-não-instrumenta)
 - [Postman / Newman](#postman--newman)
 - [Indisponibilidade de dependência e encerramento gracioso](#indisponibilidade-de-dependência-e-encerramento-gracioso)
-- [Cobertura E2E — branches estruturalmente inalcançáveis](#cobertura-e2e--branches-estruturalmente-inalcançáveis)
+- [Cobertura E2E — o que não é alcançável por HTTP](#cobertura-e2e--o-que-não-é-alcançável-por-http)
 
 ## Unitários
 
@@ -19,7 +19,11 @@ npm run test:cov  # com relatório de cobertura
 
 As suítes cobrem todas as camadas (`application/`, `domain/` — incluindo entidades, value objects e validators —, `interface-adapters/` e `infrastructure/`). Use-cases são instanciados diretamente com mocks do tipo `jest.Mocked<IRepository>` (ou `jest.Mocked<IUnitOfWork>` onde aplicável) — sem NestJS DI, sem banco de dados. Os Clean Controllers são instanciados diretamente com use-cases mockados; a borda HTTP (`@Controller` fino) é exercitada via `jest.spyOn` no Clean Controller real. As factories de mocks (incluindo `UnitOfWorkMockFactory`) estão em `test/helpers/`, organizadas por entidade.
 
-A cobertura é coletada em todo `src/**` (todas as camadas — `domain/`, `application/`, `interface-adapters/` e `infrastructure/`). As exclusões são por sufixo/caminho, não por camada: `*.module.ts`, `main.ts`, `*.enums.ts`, `*.config.ts`, `*.exception.ts`, `*.dto.ts`, `infrastructure/persistence/prisma/prisma.service.ts` e `domain/constants/**` (ver `package.json` → `jest.collectCoverageFrom`). Os arquivos gerados pelo Prisma ficam de fora por viverem em `prisma/generated/`, fora de `src/`.
+216 suites e 2082 testes, com **100% de cobertura em lines, statements, functions e branches**. O piso é declarado em `package.json` → `jest.coverageThreshold`, então `npm run test:cov` (e com ele o job `unit-tests` do CI) falha quando qualquer uma das quatro métricas cai abaixo de 100% — foi assim que a cobertura voltou a ser um contrato verificado em vez de um número observado.
+
+A cobertura é coletada em todo `src/**` (todas as camadas — `domain/`, `application/`, `interface-adapters/` e `infrastructure/`). As exclusões são por sufixo/caminho, não por camada: `*.module.ts`, `main.ts`, `otel.ts`, `*.enums.ts`, `*.config.ts`, `*.exception.ts`, `*.dto.ts`, `infrastructure/persistence/prisma/prisma.service.ts` e `domain/constants/**` (ver `package.json` → `jest.collectCoverageFrom`). Os arquivos gerados pelo Prisma ficam de fora por viverem em `prisma/generated/`, fora de `src/`.
+
+`src/otel.ts` é excluído pelo mesmo motivo que `main.ts`: é ponto de entrada de processo, não código chamado pela aplicação. O caminho ligado depende de `OTEL_EXPORTER_OTLP_ENDPOINT` e de o SDK ser registrado por `node --require` — e a auto-instrumentação **não funciona sob Jest** (ver [Telemetria: o que o Jest não instrumenta](#telemetria-o-que-o-jest-não-instrumenta)), de forma que um teste ali ficaria verde sem verificar nada e ainda abriria um exportador de fundo nas suítes. Quem o cobre é `npm run test:smoke`, num processo real, dentro do job `build` do CI. O interruptor desligado — a garantia de que sem endpoint nenhum módulo do SDK é carregado — continua asserido em `test/unit/otel.spec.ts`.
 
 ## E2E
 
@@ -52,7 +56,7 @@ O seam é real: o `LoggingModule` é configurado com `LoggerModule.forRootAsync`
 O helper **não** duplica a configuração de bootstrap: ele chama `configureApp()`
 (`src/infrastructure/config/app-bootstrap.ts`), a mesma função que o `main.ts` usa.
 
-Duas opções extras, usadas só pela suíte de logging para que as outras onze não paguem o custo:
+Duas opções extras, usadas só pela suíte de logging para que as outras quatorze não paguem o custo:
 
 | Opção | O que liga |
 | --- | --- |
@@ -119,7 +123,7 @@ O primeiro **não** substitui o segundo, e é essa a armadilha: se o `$disconnec
 
 O drain **é** alcançável neste harness: `enableShutdownHooks()` apenas registra listeners de sinais do processo, e `close(signal)` executa os hooks de qualquer forma — o servidor HTTP só fecha no `dispose()`, depois da janela. Por isso ele não aparece na lista de branches inalcançáveis abaixo. A janela, porém, só é sustentada no ambiente orquestrado (`NODE_ENV=production`), então o `describe` de encerramento declara esse ambiente no `beforeEach` e o restaura depois — é o que faz a suíte exercitar o comportamento real em vez de um caminho de teste próprio.
 
-As três `describe`s esperam a prontidão assentar em `200` antes de assertar o contrato. A primeira verificação depois do boot paga TCP + autenticação com o pool ainda vazio, e o prazo próprio do chamador é de 3,5 s — o `query_timeout` de 2 s vale só para a consulta e não cobre a aquisição da conexão: com doze suítes E2E em paralelo, cada uma subindo os próprios containers, esse caso frio estoura o prazo e a prontidão responde `503` uma vez — exatamente como responderia em produção antes de o `failureThreshold` ser atingido. A propriedade continua asserida (se a prontidão nunca ficar `200`, a suíte falha); o que a espera remove é a dependência de uma única amostra fria sob inanição de CPU.
+As três `describe`s esperam a prontidão assentar em `200` antes de assertar o contrato. A primeira verificação depois do boot paga TCP + autenticação com o pool ainda vazio, e o prazo próprio do chamador é de 3,5 s — o `query_timeout` de 2 s vale só para a consulta e não cobre a aquisição da conexão: com quinze suítes E2E em paralelo, cada uma subindo os próprios containers, esse caso frio estoura o prazo e a prontidão responde `503` uma vez — exatamente como responderia em produção antes de o `failureThreshold` ser atingido. A propriedade continua asserida (se a prontidão nunca ficar `200`, a suíte falha); o que a espera remove é a dependência de uma única amostra fria sob inanição de CPU.
 
 **Asserções de log.** Com `setupTestApp({ captureLogs: true })`, a suíte assere que uma probe saudável produz **zero** linhas de access log; que uma probe que falha produz **exatamente uma**, em `error`, **sem** stack trace e **sem** `error.type`/`oficina.error.message` (a resposta é deliberada e não lança, então não há exceção resolvida de onde derivá-los); e que a transição emite exatamente um `health.degraded` com a categoria da causa. Fecha com uma asserção **negativa**: o corpo do `503` não contém host, porta, cadeia de conexão nem stack.
 
@@ -144,41 +148,43 @@ O smoke de preload roda no job `build` do CI, depois do `npm run build`, porque 
 
 Nenhuma suíte define `OTEL_EXPORTER_OTLP_ENDPOINT`, então o SDK **não inicia** em teste algum: sem exportador de fundo e sem conexão de saída.
 
-## Postman / Newman
+## Cobertura E2E — o que não é alcançável por HTTP
 
-A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+O E2E exercita o fluxo HTTP completo contra um PostgreSQL real, e é isso que ele mede bem:
+rota, guard, pipe, use-case, repositório e banco. Uma parte do `src/` fica **estruturalmente**
+fora do alcance dele — não por falta de teste, mas porque nenhuma requisição HTTP consegue
+produzir aquele estado. Todo esse código está coberto pelo suíte unitário, que é 100%.
 
-O environment já vem com `adminEmail` e `adminPassword` preenchidos com um dos usuários do seed; confira/ajuste essas variáveis caso queira autenticar com outro usuário criado pelo seed.
+As categorias, e por que cada uma não é alcançável:
 
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Veículos → Ordens de Serviço → Orçamentos**.
+| Categoria | Onde | Por quê |
+|---|---|---|
+| Preload de telemetria | `src/otel.ts`, `infrastructure/telemetry/**` | O SDK só é registrado por `node --require` e **nenhuma suíte define `OTEL_EXPORTER_OTLP_ENDPOINT`**; além disso a auto-instrumentação não funciona sob Jest (ver [seção acima](#telemetria-o-que-o-jest-não-instrumenta)). Cobertos por unitário + `npm run test:smoke`. |
+| Validação de entidade de domínio | `domain/entities/**` | Os DTOs da borda (`class-validator`) recusam o payload antes de a entidade ser construída, então as guardas de `create()`/`reconstitute()` não são atingíveis por requisição. |
+| Capturas defensivas do Prisma | `persistence/prisma/repositories/**` | `P2002`/`P2025` cobrem corridas entre a verificação e a escrita: reproduzir isso exigiria pausar a transação no meio, o que o E2E não controla. |
+| Falha do envio de e-mail | `use-cases/user/create-user`, `use-cases/customer-access/grant-customer-access`, `services/mailer-email-sender.service.ts` | O MailHog do harness sempre aceita a mensagem; o `catch` que registra o envio falhado e segue (a criação **não** é desfeita) depende de um SMTP indisponível. |
+| Falha do próprio logger | `logging/logging-diagnostics.ts`, `logging/bootstrap-failure.ts`, `logging/logging-destination.ts` | Só executam quando a escrita em stdout/stderr falha ou quando o boot falha — estados que o harness não produz. |
+| Bootstrap fora do harness | `config/app-bootstrap.ts` | Parte da composição só é atingida por `main.ts` (`listen`, hooks de sinal), que o E2E não usa. |
+| Fallback de relação obrigatória | ver tabela abaixo | FK `NOT NULL` com `include` obrigatório: o lado `null` do ternário não existe em runtime. |
 
-Ou via linha de comando com a aplicação rodando:
-
-```bash
-npx newman run collections/oficina-collection.json -e collections/oficina-environment.json
-```
-
-## Cobertura E2E — branches estruturalmente inalcançáveis
-
-Alguns branches (`?`, `??`, `?.`) nos Presenters (`interface-adapters/`) e na borda HTTP (`infrastructure/http/`) não podem ser cobertos pelos testes E2E. Isso ocorre por design da infraestrutura (JOINs obrigatórios via Prisma `include`) ou por invariantes do domínio (FKs NOT NULL, autenticação JWT). Abaixo, cada caso é documentado com a justificativa.
-
-### `src/interface-adapters/stock/stock.presenter.ts`
+### Fallbacks de relação obrigatória
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|
-| `mapWorkOrderData` — `wo.assignedUser ? ... : null` | Ramo falso (`null`) coberto, ramo verdadeiro depende de cenário com mecânico atribuído | OS sem mecânico atribuído é o caso comum; o JOIN `assignedUser` é opcional na tabela. |
-| `toStockMovementResponse` — `item.workOrder ? ... : null` | Ramo verdadeiro/falso conforme tipo de movimento | Movimentações automáticas têm `workOrderId`; manuais podem ter `null`. |
+| `interface-adapters/me/me.presenter.ts` — `workOrder.vehicle ? … : null` | Ramo `null` | `work_orders.vehicle_id` é `NOT NULL` e o `include` do detalhe externo sempre traz o veículo. |
+| `interface-adapters/work-order/work-order.presenter.ts` — `entry.changedBy ? … : null` | Ramo `null` | Toda transição feita por requisição carrega o usuário autenticado; `changed_by_id` só fica `null` em transição sem usuário, que nenhuma rota produz. |
 
-### `src/interface-adapters/work-order/work-order.presenter.ts`
-
-| Localização | Branch não coberto | Motivo |
-|---|---|---|
-| `toStatusHistoryListResponse` — `entry.changedBy ? ... : null` | Ramo falso (`null`) | O histórico de status iniciado por usuário autenticado sempre persiste `changedById`. Apenas eventos automáticos disparados sem usuário (ex.: envio de orçamento via job interno) registram `null`. |
-
-### `src/infrastructure/http/controllers/quote/quote.module.ts`
+### Branches de aplicação sem caminho HTTP
 
 | Localização | Branch não coberto | Motivo |
 |---|---|---|
-| Configuração de `PORT` — `process.env.PORT ?? '3000'` | Ramo direito (`'3000'`) | O arquivo `.env` sempre define `PORT=3000`. Os testes E2E carregam esse arquivo via `ConfigService`, portanto `process.env.PORT` nunca é `undefined` em tempo de execução dos testes. |
+| `use-cases/work-order/update-work-order-status.use-case.ts` — `PATCH_STATUS_ALLOWED.has(...)` | Ramo de recusa | O `@IsEnum` do `UpdateWorkOrderStatusRequestDto` declara **o mesmo** conjunto: um status fora dele vira `400` na validação, antes do use-case. A guarda protege o uso programático. |
+| `use-cases/quote/reject-quote.use-case.ts` — `notes ?? \`Orçamento … rejeitado\`` | Ramo direito | `UpdateQuoteStatusUseCase` exige justificativa para rejeitar (`400` sem ela), então `notes` nunca chega vazio por HTTP. |
+| `use-cases/quote/{approve,reject}-quote.use-case.ts` — `userId ?? null` | Ramo direito | As rotas são autenticadas; `userId` nunca é nulo vindo da borda. |
+| `use-cases/me/{find-my-quote-by-id,decide-my-quote}.use-case.ts` — `if (!workOrder)` | Ramo verdadeiro | `quotes.work_order_id` é `NOT NULL` com `ON DELETE CASCADE`: um orçamento sem ordem não existe no banco. |
+| `metrics/work-order-duration.ts` — guardas de histórico | Ramos defensivos | A função é pura e recebe o histórico como está no banco. Transição ausente, status terminal, entrada de chegada truncada e carimbo inválido/negativo não são produzíveis por requisição — o unitário monta esses históricos diretamente. |
+| `use-cases/me/change-own-password.use-case.ts` — `if (!user)` | Ramo verdadeiro | O guard resolve o principal a partir de um usuário existente; um `sub` desconhecido é recusado em `CustomerJwtStrategy.validate()` antes do use-case. |
 
-> A lista é mantida em sincronia com a implementação atual dos presenters. Branches que dependem de relações obrigatórias (FKs NOT NULL com `include` mandatório) são afirmados com `!` em vez de fallback `??` / `?.`, eliminando o branch antes mesmo de ser gerado.
+> A lista descreve o comportamento atual e é revisada junto com o código. Quando uma relação
+> obrigatória permite afirmar em vez de defender, prefira `!` a `??`/`?.`: isso elimina o branch
+> em vez de deixá-lo permanentemente descoberto.

@@ -190,6 +190,27 @@ describe('buildIncomingSpanAttributes — client.address', () => {
     }
   });
 
+  /**
+   * Falha fechada, como `applyTrustProxy` do outro lado: uma lista que o
+   * `proxy-addr` recusa vira "nenhum salto confiável", nunca "todos".
+   */
+  it('should trust no hop when the configured list is invalid', () => {
+    process.env.TRUSTED_PROXY_CIDRS = 'faixa-invalida';
+
+    try {
+      const attributes = buildIncomingSpanAttributes(
+        createRequest({
+          headers: { 'x-forwarded-for': '203.0.113.7' },
+          remoteAddress: '10.0.0.4',
+        }),
+      );
+
+      expect(attributes['client.address']).toBe('10.0.0.4');
+    } finally {
+      delete process.env.TRUSTED_PROXY_CIDRS;
+    }
+  });
+
   it('should fall back to the socket address when there is no forwarded header', () => {
     const attributes = buildIncomingSpanAttributes(createRequest({ remoteAddress: '10.0.0.4' }));
 
