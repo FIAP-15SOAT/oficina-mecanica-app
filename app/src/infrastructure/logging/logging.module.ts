@@ -1,5 +1,5 @@
 import { hostname } from 'node:os';
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, RequestMethod } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerModule, PinoLogger } from 'nestjs-pino';
 import type { Params } from 'nestjs-pino';
@@ -45,6 +45,7 @@ export function buildLoggerParams(destination: DestinationStream, level: LogLeve
 
   return {
     renameContext: 'otel.scope.name',
+    forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
     pinoHttp: [
       {
         level,

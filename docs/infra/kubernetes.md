@@ -97,6 +97,23 @@ Os dois controles continuam independentes: `ENABLE_TELEMETRY_COLLECTION` instala
 
 ⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — traço e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
 
+### Classificação e atribuição dos logs de contêiner
+
+O log **não** passa por OTLP (`OTEL_LOGS_EXPORTER: none`): o caminho é o stdout do contêiner, lido pelo agente com `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL`. Isso muda duas coisas em relação ao trace e à métrica, que leem o resource do OTel.
+
+**Severidade vem do stream, não do conteúdo.** Sem pipeline de integração, o coletor deriva o status do canal de saída: **stdout → `info`, stderr → `error`**. Escapa disso apenas quem emite JSON com nível próprio — que é o caso da API, cujo envelope carrega `level` (ver [ADR 0002](../adr/0002-logging-estruturado.md)). Todo o resto do node é classificado pelo canal, e é por isso que aparecem como `error` linhas perfeitamente normais de `kube-proxy`, `coredns`, `metrics-server` e `aws-node`: são componentes em Go, e o `klog` escreve em stderr. **Não é defeito da aplicação nem do coletor** — e a contrapartida é que a falha de verdade desses componentes chega pelo mesmo canal, então filtrá-la fora custaria o sinal junto com o ruído. A exclusão feita no agente (`DD_CONTAINER_EXCLUDE_LOGS`) alcança só o MailHog e o próprio agente, cujo volume era ruído de probe sem contrapartida de sinal.
+
+**Atribuição de serviço vem de label, não do resource.** Como o log não passa por OTLP, o agente não enxerga `service.name` e cai no **nome da imagem** — o que fazia a mesma aplicação aparecer como `ecr-oficina-mecanica-app-repo` no log e `oficina-mecanica-api` no APM, quebrando a aba Logs da página do serviço e qualquer métrica derivada de log. As labels de Unified Service Tagging no `spec.template.metadata.labels` resolvem:
+
+| Workload | `tags.datadoghq.com/service` | Manifesto |
+|---|---|---|
+| API | `oficina-mecanica-api` | `k8s/03-api-deployment.yaml` |
+| Job de migração | `oficina-mecanica-db-migrate` | `k8s/00-db-migrate-job.yaml` |
+
+Os dois valores são **deliberadamente diferentes**. Job e Deployment compartilham a imagem, mas são workloads distintos com ciclo de vida distinto: unificá-los encheria a aba Logs da API com saída de migração a cada deploy — que é o problema que as labels vieram resolver, só que com outro nome.
+
+⚠️ As labels são valores **espelhados**, não derivados: label de Kubernetes não referencia ConfigMap. `service` precisa seguir igual a `OTEL_SERVICE_NAME` e `env` igual a `NODE_ENV`, ambos em `02-api-configmap.yaml`, de onde o resource do OTel tira `service.name` e `deployment.environment.name`. **Mudou lá, muda aqui** — não há verificação automática.
+
 ## Recursos: CPU e memória (requests e limits)
 
 Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto antes de throttling/OOM-kill):
@@ -240,11 +257,14 @@ O `00-db-migrate-job.yaml` é um `Job` do Kubernetes executado **uma vez por dep
 - **Consumo da `DATABASE_URL`** — o container recebe `DATABASE_URL` via `secretKeyRef` do `api-secret` e executa:
 
   ```sh
+  set -e
   npx prisma migrate deploy
   npx prisma db seed
   ```
 
 - **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente.
+- ⚠️ **O `set -e` é o que torna verdadeiro o parágrafo do `backoffLimit: 0` acima.** O status de saída de `sh -c` é o do **último** comando: sem ele, uma migração que falha seguida de um seed que passa faz o Job terminar com **sucesso**, e o CD segue para o rollout com o schema desatualizado — exatamente o mascaramento que o `backoffLimit: 0` existe para impedir, só que um nível abaixo, onde ele não alcança.
+- **`PRISMA_HIDE_UPDATE_MESSAGE: "true"`** — o verificador de versão do Prisma CLI escreve uma caixa de 10 linhas em **stderr**, e o coletor classifica stderr como `error`. Uma migração bem-sucedida pintava dez linhas vermelhas por deploy, sobre um `npm i` que ninguém executa dentro de um contêiner. O restante do stderr do CLI fica: são poucas linhas e é o mesmo canal que carrega a falha **real** (`P1001`, `P3009`), que precisa continuar vermelha — e é por isso que também não se redireciona `2>&1` aqui. Ver [Classificação e atribuição dos logs de contêiner](#classificação-e-atribuição-dos-logs-de-contêiner).
 - **O seed é o primeiro consumidor node-postgres do pipeline** — e, por isso, o primeiro a expor uma `DATABASE_URL` sem parâmetros de TLS, já que o `migrate deploy` negocia a criptografia por conta própria. Ver [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
 
 ## Autoscaling da API (HPA)

@@ -166,16 +166,40 @@ jobs:
         run: |
           JOB_NAME="${{ steps.db_job.outputs.job_name }}"
           NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+          DEADLINE=$(( SECONDS + 900 ))
+          OUTCOME="timeout"
 
-          if ! kubectl wait --for=condition=Complete "job/${JOB_NAME}" -n "${NAMESPACE}" --timeout=900s; then
-            echo "Job ${JOB_NAME} did not complete successfully. Collecting diagnostics..."
-            kubectl describe job "${JOB_NAME}" -n "${NAMESPACE}" || true
-            POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
-            if [[ -n "${POD_NAME}" ]]; then
-              kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true || true
+          while (( SECONDS < DEADLINE )); do
+            COUNTERS="$(kubectl get job "${JOB_NAME}" -n "${NAMESPACE}" \
+              -o jsonpath='{.status.succeeded}|{.status.failed}' 2>/dev/null || echo '|')"
+
+            SUCCEEDED="${COUNTERS%%|*}"
+            FAILED="${COUNTERS##*|}"
+
+            if [[ "${SUCCEEDED:-0}" -ge 1 ]]; then
+              OUTCOME="succeeded"
+              break
             fi
-            exit 1
+
+            if [[ "${FAILED:-0}" -ge 1 ]]; then
+              OUTCOME="failed"
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [[ "${OUTCOME}" == "succeeded" ]]; then
+            exit 0
           fi
+
+          echo "Job ${JOB_NAME} did not complete successfully (${OUTCOME}). Collecting diagnostics..."
+          kubectl describe job "${JOB_NAME}" -n "${NAMESPACE}" || true
+          POD_NAME="$(kubectl get pods -n "${NAMESPACE}" -l job-name="${JOB_NAME}" -o jsonpath='{.items[0].metadata.name}')"
+          if [[ -n "${POD_NAME}" ]]; then
+            kubectl logs -n "${NAMESPACE}" "${POD_NAME}" --all-containers=true || true
+          fi
+          exit 1
 
       - name: Show DB migration Job logs
         run: |
