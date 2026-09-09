@@ -116,7 +116,7 @@ spec:
               value: "true"
 
             - name: DD_CONTAINER_EXCLUDE_LOGS
-              value: "name:mailhog name:agent"
+              value: "name:mailhog name:agent name:kube-proxy"
 
             # O check `orchestrator_pod` fala com um Cluster Agent, que este
             # projeto não implanta — só há o DaemonSet. Sem ele o check falha
