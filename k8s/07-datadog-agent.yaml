@@ -86,7 +86,7 @@ spec:
 
       containers:
         - name: agent
-          image: gcr.io/datadoghq/agent:7.60.0
+          image: gcr.io/datadoghq/agent:7.83.1
           imagePullPolicy: IfNotPresent
 
           ports:
