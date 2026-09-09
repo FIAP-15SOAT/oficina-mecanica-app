@@ -115,6 +115,15 @@ spec:
             - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
               value: "true"
 
+            - name: DD_CONTAINER_EXCLUDE_LOGS
+              value: "name:mailhog name:agent"
+
+            # O check `orchestrator_pod` fala com um Cluster Agent, que este
+            # projeto não implanta — só há o DaemonSet. Sem ele o check falha
+            # para sempre e nunca produz dado
+            - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+              value: "false"
+
             - name: DD_KUBELET_TLS_VERIFY
               value: "false"
 

@@ -71,8 +71,8 @@ Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (deploy sob dem
 | # | Job | `needs:` | O que faz |
 |---|---|---|---|
 | 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tags imutáveis (`:sha` e `:latest`); exporta o `image_uri` |
-| 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML) e aplica o `ConfigMap` (`02-api-configmap.yaml`); **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão com timeout e logs |
-| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; valida o rollout |
+| 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML); renderiza `OTEL_EXPORTER_OTLP_ENDPOINT` de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` no ConfigMap e o aplica; **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão com timeout e logs |
+| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; quando `ENABLE_TELEMETRY_COLLECTION == 'true'`, valida `DD_API_KEY` e aplica a camada do Datadog Agent; reinicia explicitamente o Deployment da API para carregar as variáveis do ConfigMap e valida o rollout |
 
 A imagem roda **somente a aplicação** (`CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]` — o `--require` é o preload do OpenTelemetry, que precisa rodar antes de `express` e `pg` serem importados). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
 
@@ -165,16 +165,21 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
 | Secret | `CUSTOMER_JWT_PUBLIC_KEY` | `cd.yml` | Chave **pública** RS256 usada para verificar o token externo (`customer-jwt`) do Cliente da Oficina — a chave privada correspondente vive na função serverless externa, fora deste repositório. Pode ser cadastrada no formato PEM natural (multilinha); o `db-migrate` cria o Secret via `kubectl create secret --from-literal`, que não exige convertê-la para uma linha só — ver [kubernetes.md](kubernetes.md#convenções-labels-e-wiring-de-configuração) |
+| Secret | `DD_API_KEY` | `cd.yml` | Chave usada pelo Datadog Agent; obrigatória quando `ENABLE_TELEMETRY_COLLECTION == 'true'` |
 | Variable | `DB_HOST` | `cd.yml` | Endereço DNS do banco RDS (ex: `rds-oficina-mecanica.xxxx.us-east-1.rds.amazonaws.com`) |
 | Variable | `DB_USER` | `cd.yml` | Usuário do banco PostgreSQL (padrão: `techchallenge`) |
 | Variable | `DB_PORT` | `cd.yml` | Porta do PostgreSQL (padrão: `5432`) |
 | Variable | `DB_NAME` | `cd.yml` | Nome da base de dados (padrão: `techchallenge`) |
+| Variable | `ENABLE_TELEMETRY_COLLECTION` | `cd.yml` | Quando `true`, aplica o Secret, o DaemonSet e o Service do Datadog Agent |
+| Variable | `OTEL_EXPORTER_OTLP_ENDPOINT` | `cd.yml` | Renderizada no ConfigMap da API; vazia desliga o SDK OpenTelemetry, e preenchida aponta traces e métricas para um coletor OTLP/HTTP |
 | Variable | `PRISMA_GENERATE_DATABASE_URL` | `ci.yml`, `cd.yml` | URL fake usada apenas pelo `prisma generate` (só parseada, nunca conectada); há fallback embutido nos workflows |
 | Variable | `ECR_REPOSITORY` | `cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
 | Variable | `EKS_CLUSTER_NAME` | `cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
 | Variable | `K8S_DEPLOYMENT_NAME` | `cd.yml` | Nome do Deployment usado no `kubectl rollout status` |
 | Variable | `K8S_NAMESPACE` | `cd.yml` | Namespace onde a aplicação e os Jobs de banco são aplicados |
 | Variable | `ENABLE_DEPLOY` | `cd.yml` | Habilita ou desabilita os jobs que tocam o cluster (`build-push-image`, `db-migrate`, `app-deploy`) |
+
+`ENABLE_TELEMETRY_COLLECTION` e `OTEL_EXPORTER_OTLP_ENDPOINT` são controles independentes: o primeiro provisiona a camada do Agent e o segundo liga o SDK da aplicação. O workflow reinicia o Deployment depois de aplicar o ConfigMap, pois variáveis de ambiente de Pods existentes não são atualizadas automaticamente.
 
 Os secrets ficam no nível do repositório ou organização porque são consumidos por mais de um contexto. Como as credenciais são de laboratório do AWS Academy, o `AWS_SESSION_TOKEN` expira quando o lab é reiniciado e precisa ser reconfigurado a cada sessão.
 

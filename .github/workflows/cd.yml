@@ -112,6 +112,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
           CUSTOMER_JWT_PUBLIC_KEY: ${{ secrets.CUSTOMER_JWT_PUBLIC_KEY }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
         # `kubectl create secret --from-literal` (não `envsubst` sobre o YAML) porque
         # CUSTOMER_JWT_PUBLIC_KEY é uma chave PEM que pode conter quebras de linha reais —
         # envsubst injetaria o valor cru dentro do stringData e quebraria o YAML renderizado
@@ -135,7 +136,11 @@ jobs:
             --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-          kubectl apply -f k8s/02-api-configmap.yaml
+          envsubst '${OTEL_EXPORTER_OTLP_ENDPOINT}' \
+            < k8s/02-api-configmap.yaml \
+            > k8s/02-api-configmap.rendered.yaml
+
+          kubectl apply -f k8s/02-api-configmap.rendered.yaml
 
       - name: Apply DB migration Job
         id: db_job
@@ -220,13 +225,21 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
-          DD_API_KEY="${DD_API_KEY}"             envsubst '${DD_API_KEY}'             < k8s/06-datadog-secret.yaml             > k8s/06-datadog-secret.rendered.yaml
+          if [ -z "${DD_API_KEY}" ]; then
+            echo "::error::DD_API_KEY não está configurado nos secrets do repositório, mas ENABLE_TELEMETRY_COLLECTION está ligada."
+            exit 1
+          fi
+
+          envsubst '${DD_API_KEY}' \
+            < k8s/06-datadog-secret.yaml \
+            > k8s/06-datadog-secret.rendered.yaml
 
           kubectl apply -f k8s/06-datadog-secret.rendered.yaml
           kubectl apply -f k8s/07-datadog-agent.yaml
           kubectl apply -f k8s/08-datadog-service.yaml
 
-          kubectl rollout status daemonset/datadog-agent             --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s
+          kubectl rollout status daemonset/datadog-agent \
+            --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s
 
       - name: Wait rollout
         run: kubectl rollout status deployment/${{ vars.K8S_DEPLOYMENT_NAME }} --namespace=${{ vars.K8S_NAMESPACE }} --timeout=180s
