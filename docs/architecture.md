@@ -206,6 +206,10 @@ app/prisma/
 
 ## Modelos do banco de dados
 
+### Diagrama entidade-relacionamento
+
+<p align="center"><img src="diagrams/database-er.png" alt="Diagrama entidade-relacionamento dos 18 modelos do schema Prisma: User, Customer, Address, Vehicle, Service, PartSupply, WorkOrderStatusInfo, WorkOrder e seus itens de linha (WorkOrderService, WorkOrderPartSupply), Quote e seus itens de linha (QuoteService, QuotePartSupply), StatusHistory, StockMovement, StockReservation, UserCustomer e PasswordResetCode, com chaves primárias, estrangeiras e únicas" width="100%"></p>
+
 18 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrderStatusInfo`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`, `UserCustomer`, `PasswordResetCode`. `WorkOrderStatusInfo` (`work_order_statuses`) é uma **tabela de referência** (lookup) — não expõe API própria e é populada pelo seed. `UserCustomer` (`user_customers`) é o vínculo many-to-many entre `User` e `Customer` que autoriza o acesso externo (chave primária composta `(userId, customerId)`, sem `accessType` — a semântica vem de `Customer.type`); `PasswordResetCode` (`password_reset_codes`) guarda o código de redefinição de senha em vigor por usuário (`userId` como chave primária — no máximo um código ativo por vez).
 
 Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`. `UserRole` **não** ganhou um valor `CUSTOMER` — o acesso externo não é modelado como papel interno (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)).
