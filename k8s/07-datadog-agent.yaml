@@ -107,6 +107,9 @@ spec:
             - name: DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT
               value: 0.0.0.0:4318
 
+            - name: HOST_PROC
+              value: /proc
+
             - name: DD_APM_ENABLED
               value: "true"
 

@@ -107,6 +107,18 @@ O log **não** passa por OTLP (`OTEL_LOGS_EXPORTER: none`): o caminho é o stdou
 
 A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
 
+**`HOST_PROC` é contorno de defeito, não configuração de coleta.** A partir da 7.61.0 o pipeline de ingestão OTLP do agente falha na inicialização com `failed to register process metrics: process does not exist` quando `/proc` do host está montado em `/host/proc` — que é a montagem deste DaemonSet. O sintoma é traiçoeiro: o pod fica `Running` e `Ready`, a porta 4318 aparece no Service, e a aplicação recebe `ECONNREFUSED` porque **nada escuta ali**. `HOST_PROC: /proc` é um dos contornos publicados no [issue #32947](https://github.com/DataDog/datadog-agent/issues/32947).
+
+Não remova esta variável junto com uma atualização do agente sem antes confirmar que a 4318 continua escutando:
+
+```sh
+kubectl exec -n oficina ds/datadog-agent -- ss -lntp | grep 4318
+```
+
+**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente, e o mesmo span passa a se chamar `http.server.request`. A imagem pinada aqui está acima desse piso, então o comportamento novo vale sem variável de ativação.
+
+A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
+
 **Atribuição de serviço vem de label, não do resource.** Como o log não passa por OTLP, o agente não enxerga `service.name` e cai no **nome da imagem** — o que fazia a mesma aplicação aparecer como `ecr-oficina-mecanica-app-repo` no log e `oficina-mecanica-api` no APM, quebrando a aba Logs da página do serviço e qualquer métrica derivada de log. As labels de Unified Service Tagging no `spec.template.metadata.labels` resolvem:
 
 | Workload | `tags.datadoghq.com/service` | Manifesto |
