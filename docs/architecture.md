@@ -206,26 +206,7 @@ app/prisma/
 
 ## Modelos do banco de dados
 
-### Diagrama entidade-relacionamento
-
-<p align="center"><img src="diagrams/database-er.png" alt="Diagrama entidade-relacionamento dos 18 modelos do schema Prisma: User, Customer, Address, Vehicle, Service, PartSupply, WorkOrderStatusInfo, WorkOrder e seus itens de linha (WorkOrderService, WorkOrderPartSupply), Quote e seus itens de linha (QuoteService, QuotePartSupply), StatusHistory, StockMovement, StockReservation, UserCustomer e PasswordResetCode, com chaves primárias, estrangeiras e únicas" width="100%"></p>
-
-18 modelos: `User`, `Customer`, `Address`, `Vehicle`, `Service`, `PartSupply`, `WorkOrderStatusInfo`, `WorkOrder`, `WorkOrderService`, `WorkOrderPartSupply`, `Quote`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockMovement`, `StockReservation`, `UserCustomer`, `PasswordResetCode`. `WorkOrderStatusInfo` (`work_order_statuses`) é uma **tabela de referência** (lookup) — não expõe API própria e é populada pelo seed. `UserCustomer` (`user_customers`) é o vínculo many-to-many entre `User` e `Customer` que autoriza o acesso externo (chave primária composta `(userId, customerId)`, sem `accessType` — a semântica vem de `Customer.type`); `PasswordResetCode` (`password_reset_codes`) guarda o código de redefinição de senha em vigor por usuário (`userId` como chave primária — no máximo um código ativo por vez).
-
-Enums refletidos no banco: `UserRole`, `CustomerType`, `WorkOrderStatus`, `WorkOrderServiceStatus`, `QuoteStatus`, `StockMovementType`, `Unit`, `PartSupplyCategory`. `UserRole` **não** ganhou um valor `CUSTOMER` — o acesso externo não é modelado como papel interno (ver [ADR 0004](./adr/0004-autenticacao-de-clientes.md)).
-
-Convenções de modelagem:
-
-- **IDs**: `uuid` v4 (`@db.Uuid`) gerados pelo Prisma — exceto o número da OS, gerado por uma **sequence PostgreSQL** (`work_order_number_seq`, formatada com 6 dígitos zero-padded — `000001`, `000002`, …).
-- **Timestamps**: `created_at` / `updated_at` em todas as entidades não-imutáveis (Address, StatusHistory, StockMovement e StockReservation guardam apenas `created_at`).
-- **Concorrência otimista**: coluna `version Int @default(1)` em `WorkOrder`, `Quote` e `PartSupply`.
-- **Cascade deletes** para itens dependentes (`WorkOrderService`, `WorkOrderPartSupply`, `QuoteService`, `QuotePartSupply`, `StatusHistory`, `StockReservation`, `Address`).
-- **`StockMovement.workOrderId`** usa `onDelete: SetNull` para preservar histórico de movimentação após exclusão da OS.
-- **Unicidade**: `User.email`, `Customer.email`, `Customer.document`, `Vehicle.plate`, `PartSupply.sku`, `Service.name`, `WorkOrder.number`.
-- **Address** é um perfil 1-1 do Customer — chave primária é `customer_id` (sem ID/timestamps próprios) e é deletado em cascata com o Customer.
-- **Identidades compostas**: `WorkOrderService`, `WorkOrderPartSupply`, `QuoteService` e `QuotePartSupply` usam chave primária composta `(parentId, itemId)` em vez de surrogate key.
-- **Índices secundários** por colunas usadas em filtros (`status`, `customerId`, `vehicleId`, `assignedUserId`, `partSupplyId`, `workOrderId`, etc.) e índice composto `(status, createdAt)` em `WorkOrder` para listagens ordenadas.
-- **Tabela de referência de status** (`WorkOrderStatusInfo` → `work_order_statuses`): a coluna `WorkOrder.status` é FK para o `code` (PK) dessa tabela, que associa cada `WorkOrderStatus` a uma `priority Int @unique` (1–9, de `RECEIVED` a `CANCELLED`). A listagem de OS usa essa prioridade para ordenar por status em ordem de negócio (e não alfabética) — ver [Ciclo de vida da Ordem de Serviço](#ciclo-de-vida-da-ordem-de-serviço).
+18 modelos, cobrindo identidade/acesso, veículos, catálogo, Ordem de Serviço, orçamento e estoque. Diagrama entidade-relacionamento (com os tipos reais do Postgres), explicação tabela a tabela, enums e convenções de modelagem: ver [`docs/database.md`](database.md).
 
 ## DDD — Aggregate Roots, Entidades e Value Objects
 
@@ -277,11 +258,7 @@ Dois fluxos de autenticação totalmente isolados, cada um com sua própria estr
 | Guard HTTP | `JwtAuthGuard` | `CustomerJwtAuthGuard` (`AnyAuthGuard` aceita os dois em `GET /api/me` e `PATCH /api/me/password`) |
 | Carrega `role`/`customerId` no payload? | `role`, sim | **Não** — só `sub` (o `userId`) |
 
-### Diagrama de sequência — autenticação externa do Cliente da Oficina (CPF)
-
-<p align="center"><img src="diagrams/customer-cpf-login-sequence.png" alt="Diagrama de sequência UML da autenticação externa por CPF: a função serverless (fora deste repositório) consulta o banco diretamente, assina um customer-jwt RS256 e o devolve ao Cliente da Oficina; a primeira chamada autenticada (GET /api/me) passa pelo AnyAuthGuard, que tenta a estratégia jwt interna (falha) e depois a CustomerJwtStrategy externa, validando assinatura RS256, isActive, iat contra passwordChangedAt e a existência de vínculo ativo com algum cliente" width="100%"></p>
-
-A função serverless (documentada na [ADR 0004](./adr/0004-autenticacao-de-clientes.md), fora deste repositório) autentica por CPF + senha consultando o banco diretamente — nunca um proxy do login interno — e assina o `customer-jwt` com sua chave privada. A primeira chamada autenticada mostra o `AnyAuthGuard` tentando as duas estratégias Passport em sequência, e todos os ramos de rejeição da `CustomerJwtStrategy` (token sem `exp`, usuário inativo, `iat` anterior à última troca de senha, nenhum vínculo ativo) — todos convergindo para 401.
+Diagrama de sequência completo desse fluxo (função serverless externa + `AnyAuthGuard` + `CustomerJwtStrategy`): ver [`docs/sequence-diagrams.md`](sequence-diagrams.md#autenticação-externa-do-cliente-da-oficina-cpf).
 
 **A autorização externa é resolvida a cada requisição, nunca embutida no JWT.** O token externo carrega apenas o `userId` (`sub`); nenhuma rota `/api/me/*` confia em um `customerId` do payload. `CustomerJwtStrategy.validate()` já rejeita o principal se o usuário estiver inativo ou não tiver nenhum vínculo ativo (`findActiveCustomerIdsByUserId`), e a `CustomerAccessPolicy` (`application/policies/customer-access.policy.ts`) repete essa resolução em cada caso de uso de `/api/me/*` que precisa autorizar contra um recurso específico (`FindMyWorkOrderById`, `FindAllMyWorkOrders`, `FindMyWorkOrdersQuotes`, `FindMyQuoteById`, `DecideMyQuote`). Isso faz uma remoção de vínculo (`DELETE /customers/:id/users/:userId`) ou uma desativação de cliente (`PATCH /customers/:id`) valer **imediatamente**, sem precisar de lista de revogação de token. Pelo mesmo caminho — o `User` já recarregado do banco a cada requisição —, `JwtStrategy`, `CustomerJwtStrategy` e `RefreshTokenUseCase` também comparam o `iat` do token com `User.passwordChangedAt`: qualquer token emitido antes da última troca de senha (autenticada ou por reset) é recusado, sem lista de revogação de JWT.
 
@@ -306,17 +283,7 @@ Casos de uso transacionais incluem:
 
 ## Ciclo de vida da Ordem de Serviço
 
-### Diagrama de sequência — login interno
-
-<p align="center"><img src="diagrams/login-sequence.png" alt="Diagrama de sequência UML do login interno (POST /api/auth/login): AuthController, AuthenticateUserUseCase, IUserRepository, IHashService e ITokenService, com os quatro caminhos de falha (usuário inexistente, inativo, senha incorreta, sem role interna) convergindo para a mesma mensagem genérica 401, e o caminho feliz emitindo o par de tokens" width="100%"></p>
-
-Login interno (`POST /api/auth/login`) — os quatro caminhos de falha (usuário inexistente, inativo, senha incorreta, sem role interna) lançam a mesma exceção genérica (401 "Credenciais inválidas"); só o evento de log distingue a causa, para não virar oráculo de enumeração de contas. O `accessToken` emitido no fim é o mesmo usado como `Authorization: Bearer` no diagrama seguinte.
-
-### Diagrama de sequência — abertura de Ordem de Serviço
-
-<p align="center"><img src="diagrams/work-order-creation-sequence.png" alt="Diagrama de sequência UML da abertura de uma Ordem de Serviço (POST /api/work-orders): JwtAuthGuard/JwtStrategy, RolesGuard e a transação do CreateWorkOrderUseCase — validação de cliente, veículo e mecânico atribuído, geração do número sequencial, criação da OS, histórico de status e orçamento inicial opcional" width="100%"></p>
-
-Abertura de OS (`POST /api/work-orders`), a partir do `accessToken` obtido no login — passa por `JwtAuthGuard`/`JwtStrategy` (incluindo a checagem de `passwordChangedAt`) e `RolesGuard`, depois pela transação do `CreateWorkOrderUseCase` com todos os ramos de erro (404/409/422) até o commit.
+Diagramas de sequência do login interno e da abertura de OS: ver [`docs/sequence-diagrams.md`](sequence-diagrams.md).
 
 Transições permitidas (state machine validada no agregado `WorkOrder`):
 

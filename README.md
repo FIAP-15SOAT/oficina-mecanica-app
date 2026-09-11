@@ -277,6 +277,8 @@ O projeto está dividido em repositórios especializados e desacoplados:
 | Documento | Conteúdo |
 |---|---|
 | 🏛️ [Arquitetura](docs/architecture.md) | Clean Architecture, DDD, ciclos de vida, UoW, exceções, logs estruturados |
+| 🗃️ [Banco de Dados](docs/database.md) | Diagrama ER, tabelas e relacionamentos, enums, convenções de modelagem |
+| 🔀 [Diagramas de Sequência](docs/sequence-diagrams.md) | Login interno, abertura de OS e autenticação externa por CPF |
 | 🔌 [Referência da API](docs/api.md) | Endpoints por domínio, perfis (RBAC), formato de resposta |
 | 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
 | 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
