@@ -107,9 +107,9 @@ Não remova esta variável junto com uma atualização do agente sem antes confi
 kubectl exec -n oficina ds/datadog-agent -- ss -lntp | grep 4318
 ```
 
-**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente, e o mesmo span passa a se chamar `http.server.request`. A imagem pinada aqui está acima desse piso, então o comportamento novo vale sem variável de ativação.
+**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente. A imagem 7.83.1 está acima desse piso; nesta solução, as operações vigentes são `http.server.request` para HTTP e `postgresql.query` para PostgreSQL, sem consumidores baseados nos nomes anteriores dos escopos de instrumentação.
 
-A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
+Nenhum dashboard ou monitor da solução consulta `trace.*`: a latência permanece na métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica. A versão do agente não migra os consumidores nem substitui a decisão sobre dimensões e amostragem.
 
 **Atribuição de serviço vem de label, não do resource.** Como o log não passa por OTLP, o agente não enxerga `service.name` e cai no **nome da imagem** — o que fazia a mesma aplicação aparecer como `ecr-oficina-mecanica-app-repo` no log e `oficina-mecanica-api` no APM, quebrando a aba Logs da página do serviço e qualquer métrica derivada de log. As labels de Unified Service Tagging no `spec.template.metadata.labels` resolvem:
 
