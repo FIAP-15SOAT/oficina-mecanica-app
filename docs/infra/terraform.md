@@ -200,7 +200,7 @@ npm ci
 npm run build
 
 # Provisiona a função usando o diretório app/dist gerado pelo build
-cd ../terraform
+cd ../infra
 # Inicializa os providers e o backend remoto desta stack
 terraform init
 # Revisa o plano interativo e aplica os recursos desta stack
