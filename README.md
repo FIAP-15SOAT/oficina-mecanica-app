@@ -98,8 +98,8 @@ Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em container
 
 ```bash
 # Clonar o repositório e entrar na pasta da aplicação
-git clone https://github.com/FIAP-15SOAT/oficina-mecanica-app.git
-cd oficina-mecanica-app/app
+git clone https://github.com/FIAP-15SOAT/oficina-mecanica-api.git
+cd oficina-mecanica-api/app
 
 # (Opcional) Copiar e ajustar variáveis de ambiente
 cp .env.example .env
@@ -267,11 +267,11 @@ O projeto está dividido em repositórios especializados e desacoplados:
 
 | Repositório | Papel | Tecnologias |
 |---|---|---|
-| **[oficina-mecanica-app](https://github.com/FIAP-15SOAT/oficina-mecanica-app)** *(este repositório)* | Aplicação NestJS, APIs, Domínio DDD e Manifestos K8s da aplicação | NestJS, TypeScript, Prisma, Jest, Docker |
+| **[oficina-mecanica-api](https://github.com/FIAP-15SOAT/oficina-mecanica-api)** *(este repositório)* | Aplicação NestJS, APIs, Domínio DDD e Manifestos K8s da aplicação | NestJS, TypeScript, Prisma, Jest, Docker |
 | **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede na AWS (VPC, Subnets públicas/privadas, Gateways) | Terraform, AWS VPC, NAT Gateway, Route Tables |
-| **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR |
-| **[oficina-mecanica-database](https://github.com/FIAP-15SOAT/oficina-mecanica-database)** | Banco de dados relacional gerenciado, **fora do cluster** | Terraform, Amazon RDS, PostgreSQL 16 |
-| **[oficina-mecanica-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway)** | **Ponto de entrada público** da solução: roteamento, integração privada com o EKS e limitação de frequência | Terraform, AWS API Gateway (HTTP API), VPC Link, OpenAPI 3.0 |
+| **[oficina-mecanica-infra-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR |
+| **[oficina-mecanica-infra-database](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database)** | Banco de dados relacional gerenciado, **fora do cluster** | Terraform, Amazon RDS, PostgreSQL 16 |
+| **[oficina-mecanica-api-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway)** | **Ponto de entrada público** da solução: roteamento, integração privada com o EKS e limitação de frequência | Terraform, AWS API Gateway (HTTP API), VPC Link, OpenAPI 3.0 |
 | **[oficina-mecanica-lambda-customer-auth](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth)** | Autenticação externa de clientes por CPF em função serverless | TypeScript, AWS Lambda, Zod, Jest |
 
 ## 📚 Documentação

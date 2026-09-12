@@ -157,7 +157,7 @@ describe('Telemetry (E2E)', () => {
 
     /**
      * Um identificador vazio ou sintético é pior que a ausência do campo:
-     * levaria o destino a tentar correlacionar com um traço que não existe.
+     * levaria o destino a tentar correlacionar com um trace que não existe.
      */
     it('should not emit trace fields on bootstrap lines, which live outside any span', () => {
       const bootstrapLines = capture.bootstrapLines();

@@ -1,8 +1,8 @@
 # ☸️ Kubernetes
 
-Divisão de responsabilidade: base e plataforma via Terraform no repositório [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s); aplicação via manifests em `k8s/`.
+Divisão de responsabilidade: base e plataforma via Terraform no repositório [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s); aplicação via manifests em `k8s/`.
 
-> 🧭 Para a **visão de sistema** (inventário, topologia, fluxo em tempo de execução, segurança e limitações), comece pela [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de manifesto**: como cada workload é configurado e por quê. A definição HCL do PostgreSQL e do metrics-server está em [terraform.md](terraform.md).
+> 🧭 Para a **visão de sistema** (inventário, topologia, fluxo em tempo de execução, segurança e limitações), comece pela [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de manifesto**: como cada workload é configurado e por quê. As stacks Terraform de EKS e RDS são descritas em [terraform.md](terraform.md).
 
 ## Índice
 
@@ -10,7 +10,6 @@ Divisão de responsabilidade: base e plataforma via Terraform no repositório [`
 - [Ownership de recursos](#ownership-de-recursos)
 - [Convenções: labels e wiring de configuração](#convenções-labels-e-wiring-de-configuração)
 - [Recursos: CPU e memória (requests e limits)](#recursos-cpu-e-memória-requests-e-limits)
-- [Armazenamento do PostgreSQL: emptyDir vs EBS CSI](#armazenamento-do-postgresql-ausência-do-ebs-csi-driver-e-uso-de-emptydir)
 - [Banco de Dados Relacional (Amazon RDS)](#banco-de-dados-relacional-amazon-rds)
 - [Manifestos da aplicação](#manifestos-da-aplicação)
 - [Job de migração do banco](#job-de-migração-do-banco)
@@ -21,7 +20,7 @@ Divisão de responsabilidade: base e plataforma via Terraform no repositório [`
 
 Os recursos em Kubernetes foram divididos por responsabilidade:
 
-- Base e dados críticos via Terraform ([`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s))
+- Base e dados críticos via Terraform ([`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s))
   - cluster EKS, ECR, namespace `oficina` e metrics-server (o banco relacional é **Amazon RDS**, provisionado em [stack própria](#banco-de-dados-relacional-amazon-rds), fora do cluster)
 - Aplicação via manifests YAML (`k8s/`)
   - Secret, ConfigMap, Deployments, Services e HPA
@@ -35,10 +34,9 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 | Recurso | Ownership | Onde é definido/aplicado |
 |---|---|---|
-| Namespace `oficina` | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_namespace.tf`) |
-| Banco de dados relacional (Amazon RDS PostgreSQL) | Terraform, em **stack própria** | [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database) — **fora do cluster**; nenhum manifesto em `k8s/` define workload de banco |
-| ~~PostgreSQL no cluster (Secret, Service, StatefulSet com `emptyDir`)~~ | Terraform | **Registro histórico da fase anterior**, não é recurso corrente — ver [Armazenamento do PostgreSQL](#armazenamento-do-postgresql-ausência-do-ebs-csi-driver-e-uso-de-emptydir) |
-| metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
+| Namespace `oficina` | Terraform | [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s) (`terraform/k8s_namespace.tf`) |
+| Banco de dados relacional (Amazon RDS PostgreSQL) | Terraform, em **stack própria** | [`oficina-mecanica-infra-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database) — **fora do cluster**; nenhum manifesto em `k8s/` define workload de banco |
+| metrics-server | Terraform | [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`, referência para deploy manual) | Workflow de CD | `kubectl create secret --from-literal` (imperativo, não renderiza o YAML) em `.github/workflows/cd.yml` |
 | API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | Render de `OTEL_EXPORTER_OTLP_ENDPOINT` a partir de GitHub Actions Variables via `envsubst` + `kubectl apply` em `.github/workflows/cd.yml` |
@@ -52,20 +50,20 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 
 **Labels.** Todos os recursos carregam as labels recomendadas do Kubernetes, o que permite selecioná-los e agrupá-los de forma consistente:
 
-- `app.kubernetes.io/name` — identifica o componente (`oficina-api`, `postgres`, `mailhog`, `db-migrate-job`).
+- `app.kubernetes.io/name` — identifica o componente (`oficina-api`, `mailhog`, `db-migrate-job`).
 - `app.kubernetes.io/part-of` — sempre `oficina-mecanica` (a solução como um todo).
-- `managed-by: terraform` — presente apenas nos recursos provisionados pelo Terraform (`oficina-mecanica-k8s`), distinguindo-os dos manifests aplicados pelo CD.
+- `managed-by: terraform` — presente apenas nos recursos provisionados pelo Terraform (`oficina-mecanica-infra-k8s`), distinguindo-os dos manifests aplicados pelo CD.
 
 **Wiring de configuração.** A configuração da API é injetada como variáveis de ambiente a partir de duas fontes, separando o sensível do não-sensível:
 
 - `configMapKeyRef` → `api-config` (`ConfigMap`, **não sensível**): `NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `CUSTOMER_JWT_ISSUER`, `CUSTOMER_JWT_AUDIENCE`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_LOGS_EXPORTER` e `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
 - `secretKeyRef` → `api-secret` (`Secret`, **sensível**): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CUSTOMER_JWT_PUBLIC_KEY`.
 
-`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` são valores fixos e não secretos (identificadores de emissor/audiência do token externo), por isso vivem no ConfigMap; `CUSTOMER_JWT_PUBLIC_KEY` vai no Secret junto com os demais segredos de assinatura — não porque uma chave pública precise de sigilo, mas para manter o mesmo mecanismo de injeção (`kubectl create secret`) que já cria os outros segredos de JWT. O `QUOTE_DECISION_TOKEN_SECRET` do link de decisão de orçamento (removido — ver [ADR 0004](../adr/0004-autenticacao-de-clientes.md)) foi **substituído** por essas três variáveis.
+`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` são valores fixos e não secretos (identificadores de emissor/audiência do token externo), por isso vivem no ConfigMap; `CUSTOMER_JWT_PUBLIC_KEY` fica no Secret junto com os demais valores usados pela validação de JWT e utiliza o mesmo mecanismo de injeção por `kubectl create secret`.
 
 O Deployment referencia cada chave individualmente (`valueFrom`), o que torna explícito no manifesto de onde vem cada env — em vez de um `envFrom` opaco.
 
-> ⚠️ **Formato do `CUSTOMER_JWT_PUBLIC_KEY` no GitHub Secret.** O job `db-migrate` do `cd.yml` cria o Secret de forma **imperativa** (`kubectl create secret generic ... --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" --dry-run=client -o yaml | kubectl apply -f -`), e não mais renderizando `01-api-secret.yaml` via `envsubst`. Isso é deliberado: `envsubst` sobre um YAML `stringData` injeta o valor cru no arquivo, e uma chave PEM colada no formato natural (com quebras de linha reais) quebra o YAML gerado — a segunda linha começa na coluna 0, sem `:` — derrubando o `kubectl apply` antes da migração e do rollout. `--from-literal` não tem esse problema: aceita o valor como a variável de ambiente o carrega, com quebras de linha reais ou não, e o próprio `kubectl` faz o escape ao montar o Secret. **Por isso o GitHub Secret pode ser cadastrado com o PEM colado no formato natural, multilinha, exatamente como o `openssl` ou a autoridade certificadora o gerou** — não precisa converter para uma linha só.
+> ⚠️ **Formato do `CUSTOMER_JWT_PUBLIC_KEY` no GitHub Secret.** O job `db-migrate` do `cd.yml` cria o Secret de forma **imperativa** (`kubectl create secret generic ... --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" --dry-run=client -o yaml | kubectl apply -f -`). `--from-literal` aceita o PEM com quebras de linha reais e o próprio `kubectl` faz o escape ao montar o Secret. **Por isso o GitHub Secret pode ser cadastrado com o PEM no formato natural, multilinha, exatamente como o `openssl` ou a autoridade certificadora o gerou**.
 >
 > A conversão para uma linha com `\n` literais (a que `app/.env.example` usa) continua necessária **apenas para o `.env` local**: arquivos `.env` não suportam valores multilinha sem aspas, e o parser usado pelo projeto não desfaz esse escape sozinho — por isso `CustomerJwtStrategy` (`customer-jwt.strategy.ts`) aplica `.replaceAll(String.raw`\n`, '\n')` na leitura da env var. Esse mesmo `replaceAll` é um no-op inofensivo quando o valor já chega com quebras de linha reais (como no Secret do cluster), então o código funciona sem alteração nos dois ambientes. Para gerar a versão de uma linha para o `.env`:
 >
@@ -87,25 +85,17 @@ O manifesto contém um placeholder, não um estado fixo. A cada deploy, o workfl
 
 Os manifestos do agente vivem em `k8s/06-datadog-secret.yaml` (chave por `envsubst`, nunca committada), `k8s/07-datadog-agent.yaml` (ServiceAccount + RBAC somente-leitura + DaemonSet) e `k8s/08-datadog-service.yaml` (ClusterIP expondo `4318`). É a **única peça do sistema que conhece o fornecedor**: a aplicação exporta OTLP puro, sem dependência, cabeçalho ou credencial de plataforma.
 
-O CD só aplica o Agent com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de configuração:
-
-1. `node_instance_type` para `t3.medium` em `oficina-mecanica-k8s` (17 pods);
-2. `DD_API_KEY` como secret e `ENABLE_TELEMETRY_COLLECTION=true` como variável do GitHub Actions;
-3. `OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318` como variável do GitHub Actions — o CD transporta o valor até o ConfigMap.
+O CD aplica o Agent quando `vars.ENABLE_TELEMETRY_COLLECTION == 'true'`. O node group usa `t3.medium`, com teto de 17 pods pela configuração atual do VPC CNI. O workflow exige `DD_API_KEY` como secret; `OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318` é a configuração da aplicação para exportar ao Service do Agent.
 
 Os dois controles continuam independentes: `ENABLE_TELEMETRY_COLLECTION` instala ou remove da execução do CD a camada do Agent; `OTEL_EXPORTER_OTLP_ENDPOINT` liga ou desliga o SDK da aplicação. Assim é possível manter apenas logs/métricas de infraestrutura pelo Agent com o endpoint vazio, ou apontar a aplicação para outro coletor OTLP.
 
-⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — traço e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
+⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — trace e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
 
 ### Classificação e atribuição dos logs de contêiner
 
 O log **não** passa por OTLP (`OTEL_LOGS_EXPORTER: none`): o caminho é o stdout do contêiner, lido pelo agente com `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL`. Isso muda duas coisas em relação ao trace e à métrica, que leem o resource do OTel.
 
 **Severidade vem do stream, não do conteúdo.** Sem pipeline de integração, o coletor deriva o status do canal de saída: **stdout → `info`, stderr → `error`**. Escapa disso apenas quem emite JSON com nível próprio — que é o caso da API, cujo envelope carrega `level` (ver [ADR 0002](../adr/0002-logging-estruturado.md)). Todo o resto do node é classificado pelo canal, e é por isso que aparecem como `error` linhas perfeitamente normais de `kube-proxy`, `coredns`, `metrics-server` e `aws-node`: são componentes em Go, e o `klog` escreve em stderr. **Não é defeito da aplicação nem do coletor** — e a contrapartida é que a falha de verdade desses componentes chega pelo mesmo canal, então filtrá-la fora custaria o sinal junto com o ruído. A exclusão feita no agente (`DD_CONTAINER_EXCLUDE_LOGS`) alcança o MailHog, o próprio agente e o `kube-proxy`. Os dois primeiros eram ruído de probe sem contrapartida de sinal; o terceiro é a maior fatia isolada do índice depois da própria aplicação, quase toda classificada como `error` pelo motivo acima. O que o `kube-proxy` registra é sincronização de regra de iptables, e uma falha de rede real aparece antes na aplicação — o que o torna o único dos quatro componentes em Go cuja exclusão não custa sinal junto com o ruído. `coredns`, `metrics-server` e `aws-node` **continuam sendo coletados**: ali a falha do componente é o próprio sinal.
-
-**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente, e o mesmo span passa a se chamar `http.server.request`. A imagem pinada aqui está acima desse piso, então o comportamento novo vale sem variável de ativação.
-
-A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
 
 **`HOST_PROC` é contorno de defeito, não configuração de coleta.** A partir da 7.61.0 o pipeline de ingestão OTLP do agente falha na inicialização com `failed to register process metrics: process does not exist` quando `/proc` do host está montado em `/host/proc` — que é a montagem deste DaemonSet. O sintoma é traiçoeiro: o pod fica `Running` e `Ready`, a porta 4318 aparece no Service, e a aplicação recebe `ECONNREFUSED` porque **nada escuta ali**. `HOST_PROC: /proc` é um dos contornos publicados no [issue #32947](https://github.com/DataDog/datadog-agent/issues/32947).
 
@@ -137,96 +127,12 @@ Cada workload declara `requests` (o que o scheduler reserva) e `limits` (o teto 
 | Workload | Requests (CPU / memória) | Limits (CPU / memória) | Fonte |
 |---|---|---|---|
 | API (`oficina-api`) | `200m` / `256Mi` | `500m` / `512Mi` | `k8s/03-api-deployment.yaml` |
-| ~~PostgreSQL~~ | `100m` / `256Mi` | `500m` / `512Mi` | 🕰️ **Registro histórico da fase anterior** — não há workload de banco no cluster; a persistência corrente é [Amazon RDS](#banco-de-dados-relacional-amazon-rds), cujo dimensionamento é `db.t4g.micro`, fora deste orçamento |
 | MailHog | `50m` / `64Mi` | `200m` / `256Mi` | `k8s/03-mailhog-deployment.yaml` |
 | Job `db-migrate` | — (não define) | — (não define) | `k8s/00-db-migrate-job.yaml` |
 
-## Armazenamento do PostgreSQL: ausência do EBS CSI Driver e uso de `emptyDir`
-
-> 🕰️ **Registro histórico da fase anterior.** Esta seção documenta a tentativa de rodar o PostgreSQL **dentro** do cluster e por que ela não se sustentou. A persistência corrente é [Amazon RDS, fora do cluster](#banco-de-dados-relacional-amazon-rds): não existe StatefulSet, PVC nem `emptyDir` de banco entre os recursos atuais. O registro é mantido porque é ele que justifica a migração.
-
-### O que foi tentado
-
-Foram exploradas duas abordagens com disco EBS antes de chegar ao `emptyDir`.
-
-**Tentativa 1 — StorageClass `gp2` (padrão do EKS)**
-
-A primeira abordagem utilizou a StorageClass `gp2` criada automaticamente pelo EKS, que usa o provisioner in-tree `kubernetes.io/aws-ebs`. O fluxo esperado era:
-
-1. Terraform cria um `PersistentVolumeClaim` com `storageClassName: gp2`
-2. O Kubernetes chama o provisioner para criar um volume EBS `gp2`
-3. O StatefulSet do PostgreSQL monta esse volume em `/var/lib/postgresql/data`
-
-Em clusters EKS 1.23+, porém, o recurso de **CSI Migration** está habilitado por padrão: chamadas ao provisioner in-tree `kubernetes.io/aws-ebs` são redirecionadas internamente para o EBS CSI Driver (`ebs.csi.aws.com`). Com o driver em crash (ver seção abaixo), o redirecionamento nunca se completa e o PVC fica `Pending`.
-
-**Tentativa 2 — StorageClass customizada `gp3`**
-
-A segunda abordagem criou explicitamente uma StorageClass com o provisioner `ebs.csi.aws.com` e o tipo de volume `gp3` (mais performático e mais barato que `gp2`):
-
-```hcl
-resource "kubernetes_storage_class_v1" "gp3" {
-  metadata { name = "gp3" }
-  storage_provisioner    = "ebs.csi.aws.com"
-  volume_binding_mode    = "WaitForFirstConsumer"
-  reclaim_policy         = "Delete"
-  allow_volume_expansion = true
-  parameters = {
-    type      = "gp3"
-    encrypted = "true"
-  }
-}
-```
-
-Por chamar o CSI driver diretamente (sem o nível de indireção da CSI Migration), o problema ficou ainda mais explícito: o PVC nunca avançou de `Pending` porque não há nenhum controller funcional para atender a requisição de provisionamento.
-
-### Por que não funcionou — diagnóstico técnico
-
-**O EBS CSI Driver está instalado, mas sem credenciais IAM.**
-
-O addon `aws-ebs-csi-driver` (v1.60.0) foi implantado no cluster, porém os pods `ebs-csi-controller` entram em `CrashLoopBackOff` imediatamente após o start. O log expõe a causa raiz com precisão:
-
-```
-Failed health check: dry-run EC2 API call failed:
-no EC2 IMDS role found — operation error ec2imds: GetMetadata, context deadline exceeded
-```
-
-O controller tenta obter credenciais AWS de dois lugares, em ordem:
-
-1. **IRSA** (IAM Roles for Service Accounts): uma IAM Role anotada no ServiceAccount `ebs-csi-controller-sa` via `eks.amazonaws.com/role-arn`. O ServiceAccount não possui essa anotação — `serviceAccountRoleArn: NOT SET`.
-2. **Instance Profile do node**: a role IAM do node group (`LabEksNodeRole`) não possui a policy `AmazonEBSCSIDriverPolicy`. Nenhuma das políticas atualmente anexadas (`AmazonEKSWorkerNodePolicy`, `AmazonEKS_CNI_Policy`, `AmazonEC2ContainerRegistryReadOnly`) concede permissão para operações de EBS (`ec2:CreateVolume`, `ec2:AttachVolume`, etc.).
-
-Sem credenciais válidas em nenhum dos dois caminhos, o controller falha no health check interno e reinicia indefinidamente.
-
-**Não foi possível corrigir via Terraform ou CLI** porque o ambiente de laboratório da FIAP (AWS Academy / Learner Lab) bloqueia as permissões IAM necessárias:
-
-| Ação tentada | Resultado |
-|---|---|
-| `iam:AttachRolePolicy` no node role | `AccessDenied` |
-| Definir `serviceAccountRoleArn` no addon via Terraform | Requer `iam:CreateRole` + `iam:CreateOpenIDConnectProvider` para configurar IRSA — também negados |
-
-**Impacto em cadeia no PVC**: ambas as StorageClasses testadas (`gp2` e a `gp3` customizada) usam `volumeBindingMode: WaitForFirstConsumer`, o que significa que o PVC só é vinculado a um volume EBS quando um pod consumidor é agendado. Com o CSI controller em crash, porém, essa distinção se torna irrelevante: nenhum controller está disponível para receber a requisição de provisionamento. O PVC fica em estado `Pending` indefinidamente. O `terraform apply` aguarda o StatefulSet atingir `Ready` e expira com `context deadline exceeded` após o timeout padrão do provider.
-
-### Por que `emptyDir` foi escolhido
-
-`emptyDir` é um volume efêmero criado pelo próprio Kubernetes no node onde o pod roda. Não requer StorageClass, PVC, CSI driver, nem nenhuma permissão IAM. O pod sobe imediatamente.
-
-A troca — perda de dados ao reiniciar o pod — é aceitável neste contexto específico porque:
-
-1. **O deploy é não-destrutivo, mas o `emptyDir` é efêmero**: o CD roda `prisma migrate deploy` (aplica apenas migrations pendentes, sem apagar dados), então os dados persistem entre deploys. Se o pod do PostgreSQL for reagendado, porém, o `emptyDir` é perdido — nesse caso o schema é recriado no próximo deploy e os dados de referência são repopulados automaticamente pelo job de migração (que roda `migrate deploy` + `db seed` idempotente).
-2. **Ambiente acadêmico**: não há dados de usuário reais nem requisito de durabilidade entre reinicializações. O objetivo do projeto é demonstrar a arquitetura e o pipeline, não operar um banco de dados de produção.
-3. **Sem alternativa viável no ambiente**: `hostPath` daria falsa sensação de persistência — nodes EKS gerenciados são substituídos pela AWS em atualizações de AMI ou eventos de scale, perdendo os dados da mesma forma, mas com risco de segurança adicional (acesso ao filesystem do host).
-
-### O que seria necessário em produção
-
-Para um ambiente real, a solução correta seria uma das seguintes, em ordem de preferência:
-
-1. **IRSA para o EBS CSI Driver**: criar uma IAM Role com trust policy para o OIDC provider do cluster e a policy gerenciada `AmazonEBSCSIDriverPolicy`, anotando o ServiceAccount `ebs-csi-controller-sa`. Isso isola as credenciais do driver sem conceder permissões ao node inteiro.
-2. **`AmazonEBSCSIDriverPolicy` no node role**: solução mais simples, porém concede permissões de EBS a todos os processos rodando nos nodes — menos seguro que IRSA.
-3. **Amazon RDS (PostgreSQL gerenciado)**: elimina completamente o problema de armazenamento no Kubernetes e é o padrão recomendado para workloads de produção na AWS. À época esta opção foi descartada pelo budget do laboratório (créditos AWS Academy de US$ 50); **é o caminho adotado desde então** — ver [Banco de Dados Relacional (Amazon RDS)](#banco-de-dados-relacional-amazon-rds), com a menor instância disponível para caber no crédito.
-
 ## Banco de Dados Relacional (Amazon RDS)
 
-A persistência relacional da aplicação é fornecida pelo **Amazon RDS (PostgreSQL)**, gerenciado no repositório dedicado [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database):
+A persistência relacional da aplicação é fornecida pelo **Amazon RDS (PostgreSQL)**, gerenciado no repositório dedicado [`oficina-mecanica-infra-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database):
 
 - Instância gerenciada PostgreSQL 16 (Single-AZ, `db.t4g.micro`, 20 GiB GP3).
 - Alocado nas subnets privadas da VPC, com Security Group restrito ao CIDR da VPC.
@@ -260,7 +166,7 @@ Arquivos em `k8s/`:
 - `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER`, `CUSTOMER_JWT_AUDIENCE` e as chaves de telemetria); o placeholder de `OTEL_EXPORTER_OTLP_ENDPOINT` é renderizado pelo CD a partir da variável homônima do GitHub Actions
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
-- `04-api-service.yaml`: Service **`NodePort`** da API (`3000` → `30080` nos nós). `NodePort` é um superconjunto de `ClusterIP`: o Service continua recebendo um ClusterIP e o DNS interno segue igual. A porta dos nós é o destino do target group do NLB interno provisionado em `oficina-mecanica-k8s`, que por sua vez é o backend da integração privada do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway). O valor precisa casar com `api_node_port` naquele repositório
+- `04-api-service.yaml`: Service **`NodePort`** da API (`3000` → `30080` nos nós). `NodePort` é um superconjunto de `ClusterIP`: o Service continua recebendo um ClusterIP e o DNS interno segue igual. A porta dos nós é o destino do target group do NLB interno provisionado em `oficina-mecanica-infra-k8s`, que por sua vez é o backend da integração privada do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway). O valor precisa casar com `api_node_port` naquele repositório
 - `04-mailhog-service.yaml`: Service `ClusterIP` do MailHog, expondo as portas SMTP (`1025`) e Web UI (`8025`) para acesso interno ao cluster
 - `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2) — ver [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
 
@@ -294,25 +200,25 @@ O `05-api-hpa.yaml` (HPA `autoscaling/v2`) escala o Deployment `oficina-api` com
 | CPU (`Resource`, `averageUtilization`) | `70` |
 | Memória (`Resource`, `averageUtilization`) | `80` |
 
-`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado em `oficina-mecanica-k8s`); sem ele, o HPA não teria dados para decidir.
+`averageUtilization` é medido como **percentual da `request`** do pod — por exemplo, 70% de CPU significa 70% dos `200m` requisitados pela API (≈ `140m` de média entre as réplicas) como gatilho para escalar. O HPA escala quando **qualquer** das duas métricas ultrapassa seu alvo. As métricas vêm do **metrics-server** (provisionado em `oficina-mecanica-infra-k8s`); sem ele, o HPA não teria dados para decidir.
 
 O HPA escala apenas os **pods da API** (`1→5`); a escala do _cluster_ (nodes) está fora do escopo — o node group é mantido fixo em 1 por decisão, como registrado em [overview.md › Limitações](overview.md#limitações-e-o-que-produção-exigiria).
 
-⚠️ **O `maxReplicas: 5` esbarra no teto de pods do node, e isso independe de telemetria.** Pela fórmula padrão do VPC CNI (sem prefix delegation), um `t3.small` permite **11 pods** por node, e os workloads existentes — `coredns` ×2, `aws-node`, `kube-proxy`, `metrics-server`, `mailhog` — já ocupam 6. Sobram 5, sem margem para qualquer agente de coleta. Um `t3.medium` permite 17 pods e 4 GiB, e acomoda 6 + 5 + 1 com folga. Confirmar o número real antes de decidir:
+⚠️ **O `maxReplicas: 5` compartilha a capacidade de um único node com os workloads de sistema.** Pela fórmula padrão do VPC CNI (sem prefix delegation), o `t3.medium` configurado permite **17 pods**. Nesse teto entram `coredns` ×2, `aws-node`, `kube-proxy`, `metrics-server`, `mailhog`, o DaemonSet do Agent e as réplicas da API. O valor observado no cluster pode ser consultado com:
 
 ```bash
 kubectl get node -o jsonpath='{.items[*].status.allocatable.pods}'
 ```
 
-O `node_instance_type` vive em `oficina-mecanica-k8s` — é pré-requisito da camada de coleta, e não uma alteração deste repositório.
+O `node_instance_type` é definido em `oficina-mecanica-infra-k8s`; o valor atual é `t3.medium`.
 
 ## Acesso à aplicação em Kubernetes
 
 A aplicação tem **dois** caminhos de acesso.
 
-**Público**, para uso real: pelo endereço do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway), que alcança o cluster por VPC Link → NLB interno → NodePort `30080`. Nada disso tem IP público: o Service é `NodePort`, mas a porta só é alcançável de dentro da VPC.
+**Público**, para uso real: pelo endereço do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway), que alcança o cluster por VPC Link → NLB interno → NodePort `30080`. Nada disso tem IP público: o Service é `NodePort`, mas a porta só é alcançável de dentro da VPC.
 
-**Diagnóstico**, para testes e validações manuais: `kubectl port-forward`, que continua funcionando exatamente como antes — `NodePort` não substitui o `ClusterIP`, o acrescenta.
+**Diagnóstico**, para testes e validações manuais: `kubectl port-forward`. O Service `NodePort` também possui `ClusterIP`, portanto suporta o túnel e o DNS interno.
 
 ```bash
 kubectl port-forward -n oficina svc/oficina-api 3000:3000

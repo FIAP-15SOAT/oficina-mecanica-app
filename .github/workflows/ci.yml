@@ -134,13 +134,13 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          existing="$(gh pr list --head "${HEAD_BRANCH}" --base master --state open --json number --jq 'length')"
+          existing="$(gh pr list --head "${HEAD_BRANCH}" --base main --state open --json number --jq 'length')"
           if [[ "${existing}" != "0" ]]; then
-            echo "An open PR already exists for ${HEAD_BRANCH} -> master; nothing to do."
+            echo "An open PR already exists for ${HEAD_BRANCH} -> main; nothing to do."
             exit 0
           fi
           gh pr create \
-            --base master \
+            --base main \
             --head "${HEAD_BRANCH}" \
             --title "${HEAD_BRANCH}" \
             --body "Automated PR opened by CI on behalf of @${ACTOR} after all checks passed on \`${HEAD_BRANCH}\`."

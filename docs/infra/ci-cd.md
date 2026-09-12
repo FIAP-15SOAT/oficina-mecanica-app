@@ -17,10 +17,10 @@ A automação está dividida por responsabilidade, em quatro workflows:
 
 | Workflow | Arquivo | Gatilho | Responsabilidade |
 |---|---|---|---|
-| CI | `.github/workflows/ci.yml` | `push` em branches de trabalho (`feature/**`, `fix/**`) | Validar a mudança (inclui `terraform plan`) e abrir o PR |
-| CD | `.github/workflows/cd.yml` | `push` em `master` (pós-merge) + `workflow_dispatch` | Fluxo de entrega da aplicação: **builda e publica a imagem, migra o banco e deploya a app**. Não provisiona infraestrutura |
-| SAST | `.github/workflows/sast.yml` | `pull_request` + `push` em `master` | Análise do SonarCloud (PR + `master`), em paralelo ao CD (não bloqueia o deploy) |
-| DAST | `.github/workflows/dast.yml` | `pull_request` → `master` + `workflow_dispatch` | Scan ativo OWASP ZAP da API em execução (autenticado, via OpenAPI), em paralelo ao CI/CD |
+| CI | `.github/workflows/ci.yml` | `push` em branches de trabalho (`feature/**`, `fix/**`) | Executar lint, testes, build e validação de banco; depois abrir o PR |
+| CD | `.github/workflows/cd.yml` | `push` em `main` (pós-merge) + `workflow_dispatch` | Fluxo de entrega da aplicação: **builda e publica a imagem, migra o banco e deploya a app**. Não provisiona infraestrutura |
+| SAST | `.github/workflows/sast.yml` | `pull_request` + `push` em `main` | Análise do SonarCloud (PR + `main`), em paralelo ao CD (não bloqueia o deploy) |
+| DAST | `.github/workflows/dast.yml` | `pull_request` → `main` + `workflow_dispatch` | Scan ativo OWASP ZAP da API em execução (autenticado, via OpenAPI), em paralelo ao CI/CD |
 
 O CD faz o fluxo de entrega **da aplicação**: publica a imagem, migra o banco e deploya. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD.
 
@@ -30,24 +30,24 @@ O CD faz o fluxo de entrega **da aplicação**: publica a imagem, migra o banco 
 
 ## Fluxo de branch e Pull Request
 
-O CI dispara no `push` de uma branch de trabalho e roda todos os jobs de validação em paralelo (fail-fast). Se todos passam, o job `open-pr` abre um Pull Request para `master` — de forma idempotente (não abre duplicado se já existir PR); em pushes seguintes, o CI reexecuta e o `open-pr` vira no-op.
+O CI dispara no `push` de uma branch de trabalho e roda todos os jobs de validação em paralelo (fail-fast). Se todos passam, o job `open-pr` abre um Pull Request para `main` — de forma idempotente (não abre duplicado se já existir PR); em pushes seguintes, o CI reexecuta e o `open-pr` vira no-op.
 
-Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_request` (ação `synchronize`) já reexecuta a cada novo push numa branch com PR aberto; disparar por `push` **e** por `pull_request` executaria tudo em dobro. Mantendo o gatilho apenas em `push`, cada commit é validado uma única vez — os check-runs ficam gravados no SHA do commit, e a branch protection da `master` (required status checks) os lê para liberar ou bloquear o merge.
+Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_request` (ação `synchronize`) já reexecuta a cada novo push numa branch com PR aberto; disparar por `push` **e** por `pull_request` executaria tudo em dobro. Mantendo o gatilho apenas em `push`, cada commit é validado uma única vez — os check-runs ficam gravados no SHA do commit, e a branch protection da `main` (required status checks) os lê para liberar ou bloquear o merge.
 
 ## Controle de concorrência de runs
 
 | Workflow | `group` | `cancel-in-progress` | Porquê |
 |---|---|---|---|
 | `ci.yml` | `ci-<ref>` | `true` | Um push mais novo torna o run anterior obsoleto; cancelar economiza runners |
-| `cd.yml` | `production` | `false` | Nunca interromper um `terraform apply`/deploy no meio; o próximo run enfileira atrás (protege o state do Terraform e o rollout) |
-| `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`master` torna a análise anterior obsoleta; cancelar economiza runners |
+| `cd.yml` | `production` | `false` | Nunca interromper build, migração ou deploy no meio; o próximo run enfileira atrás (protege a publicação da imagem, o banco e o rollout) |
+| `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`main` torna a análise anterior obsoleta; cancelar economiza runners |
 | `dast.yml` | `dast-<pr ou ref>` | `true` | Um push novo no PR torna o scan anterior obsoleto; cancelar economiza runners |
 
 Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
 
 ## 1) Workflow de CI (`ci.yml`)
 
-<p align="center"><img src="../diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 5 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para master" width="100%"></p>
+<p align="center"><img src="../diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 5 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para main" width="100%"></p>
 
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
@@ -60,15 +60,15 @@ Os 5 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `o
 | 3 | `e2e-tests` | `npm run test:e2e:cov` — E2E com um PostgreSQL descartável via Testcontainers no próprio job |
 | 4 | `build` | `npm run build` — compila o TypeScript |
 | 5 | `db-validation` | Sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed): prova que as migrations aplicam do zero e o seed funciona. Banco descartado com o job — nunca toca ambiente real |
-| 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `master` de forma idempotente (não duplica), autenticado por **GitHub App** (`BOT_APP_ID` + `BOT_PRIVATE_KEY`) para que o `sast.yml` rode no PR desde o primeiro push |
+| 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `main` de forma idempotente (não duplica), autenticado por **GitHub App** (`BOT_APP_ID` + `BOT_PRIVATE_KEY`) para que o `sast.yml` rode no PR desde o primeiro push |
 
-> As validações de Terraform (`fmt`, `validate`, `plan`) são executadas nos repositórios dedicados de infraestrutura ([`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) e [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)).
+> As validações de Terraform (`fmt`, `validate`, `plan`) são executadas nos repositórios dedicados de infraestrutura ([`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) e [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s)).
 
 ## 2) Workflow de CD (`cd.yml`)
 
 <p align="center"><img src="../diagrams/cd-workflow.png" alt="Diagrama do workflow de CD: DAG de 3 jobs — build-push-image, db-migrate e app-deploy" width="100%"></p>
 
-Escopo: `push` em `master` (após o merge) e `workflow_dispatch` (deploy sob demanda). Roda sob `environment: production`, com concorrência que não cancela execução em andamento. Todos os jobs são condicionados por `vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'`. A ordem é um **DAG por `needs:`**: `build-push-image` → `db-migrate` → `app-deploy`.
+Escopo: `push` em `main` (após o merge) e `workflow_dispatch` (deploy sob demanda). O filtro do evento e as condições dos jobs referenciam `main` literalmente; cada job exige também `vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'`. O workflow roda sob `environment: production`, com concorrência que não cancela execução em andamento. A ordem é um **DAG por `needs:`**: `build-push-image` → `db-migrate` → `app-deploy`.
 
 | # | Job | `needs:` | O que faz |
 |---|---|---|---|
@@ -96,14 +96,19 @@ O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert
 | 4 | SonarQube Scan | `SonarSource/sonarqube-scan-action` (`projectBaseDir: app`, autenticado por `SONAR_TOKEN`) |
 | → | *resultado — Quality Gate* | com `sonar.qualitygate.wait=true` o run fica **vermelho** se o gate reprovar (não é um step) |
 
-Análise do SonarCloud num workflow dedicado. O plano do Sonar do projeto analisa apenas a **branch principal (`master`) e Pull Requests** — não branches de trabalho avulsas —, então o SAST **saiu do CI e do CD** e roda aqui:
+Análise do SonarCloud num workflow dedicado. O plano do Sonar do projeto analisa apenas a **branch principal (`main`) e Pull Requests** — não branches de trabalho avulsas —, então o SAST **saiu do CI e do CD** e roda aqui:
 
-- **`pull_request` → `master`**: análise em modo PR (detecção de _New Code_ + decoração do PR).
-- **`push` → `master`**: análise da branch principal (relatório consolidado + o baseline que a análise de PR usa como referência).
+- **`pull_request` → `main`**: análise em modo PR (detecção de _New Code_ + decoração do PR).
+- **`push` → `main`**: análise da branch principal (relatório consolidado + o baseline que a análise de PR usa como referência).
 
-Roda `test:cov` + Sonar Scan (`projectBaseDir: app`). Com `sonar.qualitygate.wait=true` (em `sonar-project.properties`), o run **fica vermelho se o quality gate reprovar**. Por ser um workflow **separado do CD**, uma análise vermelha na `master` **não bloqueia o deploy** (rodam em paralelo). A configuração do Sonar (chave do projeto, organização, exclusões, caminho do `lcov.info`) está em `sonar-project.properties`.
+Roda `test:cov` + Sonar Scan (`projectBaseDir: app`). Com `sonar.qualitygate.wait=true` (em `sonar-project.properties`), o run **fica vermelho se o quality gate reprovar**. Por ser um workflow **separado do CD**, uma análise vermelha na `main` **não bloqueia o deploy** (rodam em paralelo). A configuração do Sonar (chave do projeto, organização, exclusões, caminho do `lcov.info`) está em `sonar-project.properties`.
 
 Como o `open-pr` abre o PR autenticado via **GitHub App** (`BOT_APP_ID` e `BOT_PRIVATE_KEY`) em vez do `GITHUB_TOKEN` nativo, a criação do PR dispara o `sast.yml` normalmente — então a análise/decoração aparece **desde o primeiro push** (tokens de GitHub Apps não sofrem a restrição de cascata do `GITHUB_TOKEN`).
+
+O token é gerado dentro do job e existe somente durante o run. O GitHub App deve
+estar instalado no repositório, com a variable `BOT_APP_ID` e o secret
+`BOT_PRIVATE_KEY` disponíveis ao workflow. A chave privada não deve ser registrada
+em arquivo, log ou variable sem proteção.
 
 ## 4) Workflow de DAST (`dast.yml`)
 
@@ -128,10 +133,10 @@ Como o `open-pr` abre o PR autenticado via **GitHub App** (`BOT_APP_ID` e `BOT_P
 
 Teste dinâmico de segurança (**DAST**) com **OWASP ZAP**, num workflow dedicado — como o SAST, roda em paralelo ao CI/CD e não bloqueia nenhum deles. Diferente do SAST (separado por limitação do plano do Sonar), o DAST é separado por ter um **ciclo de gatilho próprio**:
 
-- **`pull_request` → `master`**: escaneia o candidato a merge — o gate natural do DAST.
+- **`pull_request` → `main`**: escaneia o candidato a merge — o gate natural do DAST.
 - **`workflow_dispatch`**: execução sob demanda.
 
-Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o loop rápido; subir a stack inteira a cada push seria caro e redundante) nem em `push` → `master` (a `master` é protegida — só entra via PR —, então o scan do PR já cobriu aquele código).
+Deliberadamente **não** roda em `push` de branch de trabalho (o CI já cobre o loop rápido; subir a stack inteira a cada push seria caro e redundante) nem em `push` → `main` (a `main` é protegida — só entra via PR —, então o scan do PR já cobriu aquele código).
 
 O job sobe a **stack prod-like inteira** a partir do `app/docker-compose.yml` (`-p dast`: `postgres` + `migrate` = `prisma migrate deploy` + `db seed` + `mailhog` + `api` com `NODE_ENV=production`) e roda o `zap-api-scan.py` (`-f openapi`) **duas vezes** contra a mesma spec em `/api/docs-json`, uma por fluxo de autenticação da API: a primeira faz login em `POST /api/auth/login` com um admin do seed (JWT interno, `JwtAuthGuard`); a segunda assina, ela mesma, um `customer-jwt` RS256 para um usuário externo já semeado, com a chave privada de um par efêmero gerado no início do job (a pública correspondente substitui o `CUSTOMER_JWT_PUBLIC_KEY` da stack antes do `up`). Em ambas, o token é injetado em cada requisição via _replacer_ do ZAP (`ZAP_AUTH_HEADER*`) — sem isso o scan só veria `401`, e é exatamente esse ponto cego que a segunda passagem fecha para as rotas `/api/me/*`: elas exigem `customer-jwt`, não o JWT interno, então sem a segunda passagem nenhum parâmetro ou caminho pós-guard dessas rotas era exercitado.
 
@@ -159,7 +164,7 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para validação e deploy |
 | Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
-| Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `master`) |
+| Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `main`) |
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Variable | `BOT_APP_ID` | `ci.yml` | Identidade do GitHub App que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` (o `GITHUB_TOKEN` não dispara workflows) |
@@ -189,7 +194,7 @@ Os secrets ficam no nível do repositório ou organização porque são consumid
 ### Injeção de secrets da aplicação
 
 - Antes de qualquer chamada AWS/kubectl, o job `db-migrate` roda o passo `Validate required secrets`: se `CUSTOMER_JWT_PUBLIC_KEY` não estiver cadastrado (string vazia) ou não contiver `BEGIN PUBLIC KEY`, o job falha imediatamente com `::error::` explicando a causa. Sem essa checagem, a falha só apareceria depois — no pod da API, como um `TypeError: JwtStrategy requires a secret or key` genérico do `passport-jwt`, já em `CrashLoopBackOff`.
-- O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-database`.
+- O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-infra-database`.
 - No workflow de deploy (`cd.yml`), o job `db-migrate` cria o Secret `api-secret` de forma **imperativa** — `kubectl create secret generic api-secret --from-literal=DATABASE_URL="..." --from-literal=JWT_SECRET="..." ... --dry-run=client -o yaml | kubectl apply -f -` —, compondo a `DATABASE_URL` a partir de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, consumida pela API e pelo Job de migração.
 - O job não renderiza mais `k8s/01-api-secret.yaml` via `envsubst` (esse arquivo continua no repositório só como referência para deploy manual — ver [kubernetes.md](kubernetes.md#deploy-em-kubernetes-manual)). `--from-literal` aceita cada valor exatamente como a variável de ambiente do job o carrega — sem re-escapar quebras de linha —, o que importa para `CUSTOMER_JWT_PUBLIC_KEY`: uma chave PEM colada no formato natural (multilinha) quebraria o YAML gerado por `envsubst`, mas não quebra `--from-literal`.
 - Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:

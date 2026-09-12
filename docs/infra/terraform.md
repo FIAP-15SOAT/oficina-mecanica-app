@@ -1,11 +1,14 @@
 # 🌍 Terraform (IaC)
 
-A infraestrutura é provisionada em três repositórios Terraform independentes:
+A infraestrutura é provisionada em seis repositórios Terraform independentes:
 - [`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base): Fundação de rede AWS (VPC, subnets públicas/privadas, IGW, NAT Gateway).
-- [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database): Banco de dados relacional gerenciado Amazon RDS (PostgreSQL).
-- [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s): Cluster Amazon EKS, Node Group gerenciado, ECR e namespace Kubernetes.
+- [`oficina-mecanica-infra-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database): Banco de dados relacional gerenciado Amazon RDS (PostgreSQL).
+- [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s): Cluster Amazon EKS, Node Group gerenciado, ECR e namespace Kubernetes.
+- [`oficina-mecanica-api-gateway`](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway): HTTP API, VPC Link, integrações, rotas e logs de acesso.
+- [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth): Função de autenticação externa, rede, segredo de assinatura e permissão do Gateway.
+- [`oficina-mecanica-custom-monitoring`](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring): Dashboards, monitores, teste sintético e configuração de tags no Datadog.
 
-> 🧭 Para a **visão de sistema** (inventário completo, topologia de rede, fluxo em tempo de execução, postura de segurança e limitações), consulte a [Visão Geral da Infraestrutura](overview.md). **Este documento é a referência em nível de HCL** dos stacks: como cada recurso é configurado e por quê.
+> 🧭 Para a **visão de sistema** (inventário completo, topologia de rede, fluxo em tempo de execução, postura de segurança e limitações), consulte a [Visão Geral da Infraestrutura](overview.md). Este documento resume os stacks; os arquivos HCL de cada repositório são a fonte executável.
 
 ## Índice
 
@@ -13,8 +16,8 @@ A infraestrutura é provisionada em três repositórios Terraform independentes:
 - [Providers e versionamento](#providers-e-versionamento)
 - [Convenções: tags e nomenclatura](#convenções-tags-e-nomenclatura)
 - [Recursos provisionados — `oficina-mecanica-infra-base`](#recursos-provisionados--oficina-mecanica-infra-base)
-- [Recursos provisionados — `oficina-mecanica-database`](#recursos-provisionados--oficina-mecanica-database)
-- [Recursos provisionados — `oficina-mecanica-k8s`](#recursos-provisionados--oficina-mecanica-k8s)
+- [Recursos provisionados — `oficina-mecanica-infra-database`](#recursos-provisionados--oficina-mecanica-infra-database)
+- [Recursos provisionados — `oficina-mecanica-infra-k8s`](#recursos-provisionados--oficina-mecanica-infra-k8s)
 - [Variáveis e saídas](#variáveis-e-saídas)
 - [Como aplicar localmente](#como-aplicar-localmente)
 
@@ -25,12 +28,15 @@ Cada stack tem **state próprio** num backend S3 (bucket `bkt-oficina-mecanica`,
 | Repositório | Camada | Chave do state (S3) |
 |---|---|---|
 | [`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) | Rede Cloud | `infra/prod-simulated/infra-base/terraform.tfstate` |
-| [`oficina-mecanica-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-database) | Banco de Dados (RDS) | `infra/prod-simulated/database/terraform.tfstate` |
-| [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) | EKS & Workloads | `infra/prod-simulated/k8s/terraform.tfstate` |
+| [`oficina-mecanica-infra-database`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database) | Banco de Dados (RDS) | `infra/prod-simulated/database/terraform.tfstate` |
+| [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s) | EKS & Workloads | `infra/prod-simulated/k8s/terraform.tfstate` |
+| [`oficina-mecanica-api-gateway`](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway) | Entrada pública | `infra/prod-simulated/gateway/terraform.tfstate` |
+| [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) | Autenticação externa | `infra/prod-simulated/lambda-customer-auth/terraform.tfstate` |
+| [`oficina-mecanica-custom-monitoring`](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring) | Monitoramento Datadog | `infra/prod-simulated/custom-monitoring/terraform.tfstate` |
 
 Todos os backends usam `encrypt = true` (criptografia do state em repouso via SSE) e **`use_lockfile = true`** — o **lock nativo do S3** introduzido no Terraform ≥ 1.11.
 
-Os repositórios `oficina-mecanica-database` e `oficina-mecanica-k8s` **consomem** `terraform_remote_state` de `oficina-mecanica-infra-base` para obter `vpc_id`, `vpc_cidr`, `private_subnet_ids` e `public_subnet_ids`.
+Database e Kubernetes consomem o state da infra-base. O Gateway consome infra-base e o listener do NLB exportado por Kubernetes. A Lambda consome infra-base, database e Gateway. O monitoramento consome o endpoint público exportado pelo Gateway.
 
 ## Providers e versionamento
 
@@ -39,9 +45,10 @@ Versões fixadas por faixa (`required_providers` + `required_version`), garantin
 | Provider / ferramenta | Restrição | Onde | Usado por |
 |---|---|---|---|
 | Terraform (core) | `>= 1.11.0` | `*/backend.tf` | todos (o `use_lockfile` exige ≥ 1.11) |
-| `hashicorp/aws` | `>= 6.46.0, < 7.0.0` | `*/providers.tf` | todos |
-| `hashicorp/kubernetes` | `>= 2.32.0, < 3.0.0` | `k8s/providers.tf` | `oficina-mecanica-k8s` |
-| `hashicorp/helm` | `>= 3.0.0, < 4.0.0` | `k8s/providers.tf` | `oficina-mecanica-k8s` |
+| `hashicorp/aws` | `>= 6.46.0, < 7.0.0` | `*/providers.tf` | os seis stacks |
+| `hashicorp/kubernetes` | `>= 2.32.0, < 3.0.0` | `k8s/providers.tf` | `oficina-mecanica-infra-k8s` |
+| `hashicorp/helm` | `>= 3.0.0, < 4.0.0` | `k8s/providers.tf` | `oficina-mecanica-infra-k8s` |
+| `DataDog/datadog` | `>= 4.20.0, < 5.0.0` | `custom-monitoring/providers.tf` | `oficina-mecanica-custom-monitoring` |
 
 ## Convenções: tags e nomenclatura
 
@@ -76,7 +83,7 @@ Versões fixadas por faixa (`required_providers` + `required_version`), garantin
 - **Internet Gateway** e **um único** NAT Gateway + Elastic IP, alocado na `public[0]`.
 - **Route tables**: `rt_public` → `0.0.0.0/0` via IGW; `rt_private` → `0.0.0.0/0` via NAT Gateway.
 
-## Recursos provisionados — `oficina-mecanica-database`
+## Recursos provisionados — `oficina-mecanica-infra-database`
 
 ### Amazon RDS PostgreSQL (`rds.tf` e `security_group.tf`)
 
@@ -85,7 +92,7 @@ Versões fixadas por faixa (`required_providers` + `required_version`), garantin
 - **Security Group**: porta `5432` liberada exclusivamente para a CIDR da VPC (`vpc_cidr`).
 - **Resiliência**: `skip_final_snapshot = true` e `deletion_protection = false` ajustados para o escopo do laboratório AWS Academy.
 
-## Recursos provisionados — `oficina-mecanica-k8s`
+## Recursos provisionados — `oficina-mecanica-infra-k8s`
 
 ### IAM: roles do AWS Academy
 
@@ -96,7 +103,7 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 - **Cluster** versão `1.35` (`var.kubernetes_version`), associado às subnets privadas e públicas lidas via Remote State.
 - **Logs do control plane**: `api`, `audit`, `authenticator`, `controllerManager`, `scheduler` — enviados a um **CloudWatch Log Group** com **retenção de 14 dias**.
 - **Security Group** do control plane: ingress `443` **apenas da CIDR da VPC**; egress liberado.
-- **Node group** gerenciado: instância `t3.small`, `desired = min = max = 1`, agendado **nas subnets privadas**.
+- **Node group** gerenciado: instância `t3.medium`, `desired = min = max = 1`, agendado **nas subnets privadas**.
 
 ### ECR (`ecr.tf`)
 
@@ -107,6 +114,12 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 
 - **Namespace** `oficina` (`k8s_namespace.tf`), com dependência explícita do Node Group (`depends_on = [aws_eks_node_group.eks_node_group]`).
 - **metrics-server** via Helm (`k8s_metrics_server.tf`): `helm_release` em `kube-system`, condicionado por `count = var.enable_metrics_server ? 1 : 0`. Alimenta o HPA da API.
+
+### Entrada privada para o API Gateway (`nlb.tf`)
+
+- **NLB interno** nas subnets privadas, com cross-zone habilitado.
+- **Target Group** do tipo `instance` na NodePort `30080`, com health check HTTP em `/api/health/ready`.
+- **Listener TCP:80**, attachment ao Auto Scaling Group do node group e regra de security group restrita à CIDR da VPC.
 
 ## Variáveis e saídas
 
@@ -121,7 +134,7 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 | `public_subnet_cidrs` | `list(string)` | `["10.0.0.0/24","10.0.1.0/24"]` | Subnets públicas — `validation` exige ≥ 2 CIDRs |
 | `private_subnet_cidrs` | `list(string)` | `["10.0.10.0/24","10.0.11.0/24"]` | Subnets privadas — `validation` exige ≥ 2 CIDRs |
 
-### `oficina-mecanica-database` — variáveis
+### `oficina-mecanica-infra-database` — variáveis
 
 | Variável | Tipo | Default | Finalidade |
 |---|---|---|---|
@@ -131,7 +144,7 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 | `db_instance_class` | `string` | `db.t4g.micro` | Família de instância RDS |
 | `db_allocated_storage` | `number` | `20` | Tamanho do disco em GiB |
 
-### `oficina-mecanica-k8s` — variáveis
+### `oficina-mecanica-infra-k8s` — variáveis
 
 | Variável | Tipo | Default | Finalidade |
 |---|---|---|---|
@@ -141,7 +154,7 @@ O cluster e o node group utilizam roles IAM gerenciadas pelo laboratório (`LabE
 | `kubernetes_version` | `string` | `1.35` | Versão do EKS |
 | `eks_cluster_role_name` | `string` | `""` | Role IAM do cluster (injetada via `vars.EKS_CLUSTER_ROLE_NAME`) |
 | `eks_node_role_name` | `string` | `""` | Role IAM do node group (injetada via `vars.EKS_NODE_ROLE_NAME`) |
-| `node_instance_type` | `string` | `t3.small` | Tipo de instância do node group |
+| `node_instance_type` | `string` | `t3.medium` | Tipo de instância do node group |
 | `node_desired_size` | `number` | `1` | Nodes desejados |
 | `k8s_namespace` | `string` | `oficina` | Namespace compartilhado |
 | `enable_metrics_server` | `bool` | `true` | Instala o metrics-server (habilita o HPA) |
@@ -157,12 +170,27 @@ terraform init
 terraform apply
 
 # 2) Provisiona o banco de dados Amazon RDS
-cd ../../oficina-mecanica-database/terraform
+cd ../../oficina-mecanica-infra-database/terraform
 terraform init
 terraform apply -var="db_password=<SENHA_FORTE>"
 
-# 3) Provisiona o cluster EKS e recursos base
-cd ../../oficina-mecanica-k8s/terraform
+# 3) Provisiona o cluster EKS, ECR, NLB e recursos base
+cd ../../oficina-mecanica-infra-k8s/terraform
 terraform init
 terraform apply -var="eks_cluster_role_name=<ROLE_CLUSTER>" -var="eks_node_role_name=<ROLE_NODE>"
+
+# 4) Provisiona o API Gateway e o caminho privado até o NLB
+cd ../../oficina-mecanica-api-gateway/terraform
+terraform init
+terraform apply
+
+# 5) Provisiona a Lambda de autenticação externa
+cd ../../oficina-mecanica-lambda-customer-auth/terraform
+terraform init
+terraform apply
+
+# 6) Provisiona dashboards, monitores e teste sintético
+cd ../../oficina-mecanica-custom-monitoring/terraform
+terraform init
+terraform apply
 ```

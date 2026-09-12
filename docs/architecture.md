@@ -539,7 +539,7 @@ Quatro instrumentações, nomeadas: `http`, `express` (que é quem resolve `http
 
 ### Correlação log-trace
 
-Um `mixin` do pino (`trace-correlation.ts`) lê o span ativo e injeta `trace_id`, `span_id` e `trace_flags` — a grafia que a convenção define para o mapeamento fora do OTLP, pela mesma razão que já sustenta `otel.scope.name`. Fora de um span os três ficam **ausentes**, nunca vazios nem sintéticos: um identificador fabricado leva o destino a correlacionar com um traço que não existe.
+Um `mixin` do pino (`trace-correlation.ts`) lê o span ativo e injeta `trace_id`, `span_id` e `trace_flags` — a grafia que a convenção define para o mapeamento fora do OTLP, pela mesma razão que já sustenta `otel.scope.name`. Fora de um span os três ficam **ausentes**, nunca vazios nem sintéticos: um identificador fabricado leva o destino a correlacionar com um trace que não existe.
 
 Os três são declarados em `CORRELATION_FIELDS` como qualquer outro atributo — sem isso o `normalizeLogRecord` os descartaria em silêncio, e a correlação seria prometida sem ser entregue.
 
