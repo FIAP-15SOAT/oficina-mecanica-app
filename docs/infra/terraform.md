@@ -166,31 +166,58 @@ Ordem de execução:
 ```bash
 # 1) Provisiona a fundação de rede AWS
 cd oficina-mecanica-infra-base/terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply
 
 # 2) Provisiona o banco de dados Amazon RDS
 cd ../../oficina-mecanica-infra-database/terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply -var="db_password=<SENHA_FORTE>"
 
 # 3) Provisiona o cluster EKS, ECR, NLB e recursos base
 cd ../../oficina-mecanica-infra-k8s/terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply -var="eks_cluster_role_name=<ROLE_CLUSTER>" -var="eks_node_role_name=<ROLE_NODE>"
 
 # 4) Provisiona o API Gateway e o caminho privado até o NLB
 cd ../../oficina-mecanica-api-gateway/terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply
 
-# 5) Provisiona a Lambda de autenticação externa
-cd ../../oficina-mecanica-lambda-customer-auth/terraform
+# 5) Instala dependências e compila a Lambda antes de empacotá-la no Terraform
+cd ../../oficina-mecanica-lambda-customer-auth/app
+# Instala as dependências fixadas no lockfile
+npm ci
+# Gera app/dist, usado pelo archive_file do Terraform
+npm run build
+
+# Provisiona a função usando o diretório app/dist gerado pelo build
+cd ../terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply
 
 # 6) Provisiona dashboards, monitores e teste sintético
 cd ../../oficina-mecanica-custom-monitoring/terraform
+# Inicializa os providers e o backend remoto desta stack
 terraform init
+# Revisa o plano interativo e aplica os recursos desta stack
 terraform apply
 ```
+
+Antes do passo 6, forneça os inputs obrigatórios de monitoring:
+
+- `TF_VAR_datadog_api_key`: API key do Datadog.
+- `TF_VAR_datadog_app_key`: application key com permissões para os recursos gerenciados.
+- `TF_VAR_alert_emails`: string com os destinatários separados por vírgula.
+
+Consulte os roteiros completos da [Lambda](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth/blob/main/docs/terraform.md) e de [monitoring](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/blob/main/README.md) para preparar as demais variáveis e credenciais. Os comandos acima usam os nomes publicados dos repositórios; adapte os caminhos se seus clones locais tiverem nomes diferentes.

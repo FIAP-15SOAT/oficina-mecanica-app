@@ -204,6 +204,8 @@ A entrega segue a separação entre os sete repositórios:
 
 O detalhamento job a job (gates, `environment: production`, `ENABLE_DEPLOY`, secrets) está em [ci-cd.md › Workflow de CD](ci-cd.md#2-workflow-de-cd-cdyml).
 
+Ao desfazer o caminho público, respeite a ordem inversa das dependências: reverter o Service de NodePort antes de retirar o encaminhamento do Gateway deixa o target group do NLB sem destino na porta `30080`.
+
 ## Postura de segurança
 
 - **A aplicação é pública apenas através do API Gateway.** O Service da API é `NodePort`, alcançável a partir dos nós; **não há ALB nem Ingress públicos**. O único caminho externo é o **API Gateway** → VPC Link → **NLB interno** (sem IP público, nas subnets privadas) → NodePort. A regra de security group que libera a `30080` aceita apenas a **CIDR da VPC**, então a porta não é alcançável da internet nem que alguém descubra o IP de um nó. O `kubectl port-forward` (autenticado pelo RBAC) segue como acesso de diagnóstico.

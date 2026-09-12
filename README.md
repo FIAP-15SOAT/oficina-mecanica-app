@@ -274,6 +274,36 @@ O projeto está dividido em repositórios especializados e desacoplados:
 | **[oficina-mecanica-api-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway)** | **Ponto de entrada público** da solução: roteamento, integração privada com o EKS e limitação de frequência | Terraform, AWS API Gateway (HTTP API), VPC Link, OpenAPI 3.0 |
 | **[oficina-mecanica-lambda-customer-auth](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth)** | Autenticação externa de clientes por CPF em função serverless | TypeScript, AWS Lambda, Zod, Jest |
 
+## 📁 Estrutura do Repositório
+
+```text
+.
+├── .github/workflows/           # CI, CD, SAST e DAST
+├── .zap/                       # Apoio ao scan dinâmico
+├── app/
+│   ├── src/
+│   │   ├── domain/              # Entidades e regras de domínio
+│   │   ├── application/         # Casos de uso e portas
+│   │   ├── interface-adapters/  # Controllers, presenters e DTOs
+│   │   └── infrastructure/      # Persistência, serviços, logging e telemetria
+│   ├── prisma/                 # Schema, migrations e seed
+│   ├── test/                    # Testes unitários e E2E
+│   ├── .env.example            # Referência de configuração local
+│   ├── Dockerfile              # Build da imagem da API
+│   ├── docker-compose.yml      # Stack para execução local
+│   └── package.json            # Dependências e comandos npm
+├── collections/                # Coleções para exercitar a API
+├── docs/
+│   ├── adr/                    # Decisões arquiteturais
+│   ├── c4/                     # Diagramas e documentação C4
+│   ├── diagrams/               # PNGs de infraestrutura e pipelines
+│   └── infra/                  # Visão da solução, Kubernetes, Terraform e CI/CD
+├── k8s/                        # Manifests aplicados pelo CD da API
+├── reports/                    # Relatórios versionados da solução
+├── .gitignore
+└── README.md
+```
+
 ## 📚 Documentação
 
 | Documento | Conteúdo |

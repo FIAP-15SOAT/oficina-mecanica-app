@@ -4,7 +4,7 @@
 
 Aceito — 2026-09-05
 
-Complementa o [ADR 0002](0002-logging-estruturado.md) com identificadores reais de trace quando há span ativo. A política de instrumentação dos healthchecks está descrita abaixo, em "Probes de saúde excluídas na entrada", e no [ADR 0003](0003-health-checks.md).
+Supera parcialmente o [ADR 0002](0002-logging-estruturado.md): a restrição anterior de não emitir identificadores de trace é substituída por identificadores reais quando há span ativo. Também corrige a recomendação anterior de instrumentação das probes no [ADR 0003](0003-health-checks.md); a política vigente está descrita abaixo, em "Probes de saúde excluídas na entrada".
 
 ## Contexto
 
@@ -196,6 +196,8 @@ Registradas com o **motivo**, para que não sejam reconsideradas do zero.
 **Isolamento das camadas**
 
 O flat config do ESLint aplica as restrições por camada depois das regras gerais. `domain/`, `application/` e `interface-adapters/` não importam NestJS, Prisma ou OpenTelemetry; as portas de logging e métricas mantêm os detalhes de infraestrutura fora desses anéis.
+
+Essa ordem evita perder as restrições: um bloco posterior que se aplica ao mesmo arquivo pode substituir as opções da mesma regra. As opções específicas de imports por camada precisam prevalecer sobre as gerais.
 
 ## Camada de coleta (versionada aqui, ativada por gate)
 

@@ -24,7 +24,7 @@ A automação está dividida por responsabilidade, em quatro workflows:
 
 O CD faz o fluxo de entrega **da aplicação**: publica a imagem, migra o banco e deploya. Não há acoplamento por `workflow_run` — a ordem é garantida pelas dependências entre jobs (`needs:`) dentro do próprio CD.
 
-**Infraestrutura não é provisionada por este repositório.** Rede, cluster, banco, API Gateway e a função serverless de autenticação externa vivem em stacks Terraform próprias, cada uma com o seu `plan` no CI e o seu `apply` no CD — ver [overview.md › Camadas](overview.md#camadas).
+**Infraestrutura não é provisionada por este repositório.** Rede, cluster, banco, API Gateway e a função serverless de autenticação externa vivem em stacks Terraform próprias, cada uma com o seu `plan` no CI e o seu `apply` no CD — ver [overview.md › Camadas](overview.md#as-sete-camadas-de-provisionamento).
 
 > **Como ler os diagramas.** Nos diagramas de **CI** e **CD**, cada caixa é um **job** (com os principais steps em bullets) e as setas seguem as dependências `needs:`. Nos de **SAST** e **DAST** — que têm um **único job** —, cada caixa é um **step**, executado em sequência no mesmo runner.
 
@@ -43,11 +43,11 @@ Os jobs pesados **não** são disparados por `pull_request`. O evento `pull_requ
 | `sast.yml` | `sast-<pr ou ref>` | `true` | Um push novo no PR/`main` torna a análise anterior obsoleta; cancelar economiza runners |
 | `dast.yml` | `dast-<pr ou ref>` | `true` | Um push novo no PR torna o scan anterior obsoleto; cancelar economiza runners |
 
-Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, o CD não provisiona nem deploya (útil quando o lab do Academy está desligado).
+Todos os jobs do CD rodam sob o GitHub `environment: production` (portão de deploy / regras de proteção) e são gated por `vars.ENABLE_DEPLOY` — o interruptor mestre do fluxo cloud: quando `false`, merges não disparam entrega cloud. O disparo manual em `main` ultrapassa esse interruptor; em outra branch, os jobs são pulados.
 
 ## 1) Workflow de CI (`ci.yml`)
 
-<p align="center"><img src="../diagrams/ci-workflow.png" alt="Diagrama do workflow de CI: os 5 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para main" width="100%"></p>
+![Diagrama do workflow de CI: os 5 jobs de validação (Lint, Unit Tests, E2E Tests, Build, DB Validation) rodam em paralelo a partir do push e convergem no job open-pr, que abre o PR para main](../diagrams/ci-workflow.png)
 
 Escopo: validação de qualquer branch de trabalho, sempre por completo (sem detecção condicional de mudança — determinístico e consistente).
 
@@ -62,21 +62,111 @@ Os 5 jobs de validação rodam **em paralelo** (fail-fast); passando todos, o `o
 | 5 | `db-validation` | Sobe um PostgreSQL efêmero (service container) e roda `npm run db:reset` (migrate reset + seed): prova que as migrations aplicam do zero e o seed funciona. Banco descartado com o job — nunca toca ambiente real |
 | 6 | `open-pr` | `needs:` os 5 jobs acima; abre o PR para `main` de forma idempotente (não duplica), autenticado por **GitHub App** (`BOT_APP_ID` + `BOT_PRIVATE_KEY`) para que o `sast.yml` rode no PR desde o primeiro push |
 
+### Steps de cada job de CI
+
+#### `lint` — Lint
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Setup CI (`./.github/actions/setup-ci`) | Composite local: Node 22 com cache npm, `npm ci` e `prisma generate` em `app/`. |
+| 3 | Lint | Executa `npm run lint`; formatação e dependências proibidas entre camadas reprovam. |
+
+#### `unit-tests` — Unit Tests
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Setup CI (`./.github/actions/setup-ci`) | Composite local: Node 22 com cache npm, `npm ci` e `prisma generate` em `app/`. |
+| 3 | Unit tests with coverage | Executa `npm run test:cov`, com cobertura unitária. |
+
+#### `e2e-tests` — E2E Tests
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Setup CI (`./.github/actions/setup-ci`) | Composite local: Node 22 com cache npm, `npm ci` e `prisma generate` em `app/`. |
+| 3 | E2E tests with coverage | Executa `npm run test:e2e:cov` com PostgreSQL descartável via Testcontainers. |
+
+#### `build` — Build
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Setup CI (`./.github/actions/setup-ci`) | Composite local: Node 22 com cache npm, `npm ci` e `prisma generate` em `app/`. |
+| 3 | Build | Compila/empacota a aplicação em `app/dist` com o comando de build do projeto. |
+| 4 | Telemetry preload smoke | Executa `npm run test:smoke` fora do Jest; verifica o preload/instrumentações no runtime compilado após o build. |
+
+#### `db-validation` — DB Validation
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Setup CI (`./.github/actions/setup-ci`) | Composite local: Node 22 com cache npm, `npm ci` e `prisma generate` em `app/`. |
+| 3 | Reset and seed the throwaway database | Executa `npm run db:reset` sobre o service container PostgreSQL; prova migrations do zero e seed sem tocar o banco real. |
+
+#### `open-pr` — Open Pull Request
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Generate GitHub App Token | Gera `app_token` com `BOT_APP_ID` e `BOT_PRIVATE_KEY`; o próximo step recebe o token como `GH_TOKEN`. |
+| 3 | Open a PR to main if none exists | Consulta `gh pr list` para head → main e cria o PR só se não houver um aberto; erro do CLI reprova o job. |
+
 > As validações de Terraform (`fmt`, `validate`, `plan`) são executadas nos repositórios dedicados de infraestrutura ([`oficina-mecanica-infra-base`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) e [`oficina-mecanica-infra-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s)).
 
 ## 2) Workflow de CD (`cd.yml`)
 
-<p align="center"><img src="../diagrams/cd-workflow.png" alt="Diagrama do workflow de CD: DAG de 3 jobs — build-push-image, db-migrate e app-deploy" width="100%"></p>
+![Diagrama do workflow de CD: DAG de 3 jobs — build-push-image, db-migrate e app-deploy](../diagrams/cd-workflow.png)
 
 Escopo: `push` em `main` (após o merge) e `workflow_dispatch` (deploy sob demanda). O filtro do evento e as condições dos jobs referenciam `main` literalmente; cada job exige também `vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch'`. O workflow roda sob `environment: production`, com concorrência que não cancela execução em andamento. A ordem é um **DAG por `needs:`**: `build-push-image` → `db-migrate` → `app-deploy`.
 
 | # | Job | `needs:` | O que faz |
 |---|---|---|---|
-| 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tags imutáveis (`:sha` e `:latest`); exporta o `image_uri` |
-| 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML); renderiza `OTEL_EXPORTER_OTLP_ENDPOINT` de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` no ConfigMap e o aplica; **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem imutável via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão consultando `.status.succeeded`/`.status.failed` do Job — **não** `kubectl wait --for=condition=Complete`, que espera uma condição só e nunca a veria num Job que quebra com `backoffLimit: 0` (esse recebe `Failed`), fazendo a falha aparecer apenas quando o timeout de 900 s estourasse, com a fila de deploys segurada por `concurrency: production`. Sucesso e falha são detectados na hora; o prazo continua sendo a rede de segurança, e em qualquer saída não-bem-sucedida o passo imprime `describe` + logs do pod |
-| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (imagem imutável) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; quando `ENABLE_TELEMETRY_COLLECTION == 'true'`, valida `DD_API_KEY` e aplica a camada do Datadog Agent; reinicia explicitamente o Deployment da API para carregar as variáveis do ConfigMap e valida o rollout |
+| 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tag por commit (`:sha`) e tag móvel `:latest`; exporta o `image_uri` |
+| 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML); renderiza `OTEL_EXPORTER_OTLP_ENDPOINT` de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` no ConfigMap e o aplica; **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem identificada pela tag do commit via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão consultando `.status.succeeded`/`.status.failed` do Job — **não** `kubectl wait --for=condition=Complete`, que espera uma condição só e nunca a veria num Job que quebra com `backoffLimit: 0` (esse recebe `Failed`), fazendo a falha aparecer apenas quando o timeout de 900 s estourasse, com a fila de deploys segurada por `concurrency: production`. Sucesso e falha são detectados na hora; o prazo continua sendo a rede de segurança, e em qualquer saída não-bem-sucedida o passo imprime `describe` + logs do pod |
+| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (tag do commit) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; quando `ENABLE_TELEMETRY_COLLECTION == 'true'`, valida `DD_API_KEY` e aplica a camada do Datadog Agent; reinicia explicitamente o Deployment da API para carregar as variáveis do ConfigMap e valida o rollout |
+
+### Steps de cada job de CD
+
+#### `build-push-image` — Build and Push App Image
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1. |
+| 3 | Login to Amazon ECR | Autentica Docker no registry ECR e expõe `login_ecr.outputs.registry`. |
+| 4 | Set image metadata | Calcula repositório/tag por commit e publica `image_meta.outputs.image_uri` para os consumidores. |
+| 5 | Build and Push Image | Constrói uma única imagem multi-stage e publica a tag por commit e latest; falha de build/push reprova. |
+
+#### `db-migrate` — DB Migrate & Seed
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Validate required secrets | Confere `CUSTOMER_JWT_PUBLIC_KEY` e seu formato PEM antes de chamadas AWS/Kubernetes; ausência ou formato inválido reprova. |
+| 3 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1. |
+| 4 | Configure kubectl | Configura o kubeconfig do EKS com as credenciais desse job; não herda a sessão do job anterior. |
+| 5 | Render and apply API secrets and ConfigMap | Cria o Secret imperativamente para preservar PEM multilinha e renderiza/aplica o ConfigMap, incluindo o endpoint OTLP. |
+| 6 | Apply DB migration Job | Renderiza o Job com nome exclusivo do run e image_uri da tag do commit; aplica migrate deploy + seed e expõe `db_job`. |
+| 7 | Wait DB migration Job completion | Consulta sucesso/falha do Job com prazo de segurança; erro imprime diagnóstico e reprova imediatamente. |
+| 8 | Show DB migration Job logs | Exibe os logs do Job de migration após a conclusão, para revisão do que executou. |
+
+#### `app-deploy` — App Deploy
+
+| # | Step no workflow | O que faz |
+| --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. |
+| 2 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1. |
+| 3 | Configure kubectl | Configura o kubeconfig do EKS com as credenciais desse job; não herda a sessão do job anterior. |
+| 4 | Render deployment manifest with immutable image | Nome literal do step: fixa image_uri pela tag do commit no Deployment; a política MUTABLE do ECR não fixa digest. |
+| 5 | Apply Kubernetes manifests | Aplica MailHog e os recursos da API (Deployment, Service, HPA) com configuração renderizada. |
+| 6 | Apply telemetry collection layer | Só com ENABLE_TELEMETRY_COLLECTION=true: verifica DD_API_KEY e aplica a coleta do Datadog Agent. |
+| 7 | Wait rollout | Reinicia o Deployment para carregar a configuração e aguarda o rollout; indisponibilidade dentro do prazo reprova. |
 
 A imagem roda **somente a aplicação** (`CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]` — o `--require` é o preload do OpenTelemetry, que precisa rodar antes de `express` e `pg` serem importados). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
+
+A tag por commit facilita rastrear a origem do deploy, mas o ECR atual é `MUTABLE`: uma republicação pode alterar seu digest. A decisão e os trade-offs estão no [ADR 0004 de infra-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s/blob/main/docs/adr/0004-ecr-scan-on-push-tags-mutaveis.md).
 
 ## Seed dos dados de referência
 
@@ -84,7 +174,7 @@ O seed **não** é um passo destrutivo. Como os seeds são idempotentes (`upsert
 
 ## 3) Workflow de SAST (`sast.yml`)
 
-<p align="center"><img src="../diagrams/sast-workflow.png" alt="Diagrama do workflow de SAST: job único sast, cujos steps (Checkout, Setup CI, Unit Tests com cobertura, SonarQube Scan) rodam em sequência e resultam no Quality Gate" width="100%"></p>
+![Diagrama do workflow de SAST: job único sast, cujos steps (Checkout, Setup CI, Unit Tests com cobertura, SonarQube Scan) rodam em sequência e resultam no Quality Gate](../diagrams/sast-workflow.png)
 
 > Este workflow tem **um único job (`sast`)**: no diagrama acima, cada caixa é um **step** (rodam em sequência no mesmo runner), não um job.
 
@@ -112,7 +202,7 @@ em arquivo, log ou variable sem proteção.
 
 ## 4) Workflow de DAST (`dast.yml`)
 
-<p align="center"><img src="../diagrams/dast-workflow.png" alt="Diagrama do workflow de DAST: job único zap-scan com steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()" width="100%"></p>
+![Diagrama do workflow de DAST: job único zap-scan com steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()](../diagrams/dast-workflow.png)
 
 > Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. As caixas *Start stack* e *Wait API ready* correspondem ao step único que sobe a stack e espera o healthcheck do serviço `api`. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama). O diagrama antecede a segunda passagem descrita abaixo — a tabela de steps é a referência completa e atual.
 
@@ -161,15 +251,15 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 
 | Tipo | Nome | Usado em | Finalidade |
 |---|---|---|---|
-| Secret | `AWS_ACCESS_KEY_ID` | `ci.yml`, `cd.yml` | Credencial AWS (Academy) para validação e deploy |
-| Secret | `AWS_SECRET_ACCESS_KEY` | `ci.yml`, `cd.yml` | Segredo complementar da credencial AWS |
+| Secret | `AWS_ACCESS_KEY_ID` | `cd.yml` | Credencial AWS (Academy) para publicar a imagem e acessar o cluster |
+| Secret | `AWS_SECRET_ACCESS_KEY` | `cd.yml` | Segredo complementar da credencial AWS |
 | Secret | `AWS_SESSION_TOKEN` | `cd.yml` | Token temporário de sessão (Academy) — expira e precisa ser renovado a cada lab |
 | Secret | `SONAR_TOKEN` | `sast.yml` | Autenticação do SonarQube Scan (workflow de SAST: PR + `main`) |
 | Secret | `SEED_ADMIN_EMAIL` | `dast.yml` | E-mail do admin do seed usado no login que autentica o scan ZAP (só contra o banco descartável do job) |
 | Secret | `SEED_ADMIN_PASSWORD` | `dast.yml` | Senha do admin do seed para o mesmo login — secret para não expor no arquivo do workflow e mascarar nos logs |
 | Variable | `BOT_APP_ID` | `ci.yml` | Identidade do GitHub App que o job `open-pr` usa para abrir o PR de modo que dispare o `sast.yml` (o `GITHUB_TOKEN` não dispara workflows) |
 | Secret | `BOT_PRIVATE_KEY` | `ci.yml` | Chave privada do mesmo GitHub App |
-| Secret | `DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: consumida no `db-migrate` para compor a `DATABASE_URL` do Secret da aplicação (`api-secret`, criado via `kubectl create secret`) |
+| Secret | `DB_PASSWORD` ou `TF_VAR_DB_PASSWORD` | `cd.yml` | Senha do PostgreSQL RDS: `DB_PASSWORD` tem precedência; o fallback é `TF_VAR_DB_PASSWORD`. O `db-migrate` compõe a `DATABASE_URL` do `api-secret` criado via `kubectl create secret` |
 | Secret | `JWT_SECRET` | `cd.yml` | Assinatura dos access tokens JWT |
 | Secret | `JWT_REFRESH_SECRET` | `cd.yml` | Assinatura dos refresh tokens JWT |
 | Secret | `CUSTOMER_JWT_PUBLIC_KEY` | `cd.yml` | Chave **pública** RS256 usada para verificar o token externo (`customer-jwt`) do Cliente da Oficina — a chave privada correspondente vive na função serverless externa, fora deste repositório. Pode ser cadastrada no formato PEM natural (multilinha); o `db-migrate` cria o Secret via `kubectl create secret --from-literal`, que não exige convertê-la para uma linha só — ver [kubernetes.md](kubernetes.md#convenções-labels-e-wiring-de-configuração) |
@@ -180,7 +270,7 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Variable | `DB_NAME` | `cd.yml` | Nome da base de dados (padrão: `techchallenge`) |
 | Variable | `ENABLE_TELEMETRY_COLLECTION` | `cd.yml` | Quando `true`, aplica o Secret, o DaemonSet e o Service do Datadog Agent |
 | Variable | `OTEL_EXPORTER_OTLP_ENDPOINT` | `cd.yml` | Renderizada no ConfigMap da API; vazia desliga o SDK OpenTelemetry, e preenchida aponta traces e métricas para um coletor OTLP/HTTP |
-| Variable | `PRISMA_GENERATE_DATABASE_URL` | `ci.yml`, `cd.yml` | URL fake usada apenas pelo `prisma generate` (só parseada, nunca conectada); há fallback embutido nos workflows |
+| Variable | `PRISMA_GENERATE_DATABASE_URL` | `ci.yml`, `cd.yml`, `sast.yml` | URL fake usada apenas pelo `prisma generate` (só parseada, nunca conectada); há fallback embutido nos workflows |
 | Variable | `ECR_REPOSITORY` | `cd.yml` | Nome do repositório ECR onde a imagem da aplicação é publicada |
 | Variable | `EKS_CLUSTER_NAME` | `cd.yml` | Nome do cluster EKS usado para `aws eks update-kubeconfig` |
 | Variable | `K8S_DEPLOYMENT_NAME` | `cd.yml` | Nome do Deployment usado no `kubectl rollout status` |

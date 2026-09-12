@@ -59,11 +59,13 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 - `configMapKeyRef` → `api-config` (`ConfigMap`, **não sensível**): `NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `CUSTOMER_JWT_ISSUER`, `CUSTOMER_JWT_AUDIENCE`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_LOGS_EXPORTER` e `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
 - `secretKeyRef` → `api-secret` (`Secret`, **sensível**): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CUSTOMER_JWT_PUBLIC_KEY`.
 
-`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` são valores fixos e não secretos (identificadores de emissor/audiência do token externo), por isso vivem no ConfigMap; `CUSTOMER_JWT_PUBLIC_KEY` fica no Secret junto com os demais valores usados pela validação de JWT e utiliza o mesmo mecanismo de injeção por `kubectl create secret`.
+`CUSTOMER_JWT_ISSUER`/`CUSTOMER_JWT_AUDIENCE` são valores fixos e não secretos (identificadores de emissor/audiência do token externo), por isso vivem no ConfigMap; `CUSTOMER_JWT_PUBLIC_KEY` fica no Secret por uniformidade de injeção com os demais valores usados pela validação de JWT, embora uma chave pública não exija sigilo.
 
 O Deployment referencia cada chave individualmente (`valueFrom`), o que torna explícito no manifesto de onde vem cada env — em vez de um `envFrom` opaco.
 
 > ⚠️ **Formato do `CUSTOMER_JWT_PUBLIC_KEY` no GitHub Secret.** O job `db-migrate` do `cd.yml` cria o Secret de forma **imperativa** (`kubectl create secret generic ... --from-literal=CUSTOMER_JWT_PUBLIC_KEY="${CUSTOMER_JWT_PUBLIC_KEY}" --dry-run=client -o yaml | kubectl apply -f -`). `--from-literal` aceita o PEM com quebras de linha reais e o próprio `kubectl` faz o escape ao montar o Secret. **Por isso o GitHub Secret pode ser cadastrado com o PEM no formato natural, multilinha, exatamente como o `openssl` ou a autoridade certificadora o gerou**.
+>
+> A [documentação de CI/CD](ci-cd.md#injeção-de-secrets-da-aplicação) explica por que interpolar esse PEM diretamente com `envsubst` pode quebrar o YAML e detalha a criação imperativa do Secret.
 >
 > A conversão para uma linha com `\n` literais (a que `app/.env.example` usa) continua necessária **apenas para o `.env` local**: arquivos `.env` não suportam valores multilinha sem aspas, e o parser usado pelo projeto não desfaz esse escape sozinho — por isso `CustomerJwtStrategy` (`customer-jwt.strategy.ts`) aplica `.replaceAll(String.raw`\n`, '\n')` na leitura da env var. Esse mesmo `replaceAll` é um no-op inofensivo quando o valor já chega com quebras de linha reais (como no Secret do cluster), então o código funciona sem alteração nos dois ambientes. Para gerar a versão de uma linha para o `.env`:
 >
@@ -137,6 +139,8 @@ A persistência relacional da aplicação é fornecida pelo **Amazon RDS (Postgr
 - Instância gerenciada PostgreSQL 16 (Single-AZ, `db.t4g.micro`, 20 GiB GP3).
 - Alocado nas subnets privadas da VPC, com Security Group restrito ao CIDR da VPC.
 - Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret` — que precisa carregar os parâmetros descritos em [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
+
+O [ADR de database sobre RDS](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database/blob/main/docs/adr/0001-banco-gerenciado-amazon-rds.md#postgresql-auto-hospedado-dentro-do-cluster-eks) preserva o diagnóstico histórico das tentativas de persistência com EBS CSI no EKS e as razões para abandonar `emptyDir`/`hostPath`.
 
 ### Conexão obrigatoriamente cifrada (TLS)
 
@@ -262,7 +266,7 @@ O MailHog não tem endpoint HTTP de health dedicado, então um **TCP check** na 
 
 ### Três probes, dois endpoints
 
-A API expõe dois endpoints de saúde com semânticas **opostas e deliberadamente separadas** (contrato em [api.md](../api.md#health) e o registro da decisão em [ADR 0003](../adr/0003-health-checks.md)):
+A API expõe dois endpoints de saúde com semânticas **opostas e deliberadamente separadas** (contrato em [api.md](../api.md#exceção-as-rotas-de-saúde) e o registro da decisão em [ADR 0003](../adr/0003-health-checks.md)):
 
 - `GET /api/health/live` — não executa I/O algum. Responde à única pergunta cujo remédio é **reiniciar o processo**.
 - `GET /api/health/ready` — verifica o PostgreSQL (`SELECT 1`, com prazo próprio) e o estado de encerramento. Responde à pergunta de **roteamento de tráfego**.

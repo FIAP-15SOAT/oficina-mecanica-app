@@ -127,7 +127,7 @@ jobs:
         with:
           app-id: ${{ vars.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
-      - name: Open a PR to master if none exists
+      - name: Open a PR to main if none exists
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           HEAD_BRANCH: ${{ github.ref_name }}
