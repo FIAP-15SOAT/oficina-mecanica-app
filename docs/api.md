@@ -27,7 +27,7 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 | POST | `/refresh` | Renovar tokens com refresh token | Público |
 | POST | `/password-reset-confirmations` | Confirmar redefinição de senha com código numérico de 6 dígitos (`email`, `code`, `newPassword`) emitido por um Admin — ver `POST /users/:userId/password-resets` | Público |
 
-> `GET /auth/me` foi **substituído** por `GET /me` (ver seção **Minha Conta** abaixo), que aceita tanto o token interno (`jwt`) quanto o externo (`customer-jwt`) e devolve a identidade do sujeito autenticado independentemente do fluxo.
+> `GET /me` (ver seção **Minha Conta** abaixo) aceita tanto o token interno (`jwt`) quanto o externo (`customer-jwt`) e devolve a identidade do sujeito autenticado independentemente do fluxo.
 
 > `POST /auth/refresh` responde **401** com a mensagem única `Refresh token inválido ou expirado` para todas as causas de falha — token inválido ou expirado, usuário inexistente e usuário desativado. A resposta é deliberadamente idêntica nos três casos para não revelar se o usuário existe; a causa fica registrada apenas no log (ver [Segurança](security.md#proteção-de-dados-nos-logs)).
 
@@ -193,7 +193,7 @@ Todas as rotas autenticadas exigem o header `Authorization: Bearer <token>` (acc
 >
 > A decisão é comunicada pelo **status HTTP**: `200` saudável, `503` indisponível. O corpo é mínimo e **idêntico para toda causa de falha** — `{"status":"ok"}` ou `{"status":"unavailable"}` —, e ambos respondem com `Cache-Control: no-store`. Um consumidor decide lendo apenas o status; ignorar o corpo não altera o resultado.
 >
-> São **públicas por requisito**: um orquestrador não porta credencial de aplicação, e condicionar as probes a um token tornaria a saúde indisponível justamente quando a autenticação estiver comprometida. A proteção é de rede — o Service é `ClusterIP`, sem Ingress —, não por credencial. Detalhes da postura em [Segurança](security.md#endpoints-de-saúde-públicos-e-não-autenticados).
+> São **públicas por requisito**: um orquestrador não porta credencial de aplicação, e condicionar as probes a um token tornaria a saúde indisponível justamente quando a autenticação estiver comprometida. O Service é `NodePort`, sem Ingress público, e o único caminho externo é API Gateway → VPC Link → NLB interno → NodePort. Como o Gateway publica `ANY /api/{proxy+}`, a proteção dessas rotas é o corpo mínimo e sem detalhes operacionais, não uma credencial. Detalhes da postura em [Segurança](security.md#endpoints-de-saúde-públicos-e-não-autenticados).
 >
 > `/live` **não tem** o desfecho `503`: ele não verifica dependência alguma. Com o banco fora, `/live` continua `200` e só `/ready` responde `503` — a instância está viva, apenas não consegue atender. Como o PostgreSQL é **compartilhado por todas as réplicas**, uma indisponibilidade dele deixa o Service sem endpoints em vez de desviar tráfego; isso é comportamento esperado, não defeito. O valor da readiness está na falha **por-réplica** (pool travado numa instância) e no encerramento gracioso.
 

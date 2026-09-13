@@ -133,7 +133,7 @@ O passo a passo completo de rodar os dois repositórios juntos (API + lambda) es
 
 Para exercitar a telemetria localmente, aponte a variável para um coletor OTLP/HTTP (por exemplo `http://localhost:4318`) e use `npm run start:prod`, que carrega o preload como a imagem de produção faz. O `npm run start:dev` **não** carrega o preload: em modo watch o objetivo é a iteração rápida, e a instrumentação de verdade é verificada na stack do compose (ver [testes](./testing.md#telemetria-o-que-o-jest-não-instrumenta)).
 
-⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** deve declarar `service.name`, `service.namespace`, `service.version`, `service.instance.id` nem `deployment.environment.name`: o detector de ambiente vence o resource montado em código e o caminho de log ignora essa variável — traço e log passariam a reportar valores diferentes, em silêncio.
+⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** deve declarar `service.name`, `service.namespace`, `service.version`, `service.instance.id` nem `deployment.environment.name`: o detector de ambiente vence o resource montado em código e o caminho de log ignora essa variável — trace e log passariam a reportar valores diferentes, em silêncio.
 
 ### Logs legíveis em desenvolvimento
 

@@ -3,11 +3,11 @@ name: SAST
 on:
   pull_request:
     branches:
-      - master
+      - main
     types: [opened, synchronize, reopened]
   push:
     branches:
-      - master
+      - main
 
 concurrency:
   group: sast-${{ github.event.pull_request.number || github.ref }}

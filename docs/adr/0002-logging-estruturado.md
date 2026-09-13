@@ -4,7 +4,7 @@
 
 Aceito — 2026-08-22
 
-Parcialmente superado pelo [ADR 0003 — Health checks](0003-health-checks.md) na parte de supressão de ruído das probes. O corpo abaixo é o registro da decisão à época e não é reescrito; a descrição do comportamento corrente está em [`docs/architecture.md`](../architecture.md#supressão-seletiva-das-probes).
+Parcialmente superado pelo [ADR 0003 — Health checks](0003-health-checks.md) na parte de supressão de ruído das probes. O corpo abaixo é o registro da decisão à época e não é reescrito; a descrição do comportamento corrente está em [`docs/observability.md`](../observability.md#supressão-seletiva-das-probes).
 
 Parcialmente superado também pelo [ADR 0005 — OpenTelemetry](0005-opentelemetry.md): a decisão "o sistema não emite identificador de trace ou de span enquanto não houver instrumentação de tracing real" cumpriu seu propósito — evitar campo artificial — e **deixa de valer**. Havendo instrumentação ativa, a linha carrega `trace_id`, `span_id` e `trace_flags` reais, declarados no dicionário como qualquer outro atributo; fora de um span eles continuam **ausentes**, nunca vazios nem sintéticos. `request.id` permanece, com o papel de chave de junção das linhas que existem fora de um span.
 
@@ -32,6 +32,8 @@ Nenhum `transport` é declarado em código e `pino-pretty` nunca é importado de
 **Portabilidade aqui significa um mapeamento padrão, não configuração zero.** Chaves JSON planas chamadas `service.name` são atributos JSON, não um Resource do OpenTelemetry; o Datadog, por exemplo, exige um remapper para tratar `service.name` como seu campo de serviço. A nomenclatura semconv faz desse remapeamento um *mapeamento padrão e documentado* em vez de um pipeline inventado por backend.
 
 **Não existe coletor de logs de aplicação neste repositório hoje** (`infra/aws-base/eks.tf` cobre apenas os logs do control-plane do EKS). Esta mudança faz a aplicação emitir logs corretos; a coleta, o parsing, a promoção de resource, a retenção e o custo pertencem a uma mudança operacional posterior. Dizer isso explicitamente evita a crença falsa de que fazer merge desta mudança coloca os logs em um lugar pesquisável.
+
+> **Correção (2026-09-12, ADR 0005).** O parágrafo acima registra o estado em que este ADR foi aceito. Hoje os manifests `k8s/06-*` a `k8s/08-*` versionam o Datadog Agent e seu endpoint OTLP; o CD aplica essa camada somente quando `ENABLE_TELEMETRY_COLLECTION == 'true'`. O Agent coleta stdout dos containers e recebe traces/métricas OTLP. A aplicação continua escrevendo JSON em stdout e não conhece credenciais nem APIs do fornecedor. Ver [ADR 0005 › Camada de coleta](0005-opentelemetry.md#camada-de-coleta-versionada-aqui-ativada-por-gate).
 
 ### O formato nunca varia por ambiente
 
@@ -87,7 +89,7 @@ O alcance do middleware é **declarado**, não herdado: `buildLoggerParams` fixa
 
 **Consequência, e é um benefício:** as probes do k8s batem em `/api/docs`, que pertence ao Swagger, então as ≈13 000 linhas de probe por dia **nunca chegam ao logger**. O problema de ruído que esta mudança originalmente pretendia suprimir não existe sob esse registro, e a maquinaria de supressão foi deletada em vez de construída.
 
-> **Correção (2026-08-28, ADR 0003).** O parágrafo acima **deixou de valer** com a adoção de endpoints dedicados de health. As probes passaram a apontar para `/api/health/live` e `/api/health/ready`, que vivem no router do Nest e atravessam o `pino-http` como qualquer rota de negócio — a premissa "pertence ao Swagger, logo está fora da cobertura" caiu junto. Com isso o ruído passou a existir de fato (até ~65 000 linhas/dia com o HPA em 5 réplicas) e a maquinaria de supressão foi **construída**, não deletada: `customLogLevel → 'silent'` em `resolveAccessLogLevel`, nunca `autoLogging.ignore`, e só para conclusão **2xx** em caminho que casa exatamente o conjunto fechado de `health.constants.ts` — um `503` continua em `error`. Ver [ADR 0003 › Supressão de access log construída, não herdada](0003-health-checks.md#supressão-de-access-log-construída-não-herdada) e [`architecture.md`](../architecture.md#supressão-seletiva-das-probes).
+> **Correção (2026-08-28, ADR 0003).** O parágrafo acima **deixou de valer** com a adoção de endpoints dedicados de health. As probes passaram a apontar para `/api/health/live` e `/api/health/ready`, que vivem no router do Nest e atravessam o `pino-http` como qualquer rota de negócio — a premissa "pertence ao Swagger, logo está fora da cobertura" caiu junto. Com isso o ruído passou a existir de fato (até ~65 000 linhas/dia com o HPA em 5 réplicas) e a maquinaria de supressão foi **construída**, não deletada: `customLogLevel → 'silent'` em `resolveAccessLogLevel`, nunca `autoLogging.ignore`, e só para conclusão **2xx** em caminho que casa exatamente o conjunto fechado de `health.constants.ts` — um `503` continua em `error`. Ver [ADR 0003 › Supressão de access log construída, não herdada](0003-health-checks.md#supressão-de-access-log-construída-não-herdada) e [`observability.md`](../observability.md#supressão-seletiva-das-probes).
 >
 > O que **permanece verdadeiro** no parágrafo é a fronteira que ele descreve: middleware de módulo não vê o que o body parser, o preflight de CORS e as rotas do Swagger resolvem antes dele. Só a conclusão sobre as probes é que dependia de onde elas apontavam.
 

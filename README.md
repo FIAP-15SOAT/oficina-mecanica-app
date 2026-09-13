@@ -9,12 +9,14 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Cobertura unitária](https://img.shields.io/badge/cobertura-100%25-brightgreen)
 
 </div>
 
 ## 📋 Sobre
 
 Projeto acadêmico da pós-graduação em Arquitetura de Software da FIAP (turma 15SOAT), **evoluído ao longo de 5 fases**. Cada fase parte de um novo cenário de negócio e adiciona uma camada de maturidade, do MVP de domínio à infraestrutura escalável.
+Atualmente composto pela API, pelos serviços de entrada e autenticação, pela infraestrutura AWS e pela observabilidade da solução.
 
 Trata-se de uma API REST para gestão de oficinas mecânicas, construída com **NestJS** e **Clean Architecture + DDD**.
 Substitui o controle manual (anotações e planilhas) de uma oficina de médio porte por um **Sistema Integrado de Atendimento e Execução de Serviços** — do recebimento do veículo à entrega, com orçamento, aprovação do cliente, execução e baixa de estoque orquestrados pelo domínio, contemplando:
@@ -48,7 +50,8 @@ Substitui o controle manual (anotações e planilhas) de uma oficina de médio p
 
 </details>
 
-### Fase 2 — Qualidade, Resiliência e Escalabilidade · fase atual
+<details>
+<summary><strong>Fase 2 — Qualidade, Resiliência e Escalabilidade</strong></summary>
 
 **Problema:** Com o sucesso do MVP vieram o aumento da demanda, a expansão para novas unidades e a necessidade de garantir alta disponibilidade. A oficina precisa reduzir riscos operacionais, automatizar o provisionamento e o deploy do ambiente e sustentar grandes volumes de ordens de serviço em horários de pico, com escalabilidade dinâmica.
 
@@ -66,6 +69,25 @@ Substitui o controle manual (anotações e planilhas) de uma oficina de médio p
 - Pipeline de CI/CD: build, testes, imagem Docker, deploy no cluster e aplicação dos manifestos.
 
 🎥 **Demonstração:** [vídeo da Fase 2 (YouTube)](https://youtu.be/9s8oesicepc)
+
+</details>
+
+### Fase 3 — Segurança, Escalabilidade e Observabilidade
+
+**Desafio:** A expansão da oficina para múltiplas unidades e o crescimento contínuo da base de clientes exigiram segurança, escalabilidade, alta disponibilidade e visibilidade completa do funcionamento do sistema. A direção precisava controlar acessos e autenticações com segurança, detectar gargalos em tempo real, adotar soluções serverless para autenticação e notificações, separar a aplicação em repositórios organizados com CI/CD completo e melhorar a modelagem relacional para garantir consistência e desempenho.
+
+**Objetivo:** Elevar a aplicação a um nível de operação corporativa por meio de práticas de cloud, infraestrutura como código, segurança e observabilidade.
+
+**Requisitos obrigatórios:**
+
+- Um API Gateway para controle e roteamento, rotas sensíveis protegidas por autenticação via CPF e uma Function Serverless responsável por validar o CPF, consultar a existência e o status do cliente no banco e devolver um JWT válido;
+- Quatro repositórios mínimos — Function Serverless, infraestrutura Kubernetes, infraestrutura do banco gerenciado e aplicação no Kubernetes —, cada um com CI/CD e deploy automático; branch principal protegida, merge por Pull Request e deploy das branches de homologação e produção;
+- Banco de dados gerenciado, cluster Kubernetes escalável e recursos provisionados com Terraform;
+- Integração com Datadog ou New Relic para observar latência das APIs, CPU/memória do Kubernetes, health checks, uptime, falhas no processamento de ordens de serviço e logs JSON correlacionados;
+- Dashboards de volume diário de ordens de serviço, tempo médio por status e erros/falhas nas integrações;
+- Documentação arquitetural com diagrama de componentes da solução, diagramas de sequência de autenticação e abertura de ordem de serviço, RFCs/ADRs para decisões relevantes e justificativa do banco acompanhada de modelo ER.
+
+**Estado atual da solução:** O escopo está implementado com AWS API Gateway, Lambda de autenticação por CPF emitindo JWT RS256, Amazon EKS, Amazon RDS PostgreSQL, Terraform e pipelines especializados. Os sete componentes vigentes estão listados em [Ecossistema de Repositórios](#-ecossistema-de-repositórios). A observabilidade usa logs estruturados, OpenTelemetry e Datadog; dashboards e alertas são declarados em Terraform nesta solução.
 
 ## 🧰 Stack
 
@@ -98,8 +120,8 @@ Esse modo sobe todos os serviços — PostgreSQL, MailHog e API — em container
 
 ```bash
 # Clonar o repositório e entrar na pasta da aplicação
-git clone https://github.com/FIAP-15SOAT/oficina-mecanica-app.git
-cd oficina-mecanica-app/app
+git clone https://github.com/FIAP-15SOAT/oficina-mecanica-api.git
+cd oficina-mecanica-api/app
 
 # (Opcional) Copiar e ajustar variáveis de ambiente
 cp .env.example .env
@@ -133,7 +155,7 @@ Para parar e remover os containers:
 docker compose down
 ```
 
-> O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e tem `CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]` — **só a aplicação**. O `--require` carrega o preload do OpenTelemetry **antes** de `express` e `pg` serem importados, que é a única ordem em que a instrumentação consegue aplicar o patch; sem `OTEL_EXPORTER_OTLP_ENDPOINT` ele retorna cedo e não carrega nada (ver [ADR 0005](docs/adr/0005-opentelemetry.md)). Em produção, o CD obtém esse valor de `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza o ConfigMap e reinicia o Deployment; valor vazio mantém o SDK desligado. A migração e o seed rodam num passo próprio: o serviço `migrate` do Compose localmente, e o Job `k8s/00-db-migrate-job.yaml` no CD.
+> O `Dockerfile` é multi-stage (`node:22-alpine` builder + runtime), executa `prisma generate` no build e tem `CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]` — **só a aplicação**. O `--require` carrega o preload do OpenTelemetry **antes** de `express` e `pg` serem importados, que é a única ordem em que a instrumentação consegue aplicar o patch; sem `OTEL_EXPORTER_OTLP_ENDPOINT` ele retorna cedo e não carrega nada (ver [ADR 0005](docs/adr/0005-opentelemetry.md)). Em produção, o CD obtém esse valor de `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza e aplica o ConfigMap; o `app-deploy` aplica o Deployment com a imagem do commit e aguarda o rollout corrente, sem executar `rollout restart`. Valor vazio mantém o SDK desligado. A migração e o seed rodam num passo próprio: o serviço `migrate` do Compose localmente, e o Job `k8s/00-db-migrate-job.yaml` no CD.
 
 > **Para testar:** faça login em `POST /api/auth/login` com um admin do seed (veja todos os usuários em [Como executar localmente › Seed](docs/local-setup.md#seed)). Para explorar os endpoints, use o **Swagger** em `/api/docs` ou importe a **collection do Postman** (`collections/oficina-collection.json` + `collections/oficina-environment.json`) — passo a passo em [Testes › Postman / Newman](docs/testing.md#postman--newman).
 
@@ -257,22 +279,53 @@ A função serverless de autenticação externa **não está neste repositório*
 | `GET /api/stock-movements` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 | `GET /api/stock-reservations` | `JwtAuthGuard`, `RolesGuard` | `ADMIN`, `ATTENDANT` |
 
-> `GET /api/quotes/:id/decisions?token=...` (decisão pública por link assinado) foi **removido** — substituído por `POST /api/me/quotes/:quoteId/decisions`, autenticado.
+> A decisão do cliente usa `POST /api/me/quotes/:quoteId/decisions`, com autenticação `customer-jwt` RS256.
 
 </details>
 
 ## 🌐 Ecossistema de Repositórios
 
-O projeto está dividido em repositórios especializados e desacoplados:
+A solução é composta por **sete repositórios especializados**, com responsabilidades separadas entre aplicação, rede, execução, dados, entrada pública, autenticação e observabilidade. Este README funciona como índice central; os detalhes de provisionamento e operação permanecem nos repositórios responsáveis.
 
-| Repositório | Papel | Tecnologias |
-|---|---|---|
-| **[oficina-mecanica-app](https://github.com/FIAP-15SOAT/oficina-mecanica-app)** *(este repositório)* | Aplicação NestJS, APIs, Domínio DDD e Manifestos K8s da aplicação | NestJS, TypeScript, Prisma, Jest, Docker |
-| **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede na AWS (VPC, Subnets públicas/privadas, Gateways) | Terraform, AWS VPC, NAT Gateway, Route Tables |
-| **[oficina-mecanica-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s)** | Cluster EKS, Node Group, ECR e Plataforma Kubernetes (Metrics Server) | Terraform, Helm, Amazon EKS 1.35, Amazon ECR |
-| **[oficina-mecanica-database](https://github.com/FIAP-15SOAT/oficina-mecanica-database)** | Banco de dados relacional gerenciado, **fora do cluster** | Terraform, Amazon RDS, PostgreSQL 16 |
-| **[oficina-mecanica-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway)** | **Ponto de entrada público** da solução: roteamento, integração privada com o EKS e limitação de frequência | Terraform, AWS API Gateway (HTTP API), VPC Link, OpenAPI 3.0 |
-| **[oficina-mecanica-lambda-customer-auth](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth)** | Autenticação externa de clientes por CPF em função serverless | TypeScript, AWS Lambda, Zod, Jest |
+| Repositório | Responsabilidade | Componente arquitetural | Tecnologias |
+|---|---|---|---|
+| **[oficina-mecanica-api](https://github.com/FIAP-15SOAT/oficina-mecanica-api)** *(este repositório)* | Aplicação, APIs, domínio e manifests dos workloads | API REST / container de aplicação no EKS | NestJS, TypeScript, Prisma, Jest, Docker |
+| **[oficina-mecanica-infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base)** | Fundação de rede compartilhada na AWS | VPC, subnets, IGW, NAT Gateway e rotas | Terraform, AWS VPC |
+| **[oficina-mecanica-infra-k8s](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s)** | Plataforma Kubernetes, registry e entrada privada do cluster | Amazon EKS, Node Group, ECR, NLB e `metrics-server` | Terraform, Helm, Amazon EKS 1.35 |
+| **[oficina-mecanica-infra-database](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database)** | Persistência relacional gerenciada, fora do cluster | Amazon RDS PostgreSQL em subnets privadas | Terraform, Amazon RDS, PostgreSQL 16 |
+| **[oficina-mecanica-api-gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway)** | Entrada pública, roteamento e integração privada com o EKS | AWS API Gateway HTTP API + VPC Link | Terraform, API Gateway, OpenAPI 3.0 |
+| **[oficina-mecanica-lambda-customer-auth](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth)** | Login externo por CPF e emissão de JWT RS256 | Função serverless de autenticação de clientes | TypeScript, AWS Lambda, Zod, Jest |
+| **[oficina-mecanica-custom-monitoring](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring)** | Dashboards, alertas e verificação sintética da solução | Camada de observabilidade no Datadog | Terraform, Datadog, OpenTelemetry |
+
+## 📁 Estrutura do Repositório
+
+```text
+.
+├── .github/workflows/           # CI, CD, SAST e DAST
+├── .zap/                       # Apoio ao scan dinâmico
+├── app/
+│   ├── src/
+│   │   ├── domain/              # Entidades e regras de domínio
+│   │   ├── application/         # Casos de uso e portas
+│   │   ├── interface-adapters/  # Controllers, presenters e DTOs
+│   │   └── infrastructure/      # Persistência, serviços, logging e telemetria
+│   ├── prisma/                 # Schema, migrations e seed
+│   ├── test/                    # Testes unitários e E2E
+│   ├── .env.example            # Referência de configuração local
+│   ├── Dockerfile              # Build da imagem da API
+│   ├── docker-compose.yml      # Stack para execução local
+│   └── package.json            # Dependências e comandos npm
+├── collections/                # Coleções para exercitar a API
+├── docs/
+│   ├── adr/                    # Decisões arquiteturais
+│   ├── c4/                     # Diagramas e documentação C4
+│   ├── diagrams/               # PNGs de infraestrutura e pipelines
+│   └── infra/                  # Visão da solução, Kubernetes, Terraform e CI/CD
+├── k8s/                        # Manifests aplicados pelo CD da API
+├── reports/                    # Relatórios versionados da solução
+├── .gitignore
+└── README.md
+```
 
 ## 📚 Documentação
 
@@ -283,6 +336,7 @@ O projeto está dividido em repositórios especializados e desacoplados:
 | 💻 [Como executar localmente](docs/local-setup.md) | Setup local, MailHog, variáveis de ambiente, seed |
 | 🧪 [Testes](docs/testing.md) | Unitários, E2E, Postman/Newman |
 | 🔒 [Segurança](docs/security.md) | Mitigações no código, proteção de dados nos logs e relatórios (ZAP, SonarQube) |
+| 🔭 [Observabilidade](docs/observability.md) | Logs estruturados, correlação, traces, métricas e degradação segura |
 | 🏗️ [Infra · Visão Geral](docs/infra/overview.md) | Arquitetura da infra como sistema: componentes, ownership e fluxos |
 | 🌍 [Infra · Terraform](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base) | Infraestrutura AWS e Kubernetes (IaC nos repositórios dedicados) |
 | ☸️ [Infra · Kubernetes](docs/infra/kubernetes.md) | Manifests de aplicação (`k8s/`), probes, HPA e deploy |

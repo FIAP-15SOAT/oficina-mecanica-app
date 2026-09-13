@@ -3,7 +3,7 @@ name: CD
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     if: >-
-      github.ref == 'refs/heads/master' &&
+      github.ref == 'refs/heads/main' &&
       (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
@@ -70,7 +70,7 @@ jobs:
     needs:
       - build-push-image
     if: >-
-      github.ref == 'refs/heads/master' &&
+      github.ref == 'refs/heads/main' &&
       (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
@@ -218,7 +218,7 @@ jobs:
       - build-push-image
       - db-migrate
     if: >-
-      github.ref == 'refs/heads/master' &&
+      github.ref == 'refs/heads/main' &&
       (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read

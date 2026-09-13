@@ -4,24 +4,24 @@
 
 Aceito — 2026-09-05
 
-Supera parcialmente o [ADR 0002](0002-logging-estruturado.md) na decisão "nenhum identificador de trace enquanto não houver tracing". A recomendação do [ADR 0003](0003-health-checks.md) sobre volume de spans das probes se mostrou **inexequível** com o SDK JS e foi corrigida naquele ADR, na própria passagem que a continha; a perda que ele advertia é real e está assumida abaixo, em "Probes de saúde excluídas na entrada".
+Supera parcialmente o [ADR 0002](0002-logging-estruturado.md): a restrição anterior de não emitir identificadores de trace é substituída por identificadores reais quando há span ativo. Também corrige a recomendação anterior de instrumentação das probes no [ADR 0003](0003-health-checks.md); a política vigente está descrita abaixo, em "Probes de saúde excluídas na entrada".
 
 ## Contexto
 
-A aplicação produz logs estruturados de alta qualidade — JSON em stdout, nomes e tipos alinhados às Semantic Conventions, esquema fechado por dicionário de campos, redação por sequência de tokens, correlação por `request.id` — e **ninguém os lê**: não existe coletor de log de aplicação neste repositório nem na infraestrutura. O mesmo vale para a saúde: `/api/health/live` e `/api/health/ready` decidem roteamento e restart corretamente, mas nada retém, historiza ou alerta sobre esse estado.
+A aplicação produz logs JSON em stdout, com nomes e tipos alinhados às Semantic Conventions, esquema fechado por dicionário de campos, redação por sequência de tokens e correlação por `request.id` e contexto de span. O SDK exporta métricas e traces por OTLP; o Datadog Agent coleta esses sinais e os logs dos contêineres quando a coleta está habilitada pelo CD.
 
-A lacuna dominante, portanto, **não é instrumentação, é coleta**. Quatro dos cinco requisitos mínimos de observabilidade já teriam sinal suficiente se alguma camada estivesse lendo o que a aplicação emite. O quinto — latência por rota com percentis, e o diagnóstico de *onde* o tempo foi gasto (aplicação ou RDS) — é o único que exige um sinal novo. Além disso, o trabalho exige que o volume de ordens de serviço e o tempo por status sejam **métricas customizadas instrumentadas**, e não relatórios derivados do banco.
+A instrumentação atende à latência por rota com percentis, ao diagnóstico do tempo gasto na aplicação e no RDS e às métricas customizadas de volume de ordens de serviço e tempo por status. Dashboards, alertas e o teste sintético do caminho público são declarados em `oficina-mecanica-custom-monitoring`. Os endpoints `/api/health/live` e `/api/health/ready` controlam reinício e prontidão; não substituem a verificação externa de disponibilidade.
 
 Oito fatos do estado corrente moldam tudo o que segue:
 
 1. A saída de log é um **esquema fechado por construção**: `normalizeLogRecord` descarta toda chave que não conste do `field-registry`, e um E2E afirma `Object.keys(linha) ⊆ dicionário` em cada linha capturada.
-2. A cerca do ESLint sobre `domain/` e `application/` existia, mas **estava inativa** (ver "Consequências").
+2. O ESLint proíbe dependências de NestJS, Prisma e OpenTelemetry em `domain/` e `application/`; métricas atravessam a porta `IMetrics`.
 3. `PrismaService` constrói um `pg.Pool` explícito e o entrega ao `PrismaPg`: o driver que executa as consultas é `pg`.
 4. `main.ts` **não é a composition root sob teste** — o `test-app.helper.ts` monta a aplicação por `configureApp` e nunca o executa.
-5. Ordem de encerramento **já regrediu uma vez, em silêncio**: o `$disconnect()` do Prisma precisou migrar de `onModuleDestroy` para `onApplicationShutdown`.
-6. A infraestrutura não tem coletor e o node é um único `t3.small`.
+5. O `$disconnect()` do Prisma ocorre em `onApplicationShutdown`, preservando a ordem de encerramento da aplicação e da telemetria.
+6. A coleta usa um Datadog Agent por node, aplicado opcionalmente pelo CD, e o node group atual usa um único `t3.medium`.
 7. **O Jest não executa o mecanismo de patch das instrumentações.** O `jest-runtime` tem registro de módulos próprio e não passa pelo carregador do Node, onde `require-in-the-middle` engancha. Nenhuma auto-instrumentação funciona dentro das suítes, e o modo de falha é **silêncio**.
-8. **A query string carrega classe de dado sensível em rotas normais**, e a proteção do log para ela é por classificação do **nome** do parâmetro, não pela forma do valor: `GET /api/customers?document=<CPF>` é um filtro de listagem comum, e à época deste ADR `GET /api/quotes/:id/decisions?token=<assinado>` era `@Public()` e carregava um token de capacidade opaco — que forma nenhuma reconheceria. A remoção daquela rota (PR #65) não muda o fato: qualquer parâmetro com PII ou segredo tem o mesmo problema.
+8. **A query string pode carregar dados sensíveis**, e a proteção do log é por classificação do **nome** do parâmetro, não apenas pela forma do valor. O filtro `GET /api/customers?document=<CPF>` exige redação por chave; tokens opacos também não podem depender de reconhecimento pelo formato.
 
 ## Decisão
 
@@ -49,7 +49,7 @@ A grafia é a que a própria convenção define para o mapeamento fora do OTLP (
 
 ### Probes de saúde excluídas na entrada da requisição
 
-`ignoreIncomingRequestHook` consultando `isHealthProbePath` — um **predicado** compartilhado exportado por `health.constants`, que o supressor de access log também passa a consumir. Compartilhar apenas o conjunto de caminhos deixava o predicado livre para divergir, e divergir significa excluir do traço uma rota diferente da exposta.
+`ignoreIncomingRequestHook` consultando `isHealthProbePath` — um **predicado** compartilhado exportado por `health.constants`, que o supressor de access log também passa a consumir. Compartilhar apenas o conjunto de caminhos deixava o predicado livre para divergir, e divergir significa excluir do trace uma rota diferente da exposta.
 
 Aritmética: 9 verificações/min/réplica ≈ 13 mil/dia; com 5 réplicas, ~65 mil spans de servidor/dia mais ~43 mil spans `pg` filhos da readiness — **~108 mil spans/dia sem leitor**. Neste ambiente as probes são praticamente todo o volume de requisições.
 
@@ -57,7 +57,7 @@ Aritmética: 9 verificações/min/réplica ≈ 13 mil/dia; com 5 réplicas, ~65 
 
 O que sustenta a superação é que não é o único registro. Uma probe que falha continua produzindo (a) a linha de access log em nível `error`, deliberadamente nunca suprimida; (b) o evento `health.degraded`, com `healthFailureCategory`; e (c) o estado da instância no Kubernetes. Se **qualquer um dos três** deixar de existir, esta exclusão deve ser reavaliada.
 
-**A perda assumida, declarada em vez de omitida:** numa verificação que falha deixa de existir a duração do `SELECT 1` em forma de span. Ela já é delimitada pelo `query_timeout` de 2 s e sua causa já consta da categoria do evento — mas o registro honesto da perda é o que impede a decisão de ser reaberta como se nada tivesse sido ponderado. Preservar o traço da probe que falha só existe de verdade com `tail_sampling` num Collector, que esta change não introduz.
+**A perda assumida, declarada em vez de omitida:** numa verificação que falha deixa de existir a duração do `SELECT 1` em forma de span. Ela já é delimitada pelo `query_timeout` de 2 s e sua causa já consta da categoria do evento — mas o registro honesto da perda é o que impede a decisão de ser reaberta como se nada tivesse sido ponderado. Preservar o trace da probe que falha só existe de verdade com `tail_sampling` num Collector, que esta change não introduz.
 
 ### Nenhum span carrega classe de dado que o log não carregue sanitizada
 
@@ -95,7 +95,7 @@ Uma porta `IMetrics` em `application/ports/output/`, catálogo tipado e fechado 
 
 A leitura é **fora da transação**, e isso é decisão, não detalhe. Dentro dela, uma consulta que existe só para observabilidade podia derrubar a operação de negócio junto — e sem conserto local: no PostgreSQL a transação já estaria abortada e o `COMMIT` que o Prisma emite ao fim do callback viraria **ROLLBACK silencioso**, com a API respondendo sucesso. Fora, a falha é absorvida e o que se perde é uma observação de métrica, cuja natureza de melhor esforço é declarada. Some-se que a leitura deixa de prolongar os locks de toda transição.
 
-⚠️ **A leitura acontece mesmo com a telemetria desligada, e isso é custo assumido, não otimização pendente.** `recordWorkOrderTransition` consulta o histórico antes de emitir, e nada nesse caminho pergunta se há destino configurado — com o endpoint vazio os instrumentos são no-op, mas a consulta ao banco roda igual, nas cinco transições que a chamam. Gatear exigiria expor na porta `IMetrics` se ela está ativa, o que é estado de infraestrutura numa porta que existe justamente para escondê-lo. Medido contra o custo real — uma leitura indexada por `work_order_id`, em transições de status que acontecem poucas vezes por ordem —, a troca não se paga. O que **não** é aceitável é documentar o contrário: uma versão anterior deste parágrafo afirmava que a leitura "deixa de acontecer quando a telemetria está desligada", e o código nunca fez isso.
+⚠️ **A leitura acontece mesmo com a telemetria desligada, e isso é custo assumido.** `recordWorkOrderTransition` consulta o histórico antes de emitir, e nada nesse caminho pergunta se há destino configurado — com o endpoint vazio os instrumentos são no-op, mas a consulta ao banco roda igual, nas cinco transições que a chamam. Gatear exigiria expor na porta `IMetrics` se ela está ativa, o que é estado de infraestrutura numa porta que existe justamente para escondê-lo. Medido contra o custo real — uma leitura indexada por `work_order_id`, em transições de status que acontecem poucas vezes por ordem —, a troca não se paga.
 
 **A transição corrente é localizada por identidade, não por posição.** O insert devolve a linha do banco, e é o `id` dela que ancora o cálculo. Tomar "a última linha do histórico" era possível enquanto a leitura vivia dentro da transação; depois do commit, uma transição concorrente já confirmada pode aparecer depois da nossa, e a medida seria de outra operação. A ordenação cronológica de `findByWorkOrderId` continua sendo contrato — as buscas por "primeira" e "mais recente" dependem dela —, e está **declarada na interface** (`IStatusHistoryRepository`) e **afirmada por spec** do repositório Prisma, que verifica o `orderBy` enviado ao banco. As duas coisas foram acrescentadas depois: por duas rodadas este parágrafo afirmou a declaração sem que ela existisse, e o modo de falha é exatamente o que a declaração existe para impedir — trocar a ordem não quebra teste nenhum e corrompe as durações em silêncio.
 
@@ -117,9 +117,9 @@ A **ausência** de `OTEL_LOGS_EXPORTER` faz o `NodeSDK` instanciar um `LoggerPro
 
 ### Atributos de recurso com origem única
 
-`otel.ts` monta o `Resource` a partir de `resolveLoggerConfig()`, de modo que `service.name`, `service.namespace`, `service.version`, `service.instance.id` e `deployment.environment.name` sejam idênticos entre log, traço e métrica **por construção**.
+`otel.ts` monta o `Resource` a partir de `resolveLoggerConfig()`, de modo que `service.name`, `service.namespace`, `service.version`, `service.instance.id` e `deployment.environment.name` sejam idênticos entre log, trace e métrica **por construção**.
 
-⚠️ **`OTEL_RESOURCE_ATTRIBUTES` não pode carregar nenhum dos cinco.** Verificado: o `envDetector` **vence** o resource montado em código, e o caminho de log ignora essa variável — declarar `service.version` ali faria traço e log reportarem versões diferentes, em silêncio, desligando a navegação cruzada entre sinais no destino.
+⚠️ **`OTEL_RESOURCE_ATTRIBUTES` não pode carregar nenhum dos cinco.** Verificado: o `envDetector` **vence** o resource montado em código, e o caminho de log ignora essa variável — declarar `service.version` ali faria trace e log reportarem versões diferentes, em silêncio, desligando a navegação cruzada entre sinais no destino.
 
 ### Encerramento num hook do Nest, com orçamento fechado
 
@@ -161,10 +161,10 @@ Registradas com o **motivo**, para que não sejam reconsideradas do zero.
 | **`@opentelemetry/auto-instrumentations-node`** | ~40 instrumentações por um pacote, incluindo `fs` (span por operação de arquivo). Superfície de runtime e volume por bibliotecas que o projeto não usa. O precedente do projeto é declarar por nome o que se configura por nome. |
 | **`@prisma/instrumentation`** | Exige `previewFeatures = ["tracing"]` no schema, acrescenta spans de fase do engine que ninguém lê, e mede uma camada acima do driver — pior granularidade por mais peso. O `pg.Pool` explícito do `PrismaService` torna `instrumentation-pg` estritamente melhor. |
 | **Logs pelo pipeline OTLP** | Perde o destino síncrono (que existe porque o buffer assíncrono perde as últimas linhas num OOM kill), perde a validação de esquema na saída, cria backpressure de rede no caminho da requisição e duplica volume — o coletor lê o stdout do contêiner de qualquer forma. |
-| **`@opentelemetry/instrumentation-nestjs-core`** | Grava `url.full = req.originalUrl \|\| req.url` num span próprio, **sem nenhum ponto de configuração** — o pacote não expõe sequer um tipo de config. Com o fato 8 do contexto, isso significa exportar a query inteira, CPF de filtro incluído, e nenhuma correção aplicada ao span de servidor alcança esse atributo. O que ele acrescentaria (o nome do handler) já existe no log como `code.function.name`, agora unido ao traço por `trace_id`. |
+| **`@opentelemetry/instrumentation-nestjs-core`** | Grava `url.full = req.originalUrl \|\| req.url` num span próprio, **sem nenhum ponto de configuração** — o pacote não expõe sequer um tipo de config. Com o fato 8 do contexto, isso significa exportar a query inteira, CPF de filtro incluído, e nenhuma correção aplicada ao span de servidor alcança esse atributo. O que ele acrescentaria (o nome do handler) já existe no log como `code.function.name`, agora unido ao trace por `trace_id`. |
 | **`@opentelemetry/instrumentation-pino`** | Três motivos, o decisivo primeiro: pelo fato 7, nenhuma instrumentação é aplicada sob Jest, então "a linha de access log carrega `trace_id`" ficaria **sem cobertura possível** e o E2E que a afirmasse passaria vazio. Além disso declara `pino >=5.14.0 <11` com o projeto em 10.x — um `npm update` de rotina pararia o patch em silêncio. E acrescenta `require-in-the-middle` no caminho do componente que o ADR 0002 mais protege. |
 | **`redactedQueryParamsServer`** | Denylist por **nome de parâmetro**: protege só os nomes que alguém lembrou de listar. É precisamente o modo fail-open que o `field-classifier` foi construído para eliminar. |
-| **Manter `url.query` no span** (refatorando `url-attributes` para expor um sanitizador de query) | É a única forma **correta** de manter a query no traço: parsear no hook para ter os nomes e rodar `sanitizePayload`. Mexe no módulo mais sensível do repositório para recuperar um atributo que o log já tem e que o `trace_id` agora alcança. Fica registrado como o caminho a seguir **se** a query no span vier a ser necessária. |
+| **Manter `url.query` no span** (refatorando `url-attributes` para expor um sanitizador de query) | É a única forma **correta** de manter a query no trace: parsear no hook para ter os nomes e rodar `sanitizePayload`. Mexe no módulo mais sensível do repositório para recuperar um atributo que o log já tem e que o `trace_id` agora alcança. Fica registrado como o caminho a seguir **se** a query no span vier a ser necessária. |
 | **`applyCustomAttributesOnSpan`** em vez de `startIncomingSpanHook` | Roda no `finish`, com o `req` já do Express, então `buildQueryString` funcionaria sem refatoração. Mas **não é chamado** em `_onServerResponseError`: numa requisição abortada ou num erro de transporte o valor cru seria exportado. Fail-open num caminho de exceção é pior que a limitação que ele resolve. |
 | **`ObservableGauge` lendo o banco** | Reporta o **mesmo** valor em cada réplica: com `service.instance.id` distinto por pod, a agregação por soma dá **N× a verdade**. Com o HPA indo de 1 a 5, é uma armadilha permanente em todo dashboard e alerta. Continua sendo a única forma de medir "OS parada há N dias" — fica como melhoria opcional, com a ressalva de agregação. |
 | **Receiver `sqlquery` do Collector / `custom_queries`** | Zero código e lê a fonte da verdade, mas o requisito do trabalho pede métrica **instrumentada**, e exigiria conceder credencial de banco ao coletor. |
@@ -187,15 +187,17 @@ Registradas com o **motivo**, para que não sejam reconsideradas do zero.
 **Negativas e riscos aceitos**
 
 - Numa probe que falha, deixa de existir a duração do `SELECT 1` em forma de span (acima).
-- A query da URL não existe no traço; quem precisar dela salta para a linha de access log pelo `trace_id`.
+- A query da URL não existe no trace; quem precisar dela salta para a linha de access log pelo `trace_id`.
 - `client.address` no span não reproduz a cadeia de `trust proxy` do Express — reimplementá-la seria uma segunda política de segurança a divergir. Em nenhum caso sai texto que não seja um IP.
 - **Overhead medido** sobre a stack do compose (Docker Desktop, 400 amostras em `GET /api/customers` após 40 de aquecimento; valores absolutos não representam produção, a ordem de grandeza sim): com telemetria ligada p50 11,3 ms / p95 23,5 ms / 145,8 MiB; desligada p50 7,9 ms / p95 13,3 ms / 126,1 MiB. O HPA mira 80% de `requests` de 256Mi, ou 204,8 MiB: a margem estreita de ~78 MiB para ~59 MiB, e o gatilho não é cruzado pelo SDK sozinho. Com o carregamento sob demanda, o modo **desligado** voltou à baseline anterior à change — medido, +1 módulo e nenhum módulo do SDK.
 - Numa exportação de métrica que falha, a janela é perdida definitivamente (temporalidade delta, acima).
 - Nenhuma auto-instrumentação é exercitada por Jest: spans reais, `http.route` parametrizado, exclusão das probes e ausência de `url.query` só são verificáveis no smoke fora do Jest, sobre a stack do compose.
 
-**Defeito latente encontrado e corrigido no caminho**
+**Isolamento das camadas**
 
-A cerca do ESLint sobre `domain/` e `application/` estava **inativa**: no flat config, o último bloco que casa o arquivo **substitui** as opções da regra, e um bloco posterior com `files: ['src/**/*.ts']` apagava a proibição de `@nestjs/*`. Só a restrição a `@generated/*` sobrevivia. A ordem foi corrigida e cada bloco por camada passou a repetir o grupo `@generated/*`; a disciplina, verificada, estava sendo cumprida à mão — nenhum arquivo violava a regra que não estava sendo aplicada.
+O flat config do ESLint aplica as restrições por camada depois das regras gerais. `domain/`, `application/` e `interface-adapters/` não importam NestJS, Prisma ou OpenTelemetry; as portas de logging e métricas mantêm os detalhes de infraestrutura fora desses anéis.
+
+Essa ordem evita perder as restrições: um bloco posterior que se aplica ao mesmo arquivo pode substituir as opções da mesma regra. As opções específicas de imports por camada precisam prevalecer sobre as gerais.
 
 ## Camada de coleta (versionada aqui, ativada por gate)
 
@@ -207,8 +209,7 @@ A cerca do ESLint sobre `domain/` e `application/` estava **inativa**: no flat c
               Agente/Collector (DaemonSet) — única peça que conhece o fornecedor
                 receiver OTLP    → APM + trace metrics
                 container logs   → Logs
-                kubelet/cAdvisor → CPU e memória do pod
-                kube-state       → Ready / restarts
+                kubelet/cAdvisor → CPU, memória e restarts
                                                ▼
                                           Plataforma
 ```
@@ -223,7 +224,7 @@ O endpoint aponta para o **DNS do Service** do agente, não para `status.hostIP`
 
 **Uptime não é estado de pod.** Readiness decide roteamento e liveness decide reinício; nenhuma das duas enxerga DNS, load balancer, TLS ou ingress — é possível ter 100% dos pods `Ready` com a API inacessível de fora. O requisito de disponibilidade só se fecha com **monitor sintético externo**, entrega da camada de coleta.
 
-**Pré-requisito de capacidade:** pela fórmula padrão do VPC CNI, `t3.small` permite **11 pods** por node e os workloads existentes já ocupam 6 — ou seja, o `maxReplicas: 5` do HPA já não cabe hoje, sem agente nenhum. `t3.medium` permite 17. Confirmar com `kubectl get node -o jsonpath='{.status.allocatable.pods}'`.
+**Capacidade:** pela fórmula padrão do VPC CNI, o `t3.medium` configurado permite **17 pods** por node. Workloads de sistema, MailHog, Agent e as réplicas da API compartilham esse teto. O valor exposto pelo cluster pode ser consultado com `kubectl get node -o jsonpath='{.items[*].status.allocatable.pods}'`.
 
 ## Referências
 
