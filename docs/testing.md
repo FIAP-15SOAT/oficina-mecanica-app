@@ -87,16 +87,22 @@ await request(ctx.httpServer)
 
 ## Postman / Newman
 
-A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica — Local"**.
+A coleção e o environment estão em `collections/`. Importe `collections/oficina-collection.json` e `collections/oficina-environment.json` no Postman e selecione o environment **"Oficina Mecânica"**.
 
-O environment já vem com `adminEmail` e `adminPassword` preenchidos com um dos usuários do seed; confira/ajuste essas variáveis caso queira autenticar com outro usuário criado pelo seed.
+`baseUrl` representa somente a origem, sem `/api`. O valor padrão é `http://localhost:3000`; as requests da aplicação acrescentam `/api` explicitamente, enquanto o login serverless usa `/customer-auth/login`. Quando o API Gateway estiver implantado, substitua apenas `baseUrl` pela URL base efêmera do gateway. Não é necessário criar outro environment nem manter uma variável exclusiva para o gateway.
 
-Execute os grupos nesta ordem: **Auth → Usuários → Serviços → Peças e Insumos → Clientes → Acesso Externo de Clientes → Minha Conta → Veículos → Ordens de Serviço → Orçamentos**.
+O environment já vem com `adminEmail`/`adminPassword` e `customerCpf`/`customerPassword` correspondentes ao seed. As senhas e os três tokens (`authToken`, `refreshToken` e `customerJwtToken`) permanecem com tipo `secret`; os identificadores produzidos pelos scripts também estão declarados para que a importação resolva todas as variáveis da collection.
 
-O grupo **Minha Conta** exercita `/api/me/*` com o token externo (`customer-jwt`) e por isso não usa o bearer padrão da collection (`{{authToken}}`) — cada requisição sobrescreve a autenticação para `Bearer {{customerJwtToken}}`. `customerJwtToken` no `collections/oficina-environment.json` vem **vazio por padrão**: preencha a variável do environment antes de rodar esse grupo, com um dos dois caminhos:
+A collection mantém as pastas de domínio sem numeração ou agrupadores adicionais. Execute-as de cima para baixo: **Health → Autenticação → Gestão de Usuários → Gestão de Serviços → Gestão de Peças e Insumos → Gestão de Clientes → Validação → Acesso Externo de Clientes → Gestão de Veículos → Gestão de Ordens de Serviço → Gestão de Orçamentos → Minha Conta → Gestão de Estoque - Relatórios → Relatórios e Métricas**. Essa ordem mantém as requests produtoras antes das consumidoras, inclusive `Minha Conta` fica depois de ordens e orçamentos porque seus cenários consomem `workOrderId` e `quoteId` produzidos anteriormente.
 
-- **Token de teste manual** — mesmo mecanismo de `test/helpers/customer-jwt.helper.ts`, descrito acima (não exige a lambda rodando).
-- **Token real da lambda** — com [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) clonada e configurada contra este mesmo banco, `npm run invoke` lá devolve um `customer-jwt` válido (use o CPF/senha de um dos usuários externos do seed, ver [Como executar localmente › Seed](local-setup.md#seed)) — cole o token retornado em `customerJwtToken`.
+O grupo **Autenticação** mantém os dois fluxos separados: o login interno grava `authToken` e `refreshToken`, e `POST /customer-auth/login` é `noauth` e grava somente `customerJwtToken`. O grupo **Minha Conta** exercita `/api/me/*` com `Bearer {{customerJwtToken}}`, sobrescrevendo o bearer interno herdado da collection.
+
+Com apenas a API local em execução, ignore o login serverless e preencha `customerJwtToken` por um destes caminhos:
+
+- **Token de teste manual** — use o mesmo mecanismo de `test/helpers/customer-jwt.helper.ts`, descrito acima; a Lambda não precisa estar em execução.
+- **Token real da Lambda local** — configure [`oficina-mecanica-lambda-customer-auth`](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth) contra o mesmo banco e execute `npm run invoke`; use `customerCpf`/`customerPassword` do seed e copie o `accessToken` retornado para `customerJwtToken`.
+
+Com o gateway implantado, basta trocar `baseUrl` e executar também o login serverless; o script preenche `customerJwtToken` automaticamente.
 
 Ou via linha de comando com a aplicação rodando:
 

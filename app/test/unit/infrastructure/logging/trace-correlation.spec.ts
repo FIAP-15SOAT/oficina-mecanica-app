@@ -18,7 +18,7 @@ describe('buildTraceCorrelation', () => {
 
   /**
    * Ausência é o contrato: um identificador vazio ou sintético é pior que a
-   * falta do campo, porque leva o destino a correlacionar com um traço que não
+   * falta do campo, porque leva o destino a correlacionar com um trace que não
    * existe. É o caso das linhas de bootstrap e de encerramento.
    */
   it('should return an empty object when there is no active span', () => {
