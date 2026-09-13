@@ -20,6 +20,16 @@ describe('tokenize', () => {
     expect(tokenize('userCPF')).toEqual(['user', 'cpf']);
   });
 
+  it.each([
+    ['APIKey', ['api', 'key']],
+    ['APIKeyURLValue', ['api', 'key', 'url', 'value']],
+    ['ABcDEf', ['a', 'bc', 'd', 'ef']],
+    ['ÁÉName', ['áé', 'name']],
+    ['API', ['api']],
+  ])('should preserve acronym tokenization for %s', (name, expected) => {
+    expect(tokenize(name)).toEqual(expected);
+  });
+
   it('should return an empty sequence for an empty name', () => {
     expect(tokenize('')).toEqual([]);
   });
@@ -27,6 +37,11 @@ describe('tokenize', () => {
 
 describe('classifyFieldName', () => {
   const anywhere = { isRootPosition: false };
+
+  it('should mask a name when no classification context is supplied', () => {
+    expect(classifyFieldName('name')).toBe('pii');
+    expect(classifyFieldName('name', undefined)).toBe('pii');
+  });
 
   it.each([
     'password',
@@ -139,9 +154,9 @@ describe('classifyFieldName — nome sem token algum', () => {
 });
 
 /**
- * `ACRONYM_BOUNDARY` é quadrático, e a classificação roda em toda chave do
- * payload — nome de campo é conteúdo controlado pelo cliente. O corte no
- * tokenizador é o que mantém o custo proporcional ao limite.
+ * A classificação roda em toda chave do payload — nome de campo é conteúdo
+ * controlado pelo cliente. O corte no tokenizador mantém o custo proporcional
+ * ao limite mesmo com a fronteira de acrônimo linear.
  */
 describe('tokenize — custo limitado pelo nome do campo', () => {
   it('should bound the field name before splitting it', () => {
@@ -217,9 +232,8 @@ describe('classifyFieldName — qualificador terminal neutro', () => {
 
 /**
  * A NFKC **expande**: 128 vezes `Ⅷ` (U+2167) viram 512 maiúsculas. Com o corte
- * aplicado antes da normalização, o `ACRONYM_BOUNDARY` — que é quadrático —
- * voltava a ver 4x o tamanho contratado, e um corpo de 100 KB dessas chaves
- * bloqueava o event loop por mais de 100 ms.
+ * aplicado apenas antes da normalização, a tokenização voltaria a ver 4x o
+ * tamanho contratado. O limite deve valer também para a forma expandida.
  */
 describe('tokenize — a NFKC não pode furar o limite', () => {
   const EXPANDING_CHARACTER = 'Ⅷ';

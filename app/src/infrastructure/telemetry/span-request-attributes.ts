@@ -38,11 +38,14 @@ function buildAttributes(request: IncomingMessage): Attributes {
   };
 }
 
-export function extractRequestPathname(url: string | undefined): string {
-  const raw = url ?? '';
-  const queryStart = raw.indexOf('?');
+export function extractRequestPathname(url: string | null = ''): string {
+  if (url === null) {
+    return '';
+  }
 
-  return queryStart === -1 ? raw : raw.slice(0, queryStart);
+  const queryStart = url.indexOf('?');
+
+  return queryStart === -1 ? url : url.slice(0, queryStart);
 }
 
 /**

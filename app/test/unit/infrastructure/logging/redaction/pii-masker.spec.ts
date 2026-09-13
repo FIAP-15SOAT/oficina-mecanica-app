@@ -25,6 +25,35 @@ describe('maskScalar', () => {
     expect(maskScalar('maria.silva@gmail.com')).toBe('ma***va@gmail.com');
   });
 
+  it.each([
+    ['maria@a.b', 'm***@a.b'],
+    ['maria@a..b', 'm***@a..b'],
+    ['maria@..b', 'm***@..b'],
+    ['maria@a.b.c', 'm***@a.b.c'],
+    ['maria@a.b.', 'm***@a.b.'],
+    ['maria@a..', 'm***@a..'],
+    ['maria@.b', 'ma***.b'],
+    ['maria@a.', 'ma***a.'],
+    ['maria@domain', 'ma***in'],
+    ['maria@@a.b', 'ma***.b'],
+    ['maria@a b.c', 'ma***.c'],
+    ['maria@a.b\n', 'ma***b\n'],
+    ['maria@a.b\t', 'ma***b\t'],
+  ])('should preserve masking for the e-mail candidate %p', (value, expected) => {
+    expect(maskScalar(value)).toBe(expected);
+  });
+
+  it('should bound the runtime for a dot-heavy invalid e-mail', () => {
+    const value = `maria@${'.'.repeat(30_000)} `;
+    const startedAt = process.hrtime.bigint();
+
+    const masked = maskScalar(value);
+    const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+
+    expect(masked).toBe('ma***. ');
+    expect(elapsedMs).toBeLessThan(100);
+  });
+
   it('should reveal a single leading character between four and six characters', () => {
     expect(maskScalar('Lucas')).toBe('L***');
     expect(maskScalar('Ana2')).toBe('A***');

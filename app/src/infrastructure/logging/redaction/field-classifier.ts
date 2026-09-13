@@ -15,11 +15,11 @@ const NON_ALPHANUMERIC = /[^\p{L}\p{N}]+/gu;
 const CAMEL_BOUNDARY = /([\p{Ll}\p{N}])(\p{Lu})/gu;
 
 /**
- * Fronteira de acrônimo: uma sequência de maiúsculas seguida de maiúscula+minúscula.
+ * Fronteira de acrônimo: a última maiúscula seguida de maiúscula+minúscula.
  * Sem ela, `APIKey` viraria o token único `apikey` e escaparia da regra
  * `['api', 'key']`. Com ela, `APIKey` → `API Key` → `['api', 'key']`.
  */
-const ACRONYM_BOUNDARY = /(\p{Lu}+)(\p{Lu}\p{Ll})/gu;
+const ACRONYM_BOUNDARY = /(\p{Lu})(\p{Lu}\p{Ll})/gu;
 
 export const MAX_FIELD_NAME_LENGTH = 128;
 
@@ -142,7 +142,7 @@ export function extractResourceSegment(urlPath: string): string | undefined {
 
 export function classifyFieldName(
   name: string,
-  context: ClassificationContext = { isRootPosition: false },
+  context?: ClassificationContext,
 ): FieldClassification {
   const bounded = boundFieldName(name);
 
@@ -183,10 +183,11 @@ function stripNeutralQualifiers(tokens: readonly string[]): readonly string[] {
   return end === tokens.length ? tokens : tokens.slice(0, end);
 }
 
-function isExemptCatalogName(tokens: readonly string[], context: ClassificationContext): boolean {
+function isExemptCatalogName(tokens: readonly string[], context?: ClassificationContext): boolean {
   return (
     tokens.length === 1 &&
     tokens[0] === 'name' &&
+    context !== undefined &&
     context.isRootPosition &&
     context.resource !== undefined &&
     CATALOG_NAME_EXEMPT_RESOURCES.includes(context.resource)

@@ -281,7 +281,7 @@ function resolveUniqueKey(
 
   let occurrence = previous + 1;
 
-  while (Object.prototype.hasOwnProperty.call(result, `${key}~${occurrence}`)) {
+  while (Object.hasOwn(result, `${key}~${occurrence}`)) {
     occurrence += 1;
   }
 

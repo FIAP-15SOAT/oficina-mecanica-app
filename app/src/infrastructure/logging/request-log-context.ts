@@ -23,7 +23,7 @@ export function assignRequestLogContext(response: unknown, patch: RequestLogCont
     return;
   }
 
-  locals[REQUEST_LOG_CONTEXT] = { ...(locals[REQUEST_LOG_CONTEXT] ?? {}), ...patch };
+  locals[REQUEST_LOG_CONTEXT] = { ...locals[REQUEST_LOG_CONTEXT], ...patch };
 }
 
 function resolveLocals(response: unknown): ContextCarrier | undefined {
