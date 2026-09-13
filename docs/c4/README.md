@@ -32,13 +32,13 @@ Convenções seguidas em todos os diagramas, para leitura consistente entre os n
 - **Tipo explícito em todo elemento.** Cada elemento declara o tipo entre colchetes (`[Pessoa]`, `[Sistema de Software]`, `[Container: tecnologia]`, `[Componente: tecnologia]`).
 - **Pessoas com silhueta.** Os atores usam a silhueta oficial de pessoa (círculo + corpo), como nos exemplos de [c4model.com/diagrams/system-context](https://c4model.com/diagrams/system-context) e [.../container](https://c4model.com/diagrams/container).
 - **Ícone de componente.** No diagrama de Componente, cada componente leva o ícone UML clássico (dois retângulos), igual à legenda de [c4model.com/diagrams/component](https://c4model.com/diagrams/component), na mesma paleta azul dos demais elementos.
-- **Tecnologia só ao cruzar fronteira.** O rótulo de tecnologia/protocolo (HTTP, JWT, SQL, SMTP…) aparece nas setas apenas a partir do nível de Container. No Contexto as setas trazem só a ação; no Componente, a tecnologia surge apenas quando a seta sai do container para o Banco de Dados ou o Servidor SMTP.
+- **Tecnologia só ao cruzar fronteira.** O rótulo de tecnologia/protocolo (HTTP, JWT, SQL, SMTP…) aparece nas setas apenas a partir do nível de Container. No Contexto as setas trazem só a ação; no Componente, a tecnologia surge quando a relação cruza a fronteira da API, como no acesso do cliente, no Banco de Dados e no Servidor SMTP.
 
 ## Nível 1 — Contexto do Sistema
 
 O nível mais macro, pensado para stakeholders **não técnicos**: mostra quem usa o sistema e com quais sistemas externos ele conversa, sem nenhum detalhe interno.
 
-<p align="center"><img src="images/c4-system-context.png" alt="Diagrama de Contexto C4: as pessoas Administrador, Mecânico e Atendente interagem com o Sistema da Oficina Mecânica; o Cliente da Oficina, como pessoa externa, autentica por CPF e senha e aprova ou rejeita orçamentos; o sistema envia o orçamento por e-mail através de um Servidor SMTP externo, que o entrega ao cliente" width="100%"></p>
+<p align="center"><img src="images/c4-system-context.png" alt="Diagrama de Contexto C4: Administrador, Mecânico, Atendente e Cliente interagem com o Sistema da Oficina Mecânica; o sistema envia notificações por um Servidor SMTP externo e telemetria ao Datadog" width="100%"></p>
 
 As caixas de pessoa descrevem **quem** cada ator é (não o que faz — a ação fica no rótulo da seta). Nenhuma seta menciona protocolo ou tecnologia, que são detalhe de nível mais baixo. Os nomes também evitam sufixo técnico: **"Sistema da Oficina Mecânica"** (não "...API") e **"Servidor SMTP"** (não "MailHog", que é apenas a implementação de desenvolvimento, revelada só no nível de Container). O **PostgreSQL não aparece** aqui por ser detalhe interno.
 
@@ -49,22 +49,27 @@ As caixas de pessoa descrevem **quem** cada ator é (não o que faz — a ação
 | **Atendente** | Pessoa | Cadastra clientes e veículos; cria e gerencia ordens de serviço e orçamentos |
 | **Cliente da Oficina** | Pessoa externa | Dono do veículo levado para manutenção; autentica por CPF e senha e aprova ou rejeita orçamentos |
 | **Servidor SMTP** | Sistema externo | Entrega aos clientes os e-mails de orçamento enviados pelo sistema |
+| **Datadog** | Sistema externo | Recebe e apresenta logs, métricas e traces da solução |
 
 ## Nível 2 — Container
 
 Um zoom para dentro da fronteira do sistema: os blocos executáveis/implantáveis e como se comunicam.
 
-<p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: dentro da fronteira do Sistema da Oficina Mecânica há dois containers, a API REST (NestJS/Node.js/TypeScript) e o Banco de Dados (PostgreSQL); os funcionários acessam a API por HTTP/JSON autenticado via JWT Bearer e o Cliente da Oficina por HTTP/JSON autenticado via JWT Bearer emitido por uma função serverless externa; a API lê e escreve no PostgreSQL via Prisma ORM e envia e-mails ao Servidor SMTP externo (MailHog), que os entrega ao cliente" width="100%"></p>
+<p align="center"><img src="images/c4-container.png" alt="Diagrama de Container C4: o API Gateway encaminha a autenticação externa à Lambda Customer Auth e o tráfego da API ao EKS; a API REST persiste no Amazon RDS, envia e-mails ao Servidor SMTP e emite telemetria ao Datadog Agent, que a encaminha ao Datadog" width="100%"></p>
 
-Dentro do **Sistema da Oficina Mecânica** há **dois containers** — a **API REST** e o **Banco de Dados** —, além do **Servidor SMTP** externo (aqui já com o nome técnico, MailHog). É neste nível que aparecem **tecnologia e protocolo** nas setas, como recomendado. Confirmado por análise de código e infraestrutura que **não há workers, filas ou cache** separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e por isso **não é modelado como container à parte**.
+Dentro do **Sistema da Oficina Mecânica** estão os cinco blocos implantáveis ou gerenciados que participam do fluxo atual: **API Gateway**, **API REST**, **Customer Auth**, **Banco de Dados** e **Coleta de Telemetria**. O **Servidor SMTP** e o **Datadog** são sistemas externos. É neste nível que aparecem **tecnologia e protocolo** nas setas, como recomendado. Não há workers, filas ou cache separados; o Job de migração do Kubernetes reutiliza a mesma imagem da API e por isso não é modelado como container à parte.
 
 | Container | Tecnologia | Responsabilidade |
 |---|---|---|
-| **API REST** | NestJS 11 · Node.js 22 · TypeScript | Expõe a API REST (prefixo `/api`), concentra a lógica de negócio em Clean Architecture, faz autenticação local via JWT e envia os e-mails de orçamento |
+| **API Gateway** | AWS HTTP API | Entrada pública; encaminha `/customer-auth/login` à Lambda e `/api/{proxy+}` ao NLB interno pelo VPC Link |
+| **API REST** | NestJS 11 · Node.js 22 · TypeScript no EKS | Expõe `/api`, concentra a lógica de negócio em Clean Architecture e envia notificações |
+| **Customer Auth** | AWS Lambda · Node.js 24 | Valida CPF, senha e status e emite `customer-jwt` RS256 |
 | **Banco de Dados** | PostgreSQL 16 (Amazon RDS) | Armazena todas as entidades de negócio (clientes, veículos, ordens de serviço, peças/insumos, orçamentos, estoque, usuários); serviço **gerenciado, fora do cluster**, alcançado pela rede a partir das subnets privadas |
+| **Coleta de Telemetria** | Datadog Agent no EKS | Coleta `stdout`, kubelet e OTLP da API e envia a telemetria ao Datadog |
 | **Servidor SMTP** | MailHog (externo) | Recebe e entrega os e-mails de orçamento (sink SMTP de desenvolvimento) |
+| **Datadog** | Serviço externo | Apresenta dashboards, alertas, logs, métricas e traces |
 
-Os protocolos nas setas: funcionários chamam a API por **HTTP/JSON REST autenticado via JWT Bearer**; o Cliente da Oficina decide o orçamento por **HTTP/JSON autenticado via JWT Bearer emitido por uma função serverless externa** — uma estratégia Passport (`customer-jwt`, RS256) inteiramente separada da usada pelos funcionários (`jwt`, HS256), nunca um único verificador aceitando os dois algoritmos; a API persiste no banco via **SQL/Prisma ORM** e notifica o cliente por **SMTP**.
+Os protocolos nas setas: os atores entram por **HTTPS** no API Gateway; a autenticação de cliente usa integração **AWS_PROXY** com a Lambda; a API segue por **VPC Link → NLB interno → NodePort**; API e Lambda acessam o RDS por **SQL/TLS**; a API notifica por **SMTP** e emite telemetria por `stdout` e **OTLP**. A estratégia Passport externa (`customer-jwt`, RS256) permanece separada da usada pelos funcionários (`jwt`, HS256).
 
 ## Nível 3 — Componente da API REST
 
@@ -72,9 +77,9 @@ O zoom mais interno: as peças que compõem o container **API REST**.
 
 <p align="center"><img src="images/c4-component.png" alt="Diagrama de Componente C4 da API REST: dez módulos de negócio (Auth, Usuários, Clientes, Veículos, Serviços, Peças/Insumos, Ordens de Serviço, Orçamentos, Estoque, Minha Conta) e dois componentes transversais (Guards/Segurança e Repositories/Prisma); Ordens de Serviço e Orçamentos se relacionam nos dois sentidos, os Orçamentos criam reservas no Estoque e enviam e-mail pelo Servidor SMTP, o Cliente da Oficina autentica-se e conecta-se ao componente Minha Conta passando por Guards/Segurança como os demais atores, e os Repositories persistem no PostgreSQL" width="100%"></p>
 
-São **dez módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** conecta-se ao módulo **Minha Conta**, passando pelo componente **Guards/Segurança** como qualquer outro ator — não é mais a única pessoa que fura a fronteira de autenticação direto para dentro de um módulo de negócio, como acontecia quando a decisão de orçamento era por link assinado sem login.
+São **dez módulos de negócio** e **dois componentes transversais**, com as dependências reais entre módulos levantadas no código. Destaques do fluxo: **Ordens de Serviço ↔ Orçamentos** se relacionam nos dois sentidos (a OS cria e lista orçamentos; o orçamento lê e atualiza o status da OS); os **Orçamentos** criam reservas no **Estoque** ao aprovar e disparam e-mail pelo **Servidor SMTP**; e o **Cliente da Oficina** apresenta o `customer-jwt` ao componente **Guards/Segurança**, que o vincula ao módulo **Minha Conta**.
 
-As dependências de quase todos os módulos em relação a **Guards / Segurança** e **Repositories** estão descritas no texto desses dois componentes, e **não desenhadas como setas** — isso evita cerca de 18 setas repetidas que poluiriam o diagrama sem agregar informação. Como no exemplo oficial (Figura 3 do material da aula), as setas entre componentes do mesmo container não levam rótulo de tecnologia; a tecnologia só aparece quando a seta cruza para o Banco de Dados ou o Servidor SMTP.
+As dependências de quase todos os módulos em relação a **Guards / Segurança** e **Repositories** estão descritas no texto desses dois componentes, e **não desenhadas como setas** — isso evita cerca de 18 setas repetidas que poluiriam o diagrama sem agregar informação. Como no exemplo oficial (Figura 3 do material da aula), as setas entre componentes do mesmo container não levam rótulo de tecnologia; a tecnologia aparece somente nas relações que cruzam a fronteira da API, como cliente, Banco de Dados e Servidor SMTP.
 
 **Módulos de negócio**
 
@@ -102,7 +107,6 @@ As dependências de quase todos os módulos em relação a **Guards / Segurança
 
 - 🏛️ [Arquitetura](../architecture.md) — Clean Architecture, DDD, ciclos de vida, Unit of Work, exceções.
 - 🏗️ [Infra · Visão Geral](../infra/overview.md) — a infraestrutura como sistema (inclui as vistas de deployment).
+- 📈 [Observabilidade](../observability.md) — logs, métricas, traces, dashboards e alertas.
 - 📐 [ADRs](../adr) — decisões arquiteturais.
 - 🌐 [c4model.com](https://c4model.com) — referência oficial do modelo C4.
-
-> **Imagens desatualizadas.** As imagens (`images/c4-system-context.png`, `c4-container.png`, `c4-component.png`) precisam ser reexportadas manualmente a partir da ferramenta de diagramação de origem para refletir o texto acima — fora do escopo desta entrega de código.

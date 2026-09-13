@@ -125,7 +125,7 @@ Escopo: `push` em `main` (após o merge) e `workflow_dispatch` (deploy sob deman
 |---|---|---|---|
 | 1 | `build-push-image` | — | Login no Amazon ECR, build **único** da imagem multi-stage NestJS e push com tag por commit (`:sha`) e tag móvel `:latest`; exporta o `image_uri` |
 | 2 | `db-migrate` | `build-push-image` | **Valida `CUSTOMER_JWT_PUBLIC_KEY`** (presente e com formato PEM) antes de tocar em AWS/kubectl — falha rápido e com causa explícita em vez de deixar o pod da API entrar em `CrashLoopBackOff` mais adiante; configura o kubeconfig; cria o `Secret` da API de forma **imperativa** (`kubectl create secret generic api-secret --from-literal=... --dry-run=client -o yaml \| kubectl apply -f -` — não renderiza `01-api-secret.yaml` via `envsubst`, justamente para aceitar `CUSTOMER_JWT_PUBLIC_KEY` como PEM multilinha sem quebrar o YAML); renderiza `OTEL_EXPORTER_OTLP_ENDPOINT` de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` no ConfigMap e o aplica; **renderiza `k8s/00-db-migrate-job.yaml`** (nome único por run + imagem identificada pela tag do commit via `sed`) e aplica o Kubernetes Job: **`prisma migrate deploy` + `prisma db seed`** — só migrations pendentes (não-destrutivo, nunca reseta) e seed idempotente (`upsert`, sem duplicar). Aguarda a conclusão consultando `.status.succeeded`/`.status.failed` do Job — **não** `kubectl wait --for=condition=Complete`, que espera uma condição só e nunca a veria num Job que quebra com `backoffLimit: 0` (esse recebe `Failed`), fazendo a falha aparecer apenas quando o timeout de 900 s estourasse, com a fila de deploys segurada por `concurrency: production`. Sucesso e falha são detectados na hora; o prazo continua sendo a rede de segurança, e em qualquer saída não-bem-sucedida o passo imprime `describe` + logs do pod |
-| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` (tag do commit) e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`), o `Deployment`/`Service`/`HPA` da API; quando `ENABLE_TELEMETRY_COLLECTION == 'true'`, valida `DD_API_KEY` e aplica a camada do Datadog Agent; reinicia explicitamente o Deployment da API para carregar as variáveis do ConfigMap e valida o rollout |
+| 3 | `app-deploy` | `build-push-image` + `db-migrate` | Renderiza `k8s/03-api-deployment.yaml` com a tag do commit e aplica os manifests Kubernetes — o **MailHog** (`Deployment` + `Service`) e o `Deployment`/`Service`/`HPA` da API; quando `ENABLE_TELEMETRY_COLLECTION == 'true'`, valida `DD_API_KEY` e aplica a camada do Datadog Agent; por fim, aguarda o rollout do Deployment da API |
 
 ### Steps de cada job de CD
 
@@ -162,7 +162,7 @@ Escopo: `push` em `main` (após o merge) e `workflow_dispatch` (deploy sob deman
 | 4 | Render deployment manifest with immutable image | Nome literal do step: fixa image_uri pela tag do commit no Deployment; a política MUTABLE do ECR não fixa digest. |
 | 5 | Apply Kubernetes manifests | Aplica MailHog e os recursos da API (Deployment, Service, HPA) com configuração renderizada. |
 | 6 | Apply telemetry collection layer | Só com ENABLE_TELEMETRY_COLLECTION=true: verifica DD_API_KEY e aplica a coleta do Datadog Agent. |
-| 7 | Wait rollout | Reinicia o Deployment para carregar a configuração e aguarda o rollout; indisponibilidade dentro do prazo reprova. |
+| 7 | Wait rollout | Aguarda o rollout corrente do Deployment; indisponibilidade dentro do prazo reprova. O step não executa `rollout restart`. |
 
 A imagem roda **somente a aplicação** (`CMD ["node", "--require", "./dist/src/otel.js", "dist/src/main"]` — o `--require` é o preload do OpenTelemetry, que precisa rodar antes de `express` e `pg` serem importados). A migração é um passo dedicado — o Job de `db-migrate` no cluster e o serviço one-shot `migrate` no `docker-compose.yml` localmente — nunca embutida no start do container. Isso evita corrida de migração entre réplicas (o HPA escala de 1 a 5 pods) e mantém o mesmo formato local e em produção.
 
@@ -202,9 +202,9 @@ em arquivo, log ou variable sem proteção.
 
 ## 4) Workflow de DAST (`dast.yml`)
 
-![Diagrama do workflow de DAST: job único zap-scan com steps em sequência (Checkout, Start Stack, Wait API Ready, Authenticate, Prepare ZAP Dir, Run OWASP ZAP, Upload Report, Tear Down); os dois últimos rodam com if: always()](../diagrams/dast-workflow.png)
+![Diagrama do workflow de DAST: job único zap-scan com geração de chave RS256 efêmera, stack Compose, autenticação interna, assinatura local do customer JWT, preparação do ZAP, scans e artifacts independentes dos dois perfis e teardown](../diagrams/dast-workflow.png)
 
-> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. As caixas *Start stack* e *Wait API ready* correspondem ao step único que sobe a stack e espera o healthcheck do serviço `api`. Os steps `Upload report` e `Tear down` rodam com `if: always()` (tracejados no diagrama). O diagrama antecede a segunda passagem descrita abaixo — a tabela de steps é a referência completa e atual.
+> Este workflow tem **um único job (`zap-scan`)**: no diagrama acima, cada caixa é um **step**, não um job. O step *Start stack and wait healthy* sobe o Compose e consome o healthcheck do próprio serviço `api`. Os dois uploads e o teardown rodam com `if: always()` e aparecem tracejados; os scans interno e externo produzem resultados independentes.
 
 | # | Step | O que faz |
 |---|---|---|
@@ -277,7 +277,7 @@ Para que os workflows e o provisionamento funcionem corretamente, é necessário
 | Variable | `K8S_NAMESPACE` | `cd.yml` | Namespace onde a aplicação e os Jobs de banco são aplicados |
 | Variable | `ENABLE_DEPLOY` | `cd.yml` | Habilita ou desabilita os jobs que tocam o cluster (`build-push-image`, `db-migrate`, `app-deploy`) |
 
-`ENABLE_TELEMETRY_COLLECTION` e `OTEL_EXPORTER_OTLP_ENDPOINT` são controles independentes: o primeiro provisiona a camada do Agent e o segundo liga o SDK da aplicação. O workflow reinicia o Deployment depois de aplicar o ConfigMap, pois variáveis de ambiente de Pods existentes não são atualizadas automaticamente.
+`ENABLE_TELEMETRY_COLLECTION` e `OTEL_EXPORTER_OTLP_ENDPOINT` são controles independentes: o primeiro aplica a camada do Agent e o segundo liga o SDK da aplicação. O workflow aplica o ConfigMap no job `db-migrate`; depois, o `app-deploy` aplica o Deployment renderizado com a imagem do commit e aguarda o rollout corrente. Não há um `rollout restart` explícito.
 
 Os secrets ficam no nível do repositório ou organização porque são consumidos por mais de um contexto. Como as credenciais são de laboratório do AWS Academy, o `AWS_SESSION_TOKEN` expira quando o lab é reiniciado e precisa ser reconfigurado a cada sessão.
 
@@ -286,7 +286,7 @@ Os secrets ficam no nível do repositório ou organização porque são consumid
 - Antes de qualquer chamada AWS/kubectl, o job `db-migrate` roda o passo `Validate required secrets`: se `CUSTOMER_JWT_PUBLIC_KEY` não estiver cadastrado (string vazia) ou não contiver `BEGIN PUBLIC KEY`, o job falha imediatamente com `::error::` explicando a causa. Sem essa checagem, a falha só apareceria depois — no pod da API, como um `TypeError: JwtStrategy requires a secret or key` genérico do `passport-jwt`, já em `CrashLoopBackOff`.
 - O secret `DB_PASSWORD` deve ser idêntico ao configurado no repositório `oficina-mecanica-infra-database`.
 - No workflow de deploy (`cd.yml`), o job `db-migrate` cria o Secret `api-secret` de forma **imperativa** — `kubectl create secret generic api-secret --from-literal=DATABASE_URL="..." --from-literal=JWT_SECRET="..." ... --dry-run=client -o yaml | kubectl apply -f -` —, compondo a `DATABASE_URL` a partir de `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME` e `DB_PASSWORD`, consumida pela API e pelo Job de migração.
-- O job não renderiza mais `k8s/01-api-secret.yaml` via `envsubst` (esse arquivo continua no repositório só como referência para deploy manual — ver [kubernetes.md](kubernetes.md#deploy-em-kubernetes-manual)). `--from-literal` aceita cada valor exatamente como a variável de ambiente do job o carrega — sem re-escapar quebras de linha —, o que importa para `CUSTOMER_JWT_PUBLIC_KEY`: uma chave PEM colada no formato natural (multilinha) quebraria o YAML gerado por `envsubst`, mas não quebra `--from-literal`.
+- O job cria `api-secret` com `kubectl create secret --from-literal`; `k8s/01-api-secret.yaml` permanece apenas como referência para deploy manual (ver [kubernetes.md](kubernetes.md#deploy-em-kubernetes-manual)). `--from-literal` aceita cada valor exatamente como a variável de ambiente do job o carrega — sem re-escapar quebras de linha —, o que importa para `CUSTOMER_JWT_PUBLIC_KEY`: uma chave PEM colada no formato natural (multilinha) quebraria o YAML gerado por `envsubst`, mas não quebra `--from-literal`.
 - Além das credenciais do PostgreSQL RDS, o workflow também injeta os secrets:
   - `JWT_SECRET`
   - `JWT_REFRESH_SECRET`

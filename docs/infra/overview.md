@@ -6,6 +6,7 @@ A solução roda inteiramente na região **`us-east-1`**, dentro de uma única V
 
 ## Índice
 
+- [Diagramas de infraestrutura](#diagramas-de-infraestrutura)
 - [As sete camadas de provisionamento](#as-sete-camadas-de-provisionamento)
 - [Inventário de componentes e ownership](#inventário-de-componentes-e-ownership)
 - [Topologia de rede](#topologia-de-rede)
@@ -14,6 +15,14 @@ A solução roda inteiramente na região **`us-east-1`**, dentro de uma única V
 - [Postura de segurança](#postura-de-segurança)
 - [Limitações e o que produção exigiria](#limitações-e-o-que-produção-exigiria)
 - [Documentação relacionada](#documentação-relacionada)
+
+## Diagramas de infraestrutura
+
+A primeira vista preserva o fluxo arquitetural resumido; a segunda detalha rede, ownership e workloads sem alterar a separação entre os recursos gerenciados e o cluster.
+
+![Arquitetura de infraestrutura: API Gateway e Lambda na entrada pública, API e Datadog Agent no EKS, Amazon RDS fora do cluster e Datadog como destino da telemetria](../diagrams/infrastructure-diagram.png)
+
+![Arquitetura de referência detalhada: fluxo API Gateway, VPC Link, NLB interno e NodePort; subnets públicas e privadas; cluster EKS, Lambda, RDS e serviços de suporte](../diagrams/infrastructure-details.png)
 
 ## As sete camadas de provisionamento
 

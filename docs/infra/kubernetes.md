@@ -81,7 +81,7 @@ O Deployment referencia cada chave individualmente (`valueFrom`), o que torna ex
 | `OTEL_LOGS_EXPORTER` | `none` | A **ausência** desta chave faria o SDK instanciar um `LoggerProvider` com exportador OTLP de rede. Os logs têm um caminho único — o stdout do contêiner, lido pelo coletor |
 | `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | O OTel JS exporta cumulative por padrão, e os destinos compatíveis esperam delta; cumulative descarta pontos na inicialização do processo |
 
-O manifesto contém um placeholder, não um estado fixo. A cada deploy, o workflow lê `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza `02-api-configmap.yaml` e aplica o resultado. Variável ausente ou vazia produz uma chave vazia e mantém o SDK desligado; qualquer URL válida ativa a exportação sem rebuild da imagem. Como chaves de ConfigMap consumidas como variáveis de ambiente não mudam em Pods existentes, o `app-deploy` reinicia explicitamente o Deployment antes de aguardar o rollout.
+O manifesto contém um placeholder, não um estado fixo. A cada deploy, o workflow lê `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza `02-api-configmap.yaml` e aplica o resultado. Variável ausente ou vazia produz uma chave vazia e mantém o SDK desligado; qualquer URL válida ativa a exportação sem rebuild da imagem. O `app-deploy` aplica o Deployment renderizado com a imagem do commit e aguarda o rollout corrente; não executa `rollout restart`.
 
 ### Camada de coleta
 
