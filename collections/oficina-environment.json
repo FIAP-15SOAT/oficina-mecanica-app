@@ -1,17 +1,32 @@
 {
   "id": "oficina-env-001",
-  "name": "Oficina Mecânica — Local",
+  "name": "Oficina Mecânica",
   "values": [
-    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "default", "enabled": true },
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "default", "enabled": true },
     { "key": "authToken", "value": "", "type": "secret", "enabled": true },
     { "key": "refreshToken", "value": "", "type": "secret", "enabled": true },
     { "key": "adminEmail", "value": "guilhermedarochasalvador@gmail.com", "type": "default", "enabled": true },
     { "key": "adminPassword", "value": "Tech@2026", "type": "secret", "enabled": true },
+    { "key": "customerCpf", "value": "12345678909", "type": "default", "enabled": true },
+    { "key": "customerPassword", "value": "Tech@2026", "type": "secret", "enabled": true },
+    { "key": "customerJwtToken", "value": "", "type": "secret", "enabled": true },
     { "key": "userId", "value": "", "type": "default", "enabled": true },
+    { "key": "mechanicUserId", "value": "", "type": "default", "enabled": true },
     { "key": "serviceId", "value": "", "type": "default", "enabled": true },
+    { "key": "serviceIdForDelete", "value": "", "type": "default", "enabled": true },
     { "key": "partSupplyId", "value": "", "type": "default", "enabled": true },
+    { "key": "partSupplyIdForDelete", "value": "", "type": "default", "enabled": true },
     { "key": "customerId", "value": "", "type": "default", "enabled": true },
-    { "key": "customerJwtToken", "value": "", "type": "secret", "enabled": true }
+    { "key": "customerId2", "value": "", "type": "default", "enabled": true },
+    { "key": "vehicleId", "value": "", "type": "default", "enabled": true },
+    { "key": "vehicleId2", "value": "", "type": "default", "enabled": true },
+    { "key": "workOrderId", "value": "", "type": "default", "enabled": true },
+    { "key": "tempWorkOrderId", "value": "", "type": "default", "enabled": true },
+    { "key": "quoteId", "value": "", "type": "default", "enabled": true },
+    { "key": "quoteIdForReject", "value": "", "type": "default", "enabled": true },
+    { "key": "tempSentQuoteId", "value": "", "type": "default", "enabled": true },
+    { "key": "testSku", "value": "", "type": "default", "enabled": true },
+    { "key": "testSku2", "value": "", "type": "default", "enabled": true }
   ],
   "_postman_variable_scope": "environment"
 }
