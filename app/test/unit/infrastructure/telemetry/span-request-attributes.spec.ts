@@ -43,7 +43,12 @@ describe('extractRequestPathname', () => {
   });
 
   it('should treat a missing url as empty', () => {
+    expect(extractRequestPathname()).toBe('');
     expect(extractRequestPathname(undefined)).toBe('');
+  });
+
+  it('should preserve an explicitly null url as empty', () => {
+    expect(extractRequestPathname(null)).toBe('');
   });
 });
 

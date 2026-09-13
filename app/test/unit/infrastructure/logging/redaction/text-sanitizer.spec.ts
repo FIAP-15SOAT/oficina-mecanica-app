@@ -48,6 +48,13 @@ describe('sanitizeText', () => {
     expect(sanitized).not.toContain('abcdef1234567890');
   });
 
+  it.each(['Bearer ABCDEFGH', 'bEaReR abcdefgh', 'Basic A0._~+/=-'])(
+    'should redact credentials with mixed case and allowed punctuation: %s',
+    (credential) => {
+      expect(sanitizeText(`Header: ${credential} invalid`)).toBe('Header: [REDACTED] invalid');
+    },
+  );
+
   it('should remove a connection string carrying credentials', () => {
     const sanitized = sanitizeText(
       'Falha em postgresql://admin:s3cr3t@db.internal:5432/oficina ao conectar',

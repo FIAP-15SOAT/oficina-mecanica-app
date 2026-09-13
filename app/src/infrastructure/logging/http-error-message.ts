@@ -43,8 +43,9 @@ function isFrameworkNotFound(detail: string, request: unknown, status: number): 
 function buildUnmatchedRouteMessage(request: Request): string {
   const path = sanitizeUrlPath(request.path ?? request.url ?? '');
   const query = buildQueryString(request);
+  const querySuffix = query ? `?${query}` : '';
 
-  return `Cannot ${request.method} ${path}${query ? `?${query}` : ''}`;
+  return `Cannot ${request.method} ${path}${querySuffix}`;
 }
 
 function extractDetail(exception: unknown): string {
@@ -97,7 +98,7 @@ function extractHttpExceptionDetail(exception: unknown): string | undefined {
     return undefined;
   }
 
-  const entries = message.slice(0, MAX_DETAIL_ENTRIES).map((entry) => String(entry));
+  const entries = message.slice(0, MAX_DETAIL_ENTRIES).map(String);
 
   if (message.length > MAX_DETAIL_ENTRIES) {
     entries.push(`(+${message.length - MAX_DETAIL_ENTRIES})`);

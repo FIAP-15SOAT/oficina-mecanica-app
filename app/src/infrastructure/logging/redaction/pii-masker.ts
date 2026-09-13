@@ -14,7 +14,7 @@ const MIN_SINGLE_EDGE_LENGTH = 4;
 const MAX_REVEALED_IDENTIFIER_CHARS = 5;
 
 const ALPHANUMERIC_RUN = /[\p{L}\p{N}]+/gu;
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_SHAPE = /^[^\s@]+@([^\s@]+)$/;
 
 export function maskScalar(value: unknown): string {
   const text = typeof value === 'string' ? value : String(value);
@@ -23,7 +23,7 @@ export function maskScalar(value: unknown): string {
     return text;
   }
 
-  if (EMAIL_SHAPE.test(text)) {
+  if (isEmail(text)) {
     return maskEmail(text);
   }
 
@@ -32,6 +32,19 @@ export function maskScalar(value: unknown): string {
   }
 
   return maskFreeText(text);
+}
+
+function isEmail(value: string): boolean {
+  const match = EMAIL_SHAPE.exec(value);
+
+  if (match === null) {
+    return false;
+  }
+
+  const domain = match[1];
+  const separator = domain.indexOf('.', 1);
+
+  return separator !== -1 && separator < domain.length - 1;
 }
 
 function maskEmail(value: string): string {

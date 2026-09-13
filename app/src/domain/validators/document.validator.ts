@@ -28,7 +28,7 @@ export class DocumentValidator {
 
     // Maps digit → 0-9, letter → 10-35 (A=10 ... Z=35)
     const charValue = (c: string): number => {
-      const code = c.charCodeAt(0);
+      const code = c.codePointAt(0)!;
       return code >= 48 && code <= 57 ? code - 48 : code - 55;
     };
 
