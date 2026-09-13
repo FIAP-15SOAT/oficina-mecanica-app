@@ -24,6 +24,7 @@
   "collectCoverageFrom": [
     "src/**/*.(t|j)s",
     "!src/main.ts",
+    "!src/otel.ts",
     "!src/**/*.config.ts",
     "!src/**/*.enum.ts",
     "!src/**/*.exception.ts",

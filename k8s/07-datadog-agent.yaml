@@ -86,7 +86,7 @@ spec:
 
       containers:
         - name: agent
-          image: gcr.io/datadoghq/agent:7.60.0
+          image: gcr.io/datadoghq/agent:7.83.1
           imagePullPolicy: IfNotPresent
 
           ports:
@@ -107,6 +107,9 @@ spec:
             - name: DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT
               value: 0.0.0.0:4318
 
+            - name: HOST_PROC
+              value: /proc
+
             - name: DD_APM_ENABLED
               value: "true"
 
@@ -114,6 +117,15 @@ spec:
               value: "true"
             - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
               value: "true"
+
+            - name: DD_CONTAINER_EXCLUDE_LOGS
+              value: "name:mailhog name:agent name:kube-proxy"
+
+            # O check `orchestrator_pod` fala com um Cluster Agent, que este
+            # projeto não implanta — só há o DaemonSet. Sem ele o check falha
+            # para sempre e nunca produz dado
+            - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+              value: "false"
 
             - name: DD_KUBELET_TLS_VERIFY
               value: "false"

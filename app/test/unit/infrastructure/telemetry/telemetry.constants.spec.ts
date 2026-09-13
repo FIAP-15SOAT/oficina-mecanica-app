@@ -89,6 +89,23 @@ describe('resolveMetricExportTiming', () => {
   });
 
   /**
+   * O preload chama sem argumento: é `process.env` que a implantação configura,
+   * e um parâmetro obrigatório só existiria para o teste.
+   */
+  it('should read the process environment when no environment is given', () => {
+    process.env.OTEL_METRIC_EXPORT_INTERVAL = '30000';
+
+    try {
+      expect(resolveMetricExportTiming()).toEqual({
+        intervalMillis: 30_000,
+        timeoutMillis: DEFAULT_METRIC_EXPORT_TIMEOUT_MS,
+      });
+    } finally {
+      delete process.env.OTEL_METRIC_EXPORT_INTERVAL;
+    }
+  });
+
+  /**
    * O construtor do leitor periódico **lança** quando o intervalo é menor que o
    * prazo, e num preload isso é fatal: medido antes da correção, qualquer
    * `OTEL_METRIC_EXPORT_INTERVAL` abaixo dos 5 s padrão — `1000` inclusive —

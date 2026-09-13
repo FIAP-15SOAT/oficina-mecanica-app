@@ -41,4 +41,22 @@ describe('FindMyQuoteByIdUseCase', () => {
       ResourceNotFoundException,
     );
   });
+
+  it('should throw 404 when the quote work order is gone', async () => {
+    const quote = { id: randomUUID(), workOrderId: randomUUID() };
+    const quoteRepository = { findByIdWithDetails: jest.fn().mockResolvedValue(quote) };
+    const workOrderRepository = { findById: jest.fn().mockResolvedValue(null) };
+    const policy = { assertCustomerAuthorized: jest.fn() };
+
+    const useCase = new FindMyQuoteByIdUseCase(
+      quoteRepository as never,
+      workOrderRepository as never,
+      policy as never,
+    );
+
+    await expect(useCase.execute(randomUUID(), quote.id)).rejects.toThrow(
+      ResourceNotFoundException,
+    );
+    expect(policy.assertCustomerAuthorized).not.toHaveBeenCalled();
+  });
 });

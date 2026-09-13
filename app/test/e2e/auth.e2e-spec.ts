@@ -190,6 +190,21 @@ describe('Auth (E2E)', () => {
       await request(httpServer).post('/api/auth/refresh').send({}).expect(400);
     });
 
+    it('should return 401 when the user was deleted after the token was issued', async () => {
+      const auth = await registerAndLogin(
+        httpServer,
+        { name: 'Refresh Deleted', email: 'refresh-deleted@e2e.test' },
+        ctx.prisma,
+      );
+
+      await ctx.prisma.user.delete({ where: { id: auth.user.id } });
+
+      await request(httpServer)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: auth.refreshToken })
+        .expect(401);
+    });
+
     it('should return 401 when user is deactivated after token issued', async () => {
       const auth = await registerAndLogin(
         httpServer,
@@ -524,6 +539,92 @@ describe('Auth (E2E)', () => {
         .post('/api/auth/password-reset-confirmations')
         .send({ email: targetEmail, code: newCode, newPassword: 'NewPass@789' })
         .expect(204);
+    });
+
+    /**
+     * A expiração é do carimbo persistido, não do relógio do teste: adiantar
+     * `expires_at` no banco é a única forma de exercitar a janela sem esperar
+     * o prazo real de validade.
+     */
+    it('should return 401 for a code that has already expired', async () => {
+      const adminAuth = await registerAndLogin(
+        httpServer,
+        { name: 'Admin Reset 6', email: `admin-reset6-${Date.now()}@e2e.test`, role: 'ADMIN' },
+        ctx.prisma,
+      );
+      const targetEmail = `target-reset6-${Date.now()}@e2e.test`;
+
+      const createRes = await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Target User 6', email: targetEmail, role: 'ATTENDANT' })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/users/${createRes.body.data.id}/password-resets`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(204);
+
+      const code = await fetchLatestResetCode(ctx.mailhogContainer, targetEmail);
+
+      await ctx.prisma.passwordResetCode.update({
+        where: { userId: createRes.body.data.id },
+        data: { expiresAt: new Date(Date.now() - 1_000) },
+      });
+
+      await request(httpServer)
+        .post('/api/auth/password-reset-confirmations')
+        .send({ email: targetEmail, code, newPassword: 'NewPass@789' })
+        .expect(401);
+    });
+
+    it('should return 404 when issuing a code for a non-existent user', async () => {
+      const adminAuth = await registerAndLogin(
+        httpServer,
+        { name: 'Admin Reset 4', email: `admin-reset4-${Date.now()}@e2e.test`, role: 'ADMIN' },
+        ctx.prisma,
+      );
+
+      await request(httpServer)
+        .post('/api/users/00000000-0000-0000-0000-000000000000/password-resets')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .expect(404);
+    });
+
+    /**
+     * A confirmação é anônima: e-mail desconhecido e código nunca emitido têm
+     * de responder o **mesmo** `401` de um código errado, ou a rota vira um
+     * oráculo de existência de conta.
+     */
+    it('should return 401 for an unknown e-mail', async () => {
+      await request(httpServer)
+        .post('/api/auth/password-reset-confirmations')
+        .send({
+          email: `desconhecido-${Date.now()}@e2e.test`,
+          code: '123456',
+          newPassword: 'NewPass@789',
+        })
+        .expect(401);
+    });
+
+    it('should return 401 when no code was ever issued for the user', async () => {
+      const adminAuth = await registerAndLogin(
+        httpServer,
+        { name: 'Admin Reset 5', email: `admin-reset5-${Date.now()}@e2e.test`, role: 'ADMIN' },
+        ctx.prisma,
+      );
+      const targetEmail = `target-reset5-${Date.now()}@e2e.test`;
+
+      await request(httpServer)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ name: 'Target User 5', email: targetEmail, role: 'ATTENDANT' })
+        .expect(201);
+
+      await request(httpServer)
+        .post('/api/auth/password-reset-confirmations')
+        .send({ email: targetEmail, code: '123456', newPassword: 'NewPass@789' })
+        .expect(401);
     });
   });
 });

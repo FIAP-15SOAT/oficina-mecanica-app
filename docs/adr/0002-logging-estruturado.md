@@ -81,9 +81,15 @@ Essa escolha resolve três problemas de uma vez: elimina a dependência de `assi
 
 Ficam **fora** da cobertura, por decisão registrada: corpo malformado ou acima do limite (rejeitado pelo parser), preflight de CORS, rotas servidas diretamente pela documentação da API, e requisições recusadas pelo servidor HTTP antes de alcançarem a aplicação. O contrato declara isso em vez de prometer "toda requisição".
 
+O alcance do middleware é **declarado**, não herdado: `buildLoggerParams` fixa `forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }]`. O default do `nestjs-pino` é o curinga legado `'*'`, que o `path-to-regexp` do Express 5 não aceita mais sem nome — o Nest converte sozinho para `'{*path}'` e **avisa ao converter**, duas vezes por boot, porque `createLoggerMiddlewares` registra dois middlewares (o `pino-http` e o que abre o `AsyncLocalStorage`). O aviso só aparece porque o `setGlobalPrefix` transforma o caminho em `/api/*`; o `'*'` puro o Nest silencia. Declarar o valor de destino mantém o alcance idêntico e cala o aviso — e é `'{*path}'`, não `'*path'`, porque o segundo exige ao menos um segmento e deixaria `/api/` de fora. A regressão é guardada no E2E, que assere ausência do aviso nas linhas de boot capturadas.
+
 **Rejeitado:** montar um `pino-http` cru na instância do Express antes de Helmet/CORS/Swagger/parsers e ligar o `LoggerModule` com `useExisting: true`. Fecharia a lacuna, mas divide a posse do bootstrap e torna `main.ts` sensível à ordem de um jeito que nada garante — mover CORS, Swagger, um parser ou o `init()` regride a cobertura silenciosamente.
 
 **Consequência, e é um benefício:** as probes do k8s batem em `/api/docs`, que pertence ao Swagger, então as ≈13 000 linhas de probe por dia **nunca chegam ao logger**. O problema de ruído que esta mudança originalmente pretendia suprimir não existe sob esse registro, e a maquinaria de supressão foi deletada em vez de construída.
+
+> **Correção (2026-08-28, ADR 0003).** O parágrafo acima **deixou de valer** com a adoção de endpoints dedicados de health. As probes passaram a apontar para `/api/health/live` e `/api/health/ready`, que vivem no router do Nest e atravessam o `pino-http` como qualquer rota de negócio — a premissa "pertence ao Swagger, logo está fora da cobertura" caiu junto. Com isso o ruído passou a existir de fato (até ~65 000 linhas/dia com o HPA em 5 réplicas) e a maquinaria de supressão foi **construída**, não deletada: `customLogLevel → 'silent'` em `resolveAccessLogLevel`, nunca `autoLogging.ignore`, e só para conclusão **2xx** em caminho que casa exatamente o conjunto fechado de `health.constants.ts` — um `503` continua em `error`. Ver [ADR 0003 › Supressão de access log construída, não herdada](0003-health-checks.md#supressão-de-access-log-construída-não-herdada) e [`architecture.md`](../architecture.md#supressão-seletiva-das-probes).
+>
+> O que **permanece verdadeiro** no parágrafo é a fronteira que ele descreve: middleware de módulo não vê o que o body parser, o preflight de CORS e as rotas do Swagger resolvem antes dele. Só a conclusão sobre as probes é que dependia de onde elas apontavam.
 
 ## Alternativas consideradas
 

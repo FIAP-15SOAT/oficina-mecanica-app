@@ -13,9 +13,25 @@ spec:
       app.kubernetes.io/name: oficina-api
   template:
     metadata:
+      # Unified Service Tagging do Datadog. É o unico jeito de o coletor
+      # atribuir `service` e `env` aos logs de container: o log nao passa por
+      # OTLP (OTEL_LOGS_EXPORTER=none em 02-api-configmap.yaml), então o agente
+      # cai no nome da imagem, enquanto o APM, que le o resource OTel, reporta 
+      # `oficina-mecanica-api`.
+      # Dois nomes para a mesma aplicação quebram a aba Logs da pagina do
+      # serviço e qualquer metrica derivada de log.
+      #
+      # São valores ESPELHADOS, não derivados: label do Kubernetes não
+      # referencia ConfigMap. `service` tem de seguir igual a OTEL_SERVICE_NAME
+      # e `env` igual a NODE_ENV, os dois em 02-api-configmap.yaml, de onde o
+      # resource OTel tira service.name e deployment.environment.name. Mudou
+      # la, muda aqui (não há verificacao automatica.)
+      #
       labels:
         app.kubernetes.io/name: oficina-api
         app.kubernetes.io/part-of: oficina-mecanica
+        tags.datadoghq.com/service: oficina-mecanica-api
+        tags.datadoghq.com/env: production
     spec:
       # > janela de drain (10 s) + fechamento do servidor + $disconnect() +
       # margem. Estoura-lo e SIGKILL; mantido baixo de proposito, porque ele

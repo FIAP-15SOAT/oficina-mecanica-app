@@ -167,7 +167,7 @@ app/test/
 ├── helpers/                         # Mock factories reutilizáveis (incluindo
 │                                    # UnitOfWorkMockFactory) e helpers de E2E
 │                                    # (auth, db cleanup, test app bootstrap)
-├── unit/                            # 191 suites de testes unitários (espelham src/)
+├── unit/                            # 216 suites de testes unitários (espelham src/)
 │   ├── domain/                      # entities/, value-objects/, validators/
 │   ├── application/use-cases/       # auth, customer, customer-access, me,
 │   │                                # part-supply, quote, service, stock, user,
@@ -175,10 +175,12 @@ app/test/
 │   ├── interface-adapters/          # Clean Controllers + Presenters por domínio
 │   └── infrastructure/              # http/ (controllers, filters, interceptors, pipes,
 │                                    # validators, auth), persistence/prisma, services
-└── e2e/                             # 12 suites de testes E2E (Testcontainers + PostgreSQL real)
+└── e2e/                             # 15 suites de testes E2E (Testcontainers + PostgreSQL real)
     ├── all-exceptions.filter.e2e-spec.ts
     ├── auth.e2e-spec.ts
     ├── customer.e2e-spec.ts
+    ├── customer-access.e2e-spec.ts
+    ├── health.e2e-spec.ts
     ├── logging.e2e-spec.ts
     ├── me.e2e-spec.ts                 # /api/me/*: identidade externa, senha, OS e
     │                                  # orçamentos vinculados, decisão de orçamento

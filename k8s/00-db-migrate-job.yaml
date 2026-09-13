@@ -11,9 +11,25 @@ spec:
   backoffLimit: 0
   template:
     metadata:
+      # Unified Service Tagging do Datadog, pela mesma razão de
+      # `03-api-deployment.yaml`: o log de contêiner não passa por OTLP, então
+      # sem estas labels o agente cai no nome da imagem e reporta este Job como
+      # `ecr-oficina-mecanica-app-repo` — um serviço fantasma que é, na verdade,
+      # a mesma imagem da API.
+      #
+      # O `service` é deliberadamente DIFERENTE do da API. Job e Deployment são
+      # workloads distintos, com ciclo de vida distinto: unificá-los encheria a
+      # aba Logs da página do serviço da API com saída de migração a cada
+      # deploy, que é justamente o que as labels do Deployment foram
+      # introduzidas para evitar.
+      #
+      # `env` é valor ESPELHADO de `NODE_ENV` em `02-api-configmap.yaml`, como
+      # no Deployment. Mudou lá, muda aqui (não há verificação automática).
       labels:
         app.kubernetes.io/name: db-migrate-job
         app.kubernetes.io/part-of: oficina-mecanica
+        tags.datadoghq.com/service: oficina-mecanica-db-migrate
+        tags.datadoghq.com/env: production
     spec:
       restartPolicy: Never
       containers:
@@ -26,9 +42,18 @@ spec:
                 secretKeyRef:
                   name: api-secret
                   key: DATABASE_URL
+
+            - name: PRISMA_HIDE_UPDATE_MESSAGE
+              value: "true"
+
+          # `set -e` porque o status de saída de `sh -c` é o do ÚLTIMO comando:
+          # sem ele, uma migração que falha seguida de um seed que passa faz o
+          # Job terminar com **sucesso**, e o CD segue para o rollout com o
+          # schema desatualizado.
           command:
             - sh
             - -c
             - |
+              set -e
               npx prisma migrate deploy
               npx prisma db seed

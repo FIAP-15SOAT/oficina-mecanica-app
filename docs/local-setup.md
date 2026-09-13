@@ -127,9 +127,9 @@ awk 'NF {sub(/\r/, ""); printf "%s\\n", $0}' customer-auth-public.pem
 
 O passo a passo completo de rodar os dois repositórios juntos (API + lambda) está documentado do lado da lambda, em `docs/local-setup.md` › **Os dois repositórios juntos**.
 
-### Telemetria desligada por padrão
+### Telemetria controlada pelo endpoint
 
-Em desenvolvimento a telemetria fica **inativa**: sem `OTEL_EXPORTER_OTLP_ENDPOINT`, o preload retorna cedo e o SDK não registra instrumentação alguma. Os logs, os health checks e todo o restante do comportamento seguem idênticos, e nenhuma conexão de saída é tentada.
+`OTEL_EXPORTER_OTLP_ENDPOINT` é o interruptor da telemetria. Em desenvolvimento ela fica **inativa por padrão** porque a variável começa vazia; nesse estado, o preload retorna cedo e o SDK não registra instrumentação alguma. Os logs, os health checks e todo o restante do comportamento seguem idênticos, e nenhuma conexão de saída é tentada. Em produção, o workflow de CD renderiza no ConfigMap o valor da variável homônima configurada no GitHub Actions.
 
 Para exercitar a telemetria localmente, aponte a variável para um coletor OTLP/HTTP (por exemplo `http://localhost:4318`) e use `npm run start:prod`, que carrega o preload como a imagem de produção faz. O `npm run start:dev` **não** carrega o preload: em modo watch o objetivo é a iteração rápida, e a instrumentação de verdade é verificada na stack do compose (ver [testes](./testing.md#telemetria-o-que-o-jest-não-instrumenta)).
 

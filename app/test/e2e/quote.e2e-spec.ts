@@ -1,8 +1,43 @@
 import type { Server } from 'http';
+import type { StartedTestContainer } from 'testcontainers';
 import request from 'supertest';
 import { TestContext, setupTestApp, teardownTestApp } from '../helpers/test-app.helper';
 import { cleanDatabase } from '../helpers/db-cleanup.helper';
 import { AuthTokens, registerAndLogin } from '../helpers/auth.helper';
+
+interface MailhogResponse {
+  items: {
+    To: { Mailbox: string; Domain: string }[];
+    Content: { Body: string };
+    Created: string;
+  }[];
+}
+
+async function fetchLatestEmailBody(
+  mailhogContainer: StartedTestContainer,
+  toEmail: string,
+): Promise<string> {
+  const base = `http://${mailhogContainer.getHost()}:${mailhogContainer.getMappedPort(8025)}`;
+  const deadline = Date.now() + 10_000;
+
+  while (Date.now() < deadline) {
+    const res = await fetch(`${base}/api/v2/messages?limit=50`);
+    const body = (await res.json()) as MailhogResponse;
+
+    const matches = body.items.filter((item) =>
+      item.To.some((to) => `${to.Mailbox}@${to.Domain}`.toLowerCase() === toEmail.toLowerCase()),
+    );
+
+    if (matches.length > 0) {
+      matches.sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime());
+      return matches[0].Content.Body;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  throw new Error(`No email found for ${toEmail}`);
+}
 
 describe('Quote (E2E)', () => {
   let ctx: TestContext;
@@ -67,6 +102,30 @@ describe('Quote (E2E)', () => {
       })
       .expect(201);
     return res.body.data as { id: string };
+  }
+
+  async function createCustomerWithoutAccess() {
+    const id = ++customerCounter;
+    const email = `cliente-sem-acesso-${Date.now()}${id}@test.com`;
+    const res = await request(httpServer)
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+      .send({
+        name: `Cliente Sem Acesso ${id}`,
+        document: generateCPF(id),
+        type: 'INDIVIDUAL',
+        email,
+        phone: '11999999999',
+        address: {
+          street: 'Rua Teste, 123',
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: '01310-100',
+        },
+        createAccess: false,
+      })
+      .expect(201);
+    return { ...(res.body.data as { id: string }), email };
   }
 
   async function createVehicle(customerId: string) {
@@ -724,6 +783,57 @@ describe('Quote (E2E)', () => {
       expect(res.body.data.status).toBe('SENT');
     });
 
+    /**
+     * Sem nenhum usuário externo ativo vinculado, o destinatário é o e-mail do
+     * próprio cliente e o texto troca de "acesse o sistema" para "entre em
+     * contato com a oficina" — mandar a instrução de acesso para quem não tem
+     * acesso é o defeito que este caso impede.
+     */
+    it('should notify the customer directly when nobody has external access', async () => {
+      const customer = await createCustomerWithoutAccess();
+      const vehicle = await createVehicle(customer.id);
+
+      const woRes = await request(httpServer)
+        .post('/api/work-orders')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({
+          customerId: customer.id,
+          vehicleId: vehicle.id,
+          problemDescription: 'Revisão geral',
+        })
+        .expect(201);
+
+      await request(httpServer)
+        .patch(`/api/work-orders/${woRes.body.data.id}`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'IN_DIAGNOSIS' })
+        .expect(200);
+
+      const service = await createService();
+      const createRes = await request(httpServer)
+        .post('/api/quotes')
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ workOrderId: woRes.body.data.id })
+        .expect(201);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/services`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ serviceId: service.id, quantity: 1 })
+        .expect(200);
+
+      await request(httpServer)
+        .post(`/api/quotes/${createRes.body.data.id}/submissions`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({})
+        .expect(200);
+
+      const body = await fetchLatestEmailBody(ctx.mailhogContainer, customer.email);
+
+      expect(body).toContain('Entre em contato com a oficina');
+      expect(body).not.toContain('Acesse o sistema');
+    });
+
     it('should return 409 when submitting quote with no items', async () => {
       const { workOrderId } = await createWorkOrderInDiagnosis();
       const createRes = await request(httpServer)
@@ -1152,6 +1262,14 @@ describe('Quote (E2E)', () => {
         .patch(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
         .set('Authorization', `Bearer ${adminAuth.accessToken}`)
         .send({ status: 'APPROVED' })
+        .expect(404);
+    });
+
+    it('should return 404 when rejecting a quote that does not exist', async () => {
+      await request(httpServer)
+        .patch(`/api/quotes/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`)
+        .set('Authorization', `Bearer ${adminAuth.accessToken}`)
+        .send({ status: 'REJECTED', reason: 'Cliente desistiu' })
         .expect(404);
     });
 

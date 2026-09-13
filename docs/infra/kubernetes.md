@@ -41,7 +41,7 @@ Os recursos em Kubernetes foram divididos por responsabilidade:
 | metrics-server | Terraform | [`oficina-mecanica-k8s`](https://github.com/FIAP-15SOAT/oficina-mecanica-k8s) (`terraform/k8s_metrics_server.tf`) |
 | DB migration Job (`00-db-migrate-job.yaml`) | Workflow de CD | Render + `kubectl apply` (job `db-migrate`) em `.github/workflows/cd.yml` |
 | API Secret (`01-api-secret.yaml`, referência para deploy manual) | Workflow de CD | `kubectl create secret --from-literal` (imperativo, não renderiza o YAML) em `.github/workflows/cd.yml` |
-| API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
+| API ConfigMap (`02-api-configmap.yaml`) | Workflow de CD | Render de `OTEL_EXPORTER_OTLP_ENDPOINT` a partir de GitHub Actions Variables via `envsubst` + `kubectl apply` em `.github/workflows/cd.yml` |
 | API Deployment (`03-api-deployment.yaml`) | Workflow de CD | Render + `kubectl apply` em `.github/workflows/cd.yml` |
 | MailHog Deployment (`03-mailhog-deployment.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` (dependência de e-mail) |
 | API Service (`04-api-service.yaml`) | Workflow de CD | `kubectl apply` em `.github/workflows/cd.yml` |
@@ -77,25 +77,58 @@ O Deployment referencia cada chave individualmente (`valueFrom`), o que torna ex
 
 | Chave | Valor no ConfigMap | Efeito |
 |---|---|---|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | **vazio** | Vazio desliga tudo: nenhum módulo do SDK carregado, nenhuma instrumentação, nenhum exportador, nenhuma conexão de saída. Para ligar, apontar para o **DNS do Service** do agente (`http://datadog-agent.oficina.svc:4318`), nunca para `status.hostIP` via Downward API |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Renderizado de `vars.OTEL_EXPORTER_OTLP_ENDPOINT` | É o interruptor do SDK: vazio desliga instrumentações e exportadores; preenchido ativa traces e métricas para o endpoint informado. Com o Agent do projeto, usar o **DNS do Service** (`http://datadog-agent.oficina.svc:4318`), nunca `status.hostIP` via Downward API |
 | `OTEL_LOGS_EXPORTER` | `none` | A **ausência** desta chave faria o SDK instanciar um `LoggerProvider` com exportador OTLP de rede. Os logs têm um caminho único — o stdout do contêiner, lido pelo coletor |
 | `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | O OTel JS exporta cumulative por padrão, e os destinos compatíveis esperam delta; cumulative descarta pontos na inicialização do processo |
 
-Como o endpoint está **vazio no manifesto**, este merge não altera o comportamento em produção: os logs saem idênticos, nenhuma conexão nova é aberta e o SDK sequer é carregado. Ligar a telemetria — e desligá-la de novo, como rollback — é uma edição de ConfigMap, sem rebuild de imagem.
+O manifesto contém um placeholder, não um estado fixo. A cada deploy, o workflow lê `vars.OTEL_EXPORTER_OTLP_ENDPOINT`, renderiza `02-api-configmap.yaml` e aplica o resultado. Variável ausente ou vazia produz uma chave vazia e mantém o SDK desligado; qualquer URL válida ativa a exportação sem rebuild da imagem. Como chaves de ConfigMap consumidas como variáveis de ambiente não mudam em Pods existentes, o `app-deploy` reinicia explicitamente o Deployment antes de aguardar o rollout.
 
 ### Camada de coleta
 
 Os manifestos do agente vivem em `k8s/06-datadog-secret.yaml` (chave por `envsubst`, nunca committada), `k8s/07-datadog-agent.yaml` (ServiceAccount + RBAC somente-leitura + DaemonSet) e `k8s/08-datadog-service.yaml` (ClusterIP expondo `4318`). É a **única peça do sistema que conhece o fornecedor**: a aplicação exporta OTLP puro, sem dependência, cabeçalho ou credencial de plataforma.
 
-O CD só os aplica com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de ativação:
+O CD só aplica o Agent com `vars.ENABLE_TELEMETRY_COLLECTION` ligada, e o gate existe por capacidade: pela fórmula do VPC CNI um `t3.small` permite 11 pods e os workloads atuais já ocupam 6, então o DaemonSet não cabe junto com o `maxReplicas: 5` do HPA. Ordem de configuração:
 
 1. `node_instance_type` para `t3.medium` em `oficina-mecanica-k8s` (17 pods);
-2. `DD_API_KEY` como secret do repositório e `ENABLE_TELEMETRY_COLLECTION` como variável;
-3. depois que o DaemonSet estiver `Ready`, apontar `OTEL_EXPORTER_OTLP_ENDPOINT` para `http://datadog-agent.oficina.svc:4318` no ConfigMap.
+2. `DD_API_KEY` como secret e `ENABLE_TELEMETRY_COLLECTION=true` como variável do GitHub Actions;
+3. `OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318` como variável do GitHub Actions — o CD transporta o valor até o ConfigMap.
 
-Os três passos são independentes, e o terceiro é o único que muda o comportamento da aplicação.
+Os dois controles continuam independentes: `ENABLE_TELEMETRY_COLLECTION` instala ou remove da execução do CD a camada do Agent; `OTEL_EXPORTER_OTLP_ENDPOINT` liga ou desliga o SDK da aplicação. Assim é possível manter apenas logs/métricas de infraestrutura pelo Agent com o endpoint vazio, ou apontar a aplicação para outro coletor OTLP.
 
 ⚠️ `OTEL_RESOURCE_ATTRIBUTES` **não** entra aqui com nenhum dos cinco atributos compartilhados (`service.name`, `service.namespace`, `service.version`, `service.instance.id`, `deployment.environment.name`): o detector de ambiente do SDK **vence** o resource montado em código, e o caminho de log não lê essa variável — traço e log passariam a reportar valores diferentes, em silêncio, desligando a navegação cruzada entre sinais. Os cinco continuam vindo de `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `SERVICE_VERSION` (assada na imagem) e `NODE_ENV`, que **ambos** os caminhos leem. Ver [ADR 0005](../adr/0005-opentelemetry.md).
+
+### Classificação e atribuição dos logs de contêiner
+
+O log **não** passa por OTLP (`OTEL_LOGS_EXPORTER: none`): o caminho é o stdout do contêiner, lido pelo agente com `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL`. Isso muda duas coisas em relação ao trace e à métrica, que leem o resource do OTel.
+
+**Severidade vem do stream, não do conteúdo.** Sem pipeline de integração, o coletor deriva o status do canal de saída: **stdout → `info`, stderr → `error`**. Escapa disso apenas quem emite JSON com nível próprio — que é o caso da API, cujo envelope carrega `level` (ver [ADR 0002](../adr/0002-logging-estruturado.md)). Todo o resto do node é classificado pelo canal, e é por isso que aparecem como `error` linhas perfeitamente normais de `kube-proxy`, `coredns`, `metrics-server` e `aws-node`: são componentes em Go, e o `klog` escreve em stderr. **Não é defeito da aplicação nem do coletor** — e a contrapartida é que a falha de verdade desses componentes chega pelo mesmo canal, então filtrá-la fora custaria o sinal junto com o ruído. A exclusão feita no agente (`DD_CONTAINER_EXCLUDE_LOGS`) alcança o MailHog, o próprio agente e o `kube-proxy`. Os dois primeiros eram ruído de probe sem contrapartida de sinal; o terceiro é a maior fatia isolada do índice depois da própria aplicação, quase toda classificada como `error` pelo motivo acima. O que o `kube-proxy` registra é sincronização de regra de iptables, e uma falha de rede real aparece antes na aplicação — o que o torna o único dos quatro componentes em Go cuja exclusão não custa sinal junto com o ruído. `coredns`, `metrics-server` e `aws-node` **continuam sendo coletados**: ali a falha do componente é o próprio sinal.
+
+**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente, e o mesmo span passa a se chamar `http.server.request`. A imagem pinada aqui está acima desse piso, então o comportamento novo vale sem variável de ativação.
+
+A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
+
+**`HOST_PROC` é contorno de defeito, não configuração de coleta.** A partir da 7.61.0 o pipeline de ingestão OTLP do agente falha na inicialização com `failed to register process metrics: process does not exist` quando `/proc` do host está montado em `/host/proc` — que é a montagem deste DaemonSet. O sintoma é traiçoeiro: o pod fica `Running` e `Ready`, a porta 4318 aparece no Service, e a aplicação recebe `ECONNREFUSED` porque **nada escuta ali**. `HOST_PROC: /proc` é um dos contornos publicados no [issue #32947](https://github.com/DataDog/datadog-agent/issues/32947).
+
+Não remova esta variável junto com uma atualização do agente sem antes confirmar que a 4318 continua escutando:
+
+```sh
+kubectl exec -n oficina ds/datadog-agent -- ss -lntp | grep 4318
+```
+
+**Nome de operação do APM.** Até a 7.65, o agente nomeava a operação de um span OTLP pelo **escopo de instrumentação**, e o que aparecia no APM era literalmente `opentelemetry_instrumentation_http.server` — com as métricas de trace derivadas herdando esse nome. A partir da **7.66** a lógica de mapeamento v2 é o padrão na ingestão OTLP via agente, e o mesmo span passa a se chamar `http.server.request`. A imagem pinada aqui está acima desse piso, então o comportamento novo vale sem variável de ativação.
+
+A renomeação é a razão de nenhum dashboard ou monitor da solução consultar `trace.*`: a latência vem da métrica OTLP `http.server.request.duration`, cujo nome é definido pela convenção semântica e não muda com a versão do agente.
+
+**Atribuição de serviço vem de label, não do resource.** Como o log não passa por OTLP, o agente não enxerga `service.name` e cai no **nome da imagem** — o que fazia a mesma aplicação aparecer como `ecr-oficina-mecanica-app-repo` no log e `oficina-mecanica-api` no APM, quebrando a aba Logs da página do serviço e qualquer métrica derivada de log. As labels de Unified Service Tagging no `spec.template.metadata.labels` resolvem:
+
+| Workload | `tags.datadoghq.com/service` | Manifesto |
+|---|---|---|
+| API | `oficina-mecanica-api` | `k8s/03-api-deployment.yaml` |
+| Job de migração | `oficina-mecanica-db-migrate` | `k8s/00-db-migrate-job.yaml` |
+
+Os dois valores são **deliberadamente diferentes**. Job e Deployment compartilham a imagem, mas são workloads distintos com ciclo de vida distinto: unificá-los encheria a aba Logs da API com saída de migração a cada deploy — que é o problema que as labels vieram resolver, só que com outro nome.
+
+⚠️ As labels são valores **espelhados**, não derivados: label de Kubernetes não referencia ConfigMap. `service` precisa seguir igual a `OTEL_SERVICE_NAME` e `env` igual a `NODE_ENV`, ambos em `02-api-configmap.yaml`, de onde o resource do OTel tira `service.name` e `deployment.environment.name`. **Mudou lá, muda aqui** — não há verificação automática.
 
 ## Recursos: CPU e memória (requests e limits)
 
@@ -197,7 +230,26 @@ A persistência relacional da aplicação é fornecida pelo **Amazon RDS (Postgr
 
 - Instância gerenciada PostgreSQL 16 (Single-AZ, `db.t4g.micro`, 20 GiB GP3).
 - Alocado nas subnets privadas da VPC, com Security Group restrito ao CIDR da VPC.
-- Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret`.
+- Acesso pela aplicação via `DATABASE_URL` injetada dinamicamente no `api-secret` — que precisa carregar os parâmetros descritos em [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
+
+### Conexão obrigatoriamente cifrada (TLS)
+
+O parameter group `default.postgres16` traz **`rds.force_ssl = 1`** — padrão do sistema desde o PostgreSQL 15, não uma escolha desta stack. O servidor recusa qualquer conexão sem criptografia com `no pg_hba.conf entry for host "...", user "...", no encryption`, um SQLSTATE `28000` que o Prisma reporta como **`P1010 "User was denied access on the database"`**: uma mensagem de permissão para o que é, na verdade, ausência de TLS.
+
+Por isso a `DATABASE_URL` do `api-secret` termina em **`sslmode=require&uselibpqcompat=true`**. A mesma URL é lida por **dois clientes com defaults opostos**:
+
+| Consumidor | Cliente | Sem `sslmode` na URL |
+|---|---|---|
+| `prisma migrate deploy` | motor Rust do Prisma | assume `sslmode=prefer` e negocia TLS sozinho |
+| `prisma db seed` e o `pg.Pool` do `PrismaService` | node-postgres | **não usa TLS algum** |
+
+A assimetria produz um sintoma enganoso: a migração passa e o seed falha. E, se o seed não estivesse no caminho, a falha só apareceria adiante — no `$connect()` do `onModuleInit` da API, com a readiness nunca ficando pronta.
+
+`require` sozinho não fecha o caso: no parser do `pg` ele hoje equivale a `verify-full`, e a cadeia do RDS termina na raiz **autoassinada** `Amazon RDS <região> Root CA RSA2048 G1`, que não está no truststore do Node — a conexão passaria a falhar na validação do certificado, trocando um erro por outro. **`uselibpqcompat=true`** dá a `require` a semântica do libpq (cifra sem validar a cadeia) e é a grafia que o próprio `pg` recomenda para o comportamento que valerá a partir do `pg` v9. O motor do Prisma descarta a chave que não conhece e segue exigindo TLS por `require`.
+
+Validar a cadeia exigiria embarcar o bundle de CAs do RDS na imagem e nomeá-lo **duas vezes** na URL — `sslrootcert` para o `pg`, `sslcert` para o Prisma —, com o PEM entrando no ciclo de rotação. Com o RDS em subnet privada e Security Group restrito à VPC, o risco residual é MITM interno à VPC, e a troca não se paga aqui.
+
+O ambiente local não carrega esses parâmetros: `docker-compose` e Testcontainers sobem PostgreSQL sem TLS, e a `DATABASE_URL` do `.env` continua sem `sslmode`.
 
 ## Manifestos da aplicação
 
@@ -205,10 +257,10 @@ Arquivos em `k8s/`:
 
 - `00-db-migrate-job.yaml`: Job **one-shot** de migração/seed do banco (`prisma migrate deploy` + `db seed`), com placeholders de nome (`JOB_NAME_PLACEHOLDER`) e imagem (`IMAGE_URI_PLACEHOLDER`); renderizado e aplicado pelo job `db-migrate` do CD antes do rollout — não é um recurso de estado da aplicação, por isso o prefixo `00-`. Detalhes em [Job de migração do banco](#job-de-migração-do-banco)
 - `01-api-secret.yaml`: referência dos secrets da aplicação (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET` e `CUSTOMER_JWT_PUBLIC_KEY`) para deploy manual — o `cd.yml` não aplica este arquivo; ele cria o Secret de forma imperativa via `kubectl create secret --from-literal`, com os mesmos valores vindos dos GitHub Secrets e Variables
-- `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER` e `CUSTOMER_JWT_AUDIENCE`)
+- `02-api-configmap.yaml`: variáveis não sensíveis da aplicação (`NODE_ENV`, `PORT`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `BCRYPT_SALT_ROUNDS`, `MAIL_HOST`, `MAIL_PORT`, `TZ`, `LOG_LEVEL`, `OTEL_SERVICE_NAME`, `OTEL_SERVICE_NAMESPACE`, `TRUSTED_PROXY_CIDRS`, `CUSTOMER_JWT_ISSUER`, `CUSTOMER_JWT_AUDIENCE` e as chaves de telemetria); o placeholder de `OTEL_EXPORTER_OTLP_ENDPOINT` é renderizado pelo CD a partir da variável homônima do GitHub Actions
 - `03-api-deployment.yaml`: deployment da API com placeholder de imagem (`IMAGE_URI_PLACEHOLDER`), `imagePullPolicy: Always`, consumo de Secret/ConfigMap (ver [wiring de configuração](#convenções-labels-e-wiring-de-configuração)) e probes de saúde
 - `03-mailhog-deployment.yaml`: deployment do MailHog para captura de e-mails enviados pela aplicação
-- `04-api-service.yaml`: Service `ClusterIP` da API
+- `04-api-service.yaml`: Service **`NodePort`** da API (`3000` → `30080` nos nós). `NodePort` é um superconjunto de `ClusterIP`: o Service continua recebendo um ClusterIP e o DNS interno segue igual. A porta dos nós é o destino do target group do NLB interno provisionado em `oficina-mecanica-k8s`, que por sua vez é o backend da integração privada do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway). O valor precisa casar com `api_node_port` naquele repositório
 - `04-mailhog-service.yaml`: Service `ClusterIP` do MailHog, expondo as portas SMTP (`1025`) e Web UI (`8025`) para acesso interno ao cluster
 - `05-api-hpa.yaml`: autoscaling da API por CPU e memória (HPA v2) — ver [Autoscaling da API (HPA)](#autoscaling-da-api-hpa)
 
@@ -221,11 +273,15 @@ O `00-db-migrate-job.yaml` é um `Job` do Kubernetes executado **uma vez por dep
 - **Consumo da `DATABASE_URL`** — o container recebe `DATABASE_URL` via `secretKeyRef` do `api-secret` e executa:
 
   ```sh
+  set -e
   npx prisma migrate deploy
   npx prisma db seed
   ```
 
 - **`prisma migrate deploy`** aplica apenas migrations pendentes (não-destrutivo) e **`prisma db seed`** é idempotente.
+- ⚠️ **O `set -e` é o que torna verdadeiro o parágrafo do `backoffLimit: 0` acima.** O status de saída de `sh -c` é o do **último** comando: sem ele, uma migração que falha seguida de um seed que passa faz o Job terminar com **sucesso**, e o CD segue para o rollout com o schema desatualizado — exatamente o mascaramento que o `backoffLimit: 0` existe para impedir, só que um nível abaixo, onde ele não alcança.
+- **`PRISMA_HIDE_UPDATE_MESSAGE: "true"`** — o verificador de versão do Prisma CLI escreve uma caixa de 10 linhas em **stderr**, e o coletor classifica stderr como `error`. Uma migração bem-sucedida pintava dez linhas vermelhas por deploy, sobre um `npm i` que ninguém executa dentro de um contêiner. O restante do stderr do CLI fica: são poucas linhas e é o mesmo canal que carrega a falha **real** (`P1001`, `P3009`), que precisa continuar vermelha — e é por isso que também não se redireciona `2>&1` aqui. Ver [Classificação e atribuição dos logs de contêiner](#classificação-e-atribuição-dos-logs-de-contêiner).
+- **O seed é o primeiro consumidor node-postgres do pipeline** — e, por isso, o primeiro a expor uma `DATABASE_URL` sem parâmetros de TLS, já que o `migrate deploy` negocia a criptografia por conta própria. Ver [Conexão obrigatoriamente cifrada (TLS)](#conexão-obrigatoriamente-cifrada-tls).
 
 ## Autoscaling da API (HPA)
 
@@ -252,7 +308,11 @@ O `node_instance_type` vive em `oficina-mecanica-k8s` — é pré-requisito da c
 
 ## Acesso à aplicação em Kubernetes
 
-O Service da API é publicado como `ClusterIP`, portanto não é acessível diretamente fora do cluster. Para testes e validações manuais, utilize `kubectl port-forward` para criar um túnel entre a sua máquina e o Service da aplicação.
+A aplicação tem **dois** caminhos de acesso.
+
+**Público**, para uso real: pelo endereço do [API Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-gateway), que alcança o cluster por VPC Link → NLB interno → NodePort `30080`. Nada disso tem IP público: o Service é `NodePort`, mas a porta só é alcançável de dentro da VPC.
+
+**Diagnóstico**, para testes e validações manuais: `kubectl port-forward`, que continua funcionando exatamente como antes — `NodePort` não substitui o `ClusterIP`, o acrescenta.
 
 ```bash
 kubectl port-forward -n oficina svc/oficina-api 3000:3000
@@ -372,11 +432,18 @@ export CHANGE_ME_STRONG_PASSWORD=<SENHA_DB>
 export JWT_SECRET=<JWT_SECRET>
 export JWT_REFRESH_SECRET=<JWT_REFRESH_SECRET>
 export CUSTOMER_JWT_PUBLIC_KEY=<CUSTOMER_JWT_PUBLIC_KEY>
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent.oficina.svc:4318
 
 envsubst \
 '${CHANGE_ME_STRONG_PASSWORD} ${JWT_SECRET} ${JWT_REFRESH_SECRET} ${CUSTOMER_JWT_PUBLIC_KEY}' \
 < k8s/01-api-secret.yaml \
 > k8s/01-api-secret.rendered.yaml
+
+# Renderiza o ConfigMap com o endpoint OTLP; use valor vazio para desligar o SDK
+
+envsubst '${OTEL_EXPORTER_OTLP_ENDPOINT}' \
+< k8s/02-api-configmap.yaml \
+> k8s/02-api-configmap.rendered.yaml
 
 # Renderiza imagem
 
@@ -385,7 +452,7 @@ sed "s|IMAGE_URI_PLACEHOLDER|<IMAGE_URI>|g" k8s/03-api-deployment.yaml > k8s/03-
 # Aplica recursos da aplicação
 
 kubectl apply -f k8s/01-api-secret.rendered.yaml
-kubectl apply -f k8s/02-api-configmap.yaml
+kubectl apply -f k8s/02-api-configmap.rendered.yaml
 kubectl apply -f k8s/03-api-deployment.rendered.yaml
 kubectl apply -f k8s/04-api-service.yaml
 kubectl apply -f k8s/05-api-hpa.yaml
